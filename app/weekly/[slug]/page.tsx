@@ -26,7 +26,7 @@ export default function WeeklyDetailPage({ params }: { params: { slug: string } 
   const eventSections: WeeklyEvent[] = [
     {
       id: "three",
-      title: "三阶比赛第15周",
+      title: `三阶比赛第${meet.yearWeek}周`,
       eventName: "三阶",
       results: meet.results
     },
