@@ -7,6 +7,7 @@ const navItems = [
   { href: "/coaches", label: "教练员" },
   { href: "/judges", label: "裁判员" },
   { href: "/competitions", label: "赛事活动" },
+  { href: "/weekly", label: "周赛" },
   { href: "/achievements", label: "荣誉档案" },
   { href: "/about", label: "关于我们" }
 ];

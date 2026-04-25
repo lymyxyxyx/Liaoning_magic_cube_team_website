@@ -1,3 +1,5 @@
+import { weeklyPlayerPeople } from "@/lib/weekly";
+
 export type PersonRole = "运动员" | "教练员" | "裁判员" | "组织者";
 export type CompletionLevel = "低" | "中" | "高";
 export type DataStatus = "待补充" | "部分整理" | "已整理";
@@ -8,6 +10,7 @@ export type Person = {
   slug: string;
   name: string;
   avatar: string;
+  gender?: "男" | "女";
   roles: PersonRole[];
   city: string;
   mainEvent?: string;
@@ -54,7 +57,7 @@ export type Achievement = {
   year: string;
 };
 
-export const people: Person[] = [
+export const corePeople: Person[] = [
   {
     id: "p-lin-hao",
     slug: "lin-hao",
@@ -112,6 +115,8 @@ export const people: Person[] = [
     visible: true
   }
 ];
+
+export const people: Person[] = [...corePeople, ...weeklyPlayerPeople];
 
 export const competitions: Competition[] = [
   {
