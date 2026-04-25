@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 160">
+  <rect width="160" height="160" rx="18" fill="#eef4ff"/>
+  <circle cx="80" cy="62" r="34" fill="#1f6feb"/>
+  <path d="M32 146c8-36 31-55 48-55s40 19 48 55" fill="#d94141"/>
+  <text x="80" y="76" text-anchor="middle" fill="#fff" font-family="Arial" font-size="30" font-weight="700">林</text>
+</svg>

@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 160">
+  <rect width="160" height="160" rx="18" fill="#fff0f0"/>
+  <circle cx="80" cy="62" r="34" fill="#d94141"/>
+  <path d="M30 146c9-36 32-55 50-55s41 19 50 55" fill="#ffbf3f"/>
+  <text x="80" y="76" text-anchor="middle" fill="#fff" font-family="Arial" font-size="30" font-weight="700">王</text>
+</svg>

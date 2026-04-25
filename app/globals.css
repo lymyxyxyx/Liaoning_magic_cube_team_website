@@ -1,0 +1,548 @@
+:root {
+  color-scheme: light;
+  --ink: #18212f;
+  --muted: #667085;
+  --line: #dde3ea;
+  --surface: #ffffff;
+  --soft: #f4f7fb;
+  --blue: #1f6feb;
+  --red: #d94141;
+  --green: #178b58;
+  --yellow: #a36500;
+  --shadow: 0 18px 45px rgba(25, 39, 62, 0.09);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: #f8fafc;
+  color: var(--ink);
+  font-family: Inter, "PingFang SC", "Microsoft YaHei", Arial, sans-serif;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+img {
+  max-width: 100%;
+  height: auto;
+}
+
+main {
+  min-height: calc(100vh - 74px);
+}
+
+.site-header {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: 24px;
+  align-items: center;
+  padding: 14px clamp(18px, 5vw, 64px);
+  border-bottom: 1px solid var(--line);
+  background: rgba(255, 255, 255, 0.92);
+  backdrop-filter: blur(14px);
+}
+
+.brand {
+  display: inline-flex;
+  gap: 12px;
+  align-items: center;
+  min-width: 220px;
+}
+
+.brand-mark,
+.icon-tile {
+  display: inline-grid;
+  width: 40px;
+  height: 40px;
+  place-items: center;
+  border-radius: 8px;
+  color: #fff;
+  background: var(--red);
+}
+
+.brand strong,
+.brand small {
+  display: block;
+}
+
+.brand small {
+  margin-top: 2px;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.main-nav {
+  display: flex;
+  gap: 4px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.main-nav a,
+.admin-link,
+.button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 40px;
+  padding: 0 13px;
+  border-radius: 8px;
+  color: #344054;
+  font-size: 14px;
+  font-weight: 650;
+}
+
+.main-nav a:hover,
+.admin-link:hover {
+  background: var(--soft);
+}
+
+.admin-link {
+  border: 1px solid var(--line);
+  background: var(--surface);
+}
+
+.container,
+.page-hero,
+.split-hero,
+.stat-band {
+  width: min(1160px, calc(100% - 36px));
+  margin: 0 auto;
+}
+
+.split-hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1.1fr) minmax(300px, 0.9fr);
+  gap: 36px;
+  align-items: center;
+  padding: 56px 0 28px;
+}
+
+.hero-copy h1,
+.page-hero h1 {
+  margin: 10px 0 14px;
+  font-size: clamp(34px, 5vw, 58px);
+  line-height: 1.08;
+  letter-spacing: 0;
+}
+
+.hero-copy p,
+.page-hero p {
+  margin: 0;
+  color: #526071;
+  font-size: 17px;
+  line-height: 1.8;
+}
+
+.hero-panel {
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface);
+  box-shadow: var(--shadow);
+}
+
+.hero-panel img {
+  display: block;
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  object-fit: cover;
+}
+
+.eyebrow {
+  color: var(--red);
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.hero-actions,
+.section-actions {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-top: 24px;
+}
+
+.button {
+  border: 1px solid var(--line);
+  background: var(--surface);
+}
+
+.button.primary {
+  border-color: var(--blue);
+  color: #fff;
+  background: var(--blue);
+}
+
+.stat-band {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+  padding: 18px 0 24px;
+}
+
+.stat {
+  padding: 18px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface);
+}
+
+.stat strong {
+  display: block;
+  font-size: 28px;
+}
+
+.stat span,
+.card-kicker,
+.meta-line {
+  color: var(--muted);
+  font-size: 14px;
+}
+
+.section {
+  padding: 34px 0;
+}
+
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 18px;
+  align-items: flex-end;
+  margin-bottom: 18px;
+}
+
+.section-header h2 {
+  margin: 0;
+  font-size: 26px;
+}
+
+.section-header p {
+  max-width: 680px;
+  margin: 8px 0 0;
+  color: var(--muted);
+  line-height: 1.7;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.grid.two {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.person-card,
+.event-card,
+.achievement-badge,
+.info-block,
+.admin-card {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface);
+  box-shadow: 0 8px 24px rgba(25, 39, 62, 0.04);
+}
+
+.person-card {
+  display: grid;
+  grid-template-columns: 84px 1fr;
+  gap: 16px;
+  min-height: 188px;
+  padding: 18px;
+}
+
+.person-card img,
+.profile-avatar {
+  border-radius: 8px;
+  background: var(--soft);
+}
+
+.person-card h3,
+.event-card h3,
+.achievement-badge h3 {
+  margin: 8px 0;
+  font-size: 21px;
+}
+
+.person-card p,
+.event-card p,
+.achievement-badge p,
+.info-block p {
+  margin: 10px 0 0;
+  color: var(--muted);
+  line-height: 1.65;
+}
+
+.tag-row {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.tag,
+.status {
+  display: inline-flex;
+  align-items: center;
+  min-height: 26px;
+  padding: 0 9px;
+  border-radius: 999px;
+  background: #eef4ff;
+  color: #1f4c9a;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.status {
+  background: #fff7e6;
+  color: var(--yellow);
+}
+
+.status-高 {
+  background: #e9f8f1;
+  color: var(--green);
+}
+
+.status-低 {
+  background: #fff0f0;
+  color: var(--red);
+}
+
+.event-card {
+  overflow: hidden;
+}
+
+.event-card img,
+.event-cover {
+  display: block;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  object-fit: cover;
+}
+
+.event-card-body {
+  padding: 18px;
+}
+
+.card-kicker,
+.meta-line {
+  display: inline-flex;
+  gap: 7px;
+  align-items: center;
+}
+
+.page-hero {
+  display: flex;
+  justify-content: space-between;
+  gap: 26px;
+  align-items: flex-end;
+  padding: 42px 0 18px;
+}
+
+.detail-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 0.8fr) minmax(300px, 1.2fr);
+  gap: 22px;
+}
+
+.profile-panel,
+.detail-main {
+  padding: 22px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface);
+}
+
+.profile-panel {
+  align-self: start;
+}
+
+.profile-avatar {
+  display: block;
+  width: 132px;
+  height: 132px;
+}
+
+.profile-panel h1,
+.detail-main h1 {
+  margin: 16px 0 8px;
+  font-size: 34px;
+}
+
+.definition-list {
+  display: grid;
+  gap: 12px;
+  margin-top: 22px;
+}
+
+.definition-list div {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--line);
+}
+
+.definition-list dt {
+  color: var(--muted);
+}
+
+.definition-list dd {
+  margin: 0;
+  font-weight: 750;
+  text-align: right;
+}
+
+.info-block,
+.admin-card {
+  padding: 18px;
+}
+
+.info-block + .info-block {
+  margin-top: 16px;
+}
+
+.info-block h2,
+.admin-card h2 {
+  margin: 0 0 12px;
+  font-size: 21px;
+}
+
+.timeline {
+  display: grid;
+  gap: 12px;
+}
+
+.timeline-item {
+  padding-left: 14px;
+  border-left: 3px solid var(--blue);
+}
+
+.timeline-item strong {
+  display: block;
+}
+
+.achievement-badge {
+  display: grid;
+  grid-template-columns: 42px 1fr;
+  gap: 12px;
+  padding: 18px;
+}
+
+.achievement-badge svg {
+  color: var(--yellow);
+}
+
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.field {
+  display: grid;
+  gap: 7px;
+}
+
+.field.full {
+  grid-column: 1 / -1;
+}
+
+label {
+  color: #344054;
+  font-size: 13px;
+  font-weight: 750;
+}
+
+input,
+select,
+textarea {
+  width: 100%;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 11px 12px;
+  background: #fff;
+  color: var(--ink);
+  font: inherit;
+}
+
+textarea {
+  min-height: 100px;
+  resize: vertical;
+}
+
+.admin-list {
+  display: grid;
+  gap: 10px;
+  margin-top: 16px;
+}
+
+.admin-list-item {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: center;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--soft);
+}
+
+@media (max-width: 900px) {
+  .site-header,
+  .split-hero,
+  .detail-layout,
+  .page-hero {
+    grid-template-columns: 1fr;
+  }
+
+  .site-header,
+  .page-hero {
+    display: grid;
+    align-items: start;
+  }
+
+  .main-nav {
+    justify-content: start;
+  }
+
+  .grid,
+  .grid.two,
+  .stat-band,
+  .form-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 560px) {
+  .site-header {
+    gap: 12px;
+  }
+
+  .main-nav {
+    overflow-x: auto;
+    flex-wrap: nowrap;
+    justify-content: start;
+    padding-bottom: 4px;
+  }
+
+  .main-nav a {
+    flex: 0 0 auto;
+  }
+
+  .person-card {
+    grid-template-columns: 1fr;
+  }
+}

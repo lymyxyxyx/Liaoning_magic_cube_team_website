@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 540" role="img" aria-label="辽宁魔方战队视觉图">
+  <rect width="720" height="540" fill="#eef4f8"/>
+  <path d="M0 410c118-42 196-48 304-12 126 43 225 29 416-58v200H0z" fill="#dbe7f1"/>
+  <g transform="translate(222 112)">
+    <path d="M126 0 274 78 148 154 0 78z" fill="#f9fbfd" stroke="#1b2635" stroke-width="6"/>
+    <path d="M0 78v166l148 88V154z" fill="#f1f5f9" stroke="#1b2635" stroke-width="6"/>
+    <path d="M274 78v166l-126 88V154z" fill="#e8eef5" stroke="#1b2635" stroke-width="6"/>
+    <g stroke="#1b2635" stroke-width="5">
+      <path d="m50 52 148 78M96 27l148 78M42 104l148 88M92 132l148-80M148 154 148 332M94 121v166M46 96v165M190 128v169M232 104v165"/>
+      <path d="M0 133l148 88M0 188l148 88M274 133l-126 88M274 188l-126 88"/>
+    </g>
+    <path d="M38 76 87 50l49 26-49 27z" fill="#d94141"/>
+    <path d="m137 24 49 26-49 27-49-27z" fill="#1f6feb"/>
+    <path d="m187 78 49 26-49 27-49-27z" fill="#178b58"/>
+    <path d="M30 124 80 154v55l-50-30z" fill="#ffbf3f"/>
+    <path d="m84 157 50 30v55l-50-30z" fill="#d94141"/>
+    <path d="m185 187 42-29v55l-42 29z" fill="#1f6feb"/>
+    <path d="m230 156 42-29v55l-42 29z" fill="#178b58"/>
+  </g>
+  <g fill="#18212f">
+    <text x="48" y="86" font-family="Arial, sans-serif" font-size="28" font-weight="700">Liaoning Magic Cube Team</text>
+    <text x="48" y="122" font-family="Arial, sans-serif" font-size="18">people · competitions · achievements</text>
+  </g>
+</svg>

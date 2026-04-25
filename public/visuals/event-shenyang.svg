@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 560 320">
+  <rect width="560" height="320" fill="#f2f6fb"/>
+  <rect x="36" y="42" width="488" height="236" rx="8" fill="#fff" stroke="#d8e0ea"/>
+  <rect x="72" y="78" width="180" height="132" fill="#d94141"/>
+  <rect x="252" y="78" width="118" height="132" fill="#1f6feb"/>
+  <rect x="370" y="78" width="118" height="132" fill="#178b58"/>
+  <text x="72" y="252" fill="#18212f" font-family="Arial, sans-serif" font-size="24" font-weight="700">沈阳魔方公开赛</text>
+</svg>
