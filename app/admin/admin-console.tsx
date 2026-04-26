@@ -45,7 +45,18 @@ type AdminDrafts = {
   relations: DraftRelation[];
 };
 
+type LocalProfileDraft = {
+  wcaId: string;
+  province: string;
+  city: string;
+  visible: boolean;
+  name: string;
+  country: string;
+  existsInWca: boolean;
+};
+
 const storageKey = "liaoning-cube-admin-drafts";
+const liaoningCities = ["沈阳", "大连", "鞍山", "抚顺", "本溪", "丹东", "锦州", "营口", "阜新", "辽阳", "盘锦", "铁岭", "朝阳", "葫芦岛"];
 
 const emptyDrafts: AdminDrafts = {
   people: [],
@@ -56,6 +67,14 @@ const emptyDrafts: AdminDrafts = {
 
 export function AdminConsole() {
   const [drafts, setDrafts] = useState<AdminDrafts>(emptyDrafts);
+  const [localProfiles, setLocalProfiles] = useState<LocalProfileDraft[]>([]);
+  const [localProfile, setLocalProfile] = useState({
+    wcaId: "",
+    province: "辽宁",
+    city: "沈阳"
+  });
+  const [localProfilesStatus, setLocalProfilesStatus] = useState("读取中");
+  const [localProfileNotice, setLocalProfileNotice] = useState("");
   const [person, setPerson] = useState<DraftPerson>({
     name: "",
     roles: "运动员",
@@ -92,6 +111,14 @@ export function AdminConsole() {
     if (saved) {
       setDrafts(JSON.parse(saved) as AdminDrafts);
     }
+
+    fetch("/api/local-profiles")
+      .then((response) => response.json())
+      .then((payload) => {
+        setLocalProfiles(payload.profiles || []);
+        setLocalProfilesStatus("已读取");
+      })
+      .catch(() => setLocalProfilesStatus("读取失败"));
   }, []);
 
   useEffect(() => {
@@ -103,9 +130,10 @@ export function AdminConsole() {
       people: people.length + drafts.people.length,
       competitions: competitions.length + drafts.competitions.length,
       achievements: drafts.achievements.length,
-      relations: drafts.relations.length
+      relations: drafts.relations.length,
+      localProfiles: localProfiles.length
     }),
-    [drafts]
+    [drafts, localProfiles.length]
   );
 
   function addPerson() {
@@ -131,6 +159,64 @@ export function AdminConsole() {
     setRelation({ person: people[0]?.name || "", competition: competitions[0]?.name || "", type: "参赛", note: "" });
   }
 
+  function addLocalProfile() {
+    const wcaId = localProfile.wcaId.trim().toUpperCase();
+    if (!/^[0-9]{4}[A-Z]{4}[0-9]{2}$/.test(wcaId)) {
+      setLocalProfileNotice("请输入正确的 WCA ID，例如 2018WUYU03。");
+      return;
+    }
+    if (localProfiles.some((profile) => profile.wcaId === wcaId)) {
+      setLocalProfileNotice("这个 WCA ID 已在辽宁选手库中。");
+      return;
+    }
+    const nextProfiles = [
+      {
+        ...localProfile,
+        wcaId,
+        visible: true,
+        name: "",
+        country: "",
+        existsInWca: false
+      },
+      ...localProfiles
+    ];
+    setLocalProfiles(nextProfiles);
+    setLocalProfile((current) => ({ ...current, wcaId: "" }));
+    setLocalProfileNotice("");
+    saveLocalProfiles(nextProfiles);
+  }
+
+  function updateLocalProfile(index: number, next: Partial<LocalProfileDraft>) {
+    setLocalProfiles((current) =>
+      current.map((profile, profileIndex) => (profileIndex === index ? { ...profile, ...next } : profile))
+    );
+    setLocalProfilesStatus("有未保存修改");
+  }
+
+  function removeLocalProfile(index: number) {
+    setLocalProfiles((current) => current.filter((_profile, profileIndex) => profileIndex !== index));
+    setLocalProfilesStatus("有未保存修改");
+  }
+
+  function saveLocalProfiles(nextProfiles = localProfiles) {
+    setLocalProfilesStatus("保存中");
+    fetch("/api/local-profiles", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ profiles: nextProfiles.map((profile) => ({ ...profile, visible: true })) })
+    })
+      .then((response) => response.json())
+      .then((payload) => {
+        setLocalProfiles(payload.profiles || []);
+        setLocalProfilesStatus("已保存");
+        setLocalProfileNotice("选手库已保存。");
+      })
+      .catch(() => {
+        setLocalProfilesStatus("保存失败");
+        setLocalProfileNotice("保存失败，请稍后重试。");
+      });
+  }
+
   return (
     <section className="container section">
       <div className="stat-band" style={{ width: "100%", paddingTop: 0 }}>
@@ -149,6 +235,108 @@ export function AdminConsole() {
         <div className="stat">
           <strong>{totals.relations}</strong>
           <span>本地关联草稿</span>
+        </div>
+        <div className="stat">
+          <strong>{totals.localProfiles}</strong>
+          <span>辽宁选手库</span>
+        </div>
+      </div>
+
+      <div className="admin-card" style={{ marginBottom: 16 }}>
+        <div className="admin-card-heading">
+          <div>
+            <h2>辽宁选手库</h2>
+            <p>维护 WCA ID、省份、城市和是否参与本地排名。保存后会写入 data/local-profiles.json。</p>
+          </div>
+          <span className="status">{localProfilesStatus}</span>
+        </div>
+
+        <div className="form-grid">
+          <Field
+            label="WCA ID"
+            value={localProfile.wcaId}
+            onChange={(value) => setLocalProfile({ ...localProfile, wcaId: value })}
+          />
+          <Field
+            label="省份"
+            value={localProfile.province}
+            onChange={(value) => setLocalProfile({ ...localProfile, province: value })}
+          />
+          <Field
+            label="城市"
+            value={localProfile.city}
+            onChange={(value) => setLocalProfile({ ...localProfile, city: value })}
+          />
+        </div>
+
+        <div className="city-quick-picks" aria-label="辽宁城市快捷选择">
+          {liaoningCities.map((city) => (
+            <button
+              className={localProfile.city === city ? "active" : ""}
+              type="button"
+              onClick={() => setLocalProfile({ ...localProfile, province: "辽宁", city })}
+              key={city}
+            >
+              {city}
+            </button>
+          ))}
+        </div>
+
+        <div className="hero-actions" style={{ marginTop: 14 }}>
+          <button className="button primary" onClick={addLocalProfile} type="button">
+            <Plus size={17} />
+            新增并保存
+          </button>
+          <button className="button" onClick={() => saveLocalProfiles()} type="button">
+            <Save size={17} />
+            保存当前修改
+          </button>
+        </div>
+        {localProfileNotice ? <p className="admin-inline-notice">{localProfileNotice}</p> : null}
+
+        <div className="result-table-wrap admin-local-table">
+          <table className="result-table">
+            <thead>
+              <tr>
+                <th>WCA ID</th>
+                <th>官方姓名</th>
+                <th>省份</th>
+                <th>城市</th>
+                <th>校验</th>
+                <th>操作</th>
+              </tr>
+            </thead>
+            <tbody>
+              {localProfiles.map((profile, index) => (
+                <tr key={profile.wcaId}>
+                  <td>{profile.wcaId}</td>
+                  <td>{profile.name || "-"}</td>
+                  <td>
+                    <input
+                      value={profile.province}
+                      onChange={(event) => updateLocalProfile(index, { province: event.target.value })}
+                    />
+                  </td>
+                  <td>
+                    <input
+                      value={profile.city}
+                      onChange={(event) => updateLocalProfile(index, { city: event.target.value })}
+                    />
+                  </td>
+                  <td>
+                    <span className={`status ${profile.existsInWca ? "status-高" : "status-低"}`}>
+                      {profile.existsInWca ? "已匹配" : "未匹配"}
+                    </span>
+                  </td>
+                  <td>
+                    <button className="button" type="button" onClick={() => removeLocalProfile(index)}>
+                      移除
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
       </div>
 

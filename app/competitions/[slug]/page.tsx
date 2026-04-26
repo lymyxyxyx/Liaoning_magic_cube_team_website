@@ -7,6 +7,7 @@ import {
   competitions,
   getAchievementPerson,
   getCompetitionBySlug,
+  getCompetitionCategory,
   getCompetitionPeople
 } from "@/lib/data";
 import { notFound } from "next/navigation";
@@ -24,6 +25,7 @@ export default function CompetitionDetailPage({ params }: { params: { slug: stri
 
   const relatedPeople = getCompetitionPeople(competition.id);
   const relatedAchievements = achievements.filter((achievement) => achievement.competitionId === competition.id);
+  const category = getCompetitionCategory(competition.category);
 
   return (
     <section className="container section">
@@ -33,6 +35,7 @@ export default function CompetitionDetailPage({ params }: { params: { slug: stri
           <span className="eyebrow">赛事活动</span>
           <h1>{competition.name}</h1>
           <div className="tag-row">
+            {category ? <span className="tag">{category.name}</span> : null}
             {competition.tags.map((tag) => (
               <span className="tag" key={tag}>
                 {tag}
@@ -41,6 +44,22 @@ export default function CompetitionDetailPage({ params }: { params: { slug: stri
             <span className={`status status-${competition.completeness}`}>{competition.status}</span>
           </div>
           <dl className="definition-list">
+            <div>
+              <dt>赛事类别</dt>
+              <dd>{category?.shortName || "未分类"}</dd>
+            </div>
+            {competition.sponsor ? (
+              <div>
+                <dt>赞助商</dt>
+                <dd>{competition.sponsor}</dd>
+              </div>
+            ) : null}
+            {competition.threeByThreeChampion ? (
+              <div>
+                <dt>三阶冠军</dt>
+                <dd>{competition.threeByThreeChampion}</dd>
+              </div>
+            ) : null}
             <div>
               <dt>举办时间</dt>
               <dd>{competition.date}</dd>
@@ -57,11 +76,30 @@ export default function CompetitionDetailPage({ params }: { params: { slug: stri
               <dt>完整度</dt>
               <dd>{competition.completeness}</dd>
             </div>
+            {competition.dataSource ? (
+              <div>
+                <dt>资料来源</dt>
+                <dd>
+                  {competition.dataSourceUrl ? (
+                    <Link href={competition.dataSourceUrl} target="_blank">
+                      {competition.dataSource}
+                    </Link>
+                  ) : (
+                    competition.dataSource
+                  )}
+                </dd>
+              </div>
+            ) : null}
           </dl>
           <p className="meta-line" style={{ marginTop: 18 }}>
             <MapPin size={15} />
             {competition.address}
           </p>
+          {competition.externalUrl ? (
+            <Link className="button primary" href={competition.externalUrl} target="_blank" style={{ marginTop: 18 }}>
+              查看比赛链接
+            </Link>
+          ) : null}
         </aside>
 
         <div className="detail-main">

@@ -3,6 +3,8 @@ import { Shield, Settings } from "lucide-react";
 
 const navItems = [
   { href: "/", label: "首页" },
+  { href: "/rankings", label: "WCA排名" },
+  { href: "/liaoning-rankings", label: "辽宁排名" },
   { href: "/athletes", label: "运动员" },
   { href: "/coaches", label: "教练员" },
   { href: "/judges", label: "裁判员" },

@@ -420,6 +420,84 @@ main {
   font-size: 21px;
 }
 
+.admin-card-heading {
+  display: flex;
+  justify-content: space-between;
+  gap: 18px;
+  align-items: flex-start;
+  margin-bottom: 14px;
+}
+
+.admin-card-heading h2 {
+  margin-bottom: 6px;
+}
+
+.admin-card-heading p {
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.6;
+}
+
+.checkbox-field {
+  align-content: start;
+}
+
+.checkbox-field input {
+  width: 20px;
+  height: 20px;
+}
+
+.city-quick-picks {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 12px;
+}
+
+.city-quick-picks button {
+  min-height: 32px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 0 10px;
+  background: #fff;
+  color: #344054;
+  font-size: 13px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.city-quick-picks button.active {
+  border-color: var(--blue);
+  color: #fff;
+  background: var(--blue);
+}
+
+.admin-local-table {
+  margin-top: 16px;
+}
+
+.admin-inline-notice {
+  margin: 10px 0 0;
+  color: var(--muted);
+  font-size: 14px;
+  font-weight: 750;
+}
+
+.admin-local-table .result-table {
+  min-width: 860px;
+}
+
+.admin-local-table input[type="text"],
+.admin-local-table input:not([type]) {
+  min-width: 110px;
+  padding: 8px 9px;
+}
+
+.admin-local-table input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+}
+
 .timeline {
   display: grid;
   gap: 12px;
@@ -910,6 +988,310 @@ textarea {
   margin-bottom: 12px;
 }
 
+.competition-category-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  margin-bottom: 26px;
+}
+
+.competition-category-card {
+  display: grid;
+  gap: 7px;
+  min-height: 118px;
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface);
+}
+
+.competition-category-card span {
+  width: fit-content;
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: #eef4ff;
+  color: #1f4c9a;
+  font-size: 12px;
+  font-weight: 850;
+}
+
+.competition-category-card strong {
+  font-size: 18px;
+}
+
+.competition-category-card small {
+  color: var(--muted);
+  font-weight: 750;
+}
+
+.competition-category-stack {
+  display: grid;
+  gap: 32px;
+}
+
+.competition-empty {
+  display: grid;
+  gap: 6px;
+  padding: 18px;
+  border: 1px dashed #b8c3d1;
+  border-radius: 8px;
+  background: #f8fafc;
+  color: var(--muted);
+}
+
+.competition-empty strong {
+  color: #344054;
+  font-size: 18px;
+}
+
+.competition-list-panel {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface);
+  box-shadow: var(--shadow);
+  overflow: hidden;
+}
+
+.competition-list-section {
+  width: min(1480px, calc(100% - 36px));
+}
+
+.competition-filter-row {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 14px;
+  align-items: start;
+  padding: 18px;
+  border-bottom: 1px solid var(--line);
+  background: #fff;
+}
+
+.competition-filter-field {
+  display: grid;
+  gap: 8px;
+}
+
+.competition-filter-field span {
+  color: #344054;
+  font-size: 13px;
+  font-weight: 750;
+}
+
+.competition-filter-toggle {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  overflow: hidden;
+  min-height: 44px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fff;
+}
+
+.competition-category-toggle {
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+}
+
+.competition-filter-toggle button {
+  min-width: 0;
+  border: 0;
+  border-right: 1px solid var(--line);
+  background: #fff;
+  color: #344054;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.competition-filter-toggle button:last-child {
+  border-right: 0;
+}
+
+.competition-filter-toggle button:hover {
+  background: #f8fafc;
+}
+
+.competition-filter-toggle button.active {
+  color: #fff;
+  background: var(--blue);
+}
+
+.competition-list-count {
+  margin: 0;
+  padding: 14px 18px;
+  color: var(--muted);
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.competition-table-wrap {
+  overflow: auto;
+}
+
+.competition-list-table {
+  width: 100%;
+  min-width: 1280px;
+  border-collapse: collapse;
+  font-size: 15px;
+}
+
+.competition-list-table th {
+  padding: 12px;
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+  background: #f8fafc;
+  color: #344054;
+  text-align: left;
+  font-size: 13px;
+  font-weight: 850;
+}
+
+.competition-list-table td {
+  padding: 13px 12px;
+  border-bottom: 1px solid var(--line);
+  vertical-align: top;
+}
+
+.competition-list-table tbody tr {
+  background: #fff;
+}
+
+.competition-list-table tbody tr:hover {
+  background: #f8fafc;
+}
+
+.competition-list-table td:first-child {
+  width: 116px;
+  white-space: nowrap;
+}
+
+.competition-list-table td:nth-child(2) {
+  width: 104px;
+}
+
+.competition-list-table td:nth-child(4) {
+  width: 84px;
+  white-space: nowrap;
+}
+
+.competition-list-table td:nth-child(5),
+.competition-list-table td:nth-child(6) {
+  width: 74px;
+  white-space: nowrap;
+}
+
+.competition-list-table td:nth-child(8),
+.competition-list-table td:nth-child(9) {
+  width: 126px;
+}
+
+.competition-source-link,
+.competition-source-pending {
+  display: inline-grid;
+  gap: 3px;
+  align-content: start;
+}
+
+.competition-source-link strong,
+.competition-source-pending strong {
+  color: #344054;
+  font-size: 14px;
+  font-weight: 850;
+}
+
+.competition-source-link span,
+.competition-source-pending span {
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.competition-source-link span {
+  color: var(--blue);
+}
+
+.competition-source-link:hover span {
+  text-decoration: underline;
+}
+
+.competition-pagination {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  align-items: center;
+  padding: 16px 18px;
+  border-top: 1px solid var(--line);
+  background: #fff;
+}
+
+.competition-pagination span {
+  color: var(--muted);
+  font-size: 14px;
+  font-weight: 750;
+}
+
+.competition-pagination button {
+  min-height: 38px;
+  padding: 0 14px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fff;
+  color: #344054;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.competition-pagination button:hover:not(:disabled) {
+  color: #fff;
+  background: var(--blue);
+  border-color: var(--blue);
+}
+
+.competition-pagination button:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
+.competition-name-link {
+  color: var(--blue);
+  font-weight: 850;
+}
+
+.competition-type {
+  display: inline-flex;
+  justify-content: center;
+  min-width: 74px;
+  padding: 4px 8px;
+  border-radius: 8px;
+  background: #eef4ff;
+  color: #1f4c9a;
+  font-size: 13px;
+  font-weight: 850;
+}
+
+.type-wca-official {
+  background: #e8f2ff;
+  color: #245b90;
+}
+
+.type-liaoning-province-open {
+  background: #e9f8f1;
+  color: var(--green);
+}
+
+.type-shenyang-city-open {
+  background: #fff7e6;
+  color: var(--yellow);
+}
+
+.type-national-chess-card,
+.type-national-social-sports {
+  background: #fff0f0;
+  color: var(--red);
+}
+
 .result-table-wrap {
   overflow: auto;
   border: 1px solid var(--line);
@@ -978,6 +1360,557 @@ textarea {
   background: #d92d20;
 }
 
+.ranking-filter-card {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 14px;
+  padding: 18px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface);
+}
+
+.ranking-field {
+  display: grid;
+  gap: 8px;
+}
+
+.ranking-field span {
+  color: #344054;
+  font-size: 13px;
+  font-weight: 750;
+}
+
+.ranking-toggle {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  overflow: hidden;
+  min-height: 44px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fff;
+}
+
+.ranking-field:nth-child(4) .ranking-toggle {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.local-ranking-filter-card {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.local-ranking-filter-card .ranking-field:nth-child(4) .ranking-toggle {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.local-ranking-filter-card .ranking-field:last-child .ranking-toggle {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.ranking-toggle button {
+  border: 0;
+  border-right: 1px solid var(--line);
+  background: #fff;
+  color: #344054;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.ranking-toggle button:last-child {
+  border-right: 0;
+}
+
+.ranking-toggle button.active {
+  color: #fff;
+  background: var(--blue);
+}
+
+.ranking-results-section {
+  margin-top: 26px;
+}
+
+.ranking-source-line {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 750;
+}
+
+.ranking-table {
+  min-width: 980px;
+}
+
+.ranking-table th:nth-child(2),
+.ranking-table td:nth-child(2) {
+  min-width: 260px;
+}
+
+.ranking-table th:nth-child(7),
+.ranking-table td:nth-child(7) {
+  min-width: 280px;
+}
+
+.ranking-wca-id {
+  display: block;
+  margin-top: 3px;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 750;
+}
+
+.ranking-competition-link {
+  display: inline-flex;
+  gap: 6px;
+  align-items: center;
+}
+
+.local-eligibility-card {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(320px, 0.78fr);
+  gap: 18px;
+  margin-bottom: 16px;
+  padding: 18px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface);
+}
+
+.local-eligibility-card h2 {
+  margin: 8px 0 12px;
+  font-size: 22px;
+}
+
+.local-eligibility-card ol {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding-left: 22px;
+  color: #344054;
+  line-height: 1.7;
+}
+
+.local-contact-box {
+  display: grid;
+  gap: 10px;
+}
+
+.local-contact-box textarea {
+  min-height: 132px;
+}
+
+.local-contact-box .button {
+  width: fit-content;
+}
+
+.wca-page {
+  width: min(1280px, calc(100% - 48px));
+  margin: 0 auto;
+  padding: 36px 0 54px;
+}
+
+.wca-page-title {
+  display: flex;
+  justify-content: space-between;
+  gap: 24px;
+  align-items: flex-end;
+  margin-bottom: 18px;
+}
+
+.wca-page-title h1 {
+  margin: 8px 0 0;
+  font-size: 42px;
+  line-height: 1.12;
+}
+
+.wca-page-meta {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.wca-page-meta span,
+.wca-search-chip {
+  display: inline-flex;
+  align-items: center;
+  min-height: 32px;
+  padding: 0 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fff;
+  color: #526071;
+  font-size: 13px;
+  font-weight: 750;
+}
+
+.wca-filter-panel {
+  margin-bottom: 34px;
+  padding: 22px 20px 28px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface);
+  box-shadow: var(--shadow);
+}
+
+.wca-select-grid {
+  display: grid;
+  grid-template-columns: minmax(220px, 0.8fr) minmax(260px, 1.2fr);
+  gap: 18px;
+  margin-bottom: 22px;
+}
+
+.wca-select-field {
+  display: grid;
+  gap: 10px;
+}
+
+.wca-select-field span {
+  color: #1f2937;
+  font-size: 18px;
+  font-weight: 850;
+}
+
+.wca-select-field select {
+  min-height: 56px;
+  border: 1px solid #d6dce4;
+  border-radius: 8px;
+  padding: 0 18px;
+  background: #fff;
+  color: #1f2937;
+  font-size: 20px;
+  font-weight: 650;
+}
+
+.wca-region-field {
+  display: grid;
+  gap: 10px;
+  margin-bottom: 22px;
+  color: #1f2937;
+  font-size: 18px;
+  font-weight: 850;
+}
+
+.wca-region-field button {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  min-height: 56px;
+  border: 1px solid #d6dce4;
+  border-radius: 8px;
+  padding: 0 18px;
+  background: #fff;
+  color: #1f2937;
+  font: inherit;
+  font-size: 20px;
+  font-weight: 650;
+}
+
+.wca-filter-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 20px;
+}
+
+.wca-control-label {
+  display: block;
+  margin-bottom: 12px;
+  color: #1f2937;
+  font-size: 18px;
+  font-weight: 850;
+}
+
+.segmented {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: 1fr;
+  overflow: hidden;
+  border-radius: 8px;
+  color: #fff;
+  font-size: 20px;
+  font-weight: 850;
+}
+
+.segmented a,
+.segmented button,
+.segmented span {
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 52px;
+  padding: 0 14px;
+}
+
+.segmented button {
+  border: 0;
+  color: inherit;
+  background: transparent;
+  font: inherit;
+  cursor: pointer;
+}
+
+.segmented button:hover {
+  filter: brightness(0.97);
+}
+
+.segmented.blue {
+  background: #315d99;
+}
+
+.segmented.blue .active {
+  background: #254f88;
+}
+
+.segmented.teal {
+  background: #11b4aa;
+}
+
+.segmented.teal .active {
+  background: #0b9b92;
+}
+
+.wca-table-toolbar {
+  display: flex;
+  justify-content: space-between;
+  gap: 18px;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.wca-table-toolbar > div:first-child {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.wca-table-toolbar strong {
+  font-size: 22px;
+}
+
+.wca-table-toolbar span {
+  color: var(--muted);
+  font-size: 14px;
+}
+
+.wca-search-chip {
+  gap: 8px;
+}
+
+.wca-ranking-table-wrap {
+  overflow: auto;
+  background: var(--surface);
+}
+
+.wca-ranking-table {
+  width: 100%;
+  min-width: 920px;
+  border-collapse: collapse;
+  font-size: 20px;
+}
+
+.wca-ranking-table th,
+.wca-ranking-table td {
+  padding: 13px 12px;
+  border-bottom: 1px solid #d7d7d7;
+  text-align: left;
+  vertical-align: middle;
+}
+
+.wca-ranking-table th {
+  color: #262b33;
+  font-size: 20px;
+  font-weight: 850;
+}
+
+.wca-ranking-table tbody tr:nth-child(even) {
+  background: #eeeeee;
+}
+
+.wca-ranking-table tbody tr:nth-child(odd) {
+  background: #fff;
+}
+
+.wca-ranking-table th:first-child,
+.wca-ranking-table td:first-child,
+.wca-ranking-table th:nth-child(3),
+.wca-ranking-table td:nth-child(3),
+.wca-ranking-table th:last-child,
+.wca-ranking-table td:last-child {
+  width: 86px;
+  text-align: center;
+}
+
+.wca-ranking-table td:nth-child(2) {
+  min-width: 360px;
+}
+
+.wca-ranking-table td:nth-child(5) {
+  min-width: 360px;
+}
+
+.wca-ranking-table small {
+  display: block;
+  margin-top: 3px;
+  color: #667085;
+  font-size: 12px;
+  font-weight: 750;
+}
+
+.wca-orange-link,
+.competition-link {
+  color: #e93900;
+  font-weight: 500;
+}
+
+.competition-link,
+.flag-label {
+  display: inline-flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.competition-link svg {
+  flex: 0 0 auto;
+}
+
+.result-cell {
+  font-weight: 500;
+}
+
+.muted-cell,
+.wca-state {
+  color: var(--muted);
+}
+
+.wca-state {
+  margin-bottom: 12px;
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fff7e6;
+}
+
+.wca-pagination {
+  display: flex;
+  justify-content: center;
+  gap: 14px;
+  align-items: center;
+  margin-top: 18px;
+}
+
+.wca-pagination button {
+  display: inline-flex;
+  gap: 7px;
+  align-items: center;
+  justify-content: center;
+  min-height: 40px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 0 12px;
+  background: #fff;
+  color: #344054;
+  font-weight: 750;
+}
+
+.wca-pagination button:disabled {
+  opacity: 0.45;
+}
+
+.wca-flag {
+  position: relative;
+  display: inline-block;
+  flex: 0 0 auto;
+  width: 28px;
+  height: 20px;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  box-shadow: 0 5px 14px rgba(25, 39, 62, 0.18);
+}
+
+.flag-china {
+  background: #ee1c25;
+}
+
+.flag-usa,
+.flag-united-states {
+  background:
+    linear-gradient(#b22234 0 8%, #fff 8% 16%, #b22234 16% 24%, #fff 24% 32%, #b22234 32% 40%, #fff 40% 48%, #b22234 48% 56%, #fff 56% 64%, #b22234 64% 72%, #fff 72% 80%, #b22234 80% 88%, #fff 88% 96%, #b22234 96%),
+    #fff;
+}
+
+.flag-usa::before,
+.flag-united-states::before {
+  position: absolute;
+  inset: 0 auto auto 0;
+  width: 12px;
+  height: 11px;
+  background: #3c3b6e;
+  content: "";
+}
+
+.flag-poland {
+  background: linear-gradient(#fff 0 50%, #dc143c 50%);
+}
+
+.flag-china::before {
+  position: absolute;
+  top: 3px;
+  left: 4px;
+  width: 6px;
+  height: 6px;
+  background: #ffde00;
+  clip-path: polygon(50% 0, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%);
+  content: "";
+}
+
+@media (max-width: 920px) {
+  .ranking-filter-card {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .local-ranking-filter-card {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .ranking-source-line {
+    flex-wrap: wrap;
+  }
+
+  .local-eligibility-card {
+    grid-template-columns: 1fr;
+  }
+
+  .wca-page-title,
+  .wca-table-toolbar {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .wca-page-meta {
+    justify-content: flex-start;
+  }
+
+  .wca-filter-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .wca-select-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 620px) {
+  .ranking-filter-card {
+    grid-template-columns: 1fr;
+  }
+
+  .local-ranking-filter-card {
+    grid-template-columns: 1fr;
+  }
+}
+
 .level-专业级 {
   background: #d49a00;
 }
@@ -1043,6 +1976,7 @@ textarea {
   .big-stack-hero,
   .big-stack-stats,
   .big-stack-podium,
+  .competition-category-grid,
   .weekly-join {
     grid-template-columns: 1fr;
   }
@@ -1055,6 +1989,14 @@ textarea {
   .qr-placeholder {
     width: 132px;
     height: 132px;
+  }
+
+  .competition-filter-row {
+    grid-template-columns: 1fr;
+  }
+
+  .competition-category-toggle {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 }
 
@@ -1082,5 +2024,9 @@ textarea {
     grid-template-columns: 36px minmax(64px, 88px) 52px minmax(90px, 1fr) 48px;
     gap: 8px;
     padding: 9px 10px;
+  }
+
+  .competition-category-toggle {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
