@@ -154,7 +154,7 @@ export function LiaoningRankingsClient() {
         基于本站维护的省市归属名单，关联 WCA 官方成绩生成本地榜单；当前先录入 10 位辽宁沈阳选手。
       </PageHero>
 
-      <section className="container section">
+      <section className="container section local-rankings-section">
         <div className="weekly-intro">
           <p>
             当前展示 {areaLabel} · {eventName} · {modeLabels[mode]} · {genderLabels[gender]}。
@@ -318,13 +318,13 @@ export function LiaoningRankingsClient() {
             <table className="result-table ranking-table">
               <thead>
                 <tr>
-                  <th>本地排名</th>
                   <th>姓名</th>
                   <th>性别</th>
                   <th>成绩</th>
                   <th>省市</th>
+                  <th>{scopeLabels[scope]}</th>
                   <th>全国排名</th>
-                  <th>WR</th>
+                  <th>世界排名</th>
                   <th>比赛</th>
                 </tr>
               </thead>
@@ -342,7 +342,6 @@ export function LiaoningRankingsClient() {
                 {!isLoading
                   ? rows.map((row) => (
                       <tr key={`${scope}-${mode}-${event}-${row.wcaId}`}>
-                        <td>{row.rank}</td>
                         <td>
                           <Link
                             className="table-person-link"
@@ -355,6 +354,7 @@ export function LiaoningRankingsClient() {
                         <td>{row.gender === "m" ? "男" : row.gender === "f" ? "女" : "-"}</td>
                         <td className="score-strong">{row.result}</td>
                         <td>{row.province} · {row.city}</td>
+                        <td>{row.rank}</td>
                         <td>{row.officialRank}</td>
                         <td>{row.worldRank}</td>
                         <td>

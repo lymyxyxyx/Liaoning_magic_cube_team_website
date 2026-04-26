@@ -1399,6 +1399,10 @@ textarea {
   grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
+.local-rankings-section {
+  width: min(1360px, calc(100% - 36px));
+}
+
 .local-ranking-filter-card .ranking-field:nth-child(4) .ranking-toggle {
   grid-template-columns: repeat(2, minmax(0, 1fr));
 }
@@ -1441,17 +1445,20 @@ textarea {
 }
 
 .ranking-table {
-  min-width: 980px;
+  min-width: 900px;
 }
 
-.ranking-table th:nth-child(2),
-.ranking-table td:nth-child(2) {
-  min-width: 260px;
+.ranking-table th:first-child,
+.ranking-table td:first-child {
+  min-width: 200px;
+  text-align: left;
 }
 
-.ranking-table th:nth-child(7),
-.ranking-table td:nth-child(7) {
-  min-width: 280px;
+.ranking-table th:nth-child(8),
+.ranking-table td:nth-child(8) {
+  min-width: 220px;
+  white-space: normal;
+  text-align: left;
 }
 
 .ranking-wca-id {
@@ -1466,6 +1473,7 @@ textarea {
   display: inline-flex;
   gap: 6px;
   align-items: center;
+  white-space: normal;
 }
 
 .local-eligibility-card {
