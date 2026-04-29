@@ -3,6 +3,8 @@ export type LocalProfile = {
   province: string;
   city: string;
   visible: boolean;
+  createdAt?: string;
+  createdBy?: string;
 };
 
 export const localProfiles: LocalProfile[] = [

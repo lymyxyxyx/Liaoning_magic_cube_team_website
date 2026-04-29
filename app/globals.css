@@ -509,6 +509,21 @@ main {
   font-weight: 800;
 }
 
+.admin-profile-meta {
+  display: grid;
+  gap: 3px;
+}
+
+.admin-profile-meta strong {
+  font-size: 13px;
+}
+
+.admin-profile-meta small {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 750;
+}
+
 .admin-inline-notice {
   margin: 10px 0 0;
   color: var(--muted);

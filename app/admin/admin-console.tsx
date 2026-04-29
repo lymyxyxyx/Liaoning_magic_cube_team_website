@@ -50,12 +50,15 @@ type LocalProfileDraft = {
   province: string;
   city: string;
   visible: boolean;
+  createdAt?: string;
+  createdBy?: string;
   name: string;
   country: string;
   existsInWca: boolean;
 };
 
 const storageKey = "liaoning-cube-admin-drafts";
+const defaultCreatedBy = "刘一鸣";
 const liaoningCities = ["沈阳", "大连", "鞍山", "抚顺", "本溪", "丹东", "锦州", "营口", "阜新", "辽阳", "盘锦", "铁岭", "朝阳", "葫芦岛"];
 
 const emptyDrafts: AdminDrafts = {
@@ -141,8 +144,8 @@ export function AdminConsole() {
     const keyword = localProfileSearch.trim().toLowerCase();
     if (!keyword) return localProfiles;
     return localProfiles.filter((profile) =>
-      [profile.wcaId, profile.name, profile.province, profile.city, profile.country]
-        .filter(Boolean)
+      [profile.wcaId, profile.name, profile.province, profile.city, profile.country, profile.createdBy]
+        .filter((value): value is string => Boolean(value))
         .some((value) => value.toLowerCase().includes(keyword))
     );
   }, [localProfileSearch, localProfiles]);
@@ -185,6 +188,8 @@ export function AdminConsole() {
         ...localProfile,
         wcaId,
         visible: true,
+        createdAt: new Date().toISOString(),
+        createdBy: defaultCreatedBy,
         name: "",
         country: "",
         existsInWca: false
@@ -327,6 +332,7 @@ export function AdminConsole() {
                 <th>官方姓名</th>
                 <th>省份</th>
                 <th>城市</th>
+                <th>录入信息</th>
                 <th>校验</th>
                 <th>操作</th>
               </tr>
@@ -351,6 +357,12 @@ export function AdminConsole() {
                       />
                     </td>
                     <td>
+                      <span className="admin-profile-meta">
+                        <strong>{profile.createdBy || defaultCreatedBy}</strong>
+                        <small>{formatDateTime(profile.createdAt)}</small>
+                      </span>
+                    </td>
+                    <td>
                       <span className={`status ${profile.existsInWca ? "status-高" : "status-低"}`}>
                         {profile.existsInWca ? "已匹配" : "未匹配"}
                       </span>
@@ -365,7 +377,7 @@ export function AdminConsole() {
               })}
               {filteredLocalProfiles.length === 0 ? (
                 <tr>
-                  <td colSpan={6}>没有找到匹配的已录入选手。</td>
+                  <td colSpan={7}>没有找到匹配的已录入选手。</td>
                 </tr>
               ) : null}
             </tbody>
@@ -483,6 +495,20 @@ export function AdminConsole() {
       </div>
     </section>
   );
+}
+
+function formatDateTime(value?: string) {
+  if (!value) return "历史数据";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "历史数据";
+  return new Intl.DateTimeFormat("zh-CN", {
+    timeZone: "Asia/Shanghai",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit"
+  }).format(date);
 }
 
 function Field({

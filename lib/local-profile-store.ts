@@ -3,6 +3,7 @@ import { localProfiles, type LocalProfile } from "@/lib/local-profiles";
 import { getPostgresPool } from "@/lib/postgres";
 
 const dataPath = `${process.cwd()}/data/local-profiles.json`;
+const defaultCreatedBy = "刘一鸣";
 
 export type EnrichedLocalProfile = LocalProfile & {
   name: string;
@@ -44,7 +45,13 @@ export async function mergeLocalProfiles(profiles: LocalProfile[]) {
     if (!byId.has(normalized.wcaId)) {
       order.unshift(normalized.wcaId);
     }
-    byId.set(normalized.wcaId, normalized);
+    const existing = byId.get(normalized.wcaId);
+    byId.set(normalized.wcaId, {
+      ...existing,
+      ...normalized,
+      createdAt: normalized.createdAt || existing?.createdAt || new Date().toISOString(),
+      createdBy: normalized.createdBy || existing?.createdBy || defaultCreatedBy
+    });
   }
 
   const merged = order.map((wcaId) => byId.get(wcaId)).filter(Boolean) as LocalProfile[];
@@ -79,6 +86,8 @@ function normalizeProfile(profile: Partial<LocalProfile>) {
     wcaId,
     province: String(profile.province || "辽宁").trim() || "辽宁",
     city: String(profile.city || "沈阳").trim() || "沈阳",
-    visible: Boolean(profile.visible)
+    visible: Boolean(profile.visible),
+    createdAt: typeof profile.createdAt === "string" && profile.createdAt.trim() ? profile.createdAt.trim() : undefined,
+    createdBy: typeof profile.createdBy === "string" && profile.createdBy.trim() ? profile.createdBy.trim() : undefined
   };
 }
