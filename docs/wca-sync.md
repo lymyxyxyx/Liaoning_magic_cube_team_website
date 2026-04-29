@@ -7,6 +7,8 @@ This project can check and import the WCA public TSV export into PostgreSQL.
 - `persons` -> `wca_persons`
 - `events` -> `wca_events`
 - `countries` -> `wca_countries`
+- `competitions` -> `wca_competitions`
+- `results` -> `wca_results`
 - `ranks_single` -> `wca_ranks_single`
 - `ranks_average` -> `wca_ranks_average`
 
@@ -66,5 +68,13 @@ The temporary extraction directory is cleaned after each update attempt.
 ## Safety
 
 Each TSV file is first imported into a `_new` table. Only after all selected files import successfully does the script swap the live tables inside a transaction.
+
+The importer also stores a schema version in:
+
+```text
+/opt/ln-cubing/data/wca_state/schema_version.txt
+```
+
+This lets the server re-import the same WCA `export_date` when the local selected table set changes, such as the V1.5 addition of `competitions` and `results`.
 
 No cron job is configured in V1.

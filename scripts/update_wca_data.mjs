@@ -18,13 +18,17 @@ const tmpDir = process.env.WCA_TMP_DIR || path.join(dataRoot, "wca_tmp");
 const stateDir = process.env.WCA_STATE_DIR || path.join(dataRoot, "wca_state");
 const logDir = process.env.WCA_LOG_DIR || defaultLogDir;
 const stateFile = path.join(stateDir, "last_export_date.txt");
+const schemaStateFile = path.join(stateDir, "schema_version.txt");
 const logFile = path.join(logDir, "wca_update.log");
 const mode = process.argv.includes("--check") ? "check" : "update";
+const schemaVersion = "wca-sync-v1.5-results";
 
 const tables = [
   { source: "persons", target: "wca_persons" },
   { source: "events", target: "wca_events" },
   { source: "countries", target: "wca_countries" },
+  { source: "competitions", target: "wca_competitions" },
+  { source: "results", target: "wca_results" },
   { source: "ranks_single", target: "wca_ranks_single" },
   { source: "ranks_average", target: "wca_ranks_average" }
 ];
@@ -63,8 +67,21 @@ async function readLastExportDate() {
   }
 }
 
+async function readSchemaVersion() {
+  try {
+    return (await fsp.readFile(schemaStateFile, "utf8")).trim();
+  } catch (error) {
+    if (error.code === "ENOENT") return "";
+    throw error;
+  }
+}
+
 async function writeLastExportDate(exportDate) {
   await fsp.writeFile(stateFile, `${exportDate}\n`, "utf8");
+}
+
+async function writeSchemaVersion() {
+  await fsp.writeFile(schemaStateFile, `${schemaVersion}\n`, "utf8");
 }
 
 function normalizeFormatVersion(payload) {
@@ -213,6 +230,9 @@ async function addIndexes(client) {
   await client.query('CREATE INDEX IF NOT EXISTS "wca_persons_country_id_idx" ON "wca_persons" ("country_id")');
   await client.query('CREATE INDEX IF NOT EXISTS "wca_events_id_idx" ON "wca_events" ("id")');
   await client.query('CREATE INDEX IF NOT EXISTS "wca_countries_id_idx" ON "wca_countries" ("id")');
+  await client.query('CREATE INDEX IF NOT EXISTS "wca_competitions_id_idx" ON "wca_competitions" ("id")');
+  await client.query('CREATE INDEX IF NOT EXISTS "wca_results_single_lookup_idx" ON "wca_results" ("event_id", "person_id", "best")');
+  await client.query('CREATE INDEX IF NOT EXISTS "wca_results_average_lookup_idx" ON "wca_results" ("event_id", "person_id", "average")');
   await client.query('CREATE INDEX IF NOT EXISTS "wca_ranks_single_event_rank_idx" ON "wca_ranks_single" ("event_id", "world_rank")');
   await client.query('CREATE INDEX IF NOT EXISTS "wca_ranks_average_event_rank_idx" ON "wca_ranks_average" ("event_id", "world_rank")');
 }
@@ -262,10 +282,13 @@ async function main() {
   const payload = await fetchJson(exportApiUrl);
   const formatVersion = assertSupportedExport(payload);
   const lastExportDate = await readLastExportDate();
+  const lastSchemaVersion = await readSchemaVersion();
 
-  await log(`WCA export_date=${payload.export_date}, format=${formatVersion || "unknown"}, last=${lastExportDate || "none"}`);
+  await log(
+    `WCA export_date=${payload.export_date}, format=${formatVersion || "unknown"}, last=${lastExportDate || "none"}, schema=${lastSchemaVersion || "none"}`
+  );
 
-  if (payload.export_date === lastExportDate) {
+  if (payload.export_date === lastExportDate && lastSchemaVersion === schemaVersion) {
     await log("WCA export is unchanged; exiting.");
     return;
   }
@@ -276,8 +299,13 @@ async function main() {
   }
 
   const zipPath = path.join(rawDir, safeExportFilename(payload.export_date));
-  await log(`Downloading TSV export to ${zipPath}`);
-  await downloadFile(payload.tsv_url, zipPath);
+  try {
+    await fsp.access(zipPath, fs.constants.R_OK);
+    await log(`Using existing TSV export at ${zipPath}`);
+  } catch {
+    await log(`Downloading TSV export to ${zipPath}`);
+    await downloadFile(payload.tsv_url, zipPath);
+  }
 
   await log(`Extracting selected TSV files to ${tmpDir}`);
   await extractSelectedTsv(zipPath, tmpDir);
@@ -286,7 +314,8 @@ async function main() {
     await log("Importing selected TSV files into PostgreSQL");
     await importToPostgres();
     await writeLastExportDate(payload.export_date);
-    await log(`WCA import completed; saved last_export_date=${payload.export_date}`);
+    await writeSchemaVersion();
+    await log(`WCA import completed; saved last_export_date=${payload.export_date}, schema=${schemaVersion}`);
   } finally {
     await fsp.rm(tmpDir, { recursive: true, force: true });
     await fsp.mkdir(tmpDir, { recursive: true });

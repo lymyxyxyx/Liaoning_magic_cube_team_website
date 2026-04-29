@@ -243,7 +243,7 @@ export function RankingsClient() {
           {error ? <div className="wca-state">{error}</div> : null}
 
           <div className="result-table-wrap">
-            <table className="result-table ranking-table">
+            <table className="result-table ranking-table wca-ranking-results-table">
               <thead>
                 <tr>
                   <th>排名</th>

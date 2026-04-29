@@ -315,7 +315,7 @@ export function LiaoningRankingsClient() {
           {error ? <div className="wca-state">{error}</div> : null}
 
           <div className="result-table-wrap">
-            <table className="result-table ranking-table">
+            <table className="result-table ranking-table local-ranking-results-table">
               <thead>
                 <tr>
                   <th>姓名</th>

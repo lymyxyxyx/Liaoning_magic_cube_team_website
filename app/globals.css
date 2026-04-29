@@ -1893,17 +1893,75 @@ textarea {
   min-width: 900px;
 }
 
-.ranking-table th:first-child,
-.ranking-table td:first-child {
+.wca-ranking-results-table {
+  min-width: 1040px;
+}
+
+.wca-ranking-results-table th:nth-child(1),
+.wca-ranking-results-table td:nth-child(1),
+.wca-ranking-results-table th:nth-child(3),
+.wca-ranking-results-table td:nth-child(3),
+.wca-ranking-results-table th:nth-child(6),
+.wca-ranking-results-table td:nth-child(6) {
+  width: 76px;
+}
+
+.wca-ranking-results-table th:nth-child(2),
+.wca-ranking-results-table td:nth-child(2) {
+  min-width: 220px;
+  text-align: left;
+}
+
+.wca-ranking-results-table th:nth-child(4),
+.wca-ranking-results-table td:nth-child(4) {
+  width: 108px;
+  font-variant-numeric: tabular-nums;
+}
+
+.wca-ranking-results-table th:nth-child(5),
+.wca-ranking-results-table td:nth-child(5) {
+  min-width: 150px;
+}
+
+.wca-ranking-results-table th:nth-child(7),
+.wca-ranking-results-table td:nth-child(7),
+.local-ranking-results-table th:nth-child(8),
+.local-ranking-results-table td:nth-child(8) {
+  min-width: 220px;
+  white-space: normal;
+  text-align: left;
+}
+
+.local-ranking-results-table {
+  min-width: 1120px;
+}
+
+.local-ranking-results-table th:first-child,
+.local-ranking-results-table td:first-child {
   min-width: 200px;
   text-align: left;
 }
 
-.ranking-table th:nth-child(8),
-.ranking-table td:nth-child(8) {
-  min-width: 220px;
-  white-space: normal;
-  text-align: left;
+.local-ranking-results-table th:nth-child(2),
+.local-ranking-results-table td:nth-child(2),
+.local-ranking-results-table th:nth-child(5),
+.local-ranking-results-table td:nth-child(5),
+.local-ranking-results-table th:nth-child(6),
+.local-ranking-results-table td:nth-child(6),
+.local-ranking-results-table th:nth-child(7),
+.local-ranking-results-table td:nth-child(7) {
+  width: 86px;
+}
+
+.local-ranking-results-table th:nth-child(3),
+.local-ranking-results-table td:nth-child(3) {
+  width: 108px;
+  font-variant-numeric: tabular-nums;
+}
+
+.local-ranking-results-table th:nth-child(4),
+.local-ranking-results-table td:nth-child(4) {
+  min-width: 130px;
 }
 
 .ranking-wca-id {

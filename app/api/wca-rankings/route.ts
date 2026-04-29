@@ -64,6 +64,7 @@ export async function GET(request: NextRequest) {
   const limitParam = queryParams.length - 1;
   const offsetParam = queryParams.length;
   const rankingTable = rankingTables[mode];
+  const resultColumn = mode === "average" ? "average" : "best";
 
   const sql = `
     SELECT
@@ -75,14 +76,29 @@ export async function GET(request: NextRequest) {
       COALESCE(cn.name, p.country_id) AS "countryName",
       p.gender AS gender,
       r.best::int AS best,
-      '' AS "competitionId",
-      '' AS "competitionName",
-      '' AS date
+      COALESCE(br.competition_id, '') AS "competitionId",
+      COALESCE(c.name, br.competition_id, '') AS "competitionName",
+      CASE
+        WHEN c.id IS NULL THEN ''
+        ELSE CONCAT(c.year, '-', LPAD(c.month, 2, '0'), '-', LPAD(c.day, 2, '0'))
+      END AS date
     FROM ${rankingTable} r
-    JOIN wca_persons p ON p.wca_id = r.person_id
+    JOIN wca_persons p ON p.wca_id = r.person_id AND p.sub_id = '1'
     LEFT JOIN wca_countries cn ON cn.id = p.country_id
+    LEFT JOIN LATERAL (
+      SELECT competition_id
+      FROM wca_results result
+      WHERE result.person_id = r.person_id
+        AND result.event_id = r.event_id
+        AND result.${resultColumn} = r.best
+        AND result.${resultColumn} NOT IN ('0', '-1', '-2')
+      ORDER BY result.competition_id
+      LIMIT 1
+    ) br ON true
+    LEFT JOIN wca_competitions c ON c.id = br.competition_id
     WHERE r.event_id = $1
       AND p.country_id = $2
+      AND r.country_rank::int > 0
       ${genderWhere}
     ORDER BY r.country_rank::int, r.world_rank::int, r.person_id
     LIMIT $${limitParam} OFFSET $${offsetParam}

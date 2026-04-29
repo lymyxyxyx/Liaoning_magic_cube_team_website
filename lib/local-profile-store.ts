@@ -37,7 +37,7 @@ export async function enrichLocalProfiles(profiles: LocalProfile[]) {
   const ids = profiles.map((profile) => profile.wcaId);
   if (ids.length === 0) return [];
   const { rows } = await getPostgresPool().query<WcaPersonRow>(
-    "SELECT wca_id, name, country_id FROM wca_persons WHERE wca_id = ANY($1::text[])",
+    "SELECT wca_id, name, country_id FROM wca_persons WHERE wca_id = ANY($1::text[]) AND sub_id = '1'",
     [ids]
   );
   const byId = new Map(rows.map((row) => [row.wca_id, row]));
