@@ -1,10 +1,13 @@
-import { execFile } from "node:child_process";
-import { promisify } from "node:util";
 import { NextRequest, NextResponse } from "next/server";
+import { getPostgresPool } from "@/lib/postgres";
 
-const execFileAsync = promisify(execFile);
-const dbPath = `${process.cwd()}/data/wca_rankings.sqlite`;
 const pageSize = 100;
+const rankingTables = {
+  single: "wca_ranks_single",
+  average: "wca_ranks_average"
+};
+
+export const dynamic = "force-dynamic";
 
 function cleanId(value: string | null, fallback: string) {
   const next = value || fallback;
@@ -17,10 +20,6 @@ function cleanMode(value: string | null) {
 
 function cleanGender(value: string | null) {
   return value === "m" || value === "f" ? value : "all";
-}
-
-function escapeSql(value: string) {
-  return value.replaceAll("'", "''");
 }
 
 function formatCentiseconds(value: number) {
@@ -58,38 +57,38 @@ export async function GET(request: NextRequest) {
   const gender = cleanGender(params.get("gender"));
   const page = Math.max(1, Math.min(5000, Number(params.get("page") || 1) || 1));
   const offset = (page - 1) * pageSize;
-  const genderWhere = gender === "all" ? "" : `AND p.gender = '${gender}'`;
+  const genderWhere = gender === "all" ? "" : "AND p.gender = $3";
+  const queryParams: (string | number)[] = [event, country];
+  if (gender !== "all") queryParams.push(gender);
+  queryParams.push(pageSize + 1, offset);
+  const limitParam = queryParams.length - 1;
+  const offsetParam = queryParams.length;
+  const rankingTable = rankingTables[mode];
 
   const sql = `
     SELECT
-      r.country_rank AS rank,
-      r.world_rank AS worldRank,
-      r.person_id AS wcaId,
+      r.country_rank::int AS rank,
+      r.world_rank::int AS "worldRank",
+      r.person_id AS "wcaId",
       p.name AS name,
       p.country_id AS country,
-      COALESCE(cn.name, p.country_id) AS countryName,
+      COALESCE(cn.name, p.country_id) AS "countryName",
       p.gender AS gender,
-      r.best AS best,
-      br.competition_id AS competitionId,
-      COALESCE(c.name, br.competition_id, '') AS competitionName,
-      COALESCE(c.date, '') AS date
-    FROM ranks r
-    JOIN persons p ON p.wca_id = r.person_id
-    LEFT JOIN countries cn ON cn.id = p.country_id
-    LEFT JOIN best_results br ON br.mode = r.mode AND br.person_id = r.person_id AND br.event_id = r.event_id
-    LEFT JOIN competitions c ON c.id = br.competition_id
-    WHERE r.mode = '${mode}'
-      AND r.event_id = '${escapeSql(event)}'
-      AND p.country_id = '${escapeSql(country)}'
+      r.best::int AS best,
+      '' AS "competitionId",
+      '' AS "competitionName",
+      '' AS date
+    FROM ${rankingTable} r
+    JOIN wca_persons p ON p.wca_id = r.person_id
+    LEFT JOIN wca_countries cn ON cn.id = p.country_id
+    WHERE r.event_id = $1
+      AND p.country_id = $2
       ${genderWhere}
-    ORDER BY r.country_rank, r.world_rank, r.person_id
-    LIMIT ${pageSize + 1} OFFSET ${offset}
+    ORDER BY r.country_rank::int, r.world_rank::int, r.person_id
+    LIMIT $${limitParam} OFFSET $${offsetParam}
   `;
 
-  const { stdout } = await execFileAsync("sqlite3", ["-json", dbPath, sql], {
-    maxBuffer: 1024 * 1024 * 8
-  });
-  const rawRows = stdout.trim() ? (JSON.parse(stdout) as RawRankingRow[]) : [];
+  const { rows: rawRows } = await getPostgresPool().query<RawRankingRow>(sql, queryParams);
   const rows = rawRows.slice(0, pageSize).map((row) => ({
     ...row,
     result: formatResult(event, row.best),

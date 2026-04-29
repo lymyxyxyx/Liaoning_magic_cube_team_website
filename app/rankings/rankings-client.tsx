@@ -100,7 +100,7 @@ export function RankingsClient() {
       })
       .catch((requestError) => {
         if (requestError.name !== "AbortError") {
-          setError("无法读取排名数据，请确认本地 SQLite 已生成。");
+          setError("无法读取排名数据，请确认 WCA 数据库已同步。");
         }
       })
       .finally(() => {
@@ -130,7 +130,7 @@ export function RankingsClient() {
   return (
     <>
       <PageHero label="WCA 官方数据本地库" title={`${countryName} ${eventName}排名`}>
-        数据保留 WCA 官方口径，筛选和分页由本地 SQLite API 提供；辽宁省标签后续会在独立页面维护。
+        数据保留 WCA 官方口径，筛选和分页由本地 PostgreSQL API 提供；辽宁省标签后续会在独立页面维护。
       </PageHero>
 
       <section className="container section">
@@ -234,7 +234,7 @@ export function RankingsClient() {
             </div>
             <div className="ranking-source-line">
               <Database size={16} />
-              <span>SQLite API</span>
+              <span>PostgreSQL API</span>
               <Globe2 size={16} />
               <span>WCA ID 关联</span>
             </div>
