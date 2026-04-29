@@ -483,6 +483,23 @@ main {
   font-weight: 750;
 }
 
+.admin-login-card {
+  display: grid;
+  gap: 14px;
+  width: min(420px, 100%);
+}
+
+.admin-login-card .button {
+  justify-self: start;
+}
+
+.admin-login-error {
+  margin: 0;
+  color: var(--red);
+  font-size: 14px;
+  font-weight: 750;
+}
+
 .admin-local-table .result-table {
   min-width: 860px;
 }
