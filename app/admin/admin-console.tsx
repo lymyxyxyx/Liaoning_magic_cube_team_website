@@ -75,6 +75,7 @@ export function AdminConsole() {
   });
   const [localProfilesStatus, setLocalProfilesStatus] = useState("读取中");
   const [localProfileNotice, setLocalProfileNotice] = useState("");
+  const [localProfileSearch, setLocalProfileSearch] = useState("");
   const [person, setPerson] = useState<DraftPerson>({
     name: "",
     roles: "运动员",
@@ -135,6 +136,16 @@ export function AdminConsole() {
     }),
     [drafts, localProfiles.length]
   );
+
+  const filteredLocalProfiles = useMemo(() => {
+    const keyword = localProfileSearch.trim().toLowerCase();
+    if (!keyword) return localProfiles;
+    return localProfiles.filter((profile) =>
+      [profile.wcaId, profile.name, profile.province, profile.city, profile.country]
+        .filter(Boolean)
+        .some((value) => value.toLowerCase().includes(keyword))
+    );
+  }, [localProfileSearch, localProfiles]);
 
   function addPerson() {
     if (!person.name.trim()) return;
@@ -294,6 +305,20 @@ export function AdminConsole() {
         </div>
         {localProfileNotice ? <p className="admin-inline-notice">{localProfileNotice}</p> : null}
 
+        <div className="admin-local-tools">
+          <label className="field">
+            <span>检索已录入选手</span>
+            <input
+              placeholder="输入 WCA ID、姓名、省份或城市"
+              value={localProfileSearch}
+              onChange={(event) => setLocalProfileSearch(event.target.value)}
+            />
+          </label>
+          <span className="admin-local-count">
+            {filteredLocalProfiles.length} / {localProfiles.length}
+          </span>
+        </div>
+
         <div className="result-table-wrap admin-local-table">
           <table className="result-table">
             <thead>
@@ -307,34 +332,42 @@ export function AdminConsole() {
               </tr>
             </thead>
             <tbody>
-              {localProfiles.map((profile, index) => (
-                <tr key={profile.wcaId}>
-                  <td>{profile.wcaId}</td>
-                  <td>{profile.name || "-"}</td>
-                  <td>
-                    <input
-                      value={profile.province}
-                      onChange={(event) => updateLocalProfile(index, { province: event.target.value })}
-                    />
-                  </td>
-                  <td>
-                    <input
-                      value={profile.city}
-                      onChange={(event) => updateLocalProfile(index, { city: event.target.value })}
-                    />
-                  </td>
-                  <td>
-                    <span className={`status ${profile.existsInWca ? "status-高" : "status-低"}`}>
-                      {profile.existsInWca ? "已匹配" : "未匹配"}
-                    </span>
-                  </td>
-                  <td>
-                    <button className="button" type="button" onClick={() => removeLocalProfile(index)}>
-                      移除
-                    </button>
-                  </td>
+              {filteredLocalProfiles.map((profile) => {
+                const index = localProfiles.findIndex((item) => item.wcaId === profile.wcaId);
+                return (
+                  <tr key={profile.wcaId}>
+                    <td>{profile.wcaId}</td>
+                    <td>{profile.name || "-"}</td>
+                    <td>
+                      <input
+                        value={profile.province}
+                        onChange={(event) => updateLocalProfile(index, { province: event.target.value })}
+                      />
+                    </td>
+                    <td>
+                      <input
+                        value={profile.city}
+                        onChange={(event) => updateLocalProfile(index, { city: event.target.value })}
+                      />
+                    </td>
+                    <td>
+                      <span className={`status ${profile.existsInWca ? "status-高" : "status-低"}`}>
+                        {profile.existsInWca ? "已匹配" : "未匹配"}
+                      </span>
+                    </td>
+                    <td>
+                      <button className="button" type="button" onClick={() => removeLocalProfile(index)}>
+                        移除
+                      </button>
+                    </td>
+                  </tr>
+                );
+              })}
+              {filteredLocalProfiles.length === 0 ? (
+                <tr>
+                  <td colSpan={6}>没有找到匹配的已录入选手。</td>
                 </tr>
-              ))}
+              ) : null}
             </tbody>
           </table>
         </div>

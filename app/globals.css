@@ -492,6 +492,23 @@ main {
   margin-top: 16px;
 }
 
+.admin-local-tools {
+  display: grid;
+  grid-template-columns: minmax(260px, 420px) auto;
+  gap: 12px;
+  align-items: end;
+  margin-top: 14px;
+}
+
+.admin-local-count {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 800;
+}
+
 .admin-inline-notice {
   margin: 10px 0 0;
   color: var(--muted);
