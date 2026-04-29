@@ -114,7 +114,7 @@ export function LiaoningRankingsClient() {
       })
       .catch((requestError) => {
         if (requestError.name !== "AbortError") {
-          setError("无法读取辽宁排名数据，请确认本地 SQLite 已生成。");
+          setError("无法读取辽宁排名数据，请确认 WCA 数据库已同步。");
         }
       })
       .finally(() => {
@@ -308,7 +308,7 @@ export function LiaoningRankingsClient() {
               <MapPin size={16} />
               <span>本站省市归属</span>
               <Database size={16} />
-              <span>WCA SQLite</span>
+              <span>WCA PostgreSQL</span>
             </div>
           </div>
 

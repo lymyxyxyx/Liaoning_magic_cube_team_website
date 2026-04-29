@@ -1,11 +1,8 @@
 import { promises as fs } from "node:fs";
-import { execFile } from "node:child_process";
-import { promisify } from "node:util";
 import { localProfiles, type LocalProfile } from "@/lib/local-profiles";
+import { getPostgresPool } from "@/lib/postgres";
 
-const execFileAsync = promisify(execFile);
 const dataPath = `${process.cwd()}/data/local-profiles.json`;
-const dbPath = `${process.cwd()}/data/wca_rankings.sqlite`;
 
 export type EnrichedLocalProfile = LocalProfile & {
   name: string;
@@ -39,17 +36,10 @@ export async function writeLocalProfiles(profiles: LocalProfile[]) {
 export async function enrichLocalProfiles(profiles: LocalProfile[]) {
   const ids = profiles.map((profile) => profile.wcaId);
   if (ids.length === 0) return [];
-  const idList = ids.map((id) => `'${escapeSql(id)}'`).join(",");
-  const { stdout } = await execFileAsync(
-    "sqlite3",
-    [
-      "-json",
-      dbPath,
-      `SELECT wca_id, name, country_id FROM persons WHERE wca_id IN (${idList})`
-    ],
-    { maxBuffer: 1024 * 1024 * 4 }
+  const { rows } = await getPostgresPool().query<WcaPersonRow>(
+    "SELECT wca_id, name, country_id FROM wca_persons WHERE wca_id = ANY($1::text[])",
+    [ids]
   );
-  const rows = stdout.trim() ? (JSON.parse(stdout) as WcaPersonRow[]) : [];
   const byId = new Map(rows.map((row) => [row.wca_id, row]));
   return profiles.map((profile) => {
     const person = byId.get(profile.wcaId);
@@ -71,8 +61,4 @@ function normalizeProfile(profile: Partial<LocalProfile>) {
     city: String(profile.city || "沈阳").trim() || "沈阳",
     visible: Boolean(profile.visible)
   };
-}
-
-function escapeSql(value: string) {
-  return value.replaceAll("'", "''");
 }
