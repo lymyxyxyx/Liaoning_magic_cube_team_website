@@ -144,6 +144,22 @@ main {
   line-height: 1.8;
 }
 
+.page-hero.ranking-page-hero {
+  padding-top: 22px;
+  padding-bottom: 10px;
+}
+
+.page-hero.ranking-page-hero h1 {
+  margin: 6px 0 6px;
+  font-size: 30px;
+  line-height: 1.15;
+}
+
+.page-hero.ranking-page-hero p {
+  font-size: 14px;
+  line-height: 1.5;
+}
+
 .hero-panel {
   overflow: hidden;
   border: 1px solid var(--line);
@@ -1808,16 +1824,35 @@ textarea {
 .ranking-filter-card {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 14px;
-  padding: 18px;
+  gap: 10px;
+  padding: 12px;
   border: 1px solid var(--line);
   border-radius: 8px;
   background: var(--surface);
 }
 
+.rankings-workspace {
+  padding-top: 12px;
+}
+
+.ranking-filter-section .section-header {
+  margin-bottom: 8px;
+}
+
+.ranking-filter-section .section-header h2,
+.ranking-results-section .section-header h2 {
+  font-size: 22px;
+}
+
+.ranking-results-section .section-header h2 small {
+  color: var(--muted);
+  font-size: 14px;
+  font-weight: 750;
+}
+
 .ranking-field {
   display: grid;
-  gap: 8px;
+  gap: 6px;
 }
 
 .ranking-field span {
@@ -1830,7 +1865,7 @@ textarea {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   overflow: hidden;
-  min-height: 44px;
+  min-height: 36px;
   border: 1px solid var(--line);
   border-radius: 8px;
   background: #fff;
@@ -1862,7 +1897,7 @@ textarea {
   background: #fff;
   color: #344054;
   font: inherit;
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 800;
   cursor: pointer;
 }
@@ -1877,7 +1912,7 @@ textarea {
 }
 
 .ranking-results-section {
-  margin-top: 26px;
+  margin-top: 16px;
 }
 
 .ranking-source-line {

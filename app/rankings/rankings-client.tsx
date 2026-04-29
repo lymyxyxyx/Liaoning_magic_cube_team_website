@@ -129,38 +129,12 @@ export function RankingsClient() {
 
   return (
     <>
-      <PageHero label="WCA 官方数据本地库" title={`${countryName} ${eventName}排名`}>
-        数据保留 WCA 官方口径，筛选和分页由本地 PostgreSQL API 提供；辽宁省标签后续会在独立页面维护。
+      <PageHero className="ranking-page-hero" label="WCA 官方数据本地库" title={`${countryName} ${eventName}排名`}>
+        WCA 官方口径，本地 PostgreSQL 查询。
       </PageHero>
 
-      <section className="container section">
-        <div className="weekly-intro">
-          <p>
-            当前展示 {countryName} · {eventName} · {modeLabels[mode]} · {genderLabels[gender]}，每页 100 名。
-          </p>
-          <strong>官方排名与本地标签分离：这里不混入省份字段，辽宁榜单会单独关联 WCA ID。</strong>
-        </div>
-
-        <div className="weekly-summary-grid">
-          <div className="stat">
-            <strong>{eventName}</strong>
-            <span>当前项目</span>
-          </div>
-          <div className="stat">
-            <strong>{countryName}</strong>
-            <span>国家/地区</span>
-          </div>
-          <div className="stat">
-            <strong>{modeLabels[mode]}</strong>
-            <span>还原类型</span>
-          </div>
-          <div className="stat">
-            <strong>{firstRank}-{lastRank}</strong>
-            <span>当前排名段</span>
-          </div>
-        </div>
-
-        <section className="weekly-event-section">
+      <section className="container section rankings-workspace">
+        <section className="weekly-event-section ranking-filter-section">
           <div className="section-header">
             <div>
               <span className="eyebrow">筛选条件</span>
@@ -228,9 +202,9 @@ export function RankingsClient() {
           <div className="section-header">
             <div>
               <span className="eyebrow">
-                {modeLabels[mode]} · 第 {page} 页
+                {countryName} · {modeLabels[mode]} · {genderLabels[gender]} · 第 {page} 页
               </span>
-              <h2>{eventName}排名</h2>
+              <h2>{eventName}排名 <small>{firstRank}-{lastRank}</small></h2>
             </div>
             <div className="ranking-source-line">
               <Database size={16} />

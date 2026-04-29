@@ -4,15 +4,17 @@ export function PageHero({
   label,
   title,
   children,
-  actions
+  actions,
+  className = ""
 }: {
   label: string;
   title: string;
   children: ReactNode;
   actions?: ReactNode;
+  className?: string;
 }) {
   return (
-    <section className="page-hero">
+    <section className={`page-hero ${className}`.trim()}>
       <div>
         <span className="eyebrow">{label}</span>
         <h1>{title}</h1>

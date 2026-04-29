@@ -150,62 +150,35 @@ export function LiaoningRankingsClient() {
 
   return (
     <>
-      <PageHero label="本地省市归属" title={`${areaLabel} ${eventName}排名`}>
-        基于本站维护的省市归属名单，关联 WCA 官方成绩生成本地榜单；当前先录入 10 位辽宁沈阳选手。
+      <PageHero className="ranking-page-hero" label="本地省市归属" title={`${areaLabel} ${eventName}排名`}>
+        本站省市归属名单关联 WCA 官方成绩。
       </PageHero>
 
-      <section className="container section local-rankings-section">
-        <div className="weekly-intro">
-          <p>
-            当前展示 {areaLabel} · {eventName} · {modeLabels[mode]} · {genderLabels[gender]}。
-          </p>
-          <strong>省市归属只在本站维护，WCA 官方数据不包含省份和城市字段。</strong>
-        </div>
-
-        <section className="local-eligibility-card">
-          <div>
-            <span className="eyebrow">入围范围</span>
-            <h2>辽宁排名认定说明</h2>
+      <section className="container section local-rankings-section rankings-workspace">
+        <details className="local-eligibility-card compact-local-eligibility">
+          <summary>辽宁排名认定说明与名单反馈</summary>
+          <div className="compact-local-eligibility-body">
             <ol>
               <li>户口本或身份证显示为辽宁户籍。</li>
               <li>户口本或身份证曾为辽宁户籍，后已取得外省或外国身份。</li>
               <li>户口本或身份证曾不是辽宁户籍，但现已取得辽宁省户籍。</li>
             </ol>
+            <div className="local-contact-box">
+              <label htmlFor="liaoning-ranking-message">名单反馈</label>
+              <textarea
+                id="liaoning-ranking-message"
+                placeholder="填写姓名、WCA ID、情况说明和联系方式。"
+                value={contactMessage}
+                onChange={(event) => setContactMessage(event.target.value)}
+              />
+              <button className="button primary" type="button" onClick={sendEligibilityMail}>
+                发送邮件
+              </button>
+            </div>
           </div>
-          <div className="local-contact-box">
-            <label htmlFor="liaoning-ranking-message">名单反馈</label>
-            <textarea
-              id="liaoning-ranking-message"
-              placeholder="如果满足条件但缺少您的名字，或不想参与排名，请在这里填写姓名、WCA ID、情况说明和联系方式。"
-              value={contactMessage}
-              onChange={(event) => setContactMessage(event.target.value)}
-            />
-            <button className="button primary" type="button" onClick={sendEligibilityMail}>
-              发送邮件
-            </button>
-          </div>
-        </section>
+        </details>
 
-        <div className="weekly-summary-grid">
-          <div className="stat">
-            <strong>{scopeLabels[scope]}</strong>
-            <span>榜单类型</span>
-          </div>
-          <div className="stat">
-            <strong>{areaLabel}</strong>
-            <span>当前区域</span>
-          </div>
-          <div className="stat">
-            <strong>{eventName}</strong>
-            <span>当前项目</span>
-          </div>
-          <div className="stat">
-            <strong>{rows.length}</strong>
-            <span>本页有成绩选手</span>
-          </div>
-        </div>
-
-        <section className="weekly-event-section">
+        <section className="weekly-event-section ranking-filter-section">
           <div className="section-header">
             <div>
               <span className="eyebrow">本地筛选</span>
@@ -300,9 +273,9 @@ export function LiaoningRankingsClient() {
           <div className="section-header">
             <div>
               <span className="eyebrow">
-                {scopeLabels[scope]} · {modeLabels[mode]}
+                {areaLabel} · {scopeLabels[scope]} · {modeLabels[mode]} · {genderLabels[gender]}
               </span>
-              <h2>{areaLabel}榜单</h2>
+              <h2>{eventName}榜单 <small>本页 {rows.length} 人</small></h2>
             </div>
             <div className="ranking-source-line">
               <MapPin size={16} />
