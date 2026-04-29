@@ -33,6 +33,26 @@ export async function writeLocalProfiles(profiles: LocalProfile[]) {
   return normalized;
 }
 
+export async function mergeLocalProfiles(profiles: LocalProfile[]) {
+  const existingProfiles = await readLocalProfiles();
+  const byId = new Map(existingProfiles.map((profile) => [profile.wcaId, profile]));
+  const order = existingProfiles.map((profile) => profile.wcaId);
+
+  for (const profile of profiles) {
+    const normalized = normalizeProfile(profile);
+    if (!normalized) continue;
+    if (!byId.has(normalized.wcaId)) {
+      order.unshift(normalized.wcaId);
+    }
+    byId.set(normalized.wcaId, normalized);
+  }
+
+  const merged = order.map((wcaId) => byId.get(wcaId)).filter(Boolean) as LocalProfile[];
+  await fs.mkdir(`${process.cwd()}/data`, { recursive: true });
+  await fs.writeFile(dataPath, `${JSON.stringify(merged, null, 2)}\n`, "utf-8");
+  return merged;
+}
+
 export async function enrichLocalProfiles(profiles: LocalProfile[]) {
   const ids = profiles.map((profile) => profile.wcaId);
   if (ids.length === 0) return [];

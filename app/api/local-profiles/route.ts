@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { enrichLocalProfiles, readLocalProfiles, writeLocalProfiles, type EnrichedLocalProfile } from "@/lib/local-profile-store";
+import { enrichLocalProfiles, mergeLocalProfiles, readLocalProfiles, type EnrichedLocalProfile } from "@/lib/local-profile-store";
 
 export async function GET() {
   const profiles = await readLocalProfiles();
@@ -9,7 +9,7 @@ export async function GET() {
 
 export async function POST(request: NextRequest) {
   const payload = (await request.json()) as { profiles?: EnrichedLocalProfile[] };
-  const saved = await writeLocalProfiles(payload.profiles || []);
+  const saved = await mergeLocalProfiles(payload.profiles || []);
   const enriched = await enrichLocalProfiles(saved);
   return NextResponse.json({ profiles: enriched });
 }
