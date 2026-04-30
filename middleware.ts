@@ -17,6 +17,10 @@ export function middleware(request: NextRequest) {
     return NextResponse.redirect(loginUrl);
   }
 
+  if (pathname === "/api/account-books" && !hasAdminSession(request)) {
+    return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
+  }
+
   if (pathname === "/api/local-profiles" && request.method !== "GET" && !hasAdminSession(request)) {
     return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
   }
@@ -25,5 +29,5 @@ export function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/admin/:path*", "/api/local-profiles"]
+  matcher: ["/admin/:path*", "/api/local-profiles", "/api/account-books"]
 };

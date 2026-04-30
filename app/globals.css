@@ -491,11 +491,19 @@ main {
   align-items: start;
 }
 
+.account-workbench {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 340px;
+  gap: 16px;
+  align-items: start;
+}
+
 .admin-profile-library {
   min-width: 0;
 }
 
-.admin-profile-entry {
+.admin-profile-entry,
+.account-entry-panel {
   position: sticky;
   top: 16px;
 }
@@ -520,6 +528,101 @@ main {
 
 .admin-profile-search {
   max-width: 520px;
+}
+
+.account-ledger {
+  min-width: 0;
+}
+
+.account-competition-filter {
+  max-width: 420px;
+}
+
+.account-category-summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.account-category-summary span {
+  display: inline-flex;
+  align-items: center;
+  min-height: 30px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 0 10px;
+  background: #fff;
+  color: #526071;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.account-table {
+  margin-top: 16px;
+}
+
+.account-table .result-table {
+  min-width: 900px;
+}
+
+.account-table input,
+.account-table select {
+  min-width: 110px;
+  padding: 8px 9px;
+}
+
+.account-table th:nth-child(4),
+.account-table td:nth-child(4) {
+  min-width: 440px;
+}
+
+.account-table td:nth-child(4) input {
+  min-width: 440px;
+}
+
+.account-save-button {
+  margin-top: 14px;
+}
+
+.account-history {
+  display: grid;
+  gap: 10px;
+  margin-top: 18px;
+  padding-top: 16px;
+  border-top: 1px solid var(--line);
+}
+
+.account-history h3 {
+  margin: 0;
+  font-size: 16px;
+}
+
+.account-history p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 750;
+}
+
+.account-history-item {
+  display: grid;
+  gap: 4px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 10px;
+  background: #fff;
+}
+
+.account-history-item strong {
+  font-size: 13px;
+}
+
+.account-history-item span {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 750;
+  line-height: 1.5;
 }
 
 .checkbox-field {
@@ -634,11 +737,13 @@ main {
 }
 
 @media (max-width: 980px) {
-  .admin-profile-workbench {
+  .admin-profile-workbench,
+  .account-workbench {
     grid-template-columns: 1fr;
   }
 
-  .admin-profile-entry {
+  .admin-profile-entry,
+  .account-entry-panel {
     position: static;
     order: -1;
   }
@@ -647,8 +752,9 @@ main {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
-  .admin-local-table .result-table {
-    min-width: 0;
+  .admin-local-table .result-table,
+  .account-table .result-table {
+    min-width: 900px;
   }
 
   .admin-local-table .result-table,
@@ -731,6 +837,11 @@ main {
   .admin-local-table input:not([type]) {
     width: 100%;
     min-width: 0;
+  }
+
+  .account-table input,
+  .account-table select {
+    min-width: 110px;
   }
 }
 
