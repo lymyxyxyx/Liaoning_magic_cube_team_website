@@ -1,0 +1,17 @@
+node_modules
+.next
+out
+.vercel
+.DS_Store
+.env
+.env.local
+*.tsbuildinfo
+npm-debug.log*
+*.sql
+WCA_export*/
+data/*.sqlite
+data/*.json
+data/wca_raw/
+data/wca_tmp/
+data/wca_state/
+logs/

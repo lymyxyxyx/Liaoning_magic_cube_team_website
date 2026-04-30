@@ -1,8 +1,5 @@
-"use client";
-
 import Link from "next/link";
 import { Shield, Settings, ChevronDown } from "lucide-react";
-import { useState } from "react";
 
 type NavItem = {
   href?: string;
@@ -42,8 +39,6 @@ const navItems: NavItem[] = [
 ];
 
 export function SiteHeader() {
-  const [openDropdown, setOpenDropdown] = useState<string | null>(null);
-
   return (
     <header className="site-header">
       <Link className="brand" href="/">
@@ -58,84 +53,29 @@ export function SiteHeader() {
       <nav className="main-nav" aria-label="主导航">
         {navItems.map((item) => {
           const hasChildren = item.children && item.children.length > 0;
-          const isOpen = openDropdown === item.label;
+
+          if (!hasChildren) {
+            return (
+              <Link href={item.href || "/"} key={item.label}>
+                {item.label}
+              </Link>
+            );
+          }
 
           return (
-            <div
-              key={item.label}
-              style={{
-                position: "relative",
-                display: "inline-block"
-              }}
-              onMouseEnter={() => hasChildren && setOpenDropdown(item.label)}
-              onMouseLeave={() => setOpenDropdown(null)}
-            >
-              {hasChildren ? (
-                <button
-                  style={{
-                    background: "none",
-                    border: "none",
-                    color: "inherit",
-                    cursor: "pointer",
-                    padding: "8px 0",
-                    display: "flex",
-                    alignItems: "center",
-                    gap: "4px",
-                    fontSize: "inherit",
-                    fontFamily: "inherit"
-                  }}
-                  className="nav-dropdown-btn"
-                >
-                  {item.label}
-                  <ChevronDown size={16} style={{ transition: "transform 0.2s" }} />
-                </button>
-              ) : (
-                <Link href={item.href || "/"} style={{ textDecoration: "none", color: "inherit" }}>
-                  {item.label}
-                </Link>
-              )}
-
-              {hasChildren && isOpen && (
-                <div
-                  style={{
-                    position: "absolute",
-                    top: "100%",
-                    left: "0",
-                    background: "white",
-                    borderRadius: "6px",
-                    boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
-                    minWidth: "160px",
-                    zIndex: 1000,
-                    marginTop: "4px",
-                    overflow: "hidden"
-                  }}
-                >
-                  {item.children?.map((child, idx) => (
-                    <Link
-                      key={child.href}
-                      href={child.href}
-                      style={{
-                        display: "block",
-                        padding: "12px 16px",
-                        textDecoration: "none",
-                        color: "inherit",
-                        borderBottom: idx < (item.children?.length || 0) - 1 ? "1px solid #f0f0f0" : "none",
-                        transition: "background-color 0.2s",
-                        background: "white"
-                      }}
-                      onMouseEnter={(e) => {
-                        (e.target as HTMLElement).style.backgroundColor = "#f5f5f5";
-                      }}
-                      onMouseLeave={(e) => {
-                        (e.target as HTMLElement).style.backgroundColor = "white";
-                      }}
-                    >
-                      {child.label}
-                    </Link>
-                  ))}
-                </div>
-              )}
-            </div>
+            <details className="nav-dropdown" key={item.label}>
+              <summary>
+                {item.label}
+                <ChevronDown size={16} />
+              </summary>
+              <div className="nav-dropdown-menu">
+                {item.children?.map((child) => (
+                  <Link key={child.href} href={child.href}>
+                    {child.label}
+                  </Link>
+                ))}
+              </div>
+            </details>
           );
         })}
       </nav>

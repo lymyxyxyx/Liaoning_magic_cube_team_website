@@ -88,6 +88,7 @@ main {
 }
 
 .main-nav a,
+.nav-dropdown summary,
 .admin-link,
 .button {
   display: inline-flex;
@@ -103,8 +104,57 @@ main {
 }
 
 .main-nav a:hover,
+.nav-dropdown summary:hover,
+.nav-dropdown[open] summary,
 .admin-link:hover {
   background: var(--soft);
+}
+
+.nav-dropdown {
+  position: relative;
+}
+
+.nav-dropdown summary {
+  cursor: pointer;
+  list-style: none;
+}
+
+.nav-dropdown summary::-webkit-details-marker {
+  display: none;
+}
+
+.nav-dropdown summary svg {
+  transition: transform 0.2s ease;
+}
+
+.nav-dropdown[open] summary svg {
+  transform: rotate(180deg);
+}
+
+.nav-dropdown-menu {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  z-index: 30;
+  display: grid;
+  min-width: 160px;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface);
+  box-shadow: var(--shadow);
+}
+
+.main-nav .nav-dropdown-menu a {
+  justify-content: flex-start;
+  min-height: 42px;
+  border-radius: 0;
+  background: var(--surface);
+  white-space: nowrap;
+}
+
+.main-nav .nav-dropdown-menu a + a {
+  border-top: 1px solid var(--line);
 }
 
 .admin-link {
@@ -2905,6 +2955,10 @@ textarea {
   }
 
   .main-nav a {
+    flex: 0 0 auto;
+  }
+
+  .nav-dropdown {
     flex: 0 0 auto;
   }
 
