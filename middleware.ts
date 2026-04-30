@@ -13,7 +13,7 @@ export function middleware(request: NextRequest) {
   if (pathname.startsWith("/admin") && pathname !== "/admin/login" && !hasAdminSession(request)) {
     const loginUrl = request.nextUrl.clone();
     loginUrl.pathname = "/admin/login";
-    loginUrl.search = "";
+    loginUrl.searchParams.set("next", `${pathname}${request.nextUrl.search}`);
     return NextResponse.redirect(loginUrl);
   }
 

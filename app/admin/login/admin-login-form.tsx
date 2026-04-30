@@ -1,11 +1,12 @@
 "use client";
 
 import { FormEvent, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { LogIn } from "lucide-react";
 
 export function AdminLoginForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -29,7 +30,7 @@ export function AdminLoginForm() {
       return;
     }
 
-    router.replace("/admin");
+    router.replace(getSafeNextPath(searchParams.get("next")));
     router.refresh();
   }
 
@@ -55,4 +56,10 @@ export function AdminLoginForm() {
       </form>
     </section>
   );
+}
+
+function getSafeNextPath(value: string | null) {
+  if (!value || !value.startsWith("/") || value.startsWith("//")) return "/admin/accounts";
+  if (value.startsWith("/admin/login")) return "/admin/accounts";
+  return value;
 }
