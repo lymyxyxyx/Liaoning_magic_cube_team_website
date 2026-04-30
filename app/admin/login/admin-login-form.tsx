@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useState } from "react";
+import { FormEvent, useState, useTransition } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { LogIn } from "lucide-react";
 
@@ -9,29 +9,29 @@ export function AdminLoginForm() {
   const searchParams = useSearchParams();
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isPending, startTransition] = useTransition();
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setError("");
-    setIsSubmitting(true);
 
-    const response = await fetch("/api/admin-auth", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ password })
+    startTransition(async () => {
+      const response = await fetch("/api/admin-auth", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ password })
+      });
+
+      if (!response.ok) {
+        setError("密码不正确，请重新输入。");
+        setPassword("");
+        return;
+      }
+
+      // 密码验证成功后，直接导航（无需 router.refresh()）
+      // httpOnly cookie 已由后端设置，浏览器会自动携带
+      router.replace(getSafeNextPath(searchParams.get("next")));
     });
-
-    setIsSubmitting(false);
-
-    if (!response.ok) {
-      setError("密码不正确，请重新输入。");
-      setPassword("");
-      return;
-    }
-
-    router.replace(getSafeNextPath(searchParams.get("next")));
-    router.refresh();
   }
 
   return (
@@ -49,9 +49,9 @@ export function AdminLoginForm() {
           />
         </label>
         {error ? <p className="admin-login-error">{error}</p> : null}
-        <button className="button primary" disabled={isSubmitting} type="submit">
+        <button className="button primary" disabled={isPending} type="submit">
           <LogIn size={17} />
-          {isSubmitting ? "验证中" : "进入后台"}
+          {isPending ? "验证中" : "进入后台"}
         </button>
       </form>
     </section>
