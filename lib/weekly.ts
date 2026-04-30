@@ -1,5 +1,3 @@
-import type { Person } from "@/lib/data";
-
 export type WeeklyAttempt = number | "DNF";
 export type Gender = "男" | "女";
 
@@ -44,6 +42,8 @@ export type WeeklyMeet = {
   threeAgeGroups: WeeklyEvent[];
   events: WeeklyEvent[];
 };
+
+export { weeklyPlayerPeople } from "@/lib/weekly-players";
 
 const weeklyPlayers = [
   ["王一桐", "wang-yitong"],
@@ -199,21 +199,6 @@ const femalePlayerNames = new Set([
   "王呈诺",
   "姜凯策"
 ]);
-
-export const weeklyPlayerPeople: Person[] = weeklyPlayers.map(([name, slug]) => ({
-  id: `weekly-${slug}`,
-  slug,
-  name,
-  avatar: "/visuals/avatar-lin.svg",
-  gender: femalePlayerNames.has(name) ? "女" : "男",
-  roles: ["运动员"],
-  city: "辽宁",
-  mainEvent: "三阶速拧",
-  bio: `${name} 是辽宁魔方少儿战队周赛选手，个人档案可继续关联登录账号、WCA 信息和历史周赛成绩。`,
-  specialties: ["三阶", "周赛"],
-  rankingNote: "周赛成绩已开始整理",
-  visible: true
-}));
 
 function result(
   rank: number,

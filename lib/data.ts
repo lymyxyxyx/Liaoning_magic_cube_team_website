@@ -1,4 +1,4 @@
-import { weeklyPlayerPeople } from "@/lib/weekly";
+import { weeklyPlayerPeople } from "@/lib/weekly-players";
 
 export type PersonRole = "运动员" | "教练员" | "裁判员" | "组织者";
 export type CompletionLevel = "低" | "中" | "高";
