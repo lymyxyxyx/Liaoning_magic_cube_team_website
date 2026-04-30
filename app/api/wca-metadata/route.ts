@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { wcaMetadataCacheHeaders } from "@/lib/http-cache";
 import { getPostgresPool } from "@/lib/postgres";
 
 export const dynamic = "force-dynamic";
@@ -10,5 +11,8 @@ export async function GET() {
     pool.query<{ id: string; name: string }>("SELECT id, name FROM wca_countries ORDER BY name")
   ]);
 
-  return NextResponse.json({ events: events.rows, countries: countries.rows });
+  return NextResponse.json(
+    { events: events.rows, countries: countries.rows },
+    { headers: wcaMetadataCacheHeaders }
+  );
 }

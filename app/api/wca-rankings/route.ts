@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { wcaRankingCacheHeaders } from "@/lib/http-cache";
 import { getPostgresPool } from "@/lib/postgres";
 
 const pageSize = 100;
@@ -113,10 +114,13 @@ export async function GET(request: NextRequest) {
     date: row.date || ""
   }));
 
-  return NextResponse.json({
-    rows,
-    page,
-    pageSize,
-    hasNextPage: rawRows.length > pageSize
-  });
+  return NextResponse.json(
+    {
+      rows,
+      page,
+      pageSize,
+      hasNextPage: rawRows.length > pageSize
+    },
+    { headers: wcaRankingCacheHeaders }
+  );
 }

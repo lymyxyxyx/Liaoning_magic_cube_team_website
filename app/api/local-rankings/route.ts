@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { wcaRankingCacheHeaders } from "@/lib/http-cache";
 import { readLocalProfiles } from "@/lib/local-profile-store";
 import { getPostgresPool } from "@/lib/postgres";
 
@@ -80,14 +81,17 @@ export async function GET(request: NextRequest) {
   const wcaIds = selectedWcaProfiles.map((profile) => profile.wcaId as string);
 
   if (wcaIds.length === 0) {
-    return NextResponse.json({
-      rows: [],
-      page,
-      pageSize,
-      hasNextPage: false,
-      provinces,
-      cities
-    });
+    return NextResponse.json(
+      {
+        rows: [],
+        page,
+        pageSize,
+        hasNextPage: false,
+        provinces,
+        cities
+      },
+      { headers: wcaRankingCacheHeaders }
+    );
   }
 
   const localInfo = new Map(selectedWcaProfiles.map((profile) => [profile.wcaId as string, profile]));
@@ -151,12 +155,15 @@ export async function GET(request: NextRequest) {
     };
   });
 
-  return NextResponse.json({
-    rows,
-    page,
-    pageSize,
-    hasNextPage: rawRows.length > pageSize,
-    provinces,
-    cities
-  });
+  return NextResponse.json(
+    {
+      rows,
+      page,
+      pageSize,
+      hasNextPage: rawRows.length > pageSize,
+      provinces,
+      cities
+    },
+    { headers: wcaRankingCacheHeaders }
+  );
 }
