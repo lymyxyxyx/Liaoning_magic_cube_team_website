@@ -1,10 +1,6 @@
-import { PersonCard } from "@/components/cards";
 import { PageHero } from "@/components/page-hero";
-import { getPeopleByRole } from "@/lib/data";
 
 export default function JudgesPage() {
-  const judges = getPeopleByRole("裁判员");
-
   return (
     <>
       <PageHero label="人员档案" title="裁判员列表">
@@ -12,9 +8,9 @@ export default function JudgesPage() {
       </PageHero>
       <section className="container section">
         <div className="grid">
-          {judges.map((person) => (
-            <PersonCard person={person} key={person.id} />
-          ))}
+          <div style={{ textAlign: "center", padding: "40px 20px", gridColumn: "1 / -1" }}>
+            <p style={{ color: "#999", fontSize: "16px" }}>裁判员列表待补充</p>
+          </div>
         </div>
       </section>
     </>
