@@ -201,15 +201,6 @@ function updateEntry(id: string, next: Partial<AccountEntry>) {
             </select>
           </label>
 
-          <div className="account-category-summary">
-            {summary.categoryTotals.length === 0 ? <span>暂无分类小计</span> : null}
-            {summary.categoryTotals.map(([name, total]) => (
-              <span key={name}>
-                {name} {formatCurrency(total)}
-              </span>
-            ))}
-          </div>
-
           <div className="result-table-wrap account-table">
             <table className="result-table">
               <thead>

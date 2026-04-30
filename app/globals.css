@@ -538,26 +538,6 @@ main {
   max-width: 420px;
 }
 
-.account-category-summary {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  margin-top: 12px;
-}
-
-.account-category-summary span {
-  display: inline-flex;
-  align-items: center;
-  min-height: 30px;
-  border: 1px solid var(--line);
-  border-radius: 8px;
-  padding: 0 10px;
-  background: #fff;
-  color: #526071;
-  font-size: 13px;
-  font-weight: 800;
-}
-
 .account-table {
   margin-top: 16px;
 }
@@ -846,6 +826,40 @@ main {
 }
 
 @media (max-width: 640px) {
+  .account-workbench {
+    gap: 12px;
+  }
+
+  .account-ledger,
+  .account-entry-panel {
+    padding: 14px;
+  }
+
+  .account-table {
+    margin-top: 12px;
+  }
+
+  .account-table .result-table {
+    min-width: 820px;
+  }
+
+  .account-table th:nth-child(4),
+  .account-table td:nth-child(4),
+  .account-table td:nth-child(4) input {
+    min-width: 360px;
+  }
+
+  .account-table input,
+  .account-table select {
+    min-height: 38px;
+    padding: 7px 8px;
+    font-size: 13px;
+  }
+
+  .account-history-item {
+    padding: 9px;
+  }
+
   .admin-workspace-heading,
   .admin-card-heading {
     display: grid;
