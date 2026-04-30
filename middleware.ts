@@ -9,6 +9,13 @@ function hasAdminSession(request: NextRequest) {
 
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
+  const host = request.headers.get("host") || "";
+
+  if (host === "www.lncubing.com" && pathname.startsWith("/admin")) {
+    const canonicalUrl = request.nextUrl.clone();
+    canonicalUrl.hostname = "lncubing.com";
+    return NextResponse.redirect(canonicalUrl);
+  }
 
   if (pathname.startsWith("/admin") && pathname !== "/admin/login" && !hasAdminSession(request)) {
     const loginUrl = request.nextUrl.clone();
