@@ -1,11 +1,9 @@
 import { LogIn } from "lucide-react";
 
-export function AdminLoginForm({ nextPath, hasError }: { nextPath: string; hasError: boolean }) {
-  const action = `/api/admin-auth?next=${encodeURIComponent(nextPath)}`;
-
+export function AdminLoginForm({ hasError = false }: { hasError?: boolean }) {
   return (
     <section className="container section">
-      <form action={action} className="admin-card admin-login-card" method="post">
+      <form action="/api/admin-auth" className="admin-card admin-login-card" method="post">
         <h2>后台登录</h2>
         <label className="field">
           <span>管理密码</span>

@@ -3,17 +3,17 @@ import { NextRequest, NextResponse } from "next/server";
 const adminPassword = "87654312";
 const adminCookieName = "liaoning_admin_session";
 const adminCookieValue = "authenticated";
+const adminNextCookieName = "liaoning_admin_next";
 
 export async function POST(request: NextRequest) {
   const payload = await readAuthPayload(request);
-  const nextPath = getSafeNextPath(request.nextUrl.searchParams.get("next"));
+  const nextPath = getSafeNextPath(request.nextUrl.searchParams.get("next") || request.cookies.get(adminNextCookieName)?.value || null);
 
   if (payload.password !== adminPassword) {
     if (payload.source === "form") {
       const loginUrl = request.nextUrl.clone();
-      loginUrl.pathname = "/admin/login";
-      loginUrl.searchParams.set("error", "1");
-      loginUrl.searchParams.set("next", nextPath);
+      loginUrl.pathname = "/admin/login/error";
+      loginUrl.search = "";
       return NextResponse.redirect(loginUrl, { status: 303 });
     }
 
@@ -31,6 +31,7 @@ export async function POST(request: NextRequest) {
     maxAge: 60 * 60 * 24 * 7,
     path: "/"
   });
+  response.cookies.delete(adminNextCookieName);
 
   return response;
 }

@@ -1,5 +1,5 @@
 import { PageHero } from "@/components/page-hero";
-import { AdminLoginForm } from "./admin-login-form";
+import { AdminLoginForm } from "../admin-login-form";
 import { type Metadata } from "next";
 
 export const metadata: Metadata = {
@@ -7,13 +7,13 @@ export const metadata: Metadata = {
   description: "后台管理系统登录页面"
 };
 
-export default function AdminLoginPage() {
+export default function AdminLoginErrorPage() {
   return (
     <>
       <PageHero label="后台管理" title="登录后台">
         请输入管理员密码后进入维护入口。
       </PageHero>
-      <AdminLoginForm />
+      <AdminLoginForm hasError />
     </>
   );
 }
