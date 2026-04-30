@@ -1,10 +1,15 @@
 export type LocalProfile = {
-  wcaId: string;
+  wcaId?: string;
+  localId?: string;
+  name?: string;
   province: string;
   city: string;
   visible: boolean;
+  sourceCompetition?: string;
   createdAt?: string;
   createdBy?: string;
+  checkedAt?: string;
+  checkedBy?: string;
 };
 
 export const localProfiles: LocalProfile[] = [

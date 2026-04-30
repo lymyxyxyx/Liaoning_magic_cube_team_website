@@ -76,7 +76,8 @@ export async function GET(request: NextRequest) {
       profile.province === province &&
       (scope === "province" || profile.city === city)
   );
-  const wcaIds = selectedProfiles.map((profile) => profile.wcaId);
+  const selectedWcaProfiles = selectedProfiles.filter((profile) => profile.wcaId);
+  const wcaIds = selectedWcaProfiles.map((profile) => profile.wcaId as string);
 
   if (wcaIds.length === 0) {
     return NextResponse.json({
@@ -89,7 +90,7 @@ export async function GET(request: NextRequest) {
     });
   }
 
-  const localInfo = new Map(selectedProfiles.map((profile) => [profile.wcaId, profile]));
+  const localInfo = new Map(selectedWcaProfiles.map((profile) => [profile.wcaId as string, profile]));
   const queryParams: (string | string[] | number)[] = [event, wcaIds];
   if (gender !== "all") queryParams.push(gender);
   queryParams.push(pageSize + 1, offset);
