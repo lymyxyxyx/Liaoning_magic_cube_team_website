@@ -168,7 +168,6 @@ export function AdminConsole() {
       country: "",
       existsInWca: false
     };
-    let nextProfile: LocalProfileDraft;
     if (entryMode === "wca") {
       const wcaId = localProfile.wcaId.trim().toUpperCase();
       if (!/^[0-9]{4}[A-Z]{4}[0-9]{2}$/.test(wcaId)) {
@@ -179,15 +178,21 @@ export function AdminConsole() {
         setLocalProfileNotice("这个 WCA ID 已在辽宁选手库中。");
         return;
       }
-      nextProfile = {
+      const nextProfile = {
         ...baseProfile,
         wcaId,
         name: ""
       };
+      const nextProfiles = [nextProfile, ...localProfiles];
+      setLocalProfiles(nextProfiles);
+      setLocalProfile((current) => ({ ...current, wcaId: "", name: "" }));
+      setWcaLookupStatus("");
+      setLocalProfileNotice("");
+      saveLocalProfiles(nextProfiles);
     } else {
-      const name = localProfile.name.trim();
+      const names = parseLocalProfileNames(localProfile.name);
       const sourceCompetition = localProfile.sourceCompetition.trim();
-      if (!name) {
+      if (names.length === 0) {
         setLocalProfileNotice("请输入无 WCA ID 选手姓名。");
         return;
       }
@@ -195,24 +200,32 @@ export function AdminConsole() {
         setLocalProfileNotice("请输入这个选手来自哪场比赛记录。");
         return;
       }
-      const localId = createLocalProfileId(name, sourceCompetition);
-      if (localProfiles.some((profile) => getProfileKey(profile) === localId)) {
-        setLocalProfileNotice("这个无 WCA ID 选手记录已在辽宁选手库中。");
+      const existingKeys = new Set(localProfiles.map(getProfileKey));
+      const nextProfilesToAdd = names
+        .map((name) => ({
+          ...baseProfile,
+          localId: createLocalProfileId(name, sourceCompetition),
+          name,
+          sourceCompetition
+        }))
+        .filter((profile) => !existingKeys.has(getProfileKey(profile)));
+      if (nextProfilesToAdd.length === 0) {
+        setLocalProfileNotice("这些无 WCA ID 选手记录已在辽宁选手库中。");
         return;
       }
-      nextProfile = {
-        ...baseProfile,
-        localId,
-        name,
-        sourceCompetition
-      };
+      const skippedCount = names.length - nextProfilesToAdd.length;
+      const nextProfiles = [...nextProfilesToAdd, ...localProfiles];
+      setLocalProfiles(nextProfiles);
+      setLocalProfile((current) => ({ ...current, wcaId: "", name: "" }));
+      setWcaLookupStatus("");
+      setLocalProfileNotice("");
+      saveLocalProfiles(
+        nextProfiles,
+        skippedCount > 0
+          ? `已新增 ${nextProfilesToAdd.length} 位无 WCA ID 选手，跳过 ${skippedCount} 条已存在记录。`
+          : `已新增 ${nextProfilesToAdd.length} 位无 WCA ID 选手。`
+      );
     }
-    const nextProfiles = [nextProfile, ...localProfiles];
-    setLocalProfiles(nextProfiles);
-    setLocalProfile((current) => ({ ...current, wcaId: "", name: "", sourceCompetition: "" }));
-    setWcaLookupStatus("");
-    setLocalProfileNotice("");
-    saveLocalProfiles(nextProfiles);
   }
 
   function addBatchWcaProfiles() {
@@ -510,6 +523,8 @@ export function AdminConsole() {
                   label="选手姓名"
                   value={localProfile.name}
                   onChange={(value) => setLocalProfile({ ...localProfile, name: value })}
+                  placeholder="可输入多个姓名，用空格、换行、逗号或顿号分隔"
+                  textarea
                 />
                 <Field
                   label="来源赛事"
@@ -603,6 +618,17 @@ function formatProfileMeta(name: string | undefined, dateTime: string | undefine
   return `${name || defaultCreatedBy} ${formatDateTime(dateTime)}`;
 }
 
+function parseLocalProfileNames(value: string) {
+  return Array.from(
+    new Set(
+      value
+        .split(/[\s,，、;；]+/)
+        .map((name) => name.trim())
+        .filter(Boolean)
+    )
+  );
+}
+
 function getProfileKey(profile: Pick<LocalProfileDraft, "wcaId" | "localId" | "name" | "sourceCompetition">) {
   return profile.wcaId || profile.localId || createLocalProfileId(profile.name || "", profile.sourceCompetition || "");
 }
@@ -623,7 +649,8 @@ function Field({
   full,
   textarea,
   type = "text",
-  list
+  list,
+  placeholder
 }: {
   label: string;
   value: string;
@@ -632,14 +659,21 @@ function Field({
   textarea?: boolean;
   type?: string;
   list?: string;
+  placeholder?: string;
 }) {
   return (
     <label className={`field ${full ? "full" : ""}`}>
       {label}
       {textarea ? (
-        <textarea value={value} onChange={(event) => onChange(event.target.value)} />
+        <textarea placeholder={placeholder} value={value} onChange={(event) => onChange(event.target.value)} />
       ) : (
-        <input list={list} type={type} value={value} onChange={(event) => onChange(event.target.value)} />
+        <input
+          list={list}
+          placeholder={placeholder}
+          type={type}
+          value={value}
+          onChange={(event) => onChange(event.target.value)}
+        />
       )}
     </label>
   );
