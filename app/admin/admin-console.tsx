@@ -473,7 +473,7 @@ export function AdminConsole() {
                       <td>
                         <span className="admin-profile-actions">
                           <button className="button" type="button" onClick={() => checkLocalProfile(index)}>
-                            已核对
+                            {profile.checkedAt ? "已核对" : "核对"}
                           </button>
                           <button className="button" type="button" onClick={() => removeLocalProfile(index)}>
                             移除
