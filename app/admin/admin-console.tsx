@@ -19,11 +19,15 @@ type LocalProfileDraft = {
   existsInWca: boolean;
 };
 
+type ProfileViewFilter = "all" | "unchecked" | "unmatched" | "local" | "dirty";
+
 const defaultCreatedBy = "刘一鸣";
 const liaoningCities = ["沈阳", "大连", "鞍山", "抚顺", "本溪", "丹东", "锦州", "营口", "阜新", "辽阳", "盘锦", "铁岭", "朝阳", "葫芦岛"];
 
 export function AdminConsole() {
   const [localProfiles, setLocalProfiles] = useState<LocalProfileDraft[]>([]);
+  const [dirtyProfileKeys, setDirtyProfileKeys] = useState<string[]>([]);
+  const [removedProfileKeys, setRemovedProfileKeys] = useState<string[]>([]);
   const [entryMode, setEntryMode] = useState<"wca" | "local">("wca");
   const [localProfile, setLocalProfile] = useState({
     wcaId: "",
@@ -35,6 +39,10 @@ export function AdminConsole() {
   const [localProfilesStatus, setLocalProfilesStatus] = useState("读取中");
   const [localProfileNotice, setLocalProfileNotice] = useState("");
   const [localProfileSearch, setLocalProfileSearch] = useState("");
+  const [profileViewFilter, setProfileViewFilter] = useState<ProfileViewFilter>("all");
+  const [batchWcaIds, setBatchWcaIds] = useState("");
+  const [wcaLookupStatus, setWcaLookupStatus] = useState("");
+  const [isSavingProfiles, setIsSavingProfiles] = useState(false);
 
   useEffect(() => {
     fetch("/api/local-profiles")
@@ -42,24 +50,82 @@ export function AdminConsole() {
       .then((payload) => {
         setLocalProfiles(payload.profiles || []);
         setLocalProfilesStatus("已读取");
+        setDirtyProfileKeys([]);
+        setRemovedProfileKeys([]);
       })
       .catch(() => setLocalProfilesStatus("读取失败"));
   }, []);
+
+  useEffect(() => {
+    const wcaId = localProfile.wcaId.trim().toUpperCase();
+    if (entryMode !== "wca" || !wcaId) {
+      setWcaLookupStatus("");
+      return;
+    }
+    if (!/^[0-9]{4}[A-Z]{4}[0-9]{2}$/.test(wcaId)) {
+      setWcaLookupStatus("输入完整 WCA ID 后会自动预查。");
+      return;
+    }
+    if (localProfiles.some((profile) => profile.wcaId === wcaId)) {
+      setWcaLookupStatus("这个 WCA ID 已在辽宁选手库中。");
+      return;
+    }
+
+    const controller = new AbortController();
+    const timer = window.setTimeout(() => {
+      setWcaLookupStatus("正在查询 WCA 人员库...");
+      fetch(`/api/local-profiles?wcaId=${encodeURIComponent(wcaId)}`, { signal: controller.signal })
+        .then((response) => response.json())
+        .then((payload) => {
+          const profile = payload.profile as LocalProfileDraft | undefined;
+          if (!profile) {
+            setWcaLookupStatus("没有查询到这个 WCA ID。");
+            return;
+          }
+          setWcaLookupStatus(
+            profile.existsInWca
+              ? `已找到：${profile.name || wcaId}${profile.country ? ` / ${profile.country}` : ""}`
+              : "未在当前 WCA 数据库中匹配到，录入前请再核对。"
+          );
+        })
+        .catch((error) => {
+          if (error.name !== "AbortError") setWcaLookupStatus("查询失败，可以先保存后再核对。");
+        });
+    }, 350);
+
+    return () => {
+      window.clearTimeout(timer);
+      controller.abort();
+    };
+  }, [entryMode, localProfile.wcaId, localProfiles]);
 
   const totals = useMemo(
     () => ({
       localProfiles: localProfiles.length,
       matchedProfiles: localProfiles.filter((profile) => profile.existsInWca).length,
-      checkedProfiles: localProfiles.filter((profile) => profile.checkedAt).length
+      checkedProfiles: localProfiles.filter((profile) => profile.checkedAt).length,
+      uncheckedProfiles: localProfiles.filter((profile) => !profile.checkedAt).length,
+      unmatchedProfiles: localProfiles.filter((profile) => profile.wcaId && !profile.existsInWca).length,
+      localOnlyProfiles: localProfiles.filter((profile) => !profile.wcaId).length
     }),
     [localProfiles]
   );
 
+  const unsavedCount = dirtyProfileKeys.length + removedProfileKeys.length;
+
   const filteredLocalProfiles = useMemo(() => {
     const keyword = localProfileSearch.trim().toLowerCase();
-    if (!keyword) return localProfiles;
-    return localProfiles.filter((profile) =>
-      [
+    return localProfiles.filter((profile) => {
+      const key = getProfileKey(profile);
+      const matchesFilter =
+        profileViewFilter === "all" ||
+        (profileViewFilter === "unchecked" && !profile.checkedAt) ||
+        (profileViewFilter === "unmatched" && Boolean(profile.wcaId) && !profile.existsInWca) ||
+        (profileViewFilter === "local" && !profile.wcaId) ||
+        (profileViewFilter === "dirty" && dirtyProfileKeys.includes(key));
+      if (!matchesFilter) return false;
+      if (!keyword) return true;
+      return [
         profile.wcaId,
         profile.localId,
         profile.name,
@@ -71,9 +137,26 @@ export function AdminConsole() {
         profile.checkedBy
       ]
         .filter((value): value is string => Boolean(value))
-        .some((value) => value.toLowerCase().includes(keyword))
-    );
-  }, [localProfileSearch, localProfiles]);
+        .some((value) => value.toLowerCase().includes(keyword));
+    });
+  }, [dirtyProfileKeys, localProfileSearch, localProfiles, profileViewFilter]);
+
+  function markProfileDirty(profile: LocalProfileDraft) {
+    const key = getProfileKey(profile);
+    setDirtyProfileKeys((current) => (current.includes(key) ? current : [...current, key]));
+    setRemovedProfileKeys((current) => current.filter((removedKey) => removedKey !== key));
+  }
+
+  function markProfileRemoved(profile: LocalProfileDraft) {
+    const key = getProfileKey(profile);
+    setDirtyProfileKeys((current) => current.filter((dirtyKey) => dirtyKey !== key));
+    setRemovedProfileKeys((current) => (current.includes(key) ? current : [...current, key]));
+  }
+
+  function getChangedStatus(nextDirtyCount = dirtyProfileKeys.length, nextRemovedCount = removedProfileKeys.length) {
+    const nextUnsavedCount = nextDirtyCount + nextRemovedCount;
+    return nextUnsavedCount > 0 ? `${nextUnsavedCount} 条未保存修改` : "已读取";
+  }
 
   function addLocalProfile() {
     const baseProfile = {
@@ -127,23 +210,69 @@ export function AdminConsole() {
     const nextProfiles = [nextProfile, ...localProfiles];
     setLocalProfiles(nextProfiles);
     setLocalProfile((current) => ({ ...current, wcaId: "", name: "", sourceCompetition: "" }));
+    setWcaLookupStatus("");
     setLocalProfileNotice("");
     saveLocalProfiles(nextProfiles);
   }
 
+  function addBatchWcaProfiles() {
+    const candidates = batchWcaIds
+      .split(/[\s,，、;；]+/)
+      .map((value) => value.trim().toUpperCase())
+      .filter(Boolean);
+    const uniqueCandidates = Array.from(new Set(candidates));
+    const invalidIds = uniqueCandidates.filter((wcaId) => !/^[0-9]{4}[A-Z]{4}[0-9]{2}$/.test(wcaId));
+    if (invalidIds.length > 0) {
+      setLocalProfileNotice(`这些 WCA ID 格式不正确：${invalidIds.slice(0, 6).join("、")}`);
+      return;
+    }
+    const existingIds = new Set(localProfiles.map((profile) => profile.wcaId).filter(Boolean));
+    const newIds = uniqueCandidates.filter((wcaId) => !existingIds.has(wcaId));
+    if (newIds.length === 0) {
+      setLocalProfileNotice("没有可新增的 WCA ID，可能都已经在库中。");
+      return;
+    }
+    const createdAt = new Date().toISOString();
+    const newProfiles = newIds.map((wcaId) => ({
+      wcaId,
+      province: localProfile.province,
+      city: localProfile.city,
+      visible: true,
+      createdAt,
+      createdBy: defaultCreatedBy,
+      country: "",
+      existsInWca: false
+    }));
+    const nextProfiles = [...newProfiles, ...localProfiles];
+    setLocalProfiles(nextProfiles);
+    setBatchWcaIds("");
+    saveLocalProfiles(nextProfiles, `已新增 ${newProfiles.length} 位 WCA 选手。`);
+  }
+
   function updateLocalProfile(index: number, next: Partial<LocalProfileDraft>) {
+    const profile = localProfiles[index];
+    if (!profile) return;
+    markProfileDirty(profile);
     setLocalProfiles((current) =>
       current.map((profile, profileIndex) => (profileIndex === index ? { ...profile, ...next } : profile))
     );
-    setLocalProfilesStatus("有未保存修改");
+    setLocalProfilesStatus(
+      getChangedStatus(dirtyProfileKeys.includes(getProfileKey(profile)) ? dirtyProfileKeys.length : dirtyProfileKeys.length + 1)
+    );
   }
 
   function removeLocalProfile(index: number) {
     const profile = localProfiles[index];
     if (!profile) return;
     if (!window.confirm(`确认从本地人员库移除 ${profile.wcaId || profile.name || "这条记录"}？`)) return;
+    markProfileRemoved(profile);
     setLocalProfiles((current) => current.filter((_profile, profileIndex) => profileIndex !== index));
-    setLocalProfilesStatus("有未保存修改");
+    setLocalProfilesStatus(
+      getChangedStatus(
+        Math.max(0, dirtyProfileKeys.length - (dirtyProfileKeys.includes(getProfileKey(profile)) ? 1 : 0)),
+        removedProfileKeys.includes(getProfileKey(profile)) ? removedProfileKeys.length : removedProfileKeys.length + 1
+      )
+    );
   }
 
   function checkLocalProfile(index: number) {
@@ -163,20 +292,29 @@ export function AdminConsole() {
 
   function saveLocalProfiles(nextProfiles = localProfiles, successNotice = "选手库已保存。") {
     setLocalProfilesStatus("保存中");
+    setIsSavingProfiles(true);
     fetch("/api/local-profiles", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ profiles: nextProfiles.map((profile) => ({ ...profile, visible: true })) })
     })
-      .then((response) => response.json())
+      .then((response) => {
+        if (!response.ok) throw new Error("保存失败");
+        return response.json();
+      })
       .then((payload) => {
         setLocalProfiles(payload.profiles || []);
+        setDirtyProfileKeys([]);
+        setRemovedProfileKeys([]);
         setLocalProfilesStatus("已保存");
         setLocalProfileNotice(successNotice);
       })
       .catch(() => {
         setLocalProfilesStatus("保存失败");
         setLocalProfileNotice("保存失败，请稍后重试。");
+      })
+      .finally(() => {
+        setIsSavingProfiles(false);
       });
   }
 
@@ -187,7 +325,7 @@ export function AdminConsole() {
           <h1>辽宁选手库</h1>
           <p>录入 WCA ID、省份、城市，并对历史选手做人工核对记录。</p>
         </div>
-        <span className="status">{localProfilesStatus}</span>
+        <span className={`status ${unsavedCount > 0 ? "status-低" : ""}`}>{localProfilesStatus}</span>
       </div>
 
       <div className="stat-band admin-profile-stats">
@@ -208,6 +346,11 @@ export function AdminConsole() {
           <span>WCA 已匹配</span>
         </div>
       </div>
+      <datalist id="liaoning-city-options">
+        {liaoningCities.map((city) => (
+          <option value={city} key={city} />
+        ))}
+      </datalist>
 
       <div className="admin-profile-workbench">
         <div className="admin-card admin-profile-library">
@@ -229,6 +372,44 @@ export function AdminConsole() {
               onChange={(event) => setLocalProfileSearch(event.target.value)}
             />
           </label>
+
+          <div className="admin-profile-filters" aria-label="选手列表筛选">
+            <button
+              className={profileViewFilter === "all" ? "active" : ""}
+              type="button"
+              onClick={() => setProfileViewFilter("all")}
+            >
+              全部
+            </button>
+            <button
+              className={profileViewFilter === "unchecked" ? "active" : ""}
+              type="button"
+              onClick={() => setProfileViewFilter("unchecked")}
+            >
+              未核对 {totals.uncheckedProfiles}
+            </button>
+            <button
+              className={profileViewFilter === "unmatched" ? "active" : ""}
+              type="button"
+              onClick={() => setProfileViewFilter("unmatched")}
+            >
+              未匹配 {totals.unmatchedProfiles}
+            </button>
+            <button
+              className={profileViewFilter === "local" ? "active" : ""}
+              type="button"
+              onClick={() => setProfileViewFilter("local")}
+            >
+              无 WCA ID {totals.localOnlyProfiles}
+            </button>
+            <button
+              className={profileViewFilter === "dirty" ? "active" : ""}
+              type="button"
+              onClick={() => setProfileViewFilter("dirty")}
+            >
+              已修改 {dirtyProfileKeys.length}
+            </button>
+          </div>
 
           <div className="result-table-wrap admin-local-table">
             <table className="result-table">
@@ -259,6 +440,7 @@ export function AdminConsole() {
                       </td>
                       <td>
                         <input
+                          list="liaoning-city-options"
                           value={profile.city}
                           onChange={(event) => updateLocalProfile(index, { city: event.target.value })}
                         />
@@ -320,7 +502,7 @@ export function AdminConsole() {
               <Field
                 label="WCA ID"
                 value={localProfile.wcaId}
-                onChange={(value) => setLocalProfile({ ...localProfile, wcaId: value })}
+                onChange={(value) => setLocalProfile({ ...localProfile, wcaId: value.toUpperCase() })}
               />
             ) : (
               <>
@@ -345,8 +527,10 @@ export function AdminConsole() {
               label="城市"
               value={localProfile.city}
               onChange={(value) => setLocalProfile({ ...localProfile, city: value })}
+              list="liaoning-city-options"
             />
           </div>
+          {wcaLookupStatus ? <p className="admin-inline-notice">{wcaLookupStatus}</p> : null}
 
           <div className="city-quick-picks admin-city-picks" aria-label="辽宁城市快捷选择">
             {liaoningCities.map((city) => (
@@ -362,15 +546,37 @@ export function AdminConsole() {
           </div>
 
           <div className="admin-entry-actions">
-            <button className="button primary" onClick={addLocalProfile} type="button">
+            <button className="button primary" disabled={isSavingProfiles} onClick={addLocalProfile} type="button">
               <Plus size={17} />
               新增并保存
             </button>
-            <button className="button" onClick={() => saveLocalProfiles()} type="button">
+            <button
+              className="button"
+              disabled={isSavingProfiles || unsavedCount === 0}
+              onClick={() => saveLocalProfiles()}
+              type="button"
+            >
               <Save size={17} />
-              保存列表修改
+              保存列表修改{unsavedCount > 0 ? `（${unsavedCount}）` : ""}
             </button>
           </div>
+          <label className="field admin-batch-entry">
+            批量 WCA ID
+            <textarea
+              placeholder="一行一个，或用空格、逗号分隔"
+              value={batchWcaIds}
+              onChange={(event) => setBatchWcaIds(event.target.value)}
+            />
+          </label>
+          <button
+            className="button admin-batch-button"
+            disabled={isSavingProfiles || !batchWcaIds.trim()}
+            onClick={addBatchWcaProfiles}
+            type="button"
+          >
+            <Plus size={17} />
+            批量新增并保存
+          </button>
           {localProfileNotice ? <p className="admin-inline-notice">{localProfileNotice}</p> : null}
         </aside>
       </div>
@@ -416,7 +622,8 @@ function Field({
   onChange,
   full,
   textarea,
-  type = "text"
+  type = "text",
+  list
 }: {
   label: string;
   value: string;
@@ -424,6 +631,7 @@ function Field({
   full?: boolean;
   textarea?: boolean;
   type?: string;
+  list?: string;
 }) {
   return (
     <label className={`field ${full ? "full" : ""}`}>
@@ -431,7 +639,7 @@ function Field({
       {textarea ? (
         <textarea value={value} onChange={(event) => onChange(event.target.value)} />
       ) : (
-        <input type={type} value={value} onChange={(event) => onChange(event.target.value)} />
+        <input list={list} type={type} value={value} onChange={(event) => onChange(event.target.value)} />
       )}
     </label>
   );

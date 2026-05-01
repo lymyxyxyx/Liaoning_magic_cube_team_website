@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 
-const adminPassword = "87654312";
+const adminPassword = process.env.ADMIN_PASSWORD || "87654312";
 const adminCookieName = "liaoning_admin_session";
 const adminCookieValue = "authenticated";
 const adminNextCookieName = "liaoning_admin_next";

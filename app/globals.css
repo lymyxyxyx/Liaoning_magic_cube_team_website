@@ -244,6 +244,11 @@ main {
   background: var(--surface);
 }
 
+.button:disabled {
+  cursor: not-allowed;
+  opacity: 0.56;
+}
+
 .button.primary {
   border-color: var(--blue);
   color: #fff;
@@ -576,8 +581,47 @@ main {
   width: 100%;
 }
 
+.admin-batch-entry {
+  margin-top: 16px;
+}
+
+.admin-batch-entry textarea {
+  min-height: 88px;
+}
+
+.admin-batch-button {
+  width: 100%;
+  margin-top: 10px;
+}
+
 .admin-profile-search {
   max-width: 520px;
+}
+
+.admin-profile-filters {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 12px;
+}
+
+.admin-profile-filters button {
+  min-height: 34px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 0 10px;
+  background: #fff;
+  color: #344054;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.admin-profile-filters button.active {
+  border-color: var(--blue);
+  color: #fff;
+  background: var(--blue);
 }
 
 .account-ledger {
