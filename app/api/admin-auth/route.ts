@@ -1,12 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
 
-if (!process.env.ADMIN_PASSWORD) throw new Error("ADMIN_PASSWORD env var is required");
-const adminPassword = process.env.ADMIN_PASSWORD;
 const adminCookieName = "liaoning_admin_session";
 const adminCookieValue = "authenticated";
 const adminNextCookieName = "liaoning_admin_next";
 
 export async function POST(request: NextRequest) {
+  const adminPassword = process.env.ADMIN_PASSWORD;
+  if (!adminPassword) {
+    return NextResponse.json({ message: "Server configuration error" }, { status: 500 });
+  }
+
   const payload = await readAuthPayload(request);
   const nextPath = getSafeNextPath(request.nextUrl.searchParams.get("next") || request.cookies.get(adminNextCookieName)?.value || null);
 
