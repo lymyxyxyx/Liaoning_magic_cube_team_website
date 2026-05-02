@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 
-const adminPassword = process.env.ADMIN_PASSWORD || "87654312";
+if (!process.env.ADMIN_PASSWORD) throw new Error("ADMIN_PASSWORD env var is required");
+const adminPassword = process.env.ADMIN_PASSWORD;
 const adminCookieName = "liaoning_admin_session";
 const adminCookieValue = "authenticated";
 const adminNextCookieName = "liaoning_admin_next";

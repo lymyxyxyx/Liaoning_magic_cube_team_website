@@ -41,9 +41,13 @@ export function middleware(request: NextRequest) {
     return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
   }
 
+  if (pathname.startsWith("/api/admin") && !hasAdminSession(request)) {
+    return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
+  }
+
   return NextResponse.next();
 }
 
 export const config = {
-  matcher: ["/admin/:path*", "/api/local-profiles", "/api/account-books"]
+  matcher: ["/admin/:path*", "/api/local-profiles", "/api/account-books", "/api/admin/:path*"]
 };

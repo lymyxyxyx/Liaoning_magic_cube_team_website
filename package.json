@@ -9,7 +9,8 @@
     "lint": "next lint",
     "typecheck": "tsc --noEmit",
     "wca:check": "node scripts/update_wca_data.mjs --check",
-    "wca:update": "node scripts/update_wca_data.mjs"
+    "wca:update": "node scripts/update_wca_data.mjs",
+    "db:init": "node scripts/init-app-db.mjs"
   },
   "dependencies": {
     "lucide-react": "^0.468.0",

@@ -3,13 +3,12 @@ import { BarChart3, CalendarDays, ListChecks, Medal, Trophy } from "lucide-react
 import { PageHero } from "@/components/page-hero";
 import { bigStackIntro, getRankedBigStackRecords } from "@/lib/big-stack";
 import { people } from "@/lib/data";
-import { weeklyMeets } from "@/lib/weekly";
+import { getWeeklyMeets } from "@/lib/weekly-db";
 
-const earliestRecordedWeek = Math.min(...weeklyMeets.map((meet) => meet.weekNumber));
-const previousWeeks = Array.from({ length: earliestRecordedWeek - 1 }, (_, index) => earliestRecordedWeek - 1 - index);
+export const dynamic = "force-dynamic";
 
-export default function WeeklyPage() {
-  const latestMeet = weeklyMeets[0];
+export default async function WeeklyPage() {
+  const weeklyMeets = await getWeeklyMeets();
   const bigStackRanking = getRankedBigStackRecords();
   const peopleByName = new Map(people.map((person) => [person.name, person]));
   const topThree = bigStackRanking.slice(0, 3);
@@ -18,6 +17,10 @@ export default function WeeklyPage() {
     bigStackRanking.slice(0, 10).reduce((total, record) => total + record.count, 0) / 10
   );
 
+  const latestMeet = weeklyMeets[0];
+  const earliestWeekNumber = weeklyMeets.length > 0 ? Math.min(...weeklyMeets.map((m) => m.weekNumber)) : 1;
+  const previousWeeks = Array.from({ length: earliestWeekNumber - 1 }, (_, i) => earliestWeekNumber - 1 - i);
+
   return (
     <>
       <PageHero label="队内周赛" title="辽宁魔方少儿战队周赛">
@@ -25,27 +28,29 @@ export default function WeeklyPage() {
       </PageHero>
 
       <section className="container section">
-        <Link className="weekly-feature" href={`/weekly/${latestMeet.slug}`}>
-          <div>
-            <span className="card-kicker">
-              <Trophy size={15} />
-              最新周赛
-            </span>
-            <h2>{latestMeet.title}</h2>
-            <p>{latestMeet.summary}</p>
-            <div className="weekly-feature-meta">
-              <span>
-                <CalendarDays size={15} />
-                {latestMeet.dateLabel}
+        {latestMeet ? (
+          <Link className="weekly-feature" href={`/weekly/${latestMeet.slug}`}>
+            <div>
+              <span className="card-kicker">
+                <Trophy size={15} />
+                最新周赛
               </span>
-              <span>
-                <ListChecks size={15} />
-                {latestMeet.results.length} 名选手
-              </span>
+              <h2>{latestMeet.title}</h2>
+              <p>{latestMeet.summary}</p>
+              <div className="weekly-feature-meta">
+                <span>
+                  <CalendarDays size={15} />
+                  {latestMeet.dateLabel}
+                </span>
+                <span>
+                  <ListChecks size={15} />
+                  {latestMeet.results.length} 名选手
+                </span>
+              </div>
             </div>
-          </div>
-          <strong>查看成绩</strong>
-        </Link>
+            <strong>查看成绩</strong>
+          </Link>
+        ) : null}
 
         <div className="section-header weekly-list-header">
           <div>
@@ -154,7 +159,7 @@ export default function WeeklyPage() {
             <span className="eyebrow">参与周赛</span>
             <h2>参赛、积分与奖品</h2>
             <p>
-              参加周赛即可领取积分，兑换奖品。周赛规则及奖品设置可扫描下方二维码，关注辽宁魔方俱乐部公众号，点击“周赛”了解详情。
+              参加周赛即可领取积分，兑换奖品。周赛规则及奖品设置可扫描下方二维码，关注辽宁魔方俱乐部公众号，点击"周赛"了解详情。
             </p>
           </div>
           <div className="qr-placeholder" aria-label="辽宁魔方俱乐部公众号二维码待上传">

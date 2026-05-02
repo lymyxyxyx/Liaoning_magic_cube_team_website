@@ -2,11 +2,10 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 import { PageHero } from "@/components/page-hero";
-import { getSingleBest, getWeeklyMeetBySlug, weeklyMeets, type WeeklyEvent } from "@/lib/weekly";
+import { getSingleBest, type WeeklyEvent } from "@/lib/weekly";
+import { getWeeklyMeetBySlug } from "@/lib/weekly-db";
 
-export function generateStaticParams() {
-  return weeklyMeets.map((meet) => ({ slug: meet.slug }));
-}
+export const dynamic = "force-dynamic";
 
 function formatAttempt(value: number | "DNF" | null) {
   if (value === null) {
@@ -16,8 +15,8 @@ function formatAttempt(value: number | "DNF" | null) {
   return typeof value === "number" ? value.toFixed(2).replace(/\.?0+$/, "") : value;
 }
 
-export default function WeeklyDetailPage({ params }: { params: { slug: string } }) {
-  const meet = getWeeklyMeetBySlug(params.slug);
+export default async function WeeklyDetailPage({ params }: { params: { slug: string } }) {
+  const meet = await getWeeklyMeetBySlug(params.slug);
 
   if (!meet) {
     notFound();
@@ -62,11 +61,11 @@ export default function WeeklyDetailPage({ params }: { params: { slug: string } 
             <span>参赛选手</span>
           </div>
           <div className="stat">
-            <strong>{formatAttempt(getSingleBest(meet.results[0].attempts))}</strong>
+            <strong>{formatAttempt(meet.results[0] ? getSingleBest(meet.results[0].attempts) : null)}</strong>
             <span>冠军本周最快</span>
           </div>
           <div className="stat">
-            <strong>{meet.results[0].average.toFixed(2)}</strong>
+            <strong>{meet.results[0] ? meet.results[0].average.toFixed(2) : "-"}</strong>
             <span>冠军平均</span>
           </div>
           <div className="stat">
