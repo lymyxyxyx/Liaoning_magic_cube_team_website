@@ -2844,6 +2844,134 @@ textarea {
   content: "";
 }
 
+/* ── Commercial Teams ── */
+
+.commercial-teams-list {
+  display: flex;
+  flex-direction: column;
+  gap: 56px;
+}
+
+.commercial-team-block {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.commercial-team-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.commercial-team-header h2 {
+  margin: 4px 0 6px;
+  font-size: 22px;
+}
+
+.commercial-team-stats {
+  margin: 0;
+  font-size: 14px;
+  color: var(--muted);
+}
+
+.wca-count {
+  color: var(--accent, #2563eb);
+}
+
+.commercial-team-description {
+  margin: 0;
+  padding: 16px 20px;
+  background: var(--soft);
+  border-left: 3px solid var(--border);
+  border-radius: 0 8px 8px 0;
+  font-size: 14px;
+  line-height: 1.75;
+  color: var(--muted);
+}
+
+.commercial-member-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 10px;
+}
+
+.commercial-member-link {
+  display: block;
+  text-decoration: none;
+  color: inherit;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+a.commercial-member-link:hover {
+  border-color: var(--accent, #2563eb);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent, #2563eb) 12%, transparent);
+}
+
+.commercial-member-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 14px;
+}
+
+.commercial-member-main {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.commercial-member-main strong {
+  font-size: 15px;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.commercial-member-meta {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.wca-id-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+  padding: 3px 7px;
+  border-radius: 5px;
+  font-size: 11px;
+  font-weight: 600;
+  font-family: var(--font-mono, monospace);
+  background: color-mix(in srgb, var(--accent, #2563eb) 10%, transparent);
+  color: var(--accent, #2563eb);
+  white-space: nowrap;
+}
+
+.wca-id-badge--pending {
+  background: var(--soft);
+  color: var(--muted);
+  font-family: inherit;
+  font-weight: 500;
+}
+
+.button--ghost {
+  background: transparent;
+  border: 1px solid var(--border);
+  font-size: 13px;
+  white-space: nowrap;
+}
+
+.button--ghost:hover {
+  background: var(--soft);
+}
+
 @media (max-width: 920px) {
   .ranking-filter-card {
     grid-template-columns: repeat(2, minmax(0, 1fr));

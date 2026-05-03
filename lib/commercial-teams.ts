@@ -3,6 +3,9 @@ import { Person } from "@/lib/data";
 export type CommercialTeam = {
   id: string;
   name: string;
+  sponsor?: string;
+  brandUrl?: string;
+  description?: string;
   members: Person[];
 };
 
@@ -18,7 +21,9 @@ export const commercialTeamMembers: Person[] = [
     gender: "男",
     bio: "GAN战队成员",
     visible: true,
-    mainEvent: "三阶速拧"
+    mainEvent: "三阶速拧",
+    wcaId: "2017HANY01",
+    wcaUrl: "https://www.worldcubeassociation.org/persons/2017HANY01"
   },
   {
     id: "ct-li-zhao-kun",
@@ -30,7 +35,9 @@ export const commercialTeamMembers: Person[] = [
     gender: "男",
     bio: "GAN战队成员",
     visible: true,
-    mainEvent: "三阶速拧"
+    mainEvent: "三阶速拧",
+    wcaId: "2024LIZH03",
+    wcaUrl: "https://www.worldcubeassociation.org/persons/2024LIZH03"
   },
   {
     id: "ct-fu-he-yu",
@@ -42,7 +49,9 @@ export const commercialTeamMembers: Person[] = [
     gender: "女",
     bio: "GAN战队成员",
     visible: true,
-    mainEvent: "三阶速拧"
+    mainEvent: "三阶速拧",
+    wcaId: "2019FUHE01",
+    wcaUrl: "https://www.worldcubeassociation.org/persons/2019FUHE01"
   },
   {
     id: "ct-dong-yi-ze",
@@ -54,7 +63,9 @@ export const commercialTeamMembers: Person[] = [
     gender: "男",
     bio: "GAN战队成员",
     visible: true,
-    mainEvent: "三阶速拧"
+    mainEvent: "三阶速拧",
+    wcaId: "2023DONG20",
+    wcaUrl: "https://www.worldcubeassociation.org/persons/2023DONG20"
   },
   {
     id: "ct-guo-kai-xi",
@@ -66,7 +77,9 @@ export const commercialTeamMembers: Person[] = [
     gender: "女",
     bio: "GAN战队成员",
     visible: true,
-    mainEvent: "三阶速拧"
+    mainEvent: "三阶速拧",
+    wcaId: "2023GUOK01",
+    wcaUrl: "https://www.worldcubeassociation.org/persons/2023GUOK01"
   },
   {
     id: "ct-huang-hui-ning",
@@ -78,7 +91,9 @@ export const commercialTeamMembers: Person[] = [
     gender: "男",
     bio: "GAN战队成员",
     visible: true,
-    mainEvent: "三阶速拧"
+    mainEvent: "三阶速拧",
+    wcaId: "2019HUAH03",
+    wcaUrl: "https://www.worldcubeassociation.org/persons/2019HUAH03"
   },
 
   // GURUS（爆速社）
@@ -280,7 +295,9 @@ export const commercialTeamMembers: Person[] = [
     gender: "女",
     bio: "魔域战队成员，魔域文化",
     visible: true,
-    mainEvent: "三阶速拧"
+    mainEvent: "三阶速拧",
+    wcaId: "2024LIZI01",
+    wcaUrl: "https://www.worldcubeassociation.org/persons/2024LIZI01"
   },
 
   // 梦之队
@@ -378,31 +395,53 @@ export const commercialTeams: CommercialTeam[] = [
   {
     id: "gan-team",
     name: "GAN战队",
-    members: commercialTeamMembers.filter(m => ["韩邺臻", "李昭昆", "付荷语", "董一泽", "郭铠希", "黄徽宁"].includes(m.name))
+    sponsor: "GANCUBE",
+    brandUrl: "https://www.gancube.com",
+    description: "GANCUBE 于 2017 年成立 GAN Gurus 战队，同年签约 Feliks Zemdegs 为全球品牌代言人。随着越来越多的国际顶尖选手加入，战队持续成为魔方界重要的培育力量，目前旗下拥有 GAN Gurus 和 Speed ACE（宇宙爆速社）两支战队。GANCUBE 长期致力于通过赞助赛事推动魔方运动发展，赞助版图覆盖全球 100 余座城市，包括巴黎世锦赛、红牛世锦赛等里程碑赛事，以及多站全国魔方公开赛、WCA 广东公开赛和 WCA 北京公开赛等国内重要赛事。",
+    members: commercialTeamMembers.filter(m =>
+      ["韩邺臻", "李昭昆", "付荷语", "董一泽", "郭铠希", "黄徽宁"].includes(m.name)
+    )
   },
   {
     id: "gurus-bao-su-she",
     name: "GURUS（爆速社）",
-    members: commercialTeamMembers.filter(m => ["高云淼", "郑名竹", "张涵涤", "徐雅芊", "夏紫晨", "李祐萱", "韩沐遥", "王一桐"].includes(m.name))
+    sponsor: "GANCUBE",
+    brandUrl: "https://www.gancube.com",
+    description: "Speed ACE / 宇宙爆速社是 GANCUBE 旗下面向青少年选手的战队，专注发掘和培养新生代魔方竞技人才。辽宁队员长期活跃于省内外赛事，多人在辽宁省公开赛中取得优异成绩。",
+    members: commercialTeamMembers.filter(m =>
+      ["高云淼", "郑名竹", "张涵涤", "徐雅芊", "夏紫晨", "李祐萱", "韩沐遥", "王一桐"].includes(m.name)
+    )
   },
   {
     id: "hua-xia-team",
-    name: "华夏",
-    members: commercialTeamMembers.filter(m => ["孟思竣", "王冠泽", "金奕霖", "王梓灏", "李雨桐", "朱斐然", "王浩泽"].includes(m.name))
+    name: "华夏战队",
+    sponsor: "华夏魔方",
+    description: "华夏战队是国内知名魔方品牌华夏魔方旗下竞技团队，辽宁成员覆盖多个年龄组，在省级赛事中有稳定表现。",
+    members: commercialTeamMembers.filter(m =>
+      ["孟思竣", "王冠泽", "金奕霖", "王梓灏", "李雨桐", "朱斐然", "王浩泽"].includes(m.name)
+    )
   },
   {
     id: "mo-yu-team",
     name: "魔域战队",
+    sponsor: "魔域文化",
+    description: "魔域文化旗下战队，专注三阶速拧及多项目全能培训，辽宁成员积极参与省内各级别赛事。",
     members: commercialTeamMembers.filter(m => ["李子贞"].includes(m.name))
   },
   {
     id: "meng-zhi-team",
     name: "梦之队",
-    members: commercialTeamMembers.filter(m => ["李易庭洋", "蒋铭朗", "韩雨轩", "李靖豪", "王澍"].includes(m.name))
+    description: "梦之队汇聚辽宁省内外多城市选手，成员来自沈阳、葫芦岛等地，是辽宁魔方战队跨地区合作的重要组成部分。",
+    members: commercialTeamMembers.filter(m =>
+      ["李易庭洋", "蒋铭朗", "韩雨轩", "李靖豪", "王澍"].includes(m.name)
+    )
   },
   {
     id: "future-stars-team",
     name: "未来星之队",
+    sponsor: "奇艺魔方格",
+    brandUrl: "https://www.qiyi.com",
+    description: "奇艺魔方格旗下青少年战队，致力于通过专业器材支持和系统训练帮助年轻选手成长，辽宁队员在省内青少年赛事中表现积极。",
     members: commercialTeamMembers.filter(m => ["孙琰茹", "吴明轩"].includes(m.name))
   }
 ];
