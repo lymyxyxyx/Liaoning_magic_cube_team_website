@@ -28,7 +28,7 @@ function formatCentiseconds(value: number) {
   const centiseconds = value % 6000;
   const seconds = centiseconds / 100;
   if (minutes > 0) return `${minutes}:${seconds.toFixed(2).padStart(5, "0")}`;
-  return seconds.toFixed(2).replace(/\.?0+$/, "");
+  return seconds.toFixed(2);
 }
 
 function formatResult(eventId: string, value: number) {

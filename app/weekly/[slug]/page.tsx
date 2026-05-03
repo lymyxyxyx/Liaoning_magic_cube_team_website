@@ -12,7 +12,7 @@ function formatAttempt(value: number | "DNF" | null) {
     return "-";
   }
 
-  return typeof value === "number" ? value.toFixed(2).replace(/\.?0+$/, "") : value;
+  return typeof value === "number" ? value.toFixed(2) : value;
 }
 
 export default async function WeeklyDetailPage({ params }: { params: { slug: string } }) {
