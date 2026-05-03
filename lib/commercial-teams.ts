@@ -14,7 +14,7 @@ export const commercialTeamMembers: Person[] = [
   {
     id: "ct-han-ye-zhen",
     slug: "han-ye-zhen",
-    name: "韩邺臻",
+    name: "韩业臻",
     avatar: "/visuals/avatar-default.svg",
     roles: ["运动员"],
     city: "沈阳",
@@ -105,9 +105,11 @@ export const commercialTeamMembers: Person[] = [
     roles: ["运动员"],
     city: "沈阳",
     gender: "女",
-    bio: "爆速社成员，GURUS团队",
+    bio: "宇宙爆速社领航队成员",
     visible: true,
-    mainEvent: "三阶速拧"
+    mainEvent: "三阶速拧",
+    wcaId: "2019GAOY03",
+    wcaUrl: "https://www.worldcubeassociation.org/persons/2019GAOY03"
   },
   {
     id: "ct-zheng-ming-zhu",
@@ -117,9 +119,11 @@ export const commercialTeamMembers: Person[] = [
     roles: ["运动员"],
     city: "沈阳",
     gender: "女",
-    bio: "爆速社成员，GURUS团队",
+    bio: "宇宙爆速社领航队成员",
     visible: true,
-    mainEvent: "三阶速拧"
+    mainEvent: "三阶速拧",
+    wcaId: "2024ZHEN03",
+    wcaUrl: "https://www.worldcubeassociation.org/persons/2024ZHEN03"
   },
   {
     id: "ct-zhang-han-di",
@@ -129,9 +133,11 @@ export const commercialTeamMembers: Person[] = [
     roles: ["运动员"],
     city: "沈阳",
     gender: "女",
-    bio: "爆速社成员，GURUS团队",
+    bio: "宇宙爆速社领航队成员",
     visible: true,
-    mainEvent: "三阶速拧"
+    mainEvent: "三阶速拧",
+    wcaId: "2023ZHAN76",
+    wcaUrl: "https://www.worldcubeassociation.org/persons/2023ZHAN76"
   },
   {
     id: "ct-xu-ya-qian",
@@ -141,9 +147,11 @@ export const commercialTeamMembers: Person[] = [
     roles: ["运动员"],
     city: "沈阳",
     gender: "女",
-    bio: "爆速社成员，GURUS团队",
+    bio: "宇宙爆速社领航队成员",
     visible: true,
-    mainEvent: "三阶速拧"
+    mainEvent: "三阶速拧",
+    wcaId: "2025XUYA01",
+    wcaUrl: "https://www.worldcubeassociation.org/persons/2025XUYA01"
   },
   {
     id: "ct-xia-zi-chen",
@@ -181,9 +189,11 @@ export const commercialTeamMembers: Person[] = [
     roles: ["运动员"],
     city: "沈阳",
     gender: "女",
-    bio: "爆速社成员，GURUS团队",
+    bio: "宇宙爆速社领航队成员",
     visible: true,
-    mainEvent: "三阶速拧"
+    mainEvent: "三阶速拧",
+    wcaId: "2024HANM01",
+    wcaUrl: "https://www.worldcubeassociation.org/persons/2024HANM01"
   },
   {
     id: "ct-wang-yi-tong",
@@ -193,12 +203,12 @@ export const commercialTeamMembers: Person[] = [
     roles: ["运动员"],
     city: "沈阳",
     gender: "女",
-    bio: "爆速社成员，GURUS团队",
+    bio: "",
     visible: true,
     mainEvent: "三阶速拧"
   },
 
-  // 华夏
+  // 宇宙爆速社·启航队
   {
     id: "ct-meng-si-jun",
     slug: "meng-si-jun",
@@ -207,7 +217,7 @@ export const commercialTeamMembers: Person[] = [
     roles: ["运动员"],
     city: "沈阳",
     gender: "男",
-    bio: "华夏战队成员",
+    bio: "",
     visible: true,
     mainEvent: "三阶速拧"
   },
@@ -219,7 +229,7 @@ export const commercialTeamMembers: Person[] = [
     roles: ["运动员"],
     city: "沈阳",
     gender: "男",
-    bio: "华夏战队成员",
+    bio: "",
     visible: true,
     mainEvent: "三阶速拧"
   },
@@ -231,7 +241,7 @@ export const commercialTeamMembers: Person[] = [
     roles: ["运动员"],
     city: "沈阳",
     gender: "男",
-    bio: "华夏战队成员",
+    bio: "",
     visible: true,
     mainEvent: "三阶速拧"
   },
@@ -243,7 +253,7 @@ export const commercialTeamMembers: Person[] = [
     roles: ["运动员"],
     city: "沈阳",
     gender: "男",
-    bio: "华夏战队成员",
+    bio: "",
     visible: true,
     mainEvent: "三阶速拧"
   },
@@ -255,7 +265,7 @@ export const commercialTeamMembers: Person[] = [
     roles: ["运动员"],
     city: "沈阳",
     gender: "女",
-    bio: "华夏战队成员",
+    bio: "",
     visible: true,
     mainEvent: "三阶速拧"
   },
@@ -267,7 +277,7 @@ export const commercialTeamMembers: Person[] = [
     roles: ["运动员"],
     city: "沈阳",
     gender: "男",
-    bio: "华夏战队成员",
+    bio: "",
     visible: true,
     mainEvent: "三阶速拧"
   },
@@ -279,7 +289,7 @@ export const commercialTeamMembers: Person[] = [
     roles: ["运动员"],
     city: "沈阳",
     gender: "男",
-    bio: "华夏战队成员",
+    bio: "",
     visible: true,
     mainEvent: "三阶速拧"
   },
@@ -399,7 +409,7 @@ export const commercialTeams: CommercialTeam[] = [
     brandUrl: "https://www.gancube.com",
     description: "GAN Gurus 是 GANCUBE 旗下顶级竞技战队，2017 年成立，同年签约 Feliks Zemdegs 为全球代言人。战队汇聚国内外顶尖选手，多人持有世界、亚洲纪录，是 GANCUBE 竞技版图的核心力量。",
     members: commercialTeamMembers.filter(m =>
-      ["韩邺臻", "李昭昆", "付荷语", "董一泽", "郭铠希", "黄徽宁"].includes(m.name)
+      ["韩业臻", "李昭昆", "付荷语", "董一泽", "郭铠希", "黄徽宁"].includes(m.name)
     )
   },
   {
@@ -419,16 +429,7 @@ export const commercialTeams: CommercialTeam[] = [
     brandUrl: "https://www.gancube.com",
     description: "启航队是宇宙爆速社面向新生代选手的培养梯队，成员持续更新中。",
     members: commercialTeamMembers.filter(m =>
-      ([] as string[]).includes(m.name)
-    )
-  },
-  {
-    id: "hua-xia-team",
-    name: "华夏战队",
-    sponsor: "华夏魔方",
-    description: "华夏战队是国内知名魔方品牌华夏魔方旗下竞技团队，辽宁成员覆盖多个年龄组，在省级赛事中有稳定表现。",
-    members: commercialTeamMembers.filter(m =>
-      ["孟思竣", "王冠泽", "金奕霖", "王梓灏", "李雨桐", "朱斐然", "王浩泽"].includes(m.name)
+      ["王一桐", "孟思竣", "王冠泽", "金奕霖", "王梓灏", "李雨桐", "朱斐然", "王浩泽"].includes(m.name)
     )
   },
   {
