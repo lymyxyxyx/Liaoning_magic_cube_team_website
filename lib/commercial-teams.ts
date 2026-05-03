@@ -393,23 +393,33 @@ export const commercialTeamMembers: Person[] = [
 
 export const commercialTeams: CommercialTeam[] = [
   {
-    id: "gan-team",
-    name: "GAN战队",
+    id: "gan-gurus",
+    name: "GAN Gurus",
     sponsor: "GANCUBE",
     brandUrl: "https://www.gancube.com",
-    description: "GANCUBE 于 2017 年成立 GAN Gurus 战队，同年签约 Feliks Zemdegs 为全球品牌代言人。随着越来越多的国际顶尖选手加入，战队持续成为魔方界重要的培育力量，目前旗下拥有 GAN Gurus 和 Speed ACE（宇宙爆速社）两支战队。GANCUBE 长期致力于通过赞助赛事推动魔方运动发展，赞助版图覆盖全球 100 余座城市，包括巴黎世锦赛、红牛世锦赛等里程碑赛事，以及多站全国魔方公开赛、WCA 广东公开赛和 WCA 北京公开赛等国内重要赛事。",
+    description: "GAN Gurus 是 GANCUBE 旗下顶级竞技战队，2017 年成立，同年签约 Feliks Zemdegs 为全球代言人。战队汇聚国内外顶尖选手，多人持有世界、亚洲纪录，是 GANCUBE 竞技版图的核心力量。",
     members: commercialTeamMembers.filter(m =>
       ["韩邺臻", "李昭昆", "付荷语", "董一泽", "郭铠希", "黄徽宁"].includes(m.name)
     )
   },
   {
-    id: "gurus-bao-su-she",
-    name: "GURUS（爆速社）",
-    sponsor: "GANCUBE",
+    id: "speed-ace-linghang",
+    name: "宇宙爆速社·领航队",
+    sponsor: "GANCUBE · Speed ACE",
     brandUrl: "https://www.gancube.com",
-    description: "Speed ACE / 宇宙爆速社是 GANCUBE 旗下面向青少年选手的战队，专注发掘和培养新生代魔方竞技人才。辽宁队员长期活跃于省内外赛事，多人在辽宁省公开赛中取得优异成绩。",
+    description: "Speed ACE（宇宙爆速社）是 GANCUBE 旗下面向青少年的梯队体系，分为领航队和启航队。领航队汇聚省内成绩突出的青少年选手，多人已在 WCA 赛事中取得优异名次。",
     members: commercialTeamMembers.filter(m =>
-      ["高云淼", "郑名竹", "张涵涤", "徐雅芊", "夏紫晨", "李祐萱", "韩沐遥", "王一桐"].includes(m.name)
+      ["高云淼", "郑名竹", "张涵涤", "夏紫晨", "徐雅芊", "李祐萱", "韩沐遥"].includes(m.name)
+    )
+  },
+  {
+    id: "speed-ace-qihang",
+    name: "宇宙爆速社·启航队",
+    sponsor: "GANCUBE · Speed ACE",
+    brandUrl: "https://www.gancube.com",
+    description: "启航队是宇宙爆速社面向新生代选手的培养梯队，成员持续更新中。",
+    members: commercialTeamMembers.filter(m =>
+      ([] as string[]).includes(m.name)
     )
   },
   {
