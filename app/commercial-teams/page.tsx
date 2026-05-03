@@ -23,20 +23,24 @@ async function getWcaNames(wcaIds: string[]): Promise<Map<string, string>> {
 function MemberCard({ member, wcaName }: { member: Person; wcaName?: string }) {
   const content = (
     <div className="commercial-member-card">
-      <div className="commercial-member-main">
-        <strong>{member.name}</strong>
-        <span className="commercial-member-meta">
-          {member.gender} · {member.city}
-        </span>
+      <div className="commercial-member-top">
+        <div className="commercial-member-main">
+          <strong>{member.name}</strong>
+          <span className="commercial-member-meta">
+            {member.gender} · {member.city}
+            {member.mainEvent ? ` · ${member.mainEvent}` : ""}
+          </span>
+        </div>
+        {member.wcaId ? (
+          <span className="wca-id-badge" title={wcaName}>
+            <ExternalLink size={11} />
+            {member.wcaId}
+          </span>
+        ) : (
+          <span className="wca-id-badge wca-id-badge--pending">待关联</span>
+        )}
       </div>
-      {member.wcaId ? (
-        <span className="wca-id-badge" title={wcaName}>
-          <ExternalLink size={11} />
-          {member.wcaId}
-        </span>
-      ) : (
-        <span className="wca-id-badge wca-id-badge--pending">待关联</span>
-      )}
+      {member.bio && <p className="commercial-member-bio">{member.bio}</p>}
     </div>
   );
 
