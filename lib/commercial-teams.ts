@@ -307,6 +307,20 @@ export const commercialTeamMembers: Person[] = [
     visible: true,
     mainEvent: "三阶速拧"
   },
+  {
+    id: "ct-hua-xia",
+    slug: "hua-xia",
+    name: "华夏",
+    avatar: "/visuals/avatar-default.svg",
+    roles: ["运动员"],
+    city: "沈阳",
+    gender: "女",
+    bio: "",
+    visible: true,
+    mainEvent: "三阶速拧",
+    wcaId: "2024HUAX01",
+    wcaUrl: "https://www.worldcubeassociation.org/persons/2024HUAX01"
+  },
 
   // 魔域战队
   {
@@ -443,7 +457,7 @@ export const commercialTeams: CommercialTeam[] = [
     brandUrl: "https://www.gancube.com",
     description: "启航队是宇宙爆速社面向新生代选手的培养梯队，成员持续更新中。",
     members: commercialTeamMembers.filter(m =>
-      ["王一桐", "孟思竣", "王冠泽", "金奕霖", "王梓灏", "李雨桐", "朱斐然", "王皓泽"].includes(m.name)
+      ["王一桐", "孟思竣", "王冠泽", "金奕霖", "王梓灏", "李雨桐", "朱斐然", "王皓泽", "华夏"].includes(m.name)
     )
   },
   {
