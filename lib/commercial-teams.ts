@@ -205,7 +205,9 @@ export const commercialTeamMembers: Person[] = [
     gender: "女",
     bio: "",
     visible: true,
-    mainEvent: "三阶速拧"
+    mainEvent: "三阶速拧",
+    wcaId: "2024WANG59",
+    wcaUrl: "https://www.worldcubeassociation.org/persons/2024WANG59"
   },
 
   // 宇宙爆速社·启航队
@@ -219,7 +221,9 @@ export const commercialTeamMembers: Person[] = [
     gender: "男",
     bio: "",
     visible: true,
-    mainEvent: "三阶速拧"
+    mainEvent: "三阶速拧",
+    wcaId: "2023MENG07",
+    wcaUrl: "https://www.worldcubeassociation.org/persons/2023MENG07"
   },
   {
     id: "ct-wang-guan-ze",
@@ -231,7 +235,9 @@ export const commercialTeamMembers: Person[] = [
     gender: "男",
     bio: "",
     visible: true,
-    mainEvent: "三阶速拧"
+    mainEvent: "三阶速拧",
+    wcaId: "2024WANG11",
+    wcaUrl: "https://www.worldcubeassociation.org/persons/2024WANG11"
   },
   {
     id: "ct-jin-yi-lin",
@@ -243,7 +249,9 @@ export const commercialTeamMembers: Person[] = [
     gender: "男",
     bio: "",
     visible: true,
-    mainEvent: "三阶速拧"
+    mainEvent: "三阶速拧",
+    wcaId: "2023JINY04",
+    wcaUrl: "https://www.worldcubeassociation.org/persons/2023JINY04"
   },
   {
     id: "ct-wang-zi-hao",
@@ -255,7 +263,9 @@ export const commercialTeamMembers: Person[] = [
     gender: "男",
     bio: "",
     visible: true,
-    mainEvent: "三阶速拧"
+    mainEvent: "三阶速拧",
+    wcaId: "2024WANG65",
+    wcaUrl: "https://www.worldcubeassociation.org/persons/2024WANG65"
   },
   {
     id: "ct-li-yu-tong",
@@ -267,7 +277,9 @@ export const commercialTeamMembers: Person[] = [
     gender: "女",
     bio: "",
     visible: true,
-    mainEvent: "三阶速拧"
+    mainEvent: "三阶速拧",
+    wcaId: "2024LIYU06",
+    wcaUrl: "https://www.worldcubeassociation.org/persons/2024LIYU06"
   },
   {
     id: "ct-zhu-fei-ran",
@@ -279,12 +291,14 @@ export const commercialTeamMembers: Person[] = [
     gender: "男",
     bio: "",
     visible: true,
-    mainEvent: "三阶速拧"
+    mainEvent: "三阶速拧",
+    wcaId: "2023ZHUF02",
+    wcaUrl: "https://www.worldcubeassociation.org/persons/2023ZHUF02"
   },
   {
     id: "ct-wang-hao-ze",
     slug: "wang-hao-ze",
-    name: "王浩泽",
+    name: "王皓泽",
     avatar: "/visuals/avatar-default.svg",
     roles: ["运动员"],
     city: "沈阳",
@@ -429,7 +443,7 @@ export const commercialTeams: CommercialTeam[] = [
     brandUrl: "https://www.gancube.com",
     description: "启航队是宇宙爆速社面向新生代选手的培养梯队，成员持续更新中。",
     members: commercialTeamMembers.filter(m =>
-      ["王一桐", "孟思竣", "王冠泽", "金奕霖", "王梓灏", "李雨桐", "朱斐然", "王浩泽"].includes(m.name)
+      ["王一桐", "孟思竣", "王冠泽", "金奕霖", "王梓灏", "李雨桐", "朱斐然", "王皓泽"].includes(m.name)
     )
   },
   {
