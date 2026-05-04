@@ -1,3 +1,4 @@
+import { promises as fs } from "node:fs";
 import { getPostgresPool } from "@/lib/postgres";
 
 export type AccountEntryType = "income" | "expense";
@@ -32,6 +33,7 @@ export type AccountBookPayload = {
 
 const defaultCompetitionName = "第32届比赛";
 const defaultCreatedBy = "刘一鸣";
+const legacyDataPath = `${process.cwd()}/data/account-books.json`;
 
 export async function readAccountBook(): Promise<AccountBookPayload> {
   const pool = getPostgresPool();
@@ -59,6 +61,11 @@ export async function readAccountBook(): Promise<AccountBookPayload> {
     }>("SELECT * FROM account_history ORDER BY created_at DESC LIMIT 100")
   ]);
 
+  if (entriesResult.rowCount === 0 && historyResult.rowCount === 0) {
+    const imported = await importLegacyAccountBook(pool);
+    if (imported) return readAccountBook();
+  }
+
   return {
     entries: entriesResult.rows.map((row) => ({
       id: row.id,
@@ -82,6 +89,76 @@ export async function readAccountBook(): Promise<AccountBookPayload> {
       totalExpense: Number(row.total_expense)
     }))
   };
+}
+
+async function importLegacyAccountBook(pool: ReturnType<typeof getPostgresPool>) {
+  const legacy = await readLegacyAccountBook();
+  if (!legacy || (legacy.entries.length === 0 && legacy.history.length === 0)) return false;
+
+  const client = await pool.connect();
+  try {
+    await client.query("BEGIN");
+
+    for (const entry of legacy.entries) {
+      await client.query(
+        `INSERT INTO account_entries
+          (id, competition_name, type, category, amount, date, payer_or_payee, note, created_at, created_by)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)
+         ON CONFLICT (id) DO NOTHING`,
+        [
+          entry.id,
+          entry.competitionName,
+          entry.type,
+          entry.category,
+          entry.amount,
+          entry.date,
+          entry.payerOrPayee,
+          entry.note,
+          entry.createdAt,
+          entry.createdBy
+        ]
+      );
+    }
+
+    const historyItems =
+      legacy.history.length > 0 ? legacy.history : [createHistoryItem(legacy.entries, "从旧账本文件自动导入")];
+    for (const item of historyItems) {
+      await client.query(
+        `INSERT INTO account_history
+          (id, action, created_at, created_by, entry_count, total_income, total_expense)
+         VALUES ($1,$2,$3,$4,$5,$6,$7)
+         ON CONFLICT (id) DO NOTHING`,
+        [item.id, item.action, item.createdAt, item.createdBy, item.entryCount, item.totalIncome, item.totalExpense]
+      );
+    }
+
+    await client.query("COMMIT");
+    return true;
+  } catch (err) {
+    await client.query("ROLLBACK");
+    throw err;
+  } finally {
+    client.release();
+  }
+}
+
+async function readLegacyAccountBook(): Promise<AccountBookPayload | null> {
+  try {
+    const payload = await fs.readFile(legacyDataPath, "utf-8");
+    const parsed = JSON.parse(payload) as Partial<AccountBookPayload> | Partial<AccountEntry>[];
+    if (Array.isArray(parsed)) {
+      return {
+        entries: parsed.map(normalizeEntry).filter(Boolean) as AccountEntry[],
+        history: []
+      };
+    }
+    return {
+      entries: (parsed.entries || []).map(normalizeEntry).filter(Boolean) as AccountEntry[],
+      history: (parsed.history || []).map(normalizeHistoryItem).filter(Boolean) as AccountHistoryItem[]
+    };
+  } catch {
+    return null;
+  }
 }
 
 export async function writeAccountBook(entries: Partial<AccountEntry>[], action = "保存账本") {
@@ -166,6 +243,22 @@ function normalizeEntry(entry: Partial<AccountEntry>): AccountEntry | null {
       typeof entry.createdAt === "string" && entry.createdAt.trim() ? entry.createdAt.trim() : new Date().toISOString(),
     createdBy:
       typeof entry.createdBy === "string" && entry.createdBy.trim() ? entry.createdBy.trim() : defaultCreatedBy
+  };
+}
+
+function normalizeHistoryItem(item: Partial<AccountHistoryItem>): AccountHistoryItem | null {
+  const entryCount = Number(item.entryCount);
+  const totalIncome = Number(item.totalIncome);
+  const totalExpense = Number(item.totalExpense);
+  if (!item.createdAt || !item.action) return null;
+  return {
+    id: String(item.id || createEntryId()).trim(),
+    action: String(item.action).trim(),
+    createdAt: String(item.createdAt).trim(),
+    createdBy: String(item.createdBy || defaultCreatedBy).trim() || defaultCreatedBy,
+    entryCount: Number.isFinite(entryCount) ? entryCount : 0,
+    totalIncome: Number.isFinite(totalIncome) ? totalIncome : 0,
+    totalExpense: Number.isFinite(totalExpense) ? totalExpense : 0
   };
 }
 
