@@ -8,6 +8,10 @@ function hasAdminSession(request: NextRequest) {
   return request.cookies.get(adminCookieName)?.value === adminCookieValue;
 }
 
+function isSecureRequest(request: NextRequest) {
+  return request.nextUrl.protocol === "https:" || request.headers.get("x-forwarded-proto") === "https";
+}
+
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
   const host = request.headers.get("host") || "";
@@ -26,7 +30,7 @@ export function middleware(request: NextRequest) {
     response.cookies.set(adminNextCookieName, `${pathname}${request.nextUrl.search}`, {
       httpOnly: true,
       sameSite: "lax",
-      secure: process.env.NODE_ENV === "production",
+      secure: isSecureRequest(request),
       maxAge: 60 * 5,
       path: "/"
     });

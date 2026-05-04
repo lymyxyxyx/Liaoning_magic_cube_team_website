@@ -4,6 +4,10 @@ const adminCookieName = "liaoning_admin_session";
 const adminCookieValue = "authenticated";
 const adminNextCookieName = "liaoning_admin_next";
 
+function isSecureRequest(request: NextRequest) {
+  return request.nextUrl.protocol === "https:" || request.headers.get("x-forwarded-proto") === "https";
+}
+
 export async function POST(request: NextRequest) {
   const adminPassword = process.env.ADMIN_PASSWORD;
   if (!adminPassword) {
@@ -31,7 +35,7 @@ export async function POST(request: NextRequest) {
   response.cookies.set(adminCookieName, adminCookieValue, {
     httpOnly: true,
     sameSite: "lax",
-    secure: process.env.NODE_ENV === "production",
+    secure: isSecureRequest(request),
     maxAge: 60 * 60 * 24 * 7,
     path: "/"
   });
