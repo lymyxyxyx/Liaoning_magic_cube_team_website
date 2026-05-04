@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { ChevronLeft, ChevronRight, Database, ExternalLink, Globe2 } from "lucide-react";
+import { CalendarClock, ChevronLeft, ChevronRight, Database, ExternalLink, Globe2 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { PageHero } from "@/components/page-hero";
 
@@ -52,6 +52,7 @@ function WcaFlag({ country }: { country: string }) {
 export function RankingsClient() {
   const [events, setEvents] = useState<MetadataOption[]>([]);
   const [countries, setCountries] = useState<MetadataOption[]>([]);
+  const [lastExportDate, setLastExportDate] = useState("");
   const [event, setEvent] = useState("333");
   const [country, setCountry] = useState("China");
   const [mode, setMode] = useState<RankingMode>("single");
@@ -69,6 +70,7 @@ export function RankingsClient() {
         if (cancelled) return;
         setEvents(payload.events || []);
         setCountries(payload.countries || []);
+        setLastExportDate(payload.lastExportDate || "");
       })
       .catch(() => {
         if (!cancelled) setError("无法读取 WCA 项目和国家列表。");
@@ -118,6 +120,7 @@ export function RankingsClient() {
   const rows = rankings?.rows || [];
   const firstRank = rows[0]?.rank || (page - 1) * 100 + 1;
   const lastRank = rows.length ? rows[rows.length - 1].rank : page * 100;
+  const updateDateLabel = formatWcaExportDate(lastExportDate);
 
   function updateFilter(next: Partial<{ event: string; country: string; mode: RankingMode; gender: Gender }>) {
     if (next.event) setEvent(next.event);
@@ -211,6 +214,12 @@ export function RankingsClient() {
               <span>PostgreSQL API</span>
               <Globe2 size={16} />
               <span>WCA ID 关联</span>
+              {updateDateLabel ? (
+                <>
+                  <CalendarClock size={16} />
+                  <span>数据更新 {updateDateLabel}</span>
+                </>
+              ) : null}
             </div>
           </div>
 
@@ -297,4 +306,16 @@ export function RankingsClient() {
       </section>
     </>
   );
+}
+
+function formatWcaExportDate(value: string) {
+  if (!value) return "";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return value;
+  return new Intl.DateTimeFormat("zh-CN", {
+    timeZone: "Asia/Shanghai",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit"
+  }).format(date);
 }

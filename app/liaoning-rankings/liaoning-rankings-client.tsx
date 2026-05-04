@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { ChevronLeft, ChevronRight, Database, ExternalLink, MapPin } from "lucide-react";
+import { CalendarClock, ChevronLeft, ChevronRight, Database, ExternalLink, MapPin } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { PageHero } from "@/components/page-hero";
 
@@ -62,6 +62,7 @@ function WcaFlag({ country }: { country: string }) {
 
 export function LiaoningRankingsClient() {
   const [events, setEvents] = useState<MetadataOption[]>([]);
+  const [lastExportDate, setLastExportDate] = useState("");
   const [event, setEvent] = useState("333");
   const [province, setProvince] = useState("辽宁");
   const [city, setCity] = useState("沈阳");
@@ -81,6 +82,7 @@ export function LiaoningRankingsClient() {
       .then((payload) => {
         if (cancelled) return;
         setEvents(payload.events || []);
+        setLastExportDate(payload.lastExportDate || "");
       })
       .catch(() => {
         if (!cancelled) setError("无法读取 WCA 项目列表。");
@@ -129,6 +131,7 @@ export function LiaoningRankingsClient() {
   const provinces = rankings?.provinces?.length ? rankings.provinces : ["辽宁"];
   const cities = rankings?.cities?.length ? rankings.cities : ["沈阳"];
   const areaLabel = scope === "province" ? `${province}省` : `${city}市`;
+  const updateDateLabel = formatWcaExportDate(lastExportDate);
 
   function updateFilter(next: Partial<{ event: string; province: string; city: string; scope: Scope; mode: RankingMode; gender: Gender }>) {
     if (next.event) setEvent(next.event);
@@ -282,6 +285,12 @@ export function LiaoningRankingsClient() {
               <span>本站省市归属</span>
               <Database size={16} />
               <span>WCA PostgreSQL</span>
+              {updateDateLabel ? (
+                <>
+                  <CalendarClock size={16} />
+                  <span>数据更新 {updateDateLabel}</span>
+                </>
+              ) : null}
             </div>
           </div>
 
@@ -366,4 +375,16 @@ export function LiaoningRankingsClient() {
       </section>
     </>
   );
+}
+
+function formatWcaExportDate(value: string) {
+  if (!value) return "";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return value;
+  return new Intl.DateTimeFormat("zh-CN", {
+    timeZone: "Asia/Shanghai",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit"
+  }).format(date);
 }
