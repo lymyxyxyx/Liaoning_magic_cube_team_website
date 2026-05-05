@@ -413,7 +413,9 @@ export const commercialTeamMembers: Person[] = [
     gender: "女",
     bio: "未来星之队成员，奇艺魔方格",
     visible: true,
-    mainEvent: "三阶速拧"
+    mainEvent: "三阶速拧",
+    wcaId: "2023SUNY03",
+    wcaUrl: "https://www.worldcubeassociation.org/persons/2023SUNY03"
   },
   {
     id: "ct-wu-ming-xuan",
@@ -425,7 +427,9 @@ export const commercialTeamMembers: Person[] = [
     gender: "男",
     bio: "未来星之队成员，奇艺魔方格",
     visible: true,
-    mainEvent: "三阶速拧"
+    mainEvent: "三阶速拧",
+    wcaId: "2018WUMI02",
+    wcaUrl: "https://www.worldcubeassociation.org/persons/2018WUMI02"
   }
 ];
 
