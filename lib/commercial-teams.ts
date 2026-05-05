@@ -338,7 +338,7 @@ export const commercialTeamMembers: Person[] = [
     wcaUrl: "https://www.worldcubeassociation.org/persons/2024LIZI01"
   },
 
-  // 梦之队
+  // 魔域梦之队
   {
     id: "ct-li-yi-ting-yang",
     slug: "li-yi-ting-yang",
@@ -347,7 +347,7 @@ export const commercialTeamMembers: Person[] = [
     roles: ["运动员"],
     city: "沈阳",
     gender: "男",
-    bio: "梦之队成员，参加多场省内外赛事",
+    bio: "魔域梦之队成员，参加多场省内外赛事",
     visible: true,
     mainEvent: "三阶速拧",
     wcaId: "2025LIYI02",
@@ -361,7 +361,7 @@ export const commercialTeamMembers: Person[] = [
     roles: ["运动员"],
     city: "葫芦岛",
     gender: "男",
-    bio: "梦之队成员（葫芦岛）",
+    bio: "魔域梦之队成员（葫芦岛）",
     visible: true,
     mainEvent: "三阶速拧"
   },
@@ -373,7 +373,7 @@ export const commercialTeamMembers: Person[] = [
     roles: ["运动员"],
     city: "葫芦岛",
     gender: "女",
-    bio: "梦之队成员（葫芦岛）",
+    bio: "魔域梦之队成员（葫芦岛）",
     visible: true,
     mainEvent: "三阶速拧"
   },
@@ -385,7 +385,7 @@ export const commercialTeamMembers: Person[] = [
     roles: ["运动员"],
     city: "葫芦岛",
     gender: "男",
-    bio: "梦之队成员（葫芦岛）",
+    bio: "魔域梦之队成员（葫芦岛）",
     visible: true,
     mainEvent: "三阶速拧"
   },
@@ -397,7 +397,7 @@ export const commercialTeamMembers: Person[] = [
     roles: ["运动员"],
     city: "葫芦岛",
     gender: "男",
-    bio: "梦之队成员（葫芦岛）",
+    bio: "魔域梦之队成员（葫芦岛）",
     visible: true,
     mainEvent: "三阶速拧"
   },
@@ -464,13 +464,16 @@ export const commercialTeams: CommercialTeam[] = [
     id: "mo-yu-team",
     name: "魔域战队",
     sponsor: "魔域文化",
-    description: "魔域文化旗下战队，专注三阶速拧及多项目全能培训，辽宁成员积极参与省内各级别赛事。",
+    brandUrl: "https://moyucube.com/en/",
+    description: "魔域文化专注于魔方设计、生产和销售，旗下品牌包括魅龙、魔域、傲速等。魔域战队由品牌选拔和资助的高水平选手组成，成员活跃在国内外各类赛事中，致力于速拧项目的全能发展，是推动中国及世界魔方技术提升的重要力量之一。",
     members: commercialTeamMembers.filter(m => ["李子贞"].includes(m.name))
   },
   {
     id: "meng-zhi-team",
-    name: "梦之队",
-    description: "梦之队汇聚辽宁省内外多城市选手，成员来自沈阳、葫芦岛等地，是辽宁魔方战队跨地区合作的重要组成部分。",
+    name: "魔域梦之队",
+    sponsor: "魔域文化 · 青少年梯队",
+    brandUrl: "https://moyucube.com/en/",
+    description: "魔域梦之队是魔域旗下青少年梯队，面向具有成长潜力的年轻选手提供训练、器材和赛事支持。辽宁成员来自沈阳、葫芦岛等地，是辽宁魔方战队跨地区合作和青少年培养的重要组成部分。",
     members: commercialTeamMembers.filter(m =>
       ["李易庭洋", "蒋铭朗", "韩雨轩", "李靖豪", "王澍"].includes(m.name)
     )
@@ -478,9 +481,9 @@ export const commercialTeams: CommercialTeam[] = [
   {
     id: "future-stars-team",
     name: "未来星之队",
-    sponsor: "奇艺魔方格",
-    brandUrl: "https://www.qiyi.com",
-    description: "奇艺魔方格旗下青少年战队，致力于通过专业器材支持和系统训练帮助年轻选手成长，辽宁队员在省内青少年赛事中表现积极。",
+    sponsor: "奇艺魔方格 · QiYi MoFangGe",
+    brandUrl: "https://www.qiyitoys.net/en/col.jsp?id=101",
+    description: "奇艺魔方格是知名魔方生产和品牌商，致力于魔方自主创新、文化推广和公益活动。未来星之队是奇艺旗下专注推广魔方运动、培养年轻选手的专业化团队，面向有潜力的青少年提供系统训练、顶尖器材支持和展示舞台，并代表奇艺品牌活跃于国内外赛事。",
     members: commercialTeamMembers.filter(m => ["孙琰茹", "吴明轩"].includes(m.name))
   }
 ];
