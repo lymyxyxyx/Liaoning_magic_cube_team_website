@@ -77,4 +77,25 @@ The importer also stores a schema version in:
 
 This lets the server re-import the same WCA `export_date` when the local selected table set changes, such as the V1.5 addition of `competitions` and `results`.
 
-No cron job is configured in V1.
+## Automatic Sync
+
+The ranking pages read from PostgreSQL, so they only show new WCA results after `npm run wca:update` has imported the latest export. To keep the server current, add a host-level cron job:
+
+```bash
+sudo crontab -e
+```
+
+Recommended schedule, once per day in the early morning:
+
+```cron
+30 4 * * * cd /opt/ln-cubing/app && /usr/bin/docker compose run --rm web npm run wca:update >> /opt/ln-cubing/logs/wca_cron.log 2>&1
+```
+
+The updater checks `/app/data/wca_state/last_export_date.txt` first. If WCA has not published a newer export, it exits without downloading the TSV package.
+
+After adding or changing ranking indexes in this project, run the updater once manually so PostgreSQL rebuilds the imported WCA tables with the latest index set:
+
+```bash
+cd /opt/ln-cubing/app
+sudo docker compose run --rm web npm run wca:update
+```

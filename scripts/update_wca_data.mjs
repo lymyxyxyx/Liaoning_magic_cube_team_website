@@ -233,8 +233,14 @@ async function addIndexes(client) {
   await client.query('CREATE INDEX IF NOT EXISTS "wca_competitions_id_idx" ON "wca_competitions" ("id")');
   await client.query('CREATE INDEX IF NOT EXISTS "wca_results_single_lookup_idx" ON "wca_results" ("event_id", "person_id", "best")');
   await client.query('CREATE INDEX IF NOT EXISTS "wca_results_average_lookup_idx" ON "wca_results" ("event_id", "person_id", "average")');
+  await client.query('CREATE INDEX IF NOT EXISTS "wca_results_single_recent_idx" ON "wca_results" ("event_id", "person_id", "best", (year::int) DESC, (month::int) DESC, (day::int) DESC)');
+  await client.query('CREATE INDEX IF NOT EXISTS "wca_results_average_recent_idx" ON "wca_results" ("event_id", "person_id", "average", (year::int) DESC, (month::int) DESC, (day::int) DESC)');
   await client.query('CREATE INDEX IF NOT EXISTS "wca_ranks_single_event_rank_idx" ON "wca_ranks_single" ("event_id", "world_rank")');
   await client.query('CREATE INDEX IF NOT EXISTS "wca_ranks_average_event_rank_idx" ON "wca_ranks_average" ("event_id", "world_rank")');
+  await client.query('CREATE INDEX IF NOT EXISTS "wca_ranks_single_event_country_rank_idx" ON "wca_ranks_single" ("event_id", (country_rank::int), (world_rank::int), "person_id")');
+  await client.query('CREATE INDEX IF NOT EXISTS "wca_ranks_average_event_country_rank_idx" ON "wca_ranks_average" ("event_id", (country_rank::int), (world_rank::int), "person_id")');
+  await client.query('CREATE INDEX IF NOT EXISTS "wca_ranks_single_event_person_best_idx" ON "wca_ranks_single" ("event_id", "person_id", (best::int), (world_rank::int))');
+  await client.query('CREATE INDEX IF NOT EXISTS "wca_ranks_average_event_person_best_idx" ON "wca_ranks_average" ("event_id", "person_id", (best::int), (world_rank::int))');
 }
 
 async function swapTables(client) {

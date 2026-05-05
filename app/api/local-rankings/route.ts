@@ -103,41 +103,55 @@ export async function GET(request: NextRequest) {
   const rankingTable = rankingTables[mode];
   const resultColumn = mode === "average" ? "average" : "best";
   const sql = `
+    WITH page_ranks AS (
+      SELECT
+        r.country_rank::int AS "officialRank",
+        r.world_rank::int AS "worldRank",
+        r.person_id AS "wcaId",
+        r.event_id,
+        r.best::int AS best,
+        p.name AS name,
+        p.country_id AS country,
+        COALESCE(cn.name, p.country_id) AS "countryName",
+        p.gender AS gender
+      FROM ${rankingTable} r
+      JOIN wca_persons p ON p.wca_id = r.person_id AND p.sub_id = '1'
+      LEFT JOIN wca_countries cn ON cn.id = p.country_id
+      WHERE r.event_id = $1
+        AND r.person_id = ANY($2::text[])
+        AND r.country_rank::int > 0
+        ${genderWhere}
+      ORDER BY r.best::int, r.world_rank::int, r.person_id
+      LIMIT $${limitParam} OFFSET $${offsetParam}
+    )
     SELECT
-      r.country_rank::int AS "officialRank",
-      r.world_rank::int AS "worldRank",
-      r.person_id AS "wcaId",
-      p.name AS name,
-      p.country_id AS country,
-      COALESCE(cn.name, p.country_id) AS "countryName",
-      p.gender AS gender,
-      r.best::int AS best,
+      page_ranks."officialRank",
+      page_ranks."worldRank",
+      page_ranks."wcaId",
+      page_ranks.name,
+      page_ranks.country,
+      page_ranks."countryName",
+      page_ranks.gender,
+      page_ranks.best,
       COALESCE(br.competition_id, '') AS "competitionId",
       COALESCE(c.name, br.competition_id, '') AS "competitionName",
       CASE
         WHEN c.id IS NULL THEN ''
         ELSE CONCAT(c.year, '-', LPAD(c.month, 2, '0'), '-', LPAD(c.day, 2, '0'))
       END AS date
-    FROM ${rankingTable} r
-    JOIN wca_persons p ON p.wca_id = r.person_id AND p.sub_id = '1'
-    LEFT JOIN wca_countries cn ON cn.id = p.country_id
+    FROM page_ranks
     LEFT JOIN LATERAL (
       SELECT competition_id
       FROM wca_results result
-      WHERE result.person_id = r.person_id
-        AND result.event_id = r.event_id
-        AND result.${resultColumn} = r.best
+      WHERE result.person_id = page_ranks."wcaId"
+        AND result.event_id = page_ranks.event_id
+        AND result.${resultColumn} = page_ranks.best::text
         AND result.${resultColumn} NOT IN ('0', '-1', '-2')
-      ORDER BY result.competition_id
+      ORDER BY result.year::int DESC, result.month::int DESC, result.day::int DESC, result.competition_id
       LIMIT 1
     ) br ON true
     LEFT JOIN wca_competitions c ON c.id = br.competition_id
-    WHERE r.event_id = $1
-      AND r.person_id = ANY($2::text[])
-      AND r.country_rank::int > 0
-      ${genderWhere}
-    ORDER BY r.best::int, r.world_rank::int, r.person_id
-    LIMIT $${limitParam} OFFSET $${offsetParam}
+    ORDER BY page_ranks.best, page_ranks."worldRank", page_ranks."wcaId"
   `;
 
   const { rows: rawRows } = await getPostgresPool().query<RawLocalRankingRow>(sql, queryParams);
