@@ -18,6 +18,9 @@ type LocalRankingRow = {
   rank: number;
   officialRank: number;
   worldRank: number;
+  genderLocalRank: number | null;
+  genderOfficialRank: number | null;
+  genderWorldRank: number | null;
   wcaId: string;
   name: string;
   country: string;
@@ -132,6 +135,8 @@ export function LiaoningRankingsClient() {
   const cities = rankings?.cities?.length ? rankings.cities : ["沈阳"];
   const areaLabel = scope === "province" ? `${province}省` : `${city}市`;
   const updateDateLabel = formatWcaExportDate(lastExportDate);
+  const showGenderRankColumns = gender !== "all";
+  const genderRankLabel = gender === "m" ? "男子" : "女子";
 
   function updateFilter(next: Partial<{ event: string; province: string; city: string; scope: Scope; mode: RankingMode; gender: Gender }>) {
     if (next.event) setEvent(next.event);
@@ -307,18 +312,25 @@ export function LiaoningRankingsClient() {
                   <th>{scopeLabels[scope]}</th>
                   <th>全国排名</th>
                   <th>世界排名</th>
+                  {showGenderRankColumns ? (
+                    <>
+                      <th>{genderRankLabel}{scopeLabels[scope]}</th>
+                      <th>{genderRankLabel}全国排名</th>
+                      <th>{genderRankLabel}世界排名</th>
+                    </>
+                  ) : null}
                   <th>比赛</th>
                 </tr>
               </thead>
               <tbody>
                 {isLoading ? (
                   <tr>
-                    <td colSpan={8}>加载中...</td>
+                    <td colSpan={showGenderRankColumns ? 11 : 8}>加载中...</td>
                   </tr>
                 ) : null}
                 {!isLoading && rows.length === 0 ? (
                   <tr>
-                    <td colSpan={8}>当前筛选没有辽宁本地排名数据。</td>
+                    <td colSpan={showGenderRankColumns ? 11 : 8}>当前筛选没有辽宁本地排名数据。</td>
                   </tr>
                 ) : null}
                 {!isLoading
@@ -339,6 +351,13 @@ export function LiaoningRankingsClient() {
                         <td>{row.rank}</td>
                         <td>{row.officialRank}</td>
                         <td>{row.worldRank}</td>
+                        {showGenderRankColumns ? (
+                          <>
+                            <td>{formatRankCell(row.genderLocalRank)}</td>
+                            <td>{formatRankCell(row.genderOfficialRank)}</td>
+                            <td>{formatRankCell(row.genderWorldRank)}</td>
+                          </>
+                        ) : null}
                         <td>
                           {row.competitionId ? (
                             <Link
@@ -375,6 +394,10 @@ export function LiaoningRankingsClient() {
       </section>
     </>
   );
+}
+
+function formatRankCell(value: number | null) {
+  return typeof value === "number" && Number.isFinite(value) ? value : "-";
 }
 
 function formatWcaExportDate(value: string) {

@@ -44,6 +44,8 @@ function formatResult(eventId: string, value: number) {
 type RawLocalRankingRow = {
   officialRank: number;
   worldRank: number;
+  genderOfficialRank: number | null;
+  genderWorldRank: number | null;
   wcaId: string;
   name: string;
   country: string;
@@ -102,6 +104,33 @@ export async function GET(request: NextRequest) {
   const offsetParam = queryParams.length;
   const rankingTable = rankingTables[mode];
   const resultColumn = mode === "average" ? "average" : "best";
+  const genderRankSelect =
+    gender === "all"
+      ? `
+        NULL::int AS "genderOfficialRank",
+        NULL::int AS "genderWorldRank",
+      `
+      : `
+        (
+          SELECT COUNT(*)::int + 1
+          FROM ${rankingTable} gender_rank
+          JOIN wca_persons gender_person ON gender_person.wca_id = gender_rank.person_id AND gender_person.sub_id = '1'
+          WHERE gender_rank.event_id = page_ranks.event_id
+            AND gender_person.country_id = page_ranks.country
+            AND gender_person.gender = page_ranks.gender
+            AND gender_rank.country_rank::int > 0
+            AND gender_rank.country_rank::int < page_ranks."officialRank"
+        ) AS "genderOfficialRank",
+        (
+          SELECT COUNT(*)::int + 1
+          FROM ${rankingTable} gender_rank
+          JOIN wca_persons gender_person ON gender_person.wca_id = gender_rank.person_id AND gender_person.sub_id = '1'
+          WHERE gender_rank.event_id = page_ranks.event_id
+            AND gender_person.gender = page_ranks.gender
+            AND gender_rank.world_rank::int > 0
+            AND gender_rank.world_rank::int < page_ranks."worldRank"
+        ) AS "genderWorldRank",
+      `;
   const sqlWithCompetition = `
     WITH page_ranks AS (
       SELECT
@@ -133,6 +162,7 @@ export async function GET(request: NextRequest) {
       page_ranks."countryName",
       page_ranks.gender,
       page_ranks.best,
+      ${genderRankSelect}
       COALESCE(br.competition_id, '') AS "competitionId",
       COALESCE(c.name, br.competition_id, '') AS "competitionName",
       CASE
@@ -169,6 +199,8 @@ export async function GET(request: NextRequest) {
       COALESCE(cn.name, p.country_id) AS "countryName",
       p.gender AS gender,
       r.best::int AS best,
+      NULL::int AS "genderOfficialRank",
+      NULL::int AS "genderWorldRank",
       '' AS "competitionId",
       '' AS "competitionName",
       '' AS date
@@ -198,6 +230,9 @@ export async function GET(request: NextRequest) {
     return {
       ...row,
       rank: offset + index + 1,
+      genderLocalRank: gender === "all" ? null : offset + index + 1,
+      genderOfficialRank: row.genderOfficialRank,
+      genderWorldRank: row.genderWorldRank,
       result: formatResult(event, row.best),
       competitionId: row.competitionId || "",
       competitionName: row.competitionName || "",
