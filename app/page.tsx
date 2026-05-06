@@ -10,7 +10,7 @@ export default function HomePage() {
           <span className="eyebrow">辽宁地区魔方数据与资料查询</span>
           <h1>辽宁地区魔方信息查询网</h1>
           <p>
-            汇总辽宁地区魔方选手、WCA 排名、赛事活动、荣誉经历和资料整理状态，让选手、家长、合作单位和魔方爱好者都能清楚查询本地魔方信息。
+            本网站为辽宁地区魔方玩家建立魔方信息查询平台，汇总魔方选手、排名、赛事活动、荣誉经历等资料，让选手、家长、合作单位和魔方爱好者都能清楚查询本地魔方信息。
           </p>
           <div className="hero-actions">
             <Link className="button primary" href="/athletes">
