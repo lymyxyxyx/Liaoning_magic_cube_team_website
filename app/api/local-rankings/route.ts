@@ -102,7 +102,7 @@ export async function GET(request: NextRequest) {
   const offsetParam = queryParams.length;
   const rankingTable = rankingTables[mode];
   const resultColumn = mode === "average" ? "average" : "best";
-  const sql = `
+  const sqlWithCompetition = `
     WITH page_ranks AS (
       SELECT
         r.country_rank::int AS "officialRank",
@@ -154,7 +154,40 @@ export async function GET(request: NextRequest) {
     ORDER BY page_ranks.best, page_ranks."worldRank", page_ranks."wcaId"
   `;
 
-  const { rows: rawRows } = await getPostgresPool().query<RawLocalRankingRow>(sql, queryParams);
+  const fallbackSql = `
+    SELECT
+      r.country_rank::int AS "officialRank",
+      r.world_rank::int AS "worldRank",
+      r.person_id AS "wcaId",
+      p.name AS name,
+      p.country_id AS country,
+      COALESCE(cn.name, p.country_id) AS "countryName",
+      p.gender AS gender,
+      r.best::int AS best,
+      '' AS "competitionId",
+      '' AS "competitionName",
+      '' AS date
+    FROM ${rankingTable} r
+    JOIN wca_persons p ON p.wca_id = r.person_id AND p.sub_id = '1'
+    LEFT JOIN wca_countries cn ON cn.id = p.country_id
+    WHERE r.event_id = $1
+      AND r.person_id = ANY($2::text[])
+      AND r.country_rank::int > 0
+      ${genderWhere}
+    ORDER BY r.best::int, r.world_rank::int, r.person_id
+    LIMIT $${limitParam} OFFSET $${offsetParam}
+  `;
+
+  let rawRows: RawLocalRankingRow[];
+  try {
+    const result = await getPostgresPool().query<RawLocalRankingRow>(sqlWithCompetition, queryParams);
+    rawRows = result.rows;
+  } catch (error) {
+    console.error("Local ranking competition lookup failed; falling back to rank-only query.", error);
+    const result = await getPostgresPool().query<RawLocalRankingRow>(fallbackSql, queryParams);
+    rawRows = result.rows;
+  }
+
   const rows = rawRows.slice(0, pageSize).map((row, index) => {
     const profile = localInfo.get(row.wcaId);
     return {
