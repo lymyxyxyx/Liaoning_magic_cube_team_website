@@ -77,7 +77,7 @@ export function LiaoningRankingsClient() {
 
   useEffect(() => {
     let cancelled = false;
-    fetch("/api/wca-metadata")
+    fetch("/api/wca-metadata", { cache: "no-cache" })
       .then((response) => response.json())
       .then((payload) => {
         if (cancelled) return;
