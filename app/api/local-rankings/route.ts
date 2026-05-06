@@ -104,6 +104,34 @@ export async function GET(request: NextRequest) {
   const offsetParam = queryParams.length;
   const rankingTable = rankingTables[mode];
   const resultColumn = mode === "average" ? "average" : "best";
+  const genderRankCtes =
+    gender === "all"
+      ? ""
+      : `
+    , gender_country_ranks AS (
+      SELECT
+        gender_rank.person_id,
+        gender_person.country_id,
+        (RANK() OVER (PARTITION BY gender_person.country_id ORDER BY gender_rank.best::int))::int AS "genderOfficialRank"
+      FROM ${rankingTable} gender_rank
+      JOIN wca_persons gender_person ON gender_person.wca_id = gender_rank.person_id AND gender_person.sub_id = '1'
+      WHERE gender_rank.event_id = $1
+        AND gender_person.gender = $3
+        AND gender_rank.country_rank::int > 0
+        AND gender_rank.best::int > 0
+    )
+    , gender_world_ranks AS (
+      SELECT
+        gender_rank.person_id,
+        (RANK() OVER (ORDER BY gender_rank.best::int))::int AS "genderWorldRank"
+      FROM ${rankingTable} gender_rank
+      JOIN wca_persons gender_person ON gender_person.wca_id = gender_rank.person_id AND gender_person.sub_id = '1'
+      WHERE gender_rank.event_id = $1
+        AND gender_person.gender = $3
+        AND gender_rank.world_rank::int > 0
+        AND gender_rank.best::int > 0
+    )
+      `;
   const genderRankSelect =
     gender === "all"
       ? `
@@ -111,25 +139,17 @@ export async function GET(request: NextRequest) {
         NULL::int AS "genderWorldRank",
       `
       : `
-        (
-          SELECT COUNT(*)::int + 1
-          FROM ${rankingTable} gender_rank
-          JOIN wca_persons gender_person ON gender_person.wca_id = gender_rank.person_id AND gender_person.sub_id = '1'
-          WHERE gender_rank.event_id = page_ranks.event_id
-            AND gender_person.country_id = page_ranks.country
-            AND gender_person.gender = page_ranks.gender
-            AND gender_rank.country_rank::int > 0
-            AND gender_rank.country_rank::int < page_ranks."officialRank"
-        ) AS "genderOfficialRank",
-        (
-          SELECT COUNT(*)::int + 1
-          FROM ${rankingTable} gender_rank
-          JOIN wca_persons gender_person ON gender_person.wca_id = gender_rank.person_id AND gender_person.sub_id = '1'
-          WHERE gender_rank.event_id = page_ranks.event_id
-            AND gender_person.gender = page_ranks.gender
-            AND gender_rank.world_rank::int > 0
-            AND gender_rank.world_rank::int < page_ranks."worldRank"
-        ) AS "genderWorldRank",
+        gender_country_ranks."genderOfficialRank",
+        gender_world_ranks."genderWorldRank",
+      `;
+  const genderRankJoins =
+    gender === "all"
+      ? ""
+      : `
+    LEFT JOIN gender_country_ranks
+      ON gender_country_ranks.person_id = page_ranks."wcaId"
+      AND gender_country_ranks.country_id = page_ranks.country
+    LEFT JOIN gender_world_ranks ON gender_world_ranks.person_id = page_ranks."wcaId"
       `;
   const sqlWithCompetition = `
     WITH page_ranks AS (
@@ -153,6 +173,7 @@ export async function GET(request: NextRequest) {
       ORDER BY r.best::int, r.world_rank::int, r.person_id
       LIMIT $${limitParam} OFFSET $${offsetParam}
     )
+    ${genderRankCtes}
     SELECT
       page_ranks."officialRank",
       page_ranks."worldRank",
@@ -170,6 +191,7 @@ export async function GET(request: NextRequest) {
         ELSE CONCAT(c.year, '-', LPAD(c.month, 2, '0'), '-', LPAD(c.day, 2, '0'))
       END AS date
     FROM page_ranks
+    ${genderRankJoins}
     LEFT JOIN LATERAL (
       SELECT result.competition_id
       FROM wca_results result
