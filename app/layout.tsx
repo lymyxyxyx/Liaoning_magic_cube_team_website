@@ -3,8 +3,8 @@ import { SiteHeader } from "@/components/site-header";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "辽宁魔方战队",
-  description: "辽宁魔方战队公开展示官网与基础档案库"
+  title: "辽宁地区魔方信息查询网",
+  description: "辽宁地区魔方排名、赛事活动、人员档案与资料查询平台"
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

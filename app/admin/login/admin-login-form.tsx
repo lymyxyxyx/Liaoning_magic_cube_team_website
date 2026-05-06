@@ -3,9 +3,9 @@ import { KeyRound, LogIn, ShieldCheck } from "lucide-react";
 export function AdminLoginForm({ hasError = false }: { hasError?: boolean }) {
   return (
     <section className="admin-login-shell">
-      <div className="admin-login-identity" aria-label="辽宁魔方战队后台">
+      <div className="admin-login-identity" aria-label="辽宁地区魔方信息查询网后台">
         <span className="eyebrow">后台管理</span>
-        <h1>辽宁魔方战队</h1>
+        <h1>辽宁地区魔方信息查询网</h1>
         <p>维护选手档案、赛事记录与账本数据。</p>
         <div className="admin-login-status">
           <ShieldCheck size={18} />

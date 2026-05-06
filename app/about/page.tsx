@@ -5,8 +5,8 @@ const principles = ["先做小，不做大而全", "历史资料允许不完整"
 export default function AboutPage() {
   return (
     <>
-      <PageHero label="项目共识" title="关于辽宁魔方战队网站">
-        第一阶段定位为公开展示官网与基础档案库，重点解决“有哪些人”“有哪些赛事活动”“资料如何持续补充”三个问题。
+      <PageHero label="项目共识" title="关于辽宁地区魔方信息查询网">
+        第一阶段定位为辽宁地区魔方信息查询平台，重点解决“有哪些人”“有哪些赛事活动”“资料如何持续补充”三个问题。
       </PageHero>
       <section className="container section">
         <div className="grid two">

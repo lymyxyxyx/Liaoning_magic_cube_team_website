@@ -46,8 +46,8 @@ export function SiteHeader() {
           <Shield size={20} />
         </span>
         <span>
-          <strong>辽宁魔方战队</strong>
-          <small>档案与赛事展示</small>
+          <strong>辽宁地区魔方信息查询网</strong>
+          <small>排名、赛事与档案查询</small>
         </span>
       </Link>
       <nav className="main-nav" aria-label="主导航">
