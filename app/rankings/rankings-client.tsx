@@ -55,7 +55,7 @@ export function RankingsClient() {
   const [lastExportDate, setLastExportDate] = useState("");
   const [event, setEvent] = useState("333");
   const [country, setCountry] = useState("China");
-  const [mode, setMode] = useState<RankingMode>("single");
+  const [mode, setMode] = useState<RankingMode>("average");
   const [gender, setGender] = useState<Gender>("all");
   const [page, setPage] = useState(1);
   const [rankings, setRankings] = useState<RankingsResponse | null>(null);

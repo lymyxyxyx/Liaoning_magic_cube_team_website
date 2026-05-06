@@ -70,7 +70,7 @@ export function LiaoningRankingsClient() {
   const [province, setProvince] = useState("辽宁");
   const [city, setCity] = useState("沈阳");
   const [scope, setScope] = useState<Scope>("city");
-  const [mode, setMode] = useState<RankingMode>("single");
+  const [mode, setMode] = useState<RankingMode>("average");
   const [gender, setGender] = useState<Gender>("all");
   const [page, setPage] = useState(1);
   const [rankings, setRankings] = useState<LocalRankingsResponse | null>(null);

@@ -1,6 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
-import { CalendarDays, UsersRound } from "lucide-react";
+import { Trophy } from "lucide-react";
 
 export default function HomePage() {
   return (
@@ -13,13 +13,9 @@ export default function HomePage() {
             本网站为辽宁地区魔方玩家建立魔方信息查询平台，汇总魔方选手、排名、赛事活动、荣誉经历等资料，让选手、家长、合作单位和魔方爱好者都能清楚查询本地魔方信息。
           </p>
           <div className="hero-actions">
-            <Link className="button primary" href="/athletes">
-              <UsersRound size={18} />
-              查看人员档案
-            </Link>
-            <Link className="button" href="/competitions">
-              <CalendarDays size={18} />
-              查看赛事活动
+            <Link className="button primary" href="/liaoning-rankings">
+              <Trophy size={18} />
+              查看辽宁排名
             </Link>
           </div>
         </div>

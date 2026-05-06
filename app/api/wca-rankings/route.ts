@@ -16,7 +16,7 @@ function cleanId(value: string | null, fallback: string) {
 }
 
 function cleanMode(value: string | null) {
-  return value === "average" ? "average" : "single";
+  return value === "single" ? "single" : "average";
 }
 
 function cleanGender(value: string | null) {
