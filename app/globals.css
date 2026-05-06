@@ -2552,6 +2552,10 @@ textarea {
   min-width: 1120px;
 }
 
+.local-ranking-results-table.has-gender-ranks {
+  min-width: 1340px;
+}
+
 .local-ranking-results-table th:first-child,
 .local-ranking-results-table td:first-child {
   min-width: 200px;
@@ -2567,6 +2571,22 @@ textarea {
 .local-ranking-results-table th:nth-child(7),
 .local-ranking-results-table td:nth-child(7) {
   width: 86px;
+}
+
+.local-ranking-results-table.has-gender-ranks th:nth-child(8),
+.local-ranking-results-table.has-gender-ranks td:nth-child(8),
+.local-ranking-results-table.has-gender-ranks th:nth-child(9),
+.local-ranking-results-table.has-gender-ranks td:nth-child(9),
+.local-ranking-results-table.has-gender-ranks th:nth-child(10),
+.local-ranking-results-table.has-gender-ranks td:nth-child(10) {
+  width: 98px;
+}
+
+.local-ranking-results-table.has-gender-ranks th:nth-child(11),
+.local-ranking-results-table.has-gender-ranks td:nth-child(11) {
+  min-width: 220px;
+  white-space: normal;
+  text-align: left;
 }
 
 .local-ranking-results-table th:nth-child(3),

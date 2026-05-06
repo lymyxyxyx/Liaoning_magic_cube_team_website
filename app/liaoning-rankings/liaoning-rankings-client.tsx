@@ -302,7 +302,7 @@ export function LiaoningRankingsClient() {
           {error ? <div className="wca-state">{error}</div> : null}
 
           <div className="result-table-wrap">
-            <table className="result-table ranking-table local-ranking-results-table">
+            <table className={`result-table ranking-table local-ranking-results-table ${showGenderRankColumns ? "has-gender-ranks" : ""}`}>
               <thead>
                 <tr>
                   <th>姓名</th>
