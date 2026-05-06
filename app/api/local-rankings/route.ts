@@ -141,13 +141,18 @@ export async function GET(request: NextRequest) {
       END AS date
     FROM page_ranks
     LEFT JOIN LATERAL (
-      SELECT competition_id
+      SELECT result.competition_id
       FROM wca_results result
+      LEFT JOIN wca_competitions result_competition ON result_competition.id = result.competition_id
       WHERE result.person_id = page_ranks."wcaId"
         AND result.event_id = page_ranks.event_id
         AND result.${resultColumn} = page_ranks.best::text
         AND result.${resultColumn} NOT IN ('0', '-1', '-2')
-      ORDER BY result.year::int DESC, result.month::int DESC, result.day::int DESC, result.competition_id
+      ORDER BY
+        result_competition.year::int DESC NULLS LAST,
+        result_competition.month::int DESC NULLS LAST,
+        result_competition.day::int DESC NULLS LAST,
+        result.competition_id
       LIMIT 1
     ) br ON true
     LEFT JOIN wca_competitions c ON c.id = br.competition_id
