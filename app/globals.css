@@ -2554,6 +2554,38 @@ textarea {
 
 .local-ranking-results-table.has-gender-ranks {
   min-width: 1340px;
+  table-layout: fixed;
+}
+
+.local-ranking-results-table.has-gender-ranks th:first-child,
+.local-ranking-results-table.has-gender-ranks td:first-child {
+  width: 220px;
+  min-width: 0;
+}
+
+.local-ranking-results-table.has-gender-ranks th:nth-child(2),
+.local-ranking-results-table.has-gender-ranks td:nth-child(2) {
+  width: 64px;
+}
+
+.local-ranking-results-table.has-gender-ranks th:nth-child(3),
+.local-ranking-results-table.has-gender-ranks td:nth-child(3) {
+  width: 86px;
+}
+
+.local-ranking-results-table.has-gender-ranks th:nth-child(4),
+.local-ranking-results-table.has-gender-ranks td:nth-child(4) {
+  width: 126px;
+  min-width: 0;
+}
+
+.local-ranking-results-table.has-gender-ranks th:nth-child(5),
+.local-ranking-results-table.has-gender-ranks td:nth-child(5),
+.local-ranking-results-table.has-gender-ranks th:nth-child(6),
+.local-ranking-results-table.has-gender-ranks td:nth-child(6),
+.local-ranking-results-table.has-gender-ranks th:nth-child(7),
+.local-ranking-results-table.has-gender-ranks td:nth-child(7) {
+  width: 82px;
 }
 
 .local-ranking-results-table th:first-child,
@@ -2579,12 +2611,13 @@ textarea {
 .local-ranking-results-table.has-gender-ranks td:nth-child(9),
 .local-ranking-results-table.has-gender-ranks th:nth-child(10),
 .local-ranking-results-table.has-gender-ranks td:nth-child(10) {
-  width: 98px;
+  width: 108px;
 }
 
 .local-ranking-results-table.has-gender-ranks th:nth-child(11),
 .local-ranking-results-table.has-gender-ranks td:nth-child(11) {
-  min-width: 220px;
+  width: auto;
+  min-width: 0;
   white-space: normal;
   text-align: left;
 }
