@@ -8,6 +8,7 @@ import { PageHero } from "@/components/page-hero";
 type RankingMode = "single" | "average";
 type Gender = "all" | "m" | "f";
 type Scope = "province" | "city";
+type FeedbackStatus = "idle" | "submitting" | "success" | "error";
 
 type MetadataOption = {
   id: string;
@@ -76,7 +77,16 @@ export function LiaoningRankingsClient() {
   const [rankings, setRankings] = useState<LocalRankingsResponse | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
-  const [contactMessage, setContactMessage] = useState("");
+  const [feedback, setFeedback] = useState({
+    type: "名单反馈",
+    name: "",
+    wcaId: "",
+    contact: "",
+    message: "",
+    website: ""
+  });
+  const [feedbackStatus, setFeedbackStatus] = useState<FeedbackStatus>("idle");
+  const [feedbackNotice, setFeedbackNotice] = useState("");
 
   useEffect(() => {
     let cancelled = false;
@@ -148,12 +158,41 @@ export function LiaoningRankingsClient() {
     setPage(1);
   }
 
-  function sendEligibilityMail() {
-    const subject = "辽宁排名名单反馈";
-    const body = contactMessage.trim()
-      ? contactMessage.trim()
-      : "您好，我想反馈辽宁排名名单信息：\n\n姓名：\nWCA ID：\n省市归属说明：\n联系方式：";
-    window.location.href = `mailto:499949970@qq.com?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+  function submitFeedback() {
+    const message = feedback.message.trim();
+    if (message.length < 4) {
+      setFeedbackStatus("error");
+      setFeedbackNotice("请先填写反馈内容。");
+      return;
+    }
+
+    setFeedbackStatus("submitting");
+    setFeedbackNotice("");
+    fetch("/api/feedback", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ ...feedback, pageUrl: window.location.pathname })
+    })
+      .then((response) => {
+        if (!response.ok) throw new Error("feedback");
+        return response.json();
+      })
+      .then(() => {
+        setFeedback({
+          type: "名单反馈",
+          name: "",
+          wcaId: "",
+          contact: "",
+          message: "",
+          website: ""
+        });
+        setFeedbackStatus("success");
+        setFeedbackNotice("已收到反馈，我们会在核实后更新名单或数据。");
+      })
+      .catch(() => {
+        setFeedbackStatus("error");
+        setFeedbackNotice("提交失败，请稍后再试。");
+      });
   }
 
   return (
@@ -173,15 +212,49 @@ export function LiaoningRankingsClient() {
             </ol>
             <div className="local-contact-box">
               <label htmlFor="liaoning-ranking-message">名单反馈</label>
+              <select
+                aria-label="反馈类型"
+                value={feedback.type}
+                onChange={(event) => setFeedback({ ...feedback, type: event.target.value })}
+              >
+                {["名单反馈", "成绩问题", "页面问题", "合作咨询", "其他"].map((item) => (
+                  <option value={item} key={item}>
+                    {item}
+                  </option>
+                ))}
+              </select>
+              <input
+                placeholder="姓名，可选"
+                value={feedback.name}
+                onChange={(event) => setFeedback({ ...feedback, name: event.target.value })}
+              />
+              <input
+                placeholder="WCA ID，可选"
+                value={feedback.wcaId}
+                onChange={(event) => setFeedback({ ...feedback, wcaId: event.target.value.toUpperCase() })}
+              />
+              <input
+                placeholder="联系方式，可选"
+                value={feedback.contact}
+                onChange={(event) => setFeedback({ ...feedback, contact: event.target.value })}
+              />
+              <input
+                className="feedback-honeypot"
+                tabIndex={-1}
+                autoComplete="off"
+                value={feedback.website}
+                onChange={(event) => setFeedback({ ...feedback, website: event.target.value })}
+              />
               <textarea
                 id="liaoning-ranking-message"
                 placeholder="填写姓名、WCA ID、情况说明和联系方式。"
-                value={contactMessage}
-                onChange={(event) => setContactMessage(event.target.value)}
+                value={feedback.message}
+                onChange={(event) => setFeedback({ ...feedback, message: event.target.value })}
               />
-              <button className="button primary" type="button" onClick={sendEligibilityMail}>
-                发送邮件
+              <button className="button primary" type="button" disabled={feedbackStatus === "submitting"} onClick={submitFeedback}>
+                {feedbackStatus === "submitting" ? "提交中" : "提交反馈"}
               </button>
+              {feedbackNotice ? <p className={`feedback-notice ${feedbackStatus === "error" ? "error" : ""}`}>{feedbackNotice}</p> : null}
             </div>
           </div>
         </details>

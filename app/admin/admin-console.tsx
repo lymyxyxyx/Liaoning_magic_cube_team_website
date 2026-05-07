@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { Plus, Save } from "lucide-react";
+import { Inbox, Plus, Save } from "lucide-react";
 
 type LocalProfileDraft = {
   wcaId?: string;
@@ -20,9 +20,27 @@ type LocalProfileDraft = {
 };
 
 type ProfileViewFilter = "all" | "unchecked" | "unmatched" | "local" | "dirty";
+type FeedbackStatus = "new" | "reviewing" | "resolved";
+
+type FeedbackMessage = {
+  id: string;
+  type: string;
+  name: string;
+  wcaId: string;
+  contact: string;
+  message: string;
+  pageUrl: string;
+  status: FeedbackStatus;
+  createdAt: string;
+};
 
 const defaultCreatedBy = "刘一鸣";
 const liaoningCities = ["沈阳", "大连", "鞍山", "抚顺", "本溪", "丹东", "锦州", "营口", "阜新", "辽阳", "盘锦", "铁岭", "朝阳", "葫芦岛"];
+const feedbackStatusLabels: Record<FeedbackStatus, string> = {
+  new: "新反馈",
+  reviewing: "跟进中",
+  resolved: "已处理"
+};
 
 export function AdminConsole() {
   const [localProfiles, setLocalProfiles] = useState<LocalProfileDraft[]>([]);
@@ -43,6 +61,8 @@ export function AdminConsole() {
   const [batchWcaIds, setBatchWcaIds] = useState("");
   const [wcaLookupStatus, setWcaLookupStatus] = useState("");
   const [isSavingProfiles, setIsSavingProfiles] = useState(false);
+  const [feedbackMessages, setFeedbackMessages] = useState<FeedbackMessage[]>([]);
+  const [feedbackStatus, setFeedbackStatus] = useState("读取中");
 
   useEffect(() => {
     fetch("/api/local-profiles")
@@ -54,6 +74,19 @@ export function AdminConsole() {
         setRemovedProfileKeys([]);
       })
       .catch(() => setLocalProfilesStatus("读取失败"));
+  }, []);
+
+  useEffect(() => {
+    fetch("/api/admin/feedback")
+      .then((response) => {
+        if (!response.ok) throw new Error("feedback");
+        return response.json();
+      })
+      .then((payload) => {
+        setFeedbackMessages(payload.messages || []);
+        setFeedbackStatus("已读取");
+      })
+      .catch(() => setFeedbackStatus("读取失败"));
   }, []);
 
   useEffect(() => {
@@ -331,6 +364,25 @@ export function AdminConsole() {
       });
   }
 
+  function updateFeedbackStatus(id: string, status: FeedbackStatus) {
+    setFeedbackStatus("保存中");
+    fetch("/api/admin/feedback", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id, status })
+    })
+      .then((response) => {
+        if (!response.ok) throw new Error("feedback");
+        return response.json();
+      })
+      .then((payload) => {
+        const nextMessage = payload.message as FeedbackMessage;
+        setFeedbackMessages((current) => current.map((message) => (message.id === nextMessage.id ? nextMessage : message)));
+        setFeedbackStatus("已保存");
+      })
+      .catch(() => setFeedbackStatus("保存失败"));
+  }
+
   return (
     <section className="container section admin-console-shell">
       <div className="admin-workspace-heading">
@@ -364,6 +416,49 @@ export function AdminConsole() {
           <option value={city} key={city} />
         ))}
       </datalist>
+
+      <div className="admin-card admin-feedback-card">
+        <div className="admin-card-heading">
+          <div>
+            <h2>用户反馈</h2>
+            <p>免登录表单提交的名单、成绩和页面问题会汇总在这里。</p>
+          </div>
+          <span className="admin-local-count">{feedbackStatus}</span>
+        </div>
+        {feedbackMessages.length > 0 ? (
+          <div className="admin-feedback-list">
+            {feedbackMessages.map((message) => (
+              <article className="admin-feedback-item" key={message.id}>
+                <div className="admin-feedback-head">
+                  <span className={`status ${message.status === "resolved" ? "status-高" : message.status === "reviewing" ? "" : "status-低"}`}>
+                    {feedbackStatusLabels[message.status]}
+                  </span>
+                  <strong>{message.type}</strong>
+                  <small>{formatDateTime(message.createdAt)}</small>
+                </div>
+                <p>{message.message}</p>
+                <div className="admin-feedback-meta">
+                  <span>姓名：{message.name || "-"}</span>
+                  <span>WCA ID：{message.wcaId || "-"}</span>
+                  <span>联系方式：{message.contact || "-"}</span>
+                  {message.pageUrl ? <span>页面：{message.pageUrl}</span> : null}
+                </div>
+                <div className="admin-profile-actions">
+                  <button className="button" type="button" onClick={() => updateFeedbackStatus(message.id, "reviewing")}>
+                    <Inbox size={16} />
+                    跟进中
+                  </button>
+                  <button className="button" type="button" onClick={() => updateFeedbackStatus(message.id, "resolved")}>
+                    处理完成
+                  </button>
+                </div>
+              </article>
+            ))}
+          </div>
+        ) : (
+          <p className="admin-inline-notice">暂无用户反馈。</p>
+        )}
+      </div>
 
       <div className="admin-profile-workbench">
         <div className="admin-card admin-profile-library">

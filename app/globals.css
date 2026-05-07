@@ -778,6 +778,45 @@ main {
   font-weight: 750;
 }
 
+.admin-feedback-card {
+  margin-bottom: 16px;
+}
+
+.admin-feedback-list {
+  display: grid;
+  gap: 10px;
+}
+
+.admin-feedback-item {
+  display: grid;
+  gap: 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 12px;
+  background: #fff;
+}
+
+.admin-feedback-head,
+.admin-feedback-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 12px;
+  align-items: center;
+}
+
+.admin-feedback-head small,
+.admin-feedback-meta {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 750;
+}
+
+.admin-feedback-item p {
+  margin: 0;
+  color: #243044;
+  line-height: 1.7;
+}
+
 .admin-login-shell {
   width: min(1080px, calc(100% - 36px));
   min-height: calc(100vh - 74px);
@@ -2678,12 +2717,43 @@ textarea {
   gap: 10px;
 }
 
+.local-contact-box input,
+.local-contact-box select {
+  width: 100%;
+  min-height: 40px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 0 11px;
+  background: #fff;
+  color: var(--ink);
+  font: inherit;
+}
+
 .local-contact-box textarea {
   min-height: 132px;
 }
 
 .local-contact-box .button {
   width: fit-content;
+}
+
+.feedback-honeypot {
+  position: absolute;
+  left: -9999px;
+  width: 1px !important;
+  height: 1px;
+  opacity: 0;
+}
+
+.feedback-notice {
+  margin: 0;
+  color: var(--green);
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.feedback-notice.error {
+  color: var(--red);
 }
 
 .wca-page {

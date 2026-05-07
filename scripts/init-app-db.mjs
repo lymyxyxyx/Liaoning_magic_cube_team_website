@@ -108,6 +108,23 @@ async function main() {
       )
     `);
 
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS feedback_messages (
+        id TEXT PRIMARY KEY,
+        type TEXT NOT NULL DEFAULT '名单反馈',
+        name TEXT NOT NULL DEFAULT '',
+        wca_id TEXT NOT NULL DEFAULT '',
+        contact TEXT NOT NULL DEFAULT '',
+        message TEXT NOT NULL,
+        page_url TEXT NOT NULL DEFAULT '',
+        status TEXT NOT NULL DEFAULT 'new' CHECK (status IN ('new', 'reviewing', 'resolved')),
+        ip_address TEXT NOT NULL DEFAULT '',
+        user_agent TEXT NOT NULL DEFAULT '',
+        created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+        handled_at TIMESTAMPTZ
+      )
+    `);
+
     await client.query("COMMIT");
     console.log("✅ All tables created (or already exist).");
   } catch (err) {
