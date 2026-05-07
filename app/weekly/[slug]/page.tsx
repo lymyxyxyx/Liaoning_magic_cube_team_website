@@ -4,6 +4,7 @@ import { ArrowLeft } from "lucide-react";
 import { PageHero } from "@/components/page-hero";
 import { getSingleBest, type WeeklyEvent } from "@/lib/weekly";
 import { getWeeklyMeetBySlug } from "@/lib/weekly-db";
+import { WeeklyImageExportButton } from "./weekly-image-export-button";
 
 export const dynamic = "force-dynamic";
 
@@ -36,10 +37,21 @@ export default async function WeeklyDetailPage({ params }: { params: { slug: str
     <>
       <PageHero
         actions={
-          <Link className="button" href="/weekly">
-            <ArrowLeft size={16} />
-            返回周赛
-          </Link>
+          <>
+            <WeeklyImageExportButton
+              meet={{
+                title: meet.title,
+                dateLabel: meet.dateLabel,
+                weekNumber: meet.weekNumber,
+                yearWeek: meet.yearWeek,
+                results: meet.results
+              }}
+            />
+            <Link className="button" href="/weekly">
+              <ArrowLeft size={16} />
+              返回周赛
+            </Link>
+          </>
         }
         label={`${meet.event} · 第${meet.weekNumber}周`}
         title={meet.title}
