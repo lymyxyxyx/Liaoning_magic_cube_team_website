@@ -1639,6 +1639,54 @@ textarea {
   margin-bottom: 12px;
 }
 
+.weekly-admin-shell {
+  display: grid;
+  gap: 16px;
+}
+
+.weekly-admin-card {
+  min-width: 0;
+}
+
+.weekly-admin-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.weekly-admin-grid .full {
+  grid-column: 1 / -1;
+}
+
+.weekly-paste-box {
+  min-height: 220px;
+  font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.weekly-parse-errors {
+  display: grid;
+  gap: 6px;
+  margin-top: 10px;
+  color: var(--red);
+  font-size: 13px;
+  font-weight: 750;
+}
+
+.weekly-parse-errors p {
+  margin: 0;
+}
+
+.weekly-admin-actions {
+  grid-template-columns: repeat(3, max-content);
+  justify-content: start;
+}
+
+.weekly-admin-preview {
+  min-width: 980px;
+}
+
 .competition-category-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));

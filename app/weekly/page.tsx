@@ -23,7 +23,15 @@ export default async function WeeklyPage() {
 
   return (
     <>
-      <PageHero label="队内周赛" title="辽宁魔方少儿战队周赛">
+      <PageHero
+        actions={
+          <Link className="button" href="/weekly/admin">
+            周赛录入后台
+          </Link>
+        }
+        label="队内周赛"
+        title="辽宁魔方少儿战队周赛"
+      >
         周赛用于记录队内选手的阶段成绩。选手不需要先注册账号，也可以先作为自然人档案平铺录入，后续登录后再关联个人主页。
       </PageHero>
 

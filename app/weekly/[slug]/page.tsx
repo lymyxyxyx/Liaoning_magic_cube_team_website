@@ -119,9 +119,13 @@ export default async function WeeklyDetailPage({ params }: { params: { slug: str
                           <tr key={`${event.id}-${result.rank}-${result.playerSlug}`}>
                             <td>{result.rank}</td>
                             <td>
-                              <Link className="table-person-link" href={`/people/${result.playerSlug}`}>
-                                {result.playerName}
-                              </Link>
+                              {result.playerSlug ? (
+                                <Link className="table-person-link" href={`/people/${result.playerSlug}`}>
+                                  {result.playerName}
+                                </Link>
+                              ) : (
+                                result.playerName
+                              )}
                             </td>
                             <td>{result.gender}</td>
                             {hasAgeGroup ? <td>{result.ageGroup || "-"}</td> : null}
@@ -200,9 +204,13 @@ export default async function WeeklyDetailPage({ params }: { params: { slug: str
                                   <tr key={`${ageEvent.id}-${result.rank}-${result.playerSlug}`}>
                                     <td>{result.rank}</td>
                                     <td>
-                                      <Link className="table-person-link" href={`/people/${result.playerSlug}`}>
-                                        {result.playerName}
-                                      </Link>
+                                      {result.playerSlug ? (
+                                        <Link className="table-person-link" href={`/people/${result.playerSlug}`}>
+                                          {result.playerName}
+                                        </Link>
+                                      ) : (
+                                        result.playerName
+                                      )}
                                     </td>
                                     <td>{result.gender}</td>
                                     <td>
