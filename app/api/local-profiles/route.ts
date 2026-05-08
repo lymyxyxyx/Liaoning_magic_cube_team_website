@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { enrichLocalProfiles, readLocalProfiles, writeLocalProfiles, type EnrichedLocalProfile } from "@/lib/local-profile-store";
+import { getPostgresPool } from "@/lib/postgres";
 
 export async function GET(request: NextRequest) {
   const wcaId = request.nextUrl.searchParams.get("wcaId")?.trim().toUpperCase();
@@ -7,15 +8,22 @@ export async function GET(request: NextRequest) {
     if (!/^[0-9]{4}[A-Z]{4}[0-9]{2}$/.test(wcaId)) {
       return NextResponse.json({ message: "Invalid WCA ID" }, { status: 400 });
     }
-    const [profile] = await enrichLocalProfiles([
-      {
+    const { rows } = await getPostgresPool().query<{ wca_id: string; name: string; country_id: string }>(
+      "SELECT wca_id, name, country_id FROM wca_persons WHERE wca_id = $1 AND sub_id = '1' LIMIT 1",
+      [wcaId]
+    );
+    const person = rows[0];
+    return NextResponse.json({
+      profile: {
         wcaId,
         province: "辽宁",
         city: "沈阳",
-        visible: true
+        visible: true,
+        name: person?.name || "",
+        country: person?.country_id || "",
+        existsInWca: Boolean(person)
       }
-    ]);
-    return NextResponse.json({ profile });
+    });
   }
 
   const profiles = await readLocalProfiles();

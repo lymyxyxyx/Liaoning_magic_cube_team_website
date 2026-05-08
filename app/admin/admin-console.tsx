@@ -60,6 +60,7 @@ export function AdminConsole() {
   const [profileViewFilter, setProfileViewFilter] = useState<ProfileViewFilter>("all");
   const [batchWcaIds, setBatchWcaIds] = useState("");
   const [wcaLookupStatus, setWcaLookupStatus] = useState("");
+  const [wcaLookupCache, setWcaLookupCache] = useState<Record<string, LocalProfileDraft>>({});
   const [isSavingProfiles, setIsSavingProfiles] = useState(false);
   const [feedbackMessages, setFeedbackMessages] = useState<FeedbackMessage[]>([]);
   const [feedbackStatus, setFeedbackStatus] = useState("读取中");
@@ -103,18 +104,31 @@ export function AdminConsole() {
       setWcaLookupStatus("这个 WCA ID 已在辽宁选手库中。");
       return;
     }
+    const cachedProfile = wcaLookupCache[wcaId];
+    if (cachedProfile) {
+      setWcaLookupStatus(
+        cachedProfile.existsInWca
+          ? `已找到：${cachedProfile.name || wcaId}${cachedProfile.country ? ` / ${cachedProfile.country}` : ""}`
+          : "未在当前 WCA 数据库中匹配到，录入前请再核对。"
+      );
+      return;
+    }
 
     const controller = new AbortController();
     const timer = window.setTimeout(() => {
       setWcaLookupStatus("正在查询 WCA 人员库...");
       fetch(`/api/local-profiles?wcaId=${encodeURIComponent(wcaId)}`, { signal: controller.signal })
-        .then((response) => response.json())
+        .then((response) => {
+          if (!response.ok) throw new Error("lookup");
+          return response.json();
+        })
         .then((payload) => {
           const profile = payload.profile as LocalProfileDraft | undefined;
           if (!profile) {
             setWcaLookupStatus("没有查询到这个 WCA ID。");
             return;
           }
+          setWcaLookupCache((current) => ({ ...current, [wcaId]: profile }));
           setWcaLookupStatus(
             profile.existsInWca
               ? `已找到：${profile.name || wcaId}${profile.country ? ` / ${profile.country}` : ""}`
@@ -130,7 +144,7 @@ export function AdminConsole() {
       window.clearTimeout(timer);
       controller.abort();
     };
-  }, [entryMode, localProfile.wcaId, localProfiles]);
+  }, [entryMode, localProfile.wcaId, localProfiles, wcaLookupCache]);
 
   const totals = useMemo(
     () => ({

@@ -228,6 +228,7 @@ async function importTable(client, table) {
 
 async function addIndexes(client) {
   await client.query('CREATE INDEX IF NOT EXISTS "wca_persons_wca_id_idx" ON "wca_persons" ("wca_id")');
+  await client.query('CREATE INDEX IF NOT EXISTS "wca_persons_wca_id_sub_id_idx" ON "wca_persons" ("wca_id", "sub_id")');
   await client.query('CREATE INDEX IF NOT EXISTS "wca_persons_country_id_idx" ON "wca_persons" ("country_id")');
   await client.query('CREATE INDEX IF NOT EXISTS "wca_events_id_idx" ON "wca_events" ("id")');
   await client.query('CREATE INDEX IF NOT EXISTS "wca_countries_id_idx" ON "wca_countries" ("id")');
