@@ -79,10 +79,10 @@ export function SiteHeader() {
           );
         })}
       </nav>
-      <Link className="admin-link" href="/admin" title="后台管理">
+      <a className="admin-link" href="/admin" title="后台管理">
         <Settings size={18} />
         <span>后台</span>
-      </Link>
+      </a>
     </header>
   );
 }
