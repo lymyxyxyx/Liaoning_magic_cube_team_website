@@ -25,7 +25,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.redirect(loginUrl, { status: 303 });
   }
 
-  const response = NextResponse.redirect(new URL(nextPath, request.url), { status: 303 });
+  const response = createRelativeRedirect(nextPath);
   response.cookies.set(weeklyCookieName, weeklyCookieValue, {
     httpOnly: true,
     sameSite: "lax",
@@ -42,4 +42,13 @@ function getSafeNextPath(value: string | null) {
   if (!value || !value.startsWith("/") || value.startsWith("//")) return "/weekly/admin";
   if (value.startsWith("/weekly/admin/login")) return "/weekly/admin";
   return value;
+}
+
+function createRelativeRedirect(path: string) {
+  return new NextResponse(null, {
+    status: 303,
+    headers: {
+      Location: path
+    }
+  });
 }

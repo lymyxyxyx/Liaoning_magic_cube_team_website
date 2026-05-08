@@ -30,7 +30,7 @@ export async function POST(request: NextRequest) {
 
   const response =
     payload.source === "form"
-      ? NextResponse.redirect(new URL(nextPath, request.url), { status: 303 })
+      ? createRelativeRedirect(nextPath)
       : NextResponse.json({ ok: true });
   response.cookies.set(adminCookieName, adminCookieValue, {
     httpOnly: true,
@@ -65,4 +65,13 @@ function getSafeNextPath(value: string | null) {
   if (!value || !value.startsWith("/") || value.startsWith("//")) return "/admin/accounts";
   if (value.startsWith("/admin/login")) return "/admin/accounts";
   return value;
+}
+
+function createRelativeRedirect(path: string) {
+  return new NextResponse(null, {
+    status: 303,
+    headers: {
+      Location: path
+    }
+  });
 }
