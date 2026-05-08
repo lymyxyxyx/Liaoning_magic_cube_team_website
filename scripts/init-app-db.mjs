@@ -125,6 +125,15 @@ async function main() {
       )
     `);
 
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS wca_import_metadata (
+        id TEXT PRIMARY KEY,
+        export_date TEXT NOT NULL,
+        schema_version TEXT NOT NULL DEFAULT '',
+        imported_at TIMESTAMPTZ NOT NULL DEFAULT now()
+      )
+    `);
+
     await client.query("COMMIT");
     console.log("✅ All tables created (or already exist).");
   } catch (err) {

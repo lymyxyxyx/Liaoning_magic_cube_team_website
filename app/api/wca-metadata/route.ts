@@ -10,7 +10,7 @@ export async function GET() {
   const [events, countries, lastExportDate] = await Promise.all([
     pool.query<{ id: string; name: string }>('SELECT id, name FROM wca_events ORDER BY rank::int, id'),
     pool.query<{ id: string; name: string }>("SELECT id, name FROM wca_countries ORDER BY name"),
-    readLastExportDate()
+    readLastExportDateFromPostgres()
   ]);
 
   return NextResponse.json(
@@ -19,7 +19,19 @@ export async function GET() {
   );
 }
 
-async function readLastExportDate() {
+async function readLastExportDateFromPostgres() {
+  try {
+    const result = await getPostgresPool().query<{ export_date: string }>(
+      "SELECT export_date FROM wca_import_metadata WHERE id = 'current'"
+    );
+    if (result.rows[0]?.export_date) return result.rows[0].export_date;
+  } catch {
+    // The metadata table may not exist until the next WCA import or db:init run.
+  }
+  return readLastExportDateFromFile();
+}
+
+async function readLastExportDateFromFile() {
   const dataRoot = process.env.WCA_DATA_ROOT || (process.cwd() === "/app" ? "/app/data" : "/opt/ln-cubing/data");
   try {
     return (await fs.readFile(`${dataRoot}/wca_state/last_export_date.txt`, "utf-8")).trim();

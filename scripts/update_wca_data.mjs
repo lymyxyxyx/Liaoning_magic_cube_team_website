@@ -263,7 +263,7 @@ async function swapTables(client) {
   }
 }
 
-async function importToPostgres() {
+async function importToPostgres(exportDate) {
   if (!process.env.DATABASE_URL) {
     throw new Error("DATABASE_URL is required for npm run wca:update");
   }
@@ -279,9 +279,33 @@ async function importToPostgres() {
       await log(`Imported ${count} rows into ${table.target}_new`);
     }
     await swapTables(client);
+    await writeImportMetadata(client, {
+      exportDate,
+      schemaVersion
+    });
   } finally {
     await client.end();
   }
+}
+
+async function writeImportMetadata(client, { exportDate, schemaVersion }) {
+  await client.query(`
+    CREATE TABLE IF NOT EXISTS wca_import_metadata (
+      id TEXT PRIMARY KEY,
+      export_date TEXT NOT NULL,
+      schema_version TEXT NOT NULL DEFAULT '',
+      imported_at TIMESTAMPTZ NOT NULL DEFAULT now()
+    )
+  `);
+  await client.query(
+    `INSERT INTO wca_import_metadata (id, export_date, schema_version, imported_at)
+     VALUES ('current', $1, $2, now())
+     ON CONFLICT (id)
+     DO UPDATE SET export_date = EXCLUDED.export_date,
+                   schema_version = EXCLUDED.schema_version,
+                   imported_at = EXCLUDED.imported_at`,
+    [exportDate, schemaVersion]
+  );
 }
 
 async function main() {
@@ -319,7 +343,7 @@ async function main() {
 
   try {
     await log("Importing selected TSV files into PostgreSQL");
-    await importToPostgres();
+    await importToPostgres(payload.export_date);
     await writeLastExportDate(payload.export_date);
     await writeSchemaVersion();
     await log(`WCA import completed; saved last_export_date=${payload.export_date}, schema=${schemaVersion}`);

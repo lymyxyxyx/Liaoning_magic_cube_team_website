@@ -1,5 +1,5 @@
 export const wcaMetadataCacheHeaders = {
-  "Cache-Control": "public, max-age=3600, s-maxage=86400, stale-while-revalidate=604800"
+  "Cache-Control": "public, max-age=60, s-maxage=300, stale-while-revalidate=600"
 };
 
 export const wcaRankingCacheHeaders = {
