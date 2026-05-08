@@ -2720,6 +2720,31 @@ textarea {
   min-width: 130px;
 }
 
+.rank-change {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  min-width: 58px;
+  font-variant-numeric: tabular-nums;
+}
+
+.rank-change svg {
+  stroke-width: 3;
+}
+
+.rank-change-up {
+  color: var(--green);
+}
+
+.rank-change-same {
+  color: var(--yellow);
+}
+
+.rank-change-down {
+  color: var(--red);
+}
+
 .ranking-wca-id {
   display: block;
   margin-top: 3px;

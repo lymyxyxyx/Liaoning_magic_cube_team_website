@@ -20,6 +20,7 @@ const logDir = process.env.WCA_LOG_DIR || defaultLogDir;
 const stateFile = path.join(stateDir, "last_export_date.txt");
 const schemaStateFile = path.join(stateDir, "schema_version.txt");
 const logFile = path.join(logDir, "wca_update.log");
+const localProfilesFile = path.join(dataRoot, "local-profiles.json");
 const mode = process.argv.includes("--check") ? "check" : "update";
 const schemaVersion = "wca-sync-v1.5-results";
 
@@ -283,6 +284,28 @@ async function importToPostgres(exportDate) {
       exportDate,
       schemaVersion
     });
+    await snapshotLocalRanks(client, exportDate);
+  } finally {
+    await client.end();
+  }
+}
+
+async function refreshPostgresMetadata(exportDate) {
+  if (!process.env.DATABASE_URL) {
+    throw new Error("DATABASE_URL is required for npm run wca:update");
+  }
+
+  const client = new Client({
+    connectionString: process.env.DATABASE_URL
+  });
+
+  await client.connect();
+  try {
+    await writeImportMetadata(client, {
+      exportDate,
+      schemaVersion
+    });
+    await snapshotLocalRanks(client, exportDate);
   } finally {
     await client.end();
   }
@@ -308,6 +331,88 @@ async function writeImportMetadata(client, { exportDate, schemaVersion }) {
   );
 }
 
+async function snapshotLocalRanks(client, exportDate) {
+  const profiles = await readLocalProfilesForSnapshot();
+  const visibleProfiles = profiles.filter((profile) => profile.visible !== false && profile.wcaId);
+  const snapshotProfiles = visibleProfiles.map((profile) => ({
+    wca_id: profile.wcaId,
+    province: profile.province,
+    city: profile.city
+  }));
+  const wcaIds = Array.from(new Set(visibleProfiles.map((profile) => profile.wcaId)));
+  if (wcaIds.length === 0) {
+    await log("Skipped local rank snapshot; no local WCA profiles found.");
+    return;
+  }
+
+  await client.query(`
+    CREATE TABLE IF NOT EXISTS wca_local_rank_snapshots (
+      export_date TEXT NOT NULL,
+      mode TEXT NOT NULL CHECK (mode IN ('single', 'average')),
+      event_id TEXT NOT NULL,
+      person_id TEXT NOT NULL,
+      province TEXT NOT NULL DEFAULT '',
+      city TEXT NOT NULL DEFAULT '',
+      gender TEXT NOT NULL DEFAULT '',
+      best INTEGER NOT NULL,
+      country_rank INTEGER NOT NULL,
+      world_rank INTEGER NOT NULL,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+      PRIMARY KEY (export_date, mode, event_id, person_id)
+    )
+  `);
+  await client.query("DELETE FROM wca_local_rank_snapshots WHERE export_date = $1", [exportDate]);
+
+  for (const modeConfig of [
+    { mode: "single", table: "wca_ranks_single" },
+    { mode: "average", table: "wca_ranks_average" }
+  ]) {
+    const result = await client.query(
+      `
+        INSERT INTO wca_local_rank_snapshots
+          (export_date, mode, event_id, person_id, province, city, gender, best, country_rank, world_rank)
+        SELECT
+          $1 AS export_date,
+          $2 AS mode,
+          rank.event_id,
+          rank.person_id,
+          profile.province,
+          profile.city,
+          person.gender,
+          rank.best::int,
+          rank.country_rank::int,
+          rank.world_rank::int
+        FROM jsonb_to_recordset($3::jsonb) AS profile(wca_id text, province text, city text)
+        JOIN ${modeConfig.table} rank ON rank.person_id = profile.wca_id
+        JOIN wca_persons person ON person.wca_id = rank.person_id AND person.sub_id = '1'
+        WHERE rank.country_rank::int > 0
+          AND rank.world_rank::int > 0
+          AND rank.best::int > 0
+      `,
+      [exportDate, modeConfig.mode, JSON.stringify(snapshotProfiles)]
+    );
+    await log(`Snapshotted ${result.rowCount} ${modeConfig.mode} local rank rows for export_date=${exportDate}`);
+  }
+}
+
+async function readLocalProfilesForSnapshot() {
+  try {
+    const raw = await fsp.readFile(localProfilesFile, "utf8");
+    const parsed = JSON.parse(raw);
+    if (!Array.isArray(parsed)) return [];
+    return parsed
+      .map((profile) => ({
+        wcaId: String(profile.wcaId || "").trim().toUpperCase(),
+        province: String(profile.province || "辽宁").trim() || "辽宁",
+        city: String(profile.city || "沈阳").trim() || "沈阳",
+        visible: profile.visible !== false
+      }))
+      .filter((profile) => /^[0-9]{4}[A-Z]{4}[0-9]{2}$/.test(profile.wcaId));
+  } catch {
+    return [];
+  }
+}
+
 async function main() {
   await ensureBaseDirs();
   const payload = await fetchJson(exportApiUrl);
@@ -320,6 +425,11 @@ async function main() {
   );
 
   if (payload.export_date === lastExportDate && lastSchemaVersion === schemaVersion) {
+    if (mode === "update") {
+      await refreshPostgresMetadata(payload.export_date);
+      await log("WCA export is unchanged; refreshed PostgreSQL metadata and local rank snapshot.");
+      return;
+    }
     await log("WCA export is unchanged; exiting.");
     return;
   }

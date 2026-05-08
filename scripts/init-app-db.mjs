@@ -134,6 +134,23 @@ async function main() {
       )
     `);
 
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS wca_local_rank_snapshots (
+        export_date TEXT NOT NULL,
+        mode TEXT NOT NULL CHECK (mode IN ('single', 'average')),
+        event_id TEXT NOT NULL,
+        person_id TEXT NOT NULL,
+        province TEXT NOT NULL DEFAULT '',
+        city TEXT NOT NULL DEFAULT '',
+        gender TEXT NOT NULL DEFAULT '',
+        best INTEGER NOT NULL,
+        country_rank INTEGER NOT NULL,
+        world_rank INTEGER NOT NULL,
+        created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+        PRIMARY KEY (export_date, mode, event_id, person_id)
+      )
+    `);
+
     await client.query("COMMIT");
     console.log("✅ All tables created (or already exist).");
   } catch (err) {

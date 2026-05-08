@@ -57,6 +57,22 @@ type RawLocalRankingRow = {
   date: string | null;
 };
 
+type LocalRankSnapshotRow = {
+  personId: string;
+  best: number;
+  countryRank: number;
+  worldRank: number;
+  province: string;
+  city: string;
+  gender: string;
+};
+
+type PreviousRankInfo = {
+  localRank: number;
+  officialRank: number;
+  worldRank: number;
+};
+
 export async function GET(request: NextRequest) {
   const params = request.nextUrl.searchParams;
   const event = cleanId(params.get("event"), "333");
@@ -247,12 +263,27 @@ export async function GET(request: NextRequest) {
     rawRows = result.rows;
   }
 
+  const previousRanks = await readPreviousLocalRanks({
+    event,
+    mode,
+    province,
+    city,
+    scope,
+    gender,
+    wcaIds
+  });
+
   const rows = rawRows.slice(0, pageSize).map((row, index) => {
     const profile = localInfo.get(row.wcaId);
+    const previous = previousRanks.get(row.wcaId);
+    const rank = offset + index + 1;
     return {
       ...row,
-      rank: offset + index + 1,
-      genderLocalRank: gender === "all" ? null : offset + index + 1,
+      rank,
+      rankChange: formatRankChange(previous?.localRank, rank),
+      officialRankChange: formatRankChange(previous?.officialRank, row.officialRank),
+      worldRankChange: formatRankChange(previous?.worldRank, row.worldRank),
+      genderLocalRank: gender === "all" ? null : rank,
       genderOfficialRank: row.genderOfficialRank,
       genderWorldRank: row.genderWorldRank,
       result: formatResult(event, row.best),
@@ -275,4 +306,89 @@ export async function GET(request: NextRequest) {
     },
     { headers: wcaRankingCacheHeaders }
   );
+}
+
+async function readPreviousLocalRanks({
+  event,
+  mode,
+  province,
+  city,
+  scope,
+  gender,
+  wcaIds
+}: {
+  event: string;
+  mode: "single" | "average";
+  province: string;
+  city: string;
+  scope: "province" | "city";
+  gender: "all" | "m" | "f";
+  wcaIds: string[];
+}) {
+  const previousRanks = new Map<string, PreviousRankInfo>();
+  if (wcaIds.length === 0) return previousRanks;
+
+  try {
+    const previousExport = await getPostgresPool().query<{ export_date: string }>(
+      `
+        SELECT DISTINCT export_date
+        FROM wca_local_rank_snapshots
+        WHERE mode = $1 AND event_id = $2
+        ORDER BY export_date DESC
+        OFFSET 1
+        LIMIT 1
+      `,
+      [mode, event]
+    );
+    const previousExportDate = previousExport.rows[0]?.export_date;
+    if (!previousExportDate) return previousRanks;
+
+    const result = await getPostgresPool().query<LocalRankSnapshotRow>(
+      `
+        SELECT
+          person_id AS "personId",
+          best,
+          country_rank AS "countryRank",
+          world_rank AS "worldRank",
+          province,
+          city,
+          gender
+        FROM wca_local_rank_snapshots
+        WHERE export_date = $1
+          AND mode = $2
+          AND event_id = $3
+          AND person_id = ANY($4::text[])
+          AND province = $5
+          ${scope === "city" ? "AND city = $6" : ""}
+          ${gender === "all" ? "" : `AND gender = $${scope === "city" ? 7 : 6}`}
+      `,
+      [
+        previousExportDate,
+        mode,
+        event,
+        wcaIds,
+        province,
+        ...(scope === "city" ? [city] : []),
+        ...(gender === "all" ? [] : [gender])
+      ]
+    );
+    result.rows
+      .sort((a, b) => a.best - b.best || a.worldRank - b.worldRank || a.personId.localeCompare(b.personId))
+      .forEach((row, index) => {
+        previousRanks.set(row.personId, {
+          localRank: index + 1,
+          officialRank: row.countryRank,
+          worldRank: row.worldRank
+        });
+      });
+  } catch {
+    return previousRanks;
+  }
+
+  return previousRanks;
+}
+
+function formatRankChange(previous: number | undefined, current: number | null) {
+  if (!previous || typeof current !== "number" || !Number.isFinite(current)) return null;
+  return previous - current;
 }

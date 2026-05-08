@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { CalendarClock, ChevronLeft, ChevronRight, Database, ExternalLink, MapPin } from "lucide-react";
+import { ArrowDown, ArrowUp, CalendarClock, ChevronLeft, ChevronRight, Database, ExternalLink, MapPin, Minus } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { PageHero } from "@/components/page-hero";
 
@@ -17,8 +17,11 @@ type MetadataOption = {
 
 type LocalRankingRow = {
   rank: number;
+  rankChange: number | null;
   officialRank: number;
+  officialRankChange: number | null;
   worldRank: number;
+  worldRankChange: number | null;
   genderLocalRank: number | null;
   genderOfficialRank: number | null;
   genderWorldRank: number | null;
@@ -421,9 +424,9 @@ export function LiaoningRankingsClient() {
                         <td>{row.gender === "m" ? "男" : row.gender === "f" ? "女" : "-"}</td>
                         <td className="score-strong">{row.result}</td>
                         <td>{row.province} · {row.city}</td>
-                        <td>{row.rank}</td>
-                        <td>{row.officialRank}</td>
-                        <td>{row.worldRank}</td>
+                        <td>{renderRankWithChange(row.rank, row.rankChange)}</td>
+                        <td>{renderRankWithChange(row.officialRank, row.officialRankChange)}</td>
+                        <td>{renderRankWithChange(row.worldRank, row.worldRankChange)}</td>
                         {showGenderRankColumns ? (
                           <>
                             <td>{formatRankCell(row.genderLocalRank)}</td>
@@ -471,6 +474,26 @@ export function LiaoningRankingsClient() {
 
 function formatRankCell(value: number | null) {
   return typeof value === "number" && Number.isFinite(value) ? value : "-";
+}
+
+function renderRankWithChange(value: number, change: number | null) {
+  const state = change === null ? "none" : change > 0 ? "up" : change < 0 ? "down" : "same";
+  const label =
+    change === null
+      ? "暂无历史变化"
+      : change > 0
+        ? `上升 ${change} 名`
+        : change < 0
+          ? `下降 ${Math.abs(change)} 名`
+          : "持平";
+  return (
+    <span className={`rank-change rank-change-${state}`} title={label}>
+      <span>{value}</span>
+      {state === "up" ? <ArrowUp size={14} /> : null}
+      {state === "down" ? <ArrowDown size={14} /> : null}
+      {state === "same" ? <Minus size={14} /> : null}
+    </span>
+  );
 }
 
 function formatWcaExportDate(value: string) {
