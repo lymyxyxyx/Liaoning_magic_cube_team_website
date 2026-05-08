@@ -39,6 +39,8 @@ const navItems: NavItem[] = [
 ];
 
 export function SiteHeader() {
+  const adminHref = process.env.NODE_ENV === "production" ? "https://lncubing.com/admin" : "/admin";
+
   return (
     <header className="site-header">
       <Link className="brand" href="/">
@@ -79,7 +81,7 @@ export function SiteHeader() {
           );
         })}
       </nav>
-      <a className="admin-link" href="/admin" title="后台管理">
+      <a className="admin-link" href={adminHref} title="后台管理">
         <Settings size={18} />
         <span>后台</span>
       </a>
