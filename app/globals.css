@@ -3370,6 +3370,102 @@ a.commercial-member-link:hover {
   .local-ranking-filter-card {
     grid-template-columns: 1fr;
   }
+
+  .local-ranking-results-table {
+    min-width: 390px;
+    table-layout: fixed;
+    font-size: 12px;
+  }
+
+  .local-ranking-results-table.has-gender-ranks {
+    min-width: 390px;
+  }
+
+  .local-ranking-results-table th,
+  .local-ranking-results-table td {
+    padding: 8px 4px;
+  }
+
+  .local-ranking-results-table th:first-child,
+  .local-ranking-results-table td:first-child,
+  .local-ranking-results-table.has-gender-ranks th:first-child,
+  .local-ranking-results-table.has-gender-ranks td:first-child {
+    width: 112px;
+    min-width: 0;
+  }
+
+  .local-ranking-results-table th:nth-child(2),
+  .local-ranking-results-table td:nth-child(2),
+  .local-ranking-results-table.has-gender-ranks th:nth-child(2),
+  .local-ranking-results-table.has-gender-ranks td:nth-child(2) {
+    width: 30px;
+    padding-left: 2px;
+    padding-right: 2px;
+  }
+
+  .local-ranking-results-table th:nth-child(3),
+  .local-ranking-results-table td:nth-child(3),
+  .local-ranking-results-table.has-gender-ranks th:nth-child(3),
+  .local-ranking-results-table.has-gender-ranks td:nth-child(3) {
+    width: 54px;
+  }
+
+  .local-ranking-results-table th:nth-child(4),
+  .local-ranking-results-table td:nth-child(4),
+  .local-ranking-results-table th:nth-child(8),
+  .local-ranking-results-table td:nth-child(8),
+  .local-ranking-results-table.has-gender-ranks th:nth-child(8),
+  .local-ranking-results-table.has-gender-ranks td:nth-child(8),
+  .local-ranking-results-table.has-gender-ranks th:nth-child(9),
+  .local-ranking-results-table.has-gender-ranks td:nth-child(9),
+  .local-ranking-results-table.has-gender-ranks th:nth-child(10),
+  .local-ranking-results-table.has-gender-ranks td:nth-child(10),
+  .local-ranking-results-table.has-gender-ranks th:nth-child(11),
+  .local-ranking-results-table.has-gender-ranks td:nth-child(11) {
+    display: none;
+  }
+
+  .local-ranking-results-table th:nth-child(5),
+  .local-ranking-results-table td:nth-child(5),
+  .local-ranking-results-table th:nth-child(6),
+  .local-ranking-results-table td:nth-child(6),
+  .local-ranking-results-table th:nth-child(7),
+  .local-ranking-results-table td:nth-child(7),
+  .local-ranking-results-table.has-gender-ranks th:nth-child(5),
+  .local-ranking-results-table.has-gender-ranks td:nth-child(5),
+  .local-ranking-results-table.has-gender-ranks th:nth-child(6),
+  .local-ranking-results-table.has-gender-ranks td:nth-child(6),
+  .local-ranking-results-table.has-gender-ranks th:nth-child(7),
+  .local-ranking-results-table.has-gender-ranks td:nth-child(7) {
+    width: 58px;
+  }
+
+  .local-ranking-results-table .table-person-link {
+    display: inline;
+    font-size: 12px;
+    line-height: 1.25;
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+
+  .local-ranking-results-table .ranking-wca-id {
+    font-size: 10px;
+    line-height: 1.2;
+  }
+
+  .local-ranking-results-table .rank-change {
+    gap: 2px;
+    min-width: 0;
+  }
+
+  .local-ranking-results-table .rank-change svg {
+    width: 12px;
+    height: 12px;
+  }
+
+  .local-ranking-results-table .rank-change small {
+    font-size: 10px;
+  }
 }
 
 .level-专业级 {
