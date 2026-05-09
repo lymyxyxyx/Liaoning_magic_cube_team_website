@@ -13,6 +13,7 @@ import {
 type ResultGroup = {
   key: string;
   id: string;
+  station: string;
   event: string;
   group: string;
   rows: NationalResultRow[];
@@ -21,6 +22,7 @@ type ResultGroup = {
 type AllAroundGroup = {
   key: string;
   id: string;
+  station: string;
   event: string;
   group: string;
   rows: NationalAllAroundRow[];
@@ -29,6 +31,7 @@ type AllAroundGroup = {
 type RelayGroup = {
   key: string;
   id: string;
+  station: string;
   group: string;
   rows: NationalRelayRow[];
 };
@@ -61,6 +64,16 @@ const resultIndexSections = [
   }
 ];
 
+const defaultStationName = "第一站 · 江苏盐城东台";
+const stationParamMap = {
+  first: defaultStationName,
+  second: "第二站 · 湖南娄底"
+} as const;
+
+function getStation(row: { station?: string }) {
+  return row.station || defaultStationName;
+}
+
 function makeId(prefix: string, key: string) {
   return `${prefix}-${key.replace(/[^\p{Script=Han}A-Za-z0-9]+/gu, "-").replace(/^-|-$/g, "")}`;
 }
@@ -69,7 +82,8 @@ function groupResults(rows: NationalResultRow[]) {
   const groups = new Map<string, ResultGroup>();
 
   rows.forEach((row) => {
-    const key = `${row.event}-${row.group}`;
+    const station = getStation(row);
+    const key = `${station}-${row.event}-${row.group}`;
     const current = groups.get(key);
     if (current) {
       current.rows.push(row);
@@ -79,6 +93,7 @@ function groupResults(rows: NationalResultRow[]) {
     groups.set(key, {
       key,
       id: makeId("single", key),
+      station,
       event: row.event,
       group: row.group,
       rows: [row]
@@ -92,7 +107,8 @@ function groupAllAroundResults(rows: NationalAllAroundRow[]) {
   const groups = new Map<string, AllAroundGroup>();
 
   rows.forEach((row) => {
-    const key = `${row.event}-${row.group}`;
+    const station = getStation(row);
+    const key = `${station}-${row.event}-${row.group}`;
     const current = groups.get(key);
     if (current) {
       current.rows.push(row);
@@ -102,6 +118,7 @@ function groupAllAroundResults(rows: NationalAllAroundRow[]) {
     groups.set(key, {
       key,
       id: makeId("all-around", key),
+      station,
       event: row.event,
       group: row.group,
       rows: [row]
@@ -115,7 +132,8 @@ function groupRelayResults(rows: NationalRelayRow[]) {
   const groups = new Map<string, RelayGroup>();
 
   rows.forEach((row) => {
-    const key = row.group;
+    const station = getStation(row);
+    const key = `${station}-${row.group}`;
     const current = groups.get(key);
     if (current) {
       current.rows.push(row);
@@ -125,6 +143,7 @@ function groupRelayResults(rows: NationalRelayRow[]) {
     groups.set(key, {
       key,
       id: makeId("relay", key),
+      station,
       group: row.group,
       rows: [row]
     });
@@ -156,29 +175,54 @@ function pickEventIndexGroups<T extends { event: string }>(groups: EventIndexGro
   return events.map((event) => groups.find((group) => group.event === event)).filter(Boolean) as EventIndexGroup<T>[];
 }
 
+function formatIndexGroupLabel(group: { group: string; station?: string }) {
+  return group.station && group.station !== defaultStationName
+    ? `${group.station.replace(" · ", " ")} ${group.group}`
+    : group.group;
+}
+
 function isShenyangTeam(team: string) {
   return team.includes("沈阳市魔方代表队");
 }
 
-export default function NationalResultsPage() {
-  const resultGroups = groupResults(nationalResults);
-  const allAroundGroups = groupAllAroundResults(nationalAllAroundResults);
-  const relayGroups = groupRelayResults(nationalRelayResults);
+function pickStation(value: string | string[] | undefined) {
+  const key = Array.isArray(value) ? value[0] : value;
+  if (!key) return null;
+  return stationParamMap[key as keyof typeof stationParamMap] || null;
+}
+
+function filterRowsByStation<T extends { station?: string }>(rows: T[], station: string | null) {
+  if (!station) return rows;
+  return rows.filter((row) => getStation(row) === station);
+}
+
+export default function NationalResultsPage({
+  searchParams
+}: {
+  searchParams?: { station?: string | string[] };
+}) {
+  const selectedStation = pickStation(searchParams?.station);
+  const filteredResults = filterRowsByStation(nationalResults, selectedStation);
+  const filteredAllAroundResults = filterRowsByStation(nationalAllAroundResults, selectedStation);
+  const filteredRelayResults = filterRowsByStation(nationalRelayResults, selectedStation);
+  const resultGroups = groupResults(filteredResults);
+  const allAroundGroups = groupAllAroundResults(filteredAllAroundResults);
+  const relayGroups = groupRelayResults(filteredRelayResults);
   const singleEventIndexGroups = groupIndexByEvent(resultGroups);
   const allAroundEventIndexGroups = groupIndexByEvent(allAroundGroups);
-  const allRows = [...nationalResults, ...nationalAllAroundResults];
+  const allRows = [...filteredResults, ...filteredAllAroundResults];
   const eventCount = new Set(allRows.map((row) => row.event)).size;
   const teamCount = new Set([
     ...allRows.map((row) => row.team).filter(Boolean),
-    ...nationalRelayResults.map((row) => row.team)
+    ...filteredRelayResults.map((row) => row.team)
   ]).size;
-  const rowCount = nationalResults.length + nationalAllAroundResults.length + nationalRelayResults.length;
+  const rowCount = filteredResults.length + filteredAllAroundResults.length + filteredRelayResults.length;
 
   return (
     <>
       <PageHero
-        label="第一站 · 江苏盐城东台"
-        title="比赛成绩"
+        label={selectedStation || "国赛专题"}
+        title={selectedStation ? "比赛成绩" : "巡回赛比赛成绩"}
         actions={
           <>
             <Link className="button" href="/national-events">
@@ -192,7 +236,9 @@ export default function NationalResultsPage() {
           </>
         }
       >
-        整理 2026年中国魔方运动巡回赛第一站已录入的各组别成绩，包含三次还原、最终成绩和名次。
+        {selectedStation
+          ? `整理 2026年中国魔方运动巡回赛${selectedStation}已录入的各组别成绩，包含三次还原、最终成绩和名次。`
+          : "整理 2026年中国魔方运动巡回赛已录入的各站成绩，包含三次还原、最终成绩和名次；第二站先按现有截图录入，后续可继续补充。"}
       </PageHero>
 
       <section className="container section national-topic-section">
@@ -231,7 +277,7 @@ export default function NationalResultsPage() {
                       <div>
                         {eventGroup.groups.map((group) => (
                           <a href={`#${group.id}`} key={group.key}>
-                            {group.group}
+                            {formatIndexGroupLabel(group)}
                           </a>
                         ))}
                       </div>
@@ -255,7 +301,7 @@ export default function NationalResultsPage() {
                     <div>
                       {eventGroup.groups.map((group) => (
                         <a href={`#${group.id}`} key={group.key}>
-                          {group.group}
+                          {formatIndexGroupLabel(group)}
                         </a>
                       ))}
                     </div>
@@ -272,7 +318,7 @@ export default function NationalResultsPage() {
                   <div>
                     {relayGroups.map((group) => (
                       <a href={`#${group.id}`} key={group.key}>
-                        {group.group}
+                        {formatIndexGroupLabel(group)}
                       </a>
                     ))}
                   </div>
@@ -287,7 +333,7 @@ export default function NationalResultsPage() {
             <details className="national-qualifier-event" id={group.id} key={group.key} open>
               <summary>
                 <strong>
-                  {group.event} · {group.group}
+                  {group.station} · {group.event} · {group.group}
                 </strong>
                 <span>{group.rows.length} 条成绩</span>
               </summary>
@@ -331,7 +377,7 @@ export default function NationalResultsPage() {
             <details className="national-qualifier-event" id={group.id} key={group.key} open>
               <summary>
                 <strong>
-                  {group.event} · {group.group}
+                  {group.station} · {group.event} · {group.group}
                 </strong>
                 <span>{group.rows.length} 条成绩</span>
               </summary>
@@ -368,7 +414,7 @@ export default function NationalResultsPage() {
           {relayGroups.map((group) => (
             <details className="national-qualifier-event" id={group.id} key={group.key} open>
               <summary>
-                <strong>团体接力赛 · {group.group}</strong>
+                <strong>{group.station} · 团体接力赛 · {group.group}</strong>
                 <span>{group.rows.length} 条成绩</span>
               </summary>
               <div className="national-qualifier-table-wrap">

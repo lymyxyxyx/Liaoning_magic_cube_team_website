@@ -10,9 +10,16 @@ const tourStops = [
     type: "分站赛",
     status: "已结束",
     qualifierHref: "/national-events/qualifiers",
-    resultHref: "/national-events/results"
+    resultHref: "/national-events/results?station=first"
   },
-  { name: "第二站", date: "5月3日至4日", city: "湖南娄底", type: "分站赛", status: "已结束" },
+  {
+    name: "第二站",
+    date: "5月3日至4日",
+    city: "湖南娄底",
+    type: "分站赛",
+    status: "已结束",
+    resultHref: "/national-events/results?station=second"
+  },
   { name: "第三站", date: "6月13日至14日", city: "浙江遂昌", type: "分站赛", status: "段级位积分赛" },
   { name: "第四站", date: "6月27日至28日", city: "安徽天长", type: "分站赛", status: "筹备中" },
   { name: "第五站", date: "7月25日至26日", city: "陕西富平", type: "分站赛" },
@@ -123,11 +130,13 @@ export default function NationalEventsPage() {
                   {stop.city}
                 </p>
                 {stop.status ? <span className="national-stop-status">{stop.status}</span> : null}
-                {stop.qualifierHref ? (
+                {stop.qualifierHref || stop.resultHref ? (
                   <div className="national-stop-actions">
-                    <Link className="national-stop-link active" href={stop.qualifierHref}>
-                      查看晋级名单
-                    </Link>
+                    {stop.qualifierHref ? (
+                      <Link className="national-stop-link active" href={stop.qualifierHref}>
+                        查看晋级名单
+                      </Link>
+                    ) : null}
                     {stop.resultHref ? (
                       <Link className="national-stop-link active" href={stop.resultHref}>
                         查看全部成绩
