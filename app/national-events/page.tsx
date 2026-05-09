@@ -12,9 +12,9 @@ const tourStops = [
     qualifierHref: "/national-events/qualifiers",
     resultHref: "/national-events/results"
   },
-  { name: "第二站", date: "5月3日至4日", city: "湖南娄底", type: "分站赛", status: "报名结束" },
-  { name: "第三站", date: "5月30日至31日", city: "浙江丽水", type: "分站赛", status: "延期" },
-  { name: "第四站", date: "6月13日至14日", city: "安徽天长", type: "分站赛" },
+  { name: "第二站", date: "5月3日至4日", city: "湖南娄底", type: "分站赛", status: "已结束" },
+  { name: "第三站", date: "6月13日至14日", city: "浙江遂昌", type: "分站赛", status: "段级位积分赛" },
+  { name: "第四站", date: "6月27日至28日", city: "安徽天长", type: "分站赛", status: "筹备中" },
   { name: "第五站", date: "7月25日至26日", city: "陕西富平", type: "分站赛" },
   { name: "第六站", date: "9月12日至13日", city: "福建莆田", type: "分站赛" },
   { name: "第七站", date: "10月31日至11月1日", city: "湖北随州", type: "分站赛" },
@@ -176,6 +176,17 @@ export default function NationalEventsPage() {
               ))}
             </ul>
           </div>
+        </section>
+
+        <section className="national-note-band">
+          <div>
+            <h2>各站补充通知</h2>
+            <p>第二站比赛已结束，后续赛事信息以各站补充通知为准。</p>
+          </div>
+          <ul>
+            <li>2026年中国魔方运动巡回赛暨段级位积分赛（浙江遂昌站）于6月13日至14日在浙江遂昌举办。</li>
+            <li>2026年中国魔方运动巡回赛（安徽天长站）将于6月27日至28日举办，为做好赛事组织筹备工作，现将有关事宜补充通知如下。</li>
+          </ul>
         </section>
 
         <section className="national-layout">
