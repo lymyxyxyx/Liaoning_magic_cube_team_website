@@ -478,6 +478,7 @@ function formatRankCell(value: number | null) {
 
 function renderRankWithChange(value: number, change: number | null) {
   const state = change === null ? "none" : change > 0 ? "up" : change < 0 ? "down" : "same";
+  const changeValue = change === null || change === 0 ? "" : Math.abs(change);
   const label =
     change === null
       ? "暂无历史变化"
@@ -492,6 +493,7 @@ function renderRankWithChange(value: number, change: number | null) {
       {state === "up" ? <ArrowUp size={14} /> : null}
       {state === "down" ? <ArrowDown size={14} /> : null}
       {state === "same" ? <Minus size={14} /> : null}
+      {changeValue ? <small>{changeValue}</small> : null}
     </span>
   );
 }
