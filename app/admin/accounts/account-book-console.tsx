@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { Plus, Save, Trash2 } from "lucide-react";
+import { Download, Plus, Save, Trash2 } from "lucide-react";
 
 type AccountEntryType = "income" | "expense";
 
@@ -127,6 +127,26 @@ function updateEntry(id: string, next: Partial<AccountEntry>) {
     if (!window.confirm("确认删除这条账目？")) return;
     setEntries((current) => current.filter((entry) => entry.id !== id));
     setStatus("有未保存修改");
+  }
+
+  function downloadVisibleEntries() {
+    const rows = [
+      ["比赛", "类型", "分类", "金额", "备注"],
+      ...visibleEntries.map((entry) => [
+        entry.competitionName,
+        entry.type === "income" ? "收入" : "支出",
+        entry.category,
+        String(entry.amount),
+        formatEntryNote(entry)
+      ])
+    ];
+    const csv = rows.map((row) => row.map(escapeCsvCell).join(",")).join("\n");
+    const blob = new Blob([`\uFEFF${csv}`], { type: "text/csv;charset=utf-8" });
+    const anchor = document.createElement("a");
+    anchor.href = URL.createObjectURL(blob);
+    anchor.download = `${competitionFilter || "账本"}-账目明细.csv`;
+    anchor.click();
+    URL.revokeObjectURL(anchor.href);
   }
 
   function saveEntries(nextEntries = entries, successNotice = "账本已保存。", action = "保存账本修改") {
@@ -255,6 +275,10 @@ function updateEntry(id: string, next: Partial<AccountEntry>) {
             <Save size={17} />
             保存账本修改
           </button>
+          <button className="button account-save-button" type="button" onClick={downloadVisibleEntries}>
+            <Download size={17} />
+            下载账目表格
+          </button>
           {notice ? <p className="admin-inline-notice">{notice}</p> : null}
 
           <div className="account-history">
@@ -352,6 +376,10 @@ function mergePayeeIntoNote(entry: AccountEntry) {
     note: formatEntryNote(entry),
     payerOrPayee: ""
   };
+}
+
+function escapeCsvCell(value: string) {
+  return `"${value.replaceAll('"', '""')}"`;
 }
 
 function formatDateTime(value: string) {
