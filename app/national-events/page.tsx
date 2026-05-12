@@ -5,27 +5,27 @@ import { PageHero } from "@/components/page-hero";
 const tourStops = [
   {
     name: "第一站",
-    date: "4月18日至19日",
+    date: "4月18日-19日",
     city: "江苏盐城",
     type: "分站赛",
-    status: "已结束",
+    status: "已完成",
     qualifierHref: "/national-events/qualifiers",
     resultHref: "/national-events/results?station=first"
   },
   {
     name: "第二站",
-    date: "5月3日至4日",
+    date: "5月3日-4日",
     city: "湖南娄底",
     type: "分站赛",
-    status: "已结束",
+    status: "已完成",
     resultHref: "/national-events/results?station=second"
   },
-  { name: "第三站", date: "6月13日至14日", city: "浙江遂昌", type: "分站赛", status: "段级位积分赛" },
-  { name: "第四站", date: "6月27日至28日", city: "安徽天长", type: "分站赛", status: "筹备中" },
-  { name: "第五站", date: "7月25日至26日", city: "陕西富平", type: "分站赛" },
-  { name: "第六站", date: "9月12日至13日", city: "福建莆田", type: "分站赛" },
-  { name: "第七站", date: "10月31日至11月1日", city: "湖北随州", type: "分站赛" },
-  { name: "总决赛", date: "11月27日至29日", city: "北京", type: "总决赛" }
+  { name: "第三站", date: "6月13日-14日", city: "浙江丽水", type: "分站赛" },
+  { name: "第四站", date: "6月27日-28日", city: "安徽天长", type: "分站赛" },
+  { name: "第五站", date: "7月25日-26日", city: "陕西富平", type: "分站赛" },
+  { name: "第六站", date: "9月12日-13日", city: "福建莆田", type: "分站赛" },
+  { name: "第七站", date: "10月31日-11月1日", city: "湖北随州", type: "分站赛" },
+  { name: "总决赛", date: "11月27日-29日", city: "北京", type: "总决赛" }
 ];
 
 const individualGroups = [
@@ -66,7 +66,7 @@ export default function NationalEventsPage() {
     <>
       <PageHero
         label="国赛专题"
-        title="2026年中国魔方运动巡回赛"
+        title="2026年中国魔方运动巡回赛暨段级位积分赛"
         actions={
           <>
             <Link className="button primary" href="/national-events/qualifiers">
@@ -81,7 +81,7 @@ export default function NationalEventsPage() {
           </>
         }
       >
-        2026年巡回赛由7场分站赛与1场总决赛组成，本站先整理竞赛总规程摘要、赛历、项目组别、参赛办法与奖励规则，后续可继续补充各站通知和辽宁选手参赛记录。
+        2026年巡回赛暨段级位积分赛由7场分站赛与1场总决赛组成，本站先整理竞赛总规程摘要、最新赛历、项目组别、参赛办法与奖励规则，后续可继续补充各站通知和辽宁选手参赛记录。
       </PageHero>
 
       <section className="container section national-topic-section">
@@ -190,11 +190,11 @@ export default function NationalEventsPage() {
         <section className="national-note-band">
           <div>
             <h2>各站补充通知</h2>
-            <p>第二站比赛已结束，后续赛事信息以各站补充通知为准。</p>
+            <p>前两站比赛已完成，后续赛事信息以各站补充通知为准。</p>
           </div>
           <ul>
-            <li>2026年中国魔方运动巡回赛暨段级位积分赛（浙江遂昌站）于6月13日至14日在浙江遂昌举办。</li>
-            <li>2026年中国魔方运动巡回赛（安徽天长站）将于6月27日至28日举办，为做好赛事组织筹备工作，现将有关事宜补充通知如下。</li>
+            <li>2026年中国魔方运动巡回赛暨段级位积分赛（浙江丽水站）于6月13日-14日在浙江丽水举办。</li>
+            <li>2026年中国魔方运动巡回赛暨段级位积分赛（安徽天长站）将于6月27日-28日举办，为做好赛事组织筹备工作，现将有关事宜补充通知如下。</li>
           </ul>
         </section>
 
