@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { wcaRankingCacheHeaders } from "@/lib/http-cache";
 import { readLocalProfiles } from "@/lib/local-profile-store";
 import { getPostgresPool } from "@/lib/postgres";
+import { formatWcaResult } from "@/lib/wca-result-format";
 
 const pageSize = 100;
 const rankingTables = {
@@ -26,19 +27,6 @@ function cleanMode(value: string | null) {
 
 function cleanGender(value: string | null) {
   return value === "m" || value === "f" ? value : "all";
-}
-
-function formatCentiseconds(value: number) {
-  const minutes = Math.floor(value / 6000);
-  const centiseconds = value % 6000;
-  const seconds = centiseconds / 100;
-  if (minutes > 0) return `${minutes}:${seconds.toFixed(2).padStart(5, "0")}`;
-  return seconds.toFixed(2);
-}
-
-function formatResult(eventId: string, value: number) {
-  if (eventId === "333fm") return String(value);
-  return formatCentiseconds(value);
 }
 
 type RawLocalRankingRow = {
@@ -286,7 +274,7 @@ export async function GET(request: NextRequest) {
       genderLocalRank: gender === "all" ? null : rank,
       genderOfficialRank: row.genderOfficialRank,
       genderWorldRank: row.genderWorldRank,
-      result: formatResult(event, row.best),
+      result: formatWcaResult(event, row.best),
       competitionId: row.competitionId || "",
       competitionName: row.competitionName || "",
       date: row.date || "",
