@@ -102,9 +102,24 @@ export async function GET(request: NextRequest) {
     LEFT JOIN LATERAL (
       SELECT
         result.competition_id,
-        result.value1::int AS value1,
-        result.value2::int AS value2,
-        result.value3::int AS value3
+        (
+          SELECT attempt.value::int
+          FROM wca_result_attempts attempt
+          WHERE attempt.result_id = result.id AND attempt.attempt_number = '1'
+          LIMIT 1
+        ) AS value1,
+        (
+          SELECT attempt.value::int
+          FROM wca_result_attempts attempt
+          WHERE attempt.result_id = result.id AND attempt.attempt_number = '2'
+          LIMIT 1
+        ) AS value2,
+        (
+          SELECT attempt.value::int
+          FROM wca_result_attempts attempt
+          WHERE attempt.result_id = result.id AND attempt.attempt_number = '3'
+          LIMIT 1
+        ) AS value3
       FROM wca_results result
       LEFT JOIN wca_competitions result_competition ON result_competition.id = result.competition_id
       WHERE result.person_id = page_ranks."wcaId"

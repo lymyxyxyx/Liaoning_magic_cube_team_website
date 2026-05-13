@@ -22,7 +22,7 @@ const schemaStateFile = path.join(stateDir, "schema_version.txt");
 const logFile = path.join(logDir, "wca_update.log");
 const localProfilesFile = path.join(dataRoot, "local-profiles.json");
 const mode = process.argv.includes("--check") ? "check" : "update";
-const schemaVersion = "wca-sync-v1.5-results";
+const schemaVersion = "wca-sync-v1.6-result-attempts";
 
 const tables = [
   { source: "persons", target: "wca_persons" },
@@ -30,6 +30,7 @@ const tables = [
   { source: "countries", target: "wca_countries" },
   { source: "competitions", target: "wca_competitions" },
   { source: "results", target: "wca_results" },
+  { source: "result_attempts", target: "wca_result_attempts" },
   { source: "ranks_single", target: "wca_ranks_single" },
   { source: "ranks_average", target: "wca_ranks_average" }
 ];
@@ -238,6 +239,7 @@ async function addIndexes(client) {
   await client.query('CREATE INDEX IF NOT EXISTS "wca_results_average_lookup_idx" ON "wca_results" ("event_id", "person_id", "average")');
   await client.query('CREATE INDEX IF NOT EXISTS "wca_results_single_competition_lookup_idx" ON "wca_results" ("event_id", "person_id", "best", "competition_id")');
   await client.query('CREATE INDEX IF NOT EXISTS "wca_results_average_competition_lookup_idx" ON "wca_results" ("event_id", "person_id", "average", "competition_id")');
+  await client.query('CREATE INDEX IF NOT EXISTS "wca_result_attempts_result_attempt_idx" ON "wca_result_attempts" ("result_id", "attempt_number")');
   await client.query('CREATE INDEX IF NOT EXISTS "wca_ranks_single_event_rank_idx" ON "wca_ranks_single" ("event_id", "world_rank")');
   await client.query('CREATE INDEX IF NOT EXISTS "wca_ranks_average_event_rank_idx" ON "wca_ranks_average" ("event_id", "world_rank")');
   await client.query('CREATE INDEX IF NOT EXISTS "wca_ranks_single_event_country_rank_idx" ON "wca_ranks_single" ("event_id", (country_rank::int), (world_rank::int), "person_id")');
