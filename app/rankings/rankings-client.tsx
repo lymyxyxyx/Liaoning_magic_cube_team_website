@@ -22,6 +22,7 @@ type RankingRow = {
   countryName: string;
   gender: string;
   result: string;
+  resultDetails: string[];
   competitionId: string;
   competitionName: string;
   date: string;
@@ -263,7 +264,12 @@ export function RankingsClient() {
                           <small className="ranking-wca-id">{row.wcaId}</small>
                         </td>
                         <td>{row.gender === "m" ? "男" : row.gender === "f" ? "女" : "-"}</td>
-                        <td className="score-strong">{row.result}</td>
+                        <td className="score-strong">
+                          {row.result}
+                          {row.resultDetails?.length ? (
+                            <small className="ranking-result-details">{row.resultDetails.join(" / ")}</small>
+                          ) : null}
+                        </td>
                         <td>
                           <span className="flag-label">
                             <WcaFlag country={row.country} />

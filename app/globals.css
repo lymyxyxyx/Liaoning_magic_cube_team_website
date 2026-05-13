@@ -2753,6 +2753,15 @@ textarea {
   font-weight: 750;
 }
 
+.ranking-result-details {
+  display: block;
+  margin-top: 4px;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 750;
+  white-space: nowrap;
+}
+
 .ranking-competition-link {
   display: inline-flex;
   gap: 6px;

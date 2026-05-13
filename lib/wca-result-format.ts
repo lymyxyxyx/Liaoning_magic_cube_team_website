@@ -34,7 +34,16 @@ function formatMultiBlindResult(value: number) {
   return `${solved}/${attempted} ${formatMultiBlindTime(timeInSeconds)}`;
 }
 
-export function formatWcaResult(eventId: string, value: number) {
+export function formatWcaResult(eventId: string, value: number, mode: "single" | "average" = "single") {
+  if (value === -1) return "DNF";
+  if (value === -2) return "DNS";
+  if (value <= 0) return "-";
+  if (eventId === "333fm") return mode === "average" ? (value / 100).toFixed(2) : String(value);
+  if (eventId === "333mbf") return formatMultiBlindResult(value);
+  return formatCentiseconds(value);
+}
+
+export function formatWcaAttempt(eventId: string, value: number) {
   if (value === -1) return "DNF";
   if (value === -2) return "DNS";
   if (value <= 0) return "-";

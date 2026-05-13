@@ -31,6 +31,7 @@ type LocalRankingRow = {
   countryName: string;
   gender: string;
   result: string;
+  resultDetails: string[];
   competitionId: string;
   competitionName: string;
   date: string;
@@ -422,7 +423,12 @@ export function LiaoningRankingsClient() {
                           <small className="ranking-wca-id">{row.wcaId}</small>
                         </td>
                         <td>{row.gender === "m" ? "男" : row.gender === "f" ? "女" : "-"}</td>
-                        <td className="score-strong">{row.result}</td>
+                        <td className="score-strong">
+                          {row.result}
+                          {row.resultDetails?.length ? (
+                            <small className="ranking-result-details">{row.resultDetails.join(" / ")}</small>
+                          ) : null}
+                        </td>
                         <td>{row.province} · {row.city}</td>
                         <td>{renderRankWithChange(row.rank, row.rankChange)}</td>
                         <td>{renderRankWithChange(row.officialRank, row.officialRankChange)}</td>

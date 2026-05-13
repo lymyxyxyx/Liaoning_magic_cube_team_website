@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { wcaRankingCacheHeaders } from "@/lib/http-cache";
 import { readLocalProfiles } from "@/lib/local-profile-store";
 import { getPostgresPool } from "@/lib/postgres";
-import { formatWcaResult } from "@/lib/wca-result-format";
+import { formatWcaAttempt, formatWcaResult } from "@/lib/wca-result-format";
 
 const pageSize = 100;
 const rankingTables = {
@@ -43,6 +43,9 @@ type RawLocalRankingRow = {
   competitionId: string | null;
   competitionName: string | null;
   date: string | null;
+  value1: number | null;
+  value2: number | null;
+  value3: number | null;
 };
 
 type LocalRankSnapshotRow = {
@@ -190,6 +193,9 @@ export async function GET(request: NextRequest) {
       ${genderRankSelect}
       COALESCE(br.competition_id, '') AS "competitionId",
       COALESCE(c.name, br.competition_id, '') AS "competitionName",
+      br.value1,
+      br.value2,
+      br.value3,
       CASE
         WHEN c.id IS NULL THEN ''
         ELSE CONCAT(c.year, '-', LPAD(c.month, 2, '0'), '-', LPAD(c.day, 2, '0'))
@@ -197,7 +203,11 @@ export async function GET(request: NextRequest) {
     FROM page_ranks
     ${genderRankJoins}
     LEFT JOIN LATERAL (
-      SELECT result.competition_id
+      SELECT
+        result.competition_id,
+        result.value1::int AS value1,
+        result.value2::int AS value2,
+        result.value3::int AS value3
       FROM wca_results result
       LEFT JOIN wca_competitions result_competition ON result_competition.id = result.competition_id
       WHERE result.person_id = page_ranks."wcaId"
@@ -229,7 +239,10 @@ export async function GET(request: NextRequest) {
       NULL::int AS "genderWorldRank",
       '' AS "competitionId",
       '' AS "competitionName",
-      '' AS date
+      '' AS date,
+      NULL::int AS value1,
+      NULL::int AS value2,
+      NULL::int AS value3
     FROM ${rankingTable} r
     JOIN wca_persons p ON p.wca_id = r.person_id AND p.sub_id = '1'
     LEFT JOIN wca_countries cn ON cn.id = p.country_id
@@ -274,7 +287,13 @@ export async function GET(request: NextRequest) {
       genderLocalRank: gender === "all" ? null : rank,
       genderOfficialRank: row.genderOfficialRank,
       genderWorldRank: row.genderWorldRank,
-      result: formatWcaResult(event, row.best),
+      result: formatWcaResult(event, row.best, mode),
+      resultDetails:
+        event === "333fm" && mode === "average"
+          ? [row.value1, row.value2, row.value3]
+              .filter((value): value is number => typeof value === "number")
+              .map((value) => formatWcaAttempt(event, value))
+          : [],
       competitionId: row.competitionId || "",
       competitionName: row.competitionName || "",
       date: row.date || "",
