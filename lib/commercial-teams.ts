@@ -122,8 +122,8 @@ export const commercialTeamMembers: Person[] = [
     bio: "宇宙爆速社领航队成员",
     visible: true,
     mainEvent: "三阶速拧",
-    wcaId: "2024ZHEN03",
-    wcaUrl: "https://www.worldcubeassociation.org/persons/2024ZHEN03"
+    wcaId: "2024ZHEN13",
+    wcaUrl: "https://www.worldcubeassociation.org/persons/2024ZHEN13"
   },
   {
     id: "ct-zhang-han-di",
@@ -164,8 +164,8 @@ export const commercialTeamMembers: Person[] = [
     bio: "宇宙爆速社领航队成员",
     visible: true,
     mainEvent: "三阶速拧",
-    wcaId: "2024XIAZ03",
-    wcaUrl: "https://www.worldcubeassociation.org/persons/2024XIAZ03"
+    wcaId: "2023XIAZ01",
+    wcaUrl: "https://www.worldcubeassociation.org/persons/2023XIAZ01"
   },
   {
     id: "ct-li-you-xuan",
@@ -178,8 +178,8 @@ export const commercialTeamMembers: Person[] = [
     bio: "宇宙爆速社领航队成员",
     visible: true,
     mainEvent: "三阶速拧",
-    wcaId: "2024LIYU03",
-    wcaUrl: "https://www.worldcubeassociation.org/persons/2024LIYU03"
+    wcaId: "2025LIYO01",
+    wcaUrl: "https://www.worldcubeassociation.org/persons/2025LIYO01"
   },
   {
     id: "ct-han-mu-yao",
@@ -350,20 +350,22 @@ export const commercialTeamMembers: Person[] = [
     bio: "魔域梦之队成员，参加多场省内外赛事",
     visible: true,
     mainEvent: "三阶速拧",
-    wcaId: "2025LIYI02",
-    wcaUrl: "https://www.worldcubeassociation.org/persons/2025LIYI02"
+    wcaId: "2024LIYI07",
+    wcaUrl: "https://www.worldcubeassociation.org/persons/2024LIYI07"
   },
   {
     id: "ct-jiang-ming-lang-hld",
     slug: "jiang-ming-lang-hld",
-    name: "蒋铭朗",
+    name: "蒋茗朗",
     avatar: "/visuals/avatar-default.svg",
     roles: ["运动员"],
     city: "葫芦岛",
     gender: "男",
     bio: "魔域梦之队成员（葫芦岛）",
     visible: true,
-    mainEvent: "三阶速拧"
+    mainEvent: "三阶速拧",
+    wcaId: "2024JIAN08",
+    wcaUrl: "https://www.worldcubeassociation.org/persons/2024JIAN08"
   },
   {
     id: "ct-han-yu-xuan-hld",
@@ -399,7 +401,9 @@ export const commercialTeamMembers: Person[] = [
     gender: "男",
     bio: "魔域梦之队成员（葫芦岛）",
     visible: true,
-    mainEvent: "三阶速拧"
+    mainEvent: "三阶速拧",
+    wcaId: "2025WANG68",
+    wcaUrl: "https://www.worldcubeassociation.org/persons/2025WANG68"
   },
 
   // 未来星之队
@@ -479,7 +483,7 @@ export const commercialTeams: CommercialTeam[] = [
     brandUrl: "https://moyucube.com/en/",
     description: "魔域梦之队是魔域旗下青少年梯队，面向具有成长潜力的年轻选手提供训练、器材和赛事支持。辽宁成员来自沈阳、葫芦岛等地，是辽宁魔方战队跨地区合作和青少年培养的重要组成部分。",
     members: commercialTeamMembers.filter(m =>
-      ["李易庭洋", "蒋铭朗", "韩雨轩", "李靖豪", "王澍"].includes(m.name)
+      ["李易庭洋", "蒋茗朗", "韩雨轩", "李靖豪", "王澍"].includes(m.name)
     )
   },
   {
