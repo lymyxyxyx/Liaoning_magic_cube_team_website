@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { ArrowLeft, Trophy } from "lucide-react";
 import { PageHero } from "@/components/page-hero";
+import { NationalResultsClient } from "./national-results-client";
 import {
   nationalAllAroundResults,
   nationalRelayResults,
@@ -202,6 +203,7 @@ export default function NationalResultsPage({
   searchParams?: { station?: string | string[] };
 }) {
   const selectedStation = pickStation(searchParams?.station);
+  const shouldCollapseResultGroups = selectedStation === stationParamMap.second;
   const filteredResults = filterRowsByStation(nationalResults, selectedStation);
   const filteredAllAroundResults = filterRowsByStation(nationalAllAroundResults, selectedStation);
   const filteredRelayResults = filterRowsByStation(nationalRelayResults, selectedStation);
@@ -220,6 +222,7 @@ export default function NationalResultsPage({
 
   return (
     <>
+      <NationalResultsClient />
       <PageHero
         label={selectedStation || "国赛专题"}
         title={selectedStation ? "比赛成绩" : "巡回赛比赛成绩"}
@@ -329,8 +332,13 @@ export default function NationalResultsPage({
         </section>
 
         <div className="national-qualifier-list">
-          {resultGroups.map((group) => (
-            <details className="national-qualifier-event" id={group.id} key={group.key} open>
+          {resultGroups.map((group, groupIndex) => (
+            <details
+              className="national-qualifier-event"
+              id={group.id}
+              key={group.key}
+              open={!shouldCollapseResultGroups || groupIndex === 0}
+            >
               <summary>
                 <strong>
                   {group.station} · {group.event} · {group.group}
@@ -374,7 +382,7 @@ export default function NationalResultsPage({
           ))}
 
           {allAroundGroups.map((group) => (
-            <details className="national-qualifier-event" id={group.id} key={group.key} open>
+            <details className="national-qualifier-event" id={group.id} key={group.key} open={!shouldCollapseResultGroups}>
               <summary>
                 <strong>
                   {group.station} · {group.event} · {group.group}
@@ -412,7 +420,7 @@ export default function NationalResultsPage({
           ))}
 
           {relayGroups.map((group) => (
-            <details className="national-qualifier-event" id={group.id} key={group.key} open>
+            <details className="national-qualifier-event" id={group.id} key={group.key} open={!shouldCollapseResultGroups}>
               <summary>
                 <strong>{group.station} · 团体接力赛 · {group.group}</strong>
                 <span>{group.rows.length} 条成绩</span>

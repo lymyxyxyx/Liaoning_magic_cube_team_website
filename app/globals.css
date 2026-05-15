@@ -2257,6 +2257,8 @@ textarea {
   border: 1px solid var(--line);
   border-radius: 8px;
   background: #fff;
+  content-visibility: auto;
+  contain-intrinsic-size: 72px 640px;
 }
 
 .national-qualifier-event summary {
@@ -2267,6 +2269,10 @@ textarea {
   padding: 14px 16px;
   background: #f8fafc;
   cursor: pointer;
+}
+
+.national-qualifier-event:not([open]) summary {
+  border-bottom: 0;
 }
 
 .national-qualifier-event summary strong {
