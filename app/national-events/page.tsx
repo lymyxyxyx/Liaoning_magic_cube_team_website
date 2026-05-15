@@ -72,9 +72,9 @@ export default function NationalEventsPage() {
             <Link className="button primary" href="/national-events/qualifiers">
               查看晋级名单
             </Link>
-            <Link className="button" href="/national-events/results">
+            <a className="button" href="/national-events/results">
               查看全部成绩
-            </Link>
+            </a>
             <Link className="button" href="https://www.mindsports.org.cn" target="_blank">
               中国智力运动网
             </Link>
@@ -138,9 +138,9 @@ export default function NationalEventsPage() {
                       </Link>
                     ) : null}
                     {stop.resultHref ? (
-                      <Link className="national-stop-link active" href={stop.resultHref}>
+                      <a className="national-stop-link active" href={stop.resultHref}>
                         查看全部成绩
-                      </Link>
+                      </a>
                     ) : null}
                   </div>
                 ) : null}

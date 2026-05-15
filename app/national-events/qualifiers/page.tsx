@@ -47,10 +47,10 @@ export default function NationalQualifiersPage() {
               <ArrowLeft size={16} />
               返回国赛专题
             </Link>
-            <Link className="button primary" href="/national-events/results">
+            <a className="button primary" href="/national-events/results?station=first">
               <ClipboardList size={16} />
               全部成绩
-            </Link>
+            </a>
           </>
         }
       >

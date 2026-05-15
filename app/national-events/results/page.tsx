@@ -197,13 +197,17 @@ function filterRowsByStation<T extends { station?: string }>(rows: T[], station:
   return rows.filter((row) => getStation(row) === station);
 }
 
+function getStationParam(station: string) {
+  return station === stationParamMap.second ? "second" : "first";
+}
+
 export default function NationalResultsPage({
   searchParams
 }: {
   searchParams?: { station?: string | string[] };
 }) {
   const selectedStation = pickStation(searchParams?.station);
-  const shouldCollapseResultGroups = selectedStation === stationParamMap.second;
+  const shouldLazyLoadResultGroups = selectedStation !== stationParamMap.first;
   const filteredResults = filterRowsByStation(nationalResults, selectedStation);
   const filteredAllAroundResults = filterRowsByStation(nationalAllAroundResults, selectedStation);
   const filteredRelayResults = filterRowsByStation(nationalRelayResults, selectedStation);
@@ -337,7 +341,7 @@ export default function NationalResultsPage({
               className="national-qualifier-event"
               id={group.id}
               key={group.key}
-              open={!shouldCollapseResultGroups || groupIndex === 0}
+              open={!shouldLazyLoadResultGroups || groupIndex === 0}
             >
               <summary>
                 <strong>
@@ -345,10 +349,10 @@ export default function NationalResultsPage({
                 </strong>
                 <span>{group.rows.length} 条成绩</span>
               </summary>
-              {shouldCollapseResultGroups ? (
+              {shouldLazyLoadResultGroups ? (
                 <LazyNationalResultsTable
                   kind="single"
-                  station="second"
+                  station={getStationParam(group.station)}
                   event={group.event}
                   group={group.group}
                   initialRows={groupIndex === 0 ? group.rows : undefined}
@@ -392,17 +396,17 @@ export default function NationalResultsPage({
           ))}
 
           {allAroundGroups.map((group) => (
-            <details className="national-qualifier-event" id={group.id} key={group.key} open={!shouldCollapseResultGroups}>
+            <details className="national-qualifier-event" id={group.id} key={group.key} open={!shouldLazyLoadResultGroups}>
               <summary>
                 <strong>
                   {group.station} · {group.event} · {group.group}
                 </strong>
                 <span>{group.rows.length} 条成绩</span>
               </summary>
-              {shouldCollapseResultGroups ? (
+              {shouldLazyLoadResultGroups ? (
                 <LazyNationalResultsTable
                   kind="all-around"
-                  station="second"
+                  station={getStationParam(group.station)}
                   event={group.event}
                   group={group.group}
                 />
@@ -439,13 +443,13 @@ export default function NationalResultsPage({
           ))}
 
           {relayGroups.map((group) => (
-            <details className="national-qualifier-event" id={group.id} key={group.key} open={!shouldCollapseResultGroups}>
+            <details className="national-qualifier-event" id={group.id} key={group.key} open={!shouldLazyLoadResultGroups}>
               <summary>
                 <strong>{group.station} · 团体接力赛 · {group.group}</strong>
                 <span>{group.rows.length} 条成绩</span>
               </summary>
-              {shouldCollapseResultGroups ? (
-                <LazyNationalResultsTable kind="relay" station="second" group={group.group} />
+              {shouldLazyLoadResultGroups ? (
+                <LazyNationalResultsTable kind="relay" station={getStationParam(group.station)} group={group.group} />
               ) : (
                 <div className="national-qualifier-table-wrap">
                   <table className="national-relay-table">
