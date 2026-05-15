@@ -59,8 +59,8 @@ const resultIndexSections = [
   },
   {
     title: "公开组项目",
-    description: "redi、四阶、五阶、六阶、七阶",
-    events: ["redi", "四阶", "五阶", "六阶", "七阶"]
+    description: "redi、三盲、四阶、五阶、六阶、七阶",
+    events: ["redi", "三盲", "四阶", "五阶", "六阶", "七阶"]
   }
 ];
 
