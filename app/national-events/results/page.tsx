@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { ArrowLeft, Trophy } from "lucide-react";
 import { PageHero } from "@/components/page-hero";
-import { NationalResultsClient } from "./national-results-client";
+import { LazyNationalResultsTable, NationalResultsClient } from "./national-results-client";
 import {
   nationalAllAroundResults,
   nationalRelayResults,
@@ -345,39 +345,49 @@ export default function NationalResultsPage({
                 </strong>
                 <span>{group.rows.length} 条成绩</span>
               </summary>
-              <div className="national-qualifier-table-wrap">
-                <table className="national-result-table">
-                  <thead>
-                    <tr>
-                      <th>名次</th>
-                      <th>姓名</th>
-                      <th>性别</th>
-                      <th>代表队</th>
-                      <th>第一次</th>
-                      <th>第二次</th>
-                      <th>第三次</th>
-                      <th>{group.event === "三盲" ? "最终成绩（三次最佳）" : "最终成绩（三次平均）"}</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {group.rows.map((row, rowIndex) => (
-                      <tr
-                        className={isShenyangTeam(row.team) ? "shenyang-team-row" : undefined}
-                        key={`${group.key}-${row.rank || rowIndex}-${row.name}`}
-                      >
-                        <td>{row.rank || "-"}</td>
-                        <td>{row.name}</td>
-                        <td>{row.gender}</td>
-                        <td>{row.team}</td>
-                        <td>{row.first || "-"}</td>
-                        <td>{row.second || "-"}</td>
-                        <td>{row.third || "-"}</td>
-                        <td>{row.final || "-"}</td>
+              {shouldCollapseResultGroups ? (
+                <LazyNationalResultsTable
+                  kind="single"
+                  station="second"
+                  event={group.event}
+                  group={group.group}
+                  initialRows={groupIndex === 0 ? group.rows : undefined}
+                />
+              ) : (
+                <div className="national-qualifier-table-wrap">
+                  <table className="national-result-table">
+                    <thead>
+                      <tr>
+                        <th>名次</th>
+                        <th>姓名</th>
+                        <th>性别</th>
+                        <th>代表队</th>
+                        <th>第一次</th>
+                        <th>第二次</th>
+                        <th>第三次</th>
+                        <th>{group.event === "三盲" ? "最终成绩（三次最佳）" : "最终成绩（三次平均）"}</th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+                    </thead>
+                    <tbody>
+                      {group.rows.map((row, rowIndex) => (
+                        <tr
+                          className={isShenyangTeam(row.team) ? "shenyang-team-row" : undefined}
+                          key={`${group.key}-${row.rank || rowIndex}-${row.name}`}
+                        >
+                          <td>{row.rank || "-"}</td>
+                          <td>{row.name}</td>
+                          <td>{row.gender}</td>
+                          <td>{row.team}</td>
+                          <td>{row.first || "-"}</td>
+                          <td>{row.second || "-"}</td>
+                          <td>{row.third || "-"}</td>
+                          <td>{row.final || "-"}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
             </details>
           ))}
 
@@ -389,33 +399,42 @@ export default function NationalResultsPage({
                 </strong>
                 <span>{group.rows.length} 条成绩</span>
               </summary>
-              <div className="national-qualifier-table-wrap">
-                <table className="national-all-around-table">
-                  <thead>
-                    <tr>
-                      <th>名次</th>
-                      <th>姓名</th>
-                      <th>性别</th>
-                      <th>代表队</th>
-                      <th>最终成绩</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {group.rows.map((row, rowIndex) => (
-                      <tr
-                        className={isShenyangTeam(row.team) ? "shenyang-team-row" : undefined}
-                        key={`${group.key}-${row.rank || rowIndex}-${row.name}`}
-                      >
-                        <td>{row.rank || "-"}</td>
-                        <td>{row.name}</td>
-                        <td>{row.gender}</td>
-                        <td>{row.team}</td>
-                        <td>{row.final}</td>
+              {shouldCollapseResultGroups ? (
+                <LazyNationalResultsTable
+                  kind="all-around"
+                  station="second"
+                  event={group.event}
+                  group={group.group}
+                />
+              ) : (
+                <div className="national-qualifier-table-wrap">
+                  <table className="national-all-around-table">
+                    <thead>
+                      <tr>
+                        <th>名次</th>
+                        <th>姓名</th>
+                        <th>性别</th>
+                        <th>代表队</th>
+                        <th>最终成绩</th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+                    </thead>
+                    <tbody>
+                      {group.rows.map((row, rowIndex) => (
+                        <tr
+                          className={isShenyangTeam(row.team) ? "shenyang-team-row" : undefined}
+                          key={`${group.key}-${row.rank || rowIndex}-${row.name}`}
+                        >
+                          <td>{row.rank || "-"}</td>
+                          <td>{row.name}</td>
+                          <td>{row.gender}</td>
+                          <td>{row.team}</td>
+                          <td>{row.final}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
             </details>
           ))}
 
@@ -425,35 +444,39 @@ export default function NationalResultsPage({
                 <strong>{group.station} · 团体接力赛 · {group.group}</strong>
                 <span>{group.rows.length} 条成绩</span>
               </summary>
-              <div className="national-qualifier-table-wrap">
-                <table className="national-relay-table">
-                  <thead>
-                    <tr>
-                      <th>名次</th>
-                      <th>代表队</th>
-                      <th>组别</th>
-                      <th>队长</th>
-                      <th>队员</th>
-                      <th>最终成绩</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {group.rows.map((row) => (
-                      <tr
-                        className={isShenyangTeam(row.team) ? "shenyang-team-row" : undefined}
-                        key={`${group.key}-${row.rank}-${row.team}-${row.captain}`}
-                      >
-                        <td>{row.rank}</td>
-                        <td>{row.team}</td>
-                        <td>{row.group}</td>
-                        <td>{row.captain}</td>
-                        <td>{row.members.join("、")}</td>
-                        <td>{row.final}</td>
+              {shouldCollapseResultGroups ? (
+                <LazyNationalResultsTable kind="relay" station="second" group={group.group} />
+              ) : (
+                <div className="national-qualifier-table-wrap">
+                  <table className="national-relay-table">
+                    <thead>
+                      <tr>
+                        <th>名次</th>
+                        <th>代表队</th>
+                        <th>组别</th>
+                        <th>队长</th>
+                        <th>队员</th>
+                        <th>最终成绩</th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+                    </thead>
+                    <tbody>
+                      {group.rows.map((row) => (
+                        <tr
+                          className={isShenyangTeam(row.team) ? "shenyang-team-row" : undefined}
+                          key={`${group.key}-${row.rank}-${row.team}-${row.captain}`}
+                        >
+                          <td>{row.rank}</td>
+                          <td>{row.team}</td>
+                          <td>{row.group}</td>
+                          <td>{row.captain}</td>
+                          <td>{row.members.join("、")}</td>
+                          <td>{row.final}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
             </details>
           ))}
         </div>

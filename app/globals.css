@@ -2289,6 +2289,15 @@ textarea {
   overflow: auto;
 }
 
+.national-results-loading {
+  padding: 16px;
+  border-top: 1px solid var(--line);
+  color: var(--muted);
+  font-size: 14px;
+  font-weight: 800;
+  background: #fff;
+}
+
 .national-qualifier-table {
   width: 100%;
   min-width: 620px;
