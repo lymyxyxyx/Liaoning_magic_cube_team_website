@@ -3220,6 +3220,18 @@ textarea {
   gap: 56px;
 }
 
+.commercial-edit-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 28px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--border);
+  font-size: 13px;
+  color: var(--muted);
+}
+
 .commercial-team-block {
   display: flex;
   flex-direction: column;
@@ -3279,6 +3291,10 @@ a.commercial-member-link:hover {
   box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent, #2563eb) 12%, transparent);
 }
 
+.commercial-member-link.commercial-member-editor {
+  border-color: var(--accent, #2563eb);
+}
+
 .commercial-member-card {
   display: flex;
   flex-direction: column;
@@ -3317,6 +3333,62 @@ a.commercial-member-link:hover {
   color: var(--muted);
 }
 
+.commercial-member-actions {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.commercial-edit-button {
+  padding: 6px 10px;
+  font-size: 12px;
+}
+
+.commercial-member-editor {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  padding: 14px;
+  border-color: var(--accent, #2563eb);
+  background: color-mix(in srgb, var(--accent, #2563eb) 4%, transparent);
+}
+
+.commercial-member-editor label {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  min-width: 0;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--muted);
+}
+
+.commercial-member-editor input,
+.commercial-member-editor select,
+.commercial-member-editor textarea {
+  width: 100%;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 8px 9px;
+  background: var(--background);
+  color: var(--foreground);
+  font: inherit;
+  font-size: 13px;
+}
+
+.commercial-member-editor textarea {
+  resize: vertical;
+  line-height: 1.55;
+}
+
+.commercial-editor-wide,
+.commercial-editor-save {
+  grid-column: 1 / -1;
+}
+
+.commercial-editor-save {
+  justify-content: center;
+}
+
 .wca-id-badge {
   display: inline-flex;
   align-items: center;
@@ -3348,6 +3420,18 @@ a.commercial-member-link:hover {
 
 .button--ghost:hover {
   background: var(--soft);
+}
+
+@media (max-width: 640px) {
+  .commercial-edit-toolbar,
+  .commercial-team-header {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .commercial-member-editor {
+    grid-template-columns: 1fr;
+  }
 }
 
 @media (max-width: 920px) {
