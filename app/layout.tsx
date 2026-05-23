@@ -14,6 +14,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body>
         <SiteHeader />
         <main>{children}</main>
+        <footer className="site-footer">
+          <a href="https://beian.miit.gov.cn" target="_blank" rel="noopener noreferrer">
+            辽ICP备2026010407号-1
+          </a>
+        </footer>
       </body>
     </html>
   );
