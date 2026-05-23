@@ -7,10 +7,10 @@ export default function HomePage() {
     <>
       <section className="split-hero">
         <div className="hero-copy">
-          <span className="eyebrow">辽宁地区魔方数据与资料查询</span>
+          <span className="eyebrow">测试版 · 非官方资料整理</span>
           <h1>辽宁地区魔方信息查询网</h1>
           <p>
-            本网站为辽宁地区魔方玩家建立魔方信息查询平台，汇总魔方选手、排名、赛事活动、荣誉经历等资料，让选手、家长、合作单位和魔方爱好者都能清楚查询本地魔方信息。
+            本网站目前为测试阶段的信息整理页面，并非官方对外发布渠道。站内排名、赛事、人员与荣誉等内容主要依据公开资料和人工采集整理，仅供辽宁地区魔方爱好者查询参考；如与官方公告或 WCA 数据不一致，请以官方发布为准。
           </p>
           <div className="hero-actions">
             <Link className="button primary" href="/liaoning-rankings">
