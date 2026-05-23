@@ -68,17 +68,9 @@ export default function NationalEventsPage() {
         label="国赛专题"
         title="2026年中国魔方运动巡回赛暨段级位积分赛"
         actions={
-          <>
-            <Link className="button primary" href="/national-events/qualifiers">
-              查看晋级名单
-            </Link>
-            <a className="button" href="/national-events/results">
-              查看全部成绩
-            </a>
-            <Link className="button" href="https://www.mindsports.org.cn" target="_blank">
-              中国智力运动网
-            </Link>
-          </>
+          <Link className="button" href="https://www.mindsports.org.cn" target="_blank">
+            中国智力运动网
+          </Link>
         }
       >
         2026年巡回赛暨段级位积分赛由7场分站赛与1场总决赛组成，本站先整理竞赛总规程摘要、最新赛历、项目组别、参赛办法与奖励规则，后续可继续补充各站通知和辽宁选手参赛记录。
