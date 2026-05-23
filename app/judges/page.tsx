@@ -4,7 +4,7 @@ export default function JudgesPage() {
   return (
     <>
       <PageHero label="人员档案" title="裁判员列表">
-        沉淀裁判员执裁经历、规则宣讲和赛事参与记录，让省内赛事资料更容易维护。
+        裁判员资料待补充。
       </PageHero>
       <section className="container section">
         <div className="grid">

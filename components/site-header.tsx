@@ -20,11 +20,11 @@ const navItems: NavItem[] = [
   { href: "/national-events", label: "国赛专题（棋牌中心）" },
   { href: "/commercial-teams", label: "商业战队" },
   {
-    label: "人员",
+    label: "人员（待补充）",
     children: [
-      { href: "/athletes", label: "运动员" },
-      { href: "/coaches", label: "教练员" },
-      { href: "/judges", label: "裁判员" }
+      { href: "/athletes", label: "运动员（待补充）" },
+      { href: "/coaches", label: "教练员（待补充）" },
+      { href: "/judges", label: "裁判员（待补充）" }
     ]
   },
   {
@@ -33,9 +33,7 @@ const navItems: NavItem[] = [
       { href: "/competitions", label: "赛事活动" },
       { href: "/weekly", label: "周赛" }
     ]
-  },
-  { href: "/achievements", label: "荣誉档案" },
-  { href: "/about", label: "关于我们" }
+  }
 ];
 
 export function SiteHeader() {
