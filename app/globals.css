@@ -2495,6 +2495,79 @@ textarea {
   font-weight: 800;
 }
 
+.judges-workspace {
+  display: grid;
+  gap: 16px;
+}
+
+.judges-toolbar {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  align-items: center;
+}
+
+.judges-toolbar h2 {
+  margin: 4px 0 0;
+  font-size: 24px;
+}
+
+.judges-notice {
+  margin: 0;
+  border: 1px solid #d7e4ff;
+  border-radius: 8px;
+  padding: 10px 12px;
+  background: #f5f8ff;
+  color: #1f4c9a;
+  font-size: 14px;
+  font-weight: 750;
+}
+
+.judges-create-card {
+  display: grid;
+  gap: 14px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 16px;
+  background: var(--surface);
+}
+
+.judges-form-grid {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.judges-form-grid label {
+  display: grid;
+  gap: 6px;
+  color: #344054;
+  font-size: 13px;
+  font-weight: 850;
+}
+
+.judges-form-grid input,
+.judges-form-grid select {
+  min-height: 42px;
+}
+
+.judges-form-actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.judges-table {
+  min-width: 720px;
+}
+
+.judges-table th:first-child,
+.judges-table td:first-child,
+.judges-table th:nth-child(2),
+.judges-table td:nth-child(2) {
+  text-align: left;
+}
+
 .level-pill {
   display: inline-flex;
   min-width: 64px;

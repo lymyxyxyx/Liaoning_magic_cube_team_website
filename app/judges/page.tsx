@@ -1,18 +1,16 @@
 import { PageHero } from "@/components/page-hero";
+import { readJudges } from "@/lib/judge-store";
+import { JudgesClient } from "./judges-client";
 
-export default function JudgesPage() {
+export default async function JudgesPage() {
+  const judges = await readJudges();
+
   return (
     <>
       <PageHero label="人员档案" title="裁判员列表">
-        裁判员资料待补充。
+        记录裁判员姓名、地区、级别与考取年份。
       </PageHero>
-      <section className="container section">
-        <div className="grid">
-          <div style={{ textAlign: "center", padding: "40px 20px", gridColumn: "1 / -1" }}>
-            <p style={{ color: "#999", fontSize: "16px" }}>裁判员列表待补充</p>
-          </div>
-        </div>
-      </section>
+      <JudgesClient initialJudges={judges} />
     </>
   );
 }
