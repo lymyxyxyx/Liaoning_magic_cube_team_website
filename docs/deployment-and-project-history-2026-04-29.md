@@ -228,10 +228,12 @@ scp /本地真实路径/WCA_export_xxx.zip ubuntu@124.156.140.54:/opt/ln-cubing/
 
 ## 9. 本地、GitHub、服务器同步规则
 
+> 2026-05-25 更新：生产已迁移到阿里云 `39.106.199.195`，当前部署规范以 `docs/current-deployment.md` 为准。腾讯云香港 `124.156.140.54` 已废弃。
+
 推荐同步链路：
 
 ```text
-本地开发 -> git commit -> git push -> 服务器 git pull -> 重新部署
+本地开发 -> git commit -> git push origin main -> git push aliyun main -> 服务器容器内 build -> 重启 web
 ```
 
 服务器不要直接改业务代码。
@@ -249,10 +251,7 @@ scp /本地真实路径/WCA_export_xxx.zip ubuntu@124.156.140.54:/opt/ln-cubing/
 辽宁项目服务器更新命令：
 
 ```bash
-cd /opt/ln-cubing/app
-git pull origin main
-docker compose up -d --build
-docker compose ps
+scripts/deploy_aliyun.sh
 ```
 
 ## 10. sttimer 项目情况
@@ -294,6 +293,8 @@ git pull origin main
 sudo nginx -t
 sudo systemctl reload nginx
 ```
+
+> 注意：以上为 sttimer 静态站维护记录，不适用于 `lncubing.com`。辽宁项目当前部署见 `docs/current-deployment.md`。
 
 ## 11. sttimer 域名和 DNS
 

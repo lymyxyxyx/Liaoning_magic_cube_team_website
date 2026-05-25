@@ -27,6 +27,8 @@ HTTPS_PROXY=http://127.0.0.1:7897 HTTP_PROXY=http://127.0.0.1:7897 git -c http.v
 
 ## 服务器状态
 
+- 2026-05-25 已完整切换到阿里云国内服务器，当前部署说明见 `docs/current-deployment.md`。
+- 腾讯云香港服务器 `124.156.140.54` 已废弃，不再用于部署。
 - 服务器路径：`/opt/ln-cubing/app`
 - 持久数据文件：`/opt/ln-cubing/data/local-profiles.json`
 - 已确认服务器后台录入会写入宿主机持久文件。
@@ -36,10 +38,7 @@ HTTPS_PROXY=http://127.0.0.1:7897 HTTP_PROXY=http://127.0.0.1:7897 git -c http.v
 常用部署命令：
 
 ```bash
-cd /opt/ln-cubing/app
-git pull origin main
-sudo docker compose up -d --build
-sudo docker compose ps
+scripts/deploy_aliyun.sh
 ```
 
 数据目录写入测试：
@@ -89,7 +88,7 @@ docs/local-profile-entry-log.md
 - 如需拉回本地，可用：
 
 ```bash
-scp ubuntu@124.156.140.54:/opt/ln-cubing/data/local-profiles.json \
+scp admin@39.106.199.195:/opt/ln-cubing/data/local-profiles.json \
   /Users/stevenovak/Documents/GitHub/Liaoning_magic_cube_team_website/data/local-profiles.json
 ```
 

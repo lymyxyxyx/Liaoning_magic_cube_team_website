@@ -17,6 +17,22 @@ npm run db:init      # Initialize PostgreSQL schema (first-time setup)
 python3 scripts/build_wca_china_333_rankings.py  # Generate data/wca_rankings.sqlite from WCA SQL export
 ```
 
+## Production Deployment
+
+Production is on Aliyun:
+
+```text
+admin@39.106.199.195:/opt/ln-cubing/app
+```
+
+Use `docs/current-deployment.md` as the source of truth. The old Tencent Cloud Hong Kong server `124.156.140.54` is deprecated.
+
+Deploy from local with:
+
+```bash
+scripts/deploy_aliyun.sh
+```
+
 ## Architecture
 
 This is a **Next.js 14 App Router** site for the Liaoning Rubik's Cube team. Data comes from three distinct sources that must not be confused:

@@ -83,6 +83,21 @@ data/wca_china_333_rankings.json
 - `.env*`
 - `*.tsbuildinfo`
 
+## 生产部署
+
+当前生产环境在阿里云国内服务器：
+
+```text
+admin@39.106.199.195
+/opt/ln-cubing/app
+```
+
+部署流程见 `docs/current-deployment.md`。常用命令：
+
+```bash
+scripts/deploy_aliyun.sh
+```
+
 ## 验证
 
 ```bash

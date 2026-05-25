@@ -83,6 +83,8 @@ Certbot 已设置自动续期。
 
 ## 3. 服务器部署结构
 
+> 2026-05-25 更新：生产服务器已切换到阿里云 `39.106.199.195`。当前部署规范见 `docs/current-deployment.md`。
+
 项目 Git 仓库目录：
 
 ```text
@@ -322,9 +324,7 @@ git push
 服务器：
 
 ```bash
-cd /opt/ln-cubing/app
-git pull
-sudo docker compose up -d --build
+scripts/deploy_aliyun.sh
 ```
 
 ## 8. 常用运维命令
@@ -338,8 +338,7 @@ sudo docker ps
 重建站点：
 
 ```bash
-cd /opt/ln-cubing/app
-sudo docker compose up -d --build
+scripts/deploy_aliyun.sh
 ```
 
 查看 web 日志：
@@ -391,8 +390,7 @@ curl -i "http://127.0.0.1:3000/api/local-rankings?event=333&province=辽宁&city
 待确认：
 
 - 将辽宁本地排名接口切 PostgreSQL 的最后一批改动提交并推送
-- 服务器 `git pull`
-- 服务器 `sudo docker compose up -d --build`
+- 通过 `scripts/deploy_aliyun.sh` 部署到阿里云
 - 确认 `/rankings` 和 `/liaoning-rankings` 不再卡在加载中
 
 ## 10. WCA 数据同步 V1.5
