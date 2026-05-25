@@ -38,7 +38,6 @@ export function CommercialTeamsClient({ initialTeams, wcaNameEntries }: Props) {
       setNotice("姓名不能为空。");
       return;
     }
-    if (!window.confirm(`确定保存 ${editing.draft.name.trim()} 的商业战队信息吗？`)) return;
 
     const nextTeams = teams.map((team) =>
       team.id === editing.teamId
