@@ -45,6 +45,7 @@ function normalizeJudges(judges: RawJudge[]) {
       const year = Number(judge.certifiedYear || 2025);
       return {
         id,
+        ...(String(judge.number || "").trim() ? { number: String(judge.number || "").trim() } : {}),
         name,
         gender,
         province: String(judge.province || "辽宁").trim() || "辽宁",

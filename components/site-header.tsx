@@ -24,7 +24,7 @@ const navItems: NavItem[] = [
     children: [
       { href: "/athletes", label: "运动员（待补充）" },
       { href: "/coaches", label: "教练员（待补充）" },
-      { href: "/judges", label: "裁判员（待补充）" }
+      { href: "/judges", label: "裁判员（录入中）" }
     ]
   },
   {

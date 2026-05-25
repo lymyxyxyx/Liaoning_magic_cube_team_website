@@ -8,6 +8,7 @@ export type JudgeNationalLevel = (typeof judgeNationalLevels)[number];
 
 export type Judge = {
   id: string;
+  number?: string;
   name: string;
   gender: JudgeGender;
   province: string;

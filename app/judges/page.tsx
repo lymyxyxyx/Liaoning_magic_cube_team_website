@@ -8,7 +8,7 @@ export default async function JudgesPage() {
   return (
     <>
       <PageHero label="人员档案" title="裁判员列表">
-        记录裁判员姓名、地区、级别与考取年份。
+        记录裁判员编号、姓名、地区、级别与考取年份。
       </PageHero>
       <JudgesClient initialJudges={judges} />
     </>

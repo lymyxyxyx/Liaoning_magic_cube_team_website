@@ -17,6 +17,7 @@ type Props = {
 };
 
 type JudgeDraft = {
+  number: string;
   name: string;
   gender: JudgeGender;
   province: string;
@@ -27,6 +28,7 @@ type JudgeDraft = {
 };
 
 const emptyDraft: JudgeDraft = {
+  number: "",
   name: "",
   gender: "男",
   province: "辽宁",
@@ -71,6 +73,7 @@ export function JudgesClient({ initialJudges }: Props) {
 
     const nextJudge: Judge = {
       id: createJudgeId(),
+      ...(draft.number.trim() ? { number: draft.number.trim() } : {}),
       name,
       gender: draft.gender,
       province: draft.province.trim() || "辽宁",
@@ -123,6 +126,10 @@ export function JudgesClient({ initialJudges }: Props) {
       {isCreating ? (
         <div className="judges-create-card">
           <div className="judges-form-grid">
+            <label>
+              编号
+              <input value={draft.number} onChange={(event) => setDraft({ ...draft, number: event.target.value })} placeholder="可选" />
+            </label>
             <label>
               姓名
               <input value={draft.name} onChange={(event) => setDraft({ ...draft, name: event.target.value })} />
@@ -196,6 +203,7 @@ export function JudgesClient({ initialJudges }: Props) {
         <table className="result-table judges-table">
           <thead>
             <tr>
+              <th>编号</th>
               <th>姓名</th>
               <th>性别</th>
               <th>地区</th>
@@ -207,11 +215,12 @@ export function JudgesClient({ initialJudges }: Props) {
           <tbody>
             {sortedJudges.length === 0 ? (
               <tr>
-                <td colSpan={showNationalLevelColumn ? 6 : 5}>暂无裁判员信息，请点击右上角新建。</td>
+                <td colSpan={showNationalLevelColumn ? 7 : 6}>暂无裁判员信息，请点击右上角新建。</td>
               </tr>
             ) : (
               sortedJudges.map((judge) => (
                 <tr key={judge.id}>
+                  <td>{judge.number || "-"}</td>
                   <td>{judge.name}</td>
                   <td>{judge.gender}</td>
                   <td>
