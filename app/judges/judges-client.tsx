@@ -2,7 +2,15 @@
 
 import { Plus, Save, X } from "lucide-react";
 import { useMemo, useState } from "react";
-import { judgeLevels, type Judge, type JudgeLevel } from "@/lib/judge-types";
+import {
+  judgeGenders,
+  judgeLevelTypes,
+  judgeNationalLevels,
+  type Judge,
+  type JudgeGender,
+  type JudgeLevelType,
+  type JudgeNationalLevel
+} from "@/lib/judge-types";
 
 type Props = {
   initialJudges: Judge[];
@@ -10,17 +18,21 @@ type Props = {
 
 type JudgeDraft = {
   name: string;
+  gender: JudgeGender;
   province: string;
   city: string;
-  level: JudgeLevel;
+  levelType: JudgeLevelType;
+  nationalLevel: JudgeNationalLevel;
   certifiedYear: string;
 };
 
 const emptyDraft: JudgeDraft = {
   name: "",
+  gender: "男",
   province: "辽宁",
   city: "沈阳",
-  level: "市级",
+  levelType: "市级",
+  nationalLevel: "一级",
   certifiedYear: "2025"
 };
 
@@ -35,7 +47,7 @@ export function JudgesClient({ initialJudges }: Props) {
     () =>
       [...judges].sort(
         (a, b) =>
-          levelWeight(a.level) - levelWeight(b.level) ||
+          levelWeight(a) - levelWeight(b) ||
           b.certifiedYear - a.certifiedYear ||
           a.province.localeCompare(b.province, "zh-Hans-CN") ||
           a.city.localeCompare(b.city, "zh-Hans-CN") ||
@@ -60,9 +72,11 @@ export function JudgesClient({ initialJudges }: Props) {
     const nextJudge: Judge = {
       id: createJudgeId(),
       name,
+      gender: draft.gender,
       province: draft.province.trim() || "辽宁",
       city: draft.city.trim() || "沈阳",
-      level: draft.level,
+      levelType: draft.levelType,
+      ...(draft.levelType === "国家级" ? { nationalLevel: draft.nationalLevel } : {}),
       certifiedYear: Math.trunc(year),
       createdAt: new Date().toISOString()
     };
@@ -89,6 +103,8 @@ export function JudgesClient({ initialJudges }: Props) {
     }
   }
 
+  const showNationalLevelColumn = sortedJudges.some((judge) => judge.levelType === "国家级");
+
   return (
     <section className="container section judges-workspace">
       <div className="judges-toolbar">
@@ -112,6 +128,16 @@ export function JudgesClient({ initialJudges }: Props) {
               <input value={draft.name} onChange={(event) => setDraft({ ...draft, name: event.target.value })} />
             </label>
             <label>
+              性别
+              <select value={draft.gender} onChange={(event) => setDraft({ ...draft, gender: event.target.value as JudgeGender })}>
+                {judgeGenders.map((gender) => (
+                  <option value={gender} key={gender}>
+                    {gender}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label>
               省份
               <input value={draft.province} onChange={(event) => setDraft({ ...draft, province: event.target.value })} />
             </label>
@@ -121,14 +147,29 @@ export function JudgesClient({ initialJudges }: Props) {
             </label>
             <label>
               级别
-              <select value={draft.level} onChange={(event) => setDraft({ ...draft, level: event.target.value as JudgeLevel })}>
-                {judgeLevels.map((level) => (
-                  <option value={level} key={level}>
-                    {level}
+              <select value={draft.levelType} onChange={(event) => setDraft({ ...draft, levelType: event.target.value as JudgeLevelType })}>
+                {judgeLevelTypes.map((levelType) => (
+                  <option value={levelType} key={levelType}>
+                    {levelType}
                   </option>
                 ))}
               </select>
             </label>
+            {draft.levelType === "国家级" ? (
+              <label>
+                国家等级
+                <select
+                  value={draft.nationalLevel}
+                  onChange={(event) => setDraft({ ...draft, nationalLevel: event.target.value as JudgeNationalLevel })}
+                >
+                  {judgeNationalLevels.map((level) => (
+                    <option value={level} key={level}>
+                      {level}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            ) : null}
             <label>
               考取年份
               <input
@@ -156,26 +197,30 @@ export function JudgesClient({ initialJudges }: Props) {
           <thead>
             <tr>
               <th>姓名</th>
+              <th>性别</th>
               <th>地区</th>
               <th>级别</th>
+              {showNationalLevelColumn ? <th>国家等级</th> : null}
               <th>考取年份</th>
             </tr>
           </thead>
           <tbody>
             {sortedJudges.length === 0 ? (
               <tr>
-                <td colSpan={4}>暂无裁判员信息，请点击右上角新建。</td>
+                <td colSpan={showNationalLevelColumn ? 6 : 5}>暂无裁判员信息，请点击右上角新建。</td>
               </tr>
             ) : (
               sortedJudges.map((judge) => (
                 <tr key={judge.id}>
                   <td>{judge.name}</td>
+                  <td>{judge.gender}</td>
                   <td>
                     {judge.province} · {judge.city}
                   </td>
-                  <td>
-                    <span className="status">{judge.level}</span>
+                  <td colSpan={showNationalLevelColumn && judge.levelType !== "国家级" ? 2 : 1}>
+                    <span className="status">{judge.levelType}</span>
                   </td>
+                  {showNationalLevelColumn && judge.levelType === "国家级" ? <td>{judge.nationalLevel || "-"}</td> : null}
                   <td>{judge.certifiedYear}</td>
                 </tr>
               ))
@@ -187,8 +232,10 @@ export function JudgesClient({ initialJudges }: Props) {
   );
 }
 
-function levelWeight(level: JudgeLevel) {
-  return judgeLevels.indexOf(level);
+function levelWeight(judge: Judge) {
+  const typeWeight = judgeLevelTypes.indexOf(judge.levelType);
+  const nationalWeight = judge.levelType === "国家级" ? judgeNationalLevels.indexOf(judge.nationalLevel || "一级") : 0;
+  return typeWeight * 10 + nationalWeight;
 }
 
 function createJudgeId() {
