@@ -70,8 +70,14 @@ function normalizeLevel(judge: RawJudge) {
   if (judge.level === "国家一级") return "国家一级" as const;
   if (judge.level === "国家二级") return "国家二级" as const;
   if (judge.level === "国家三级") return "国家三级" as const;
-  if (judge.level === "省级") return "省级" as const;
-  return "市级" as const;
+  if (judge.level === "省一级") return "省一级" as const;
+  if (judge.level === "省二级") return "省二级" as const;
+  if (judge.level === "省三级") return "省三级" as const;
+  if (judge.level === "省级") return "省一级" as const;
+  if (judge.level === "市一级") return "市一级" as const;
+  if (judge.level === "市二级") return "市二级" as const;
+  if (judge.level === "市三级") return "市三级" as const;
+  return "市一级" as const;
 }
 
 function createJudgeId() {

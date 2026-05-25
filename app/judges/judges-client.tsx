@@ -30,7 +30,7 @@ const emptyDraft: JudgeDraft = {
   gender: "男",
   province: "辽宁",
   city: "沈阳",
-  levelType: "市级",
+  levelType: "市一级",
   certifiedYear: "2025"
 };
 
