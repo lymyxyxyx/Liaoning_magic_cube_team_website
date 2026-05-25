@@ -2,18 +2,17 @@ import { promises as fs } from "node:fs";
 import {
   judgeGenders,
   judgeLevelTypes,
-  judgeNationalLevels,
   type Judge,
   type JudgeGender,
-  type JudgeLevelType,
-  type JudgeNationalLevel
+  type JudgeLevelType
 } from "@/lib/judge-types";
 
 const dataPath = `${process.cwd()}/data/judges.json`;
-export type { Judge, JudgeGender, JudgeLevelType, JudgeNationalLevel } from "@/lib/judge-types";
+export type { Judge, JudgeGender, JudgeLevelType } from "@/lib/judge-types";
 
 type RawJudge = Partial<Judge> & {
   level?: string;
+  nationalLevel?: string;
 };
 
 export async function readJudges(): Promise<Judge[]> {
@@ -40,7 +39,7 @@ function normalizeJudges(judges: RawJudge[]) {
       const id = String(judge.id || "").trim() || createJudgeId();
       const name = String(judge.name || "").trim();
       if (!name) return null;
-      const { levelType, nationalLevel } = normalizeLevel(judge);
+      const levelType = normalizeLevel(judge);
       const gender = judgeGenders.includes(judge.gender as JudgeGender) ? (judge.gender as JudgeGender) : "男";
       const year = Number(judge.certifiedYear || 2025);
       return {
@@ -51,7 +50,6 @@ function normalizeJudges(judges: RawJudge[]) {
         province: String(judge.province || "辽宁").trim() || "辽宁",
         city: String(judge.city || "沈阳").trim() || "沈阳",
         levelType,
-        ...(levelType === "国家级" ? { nationalLevel } : {}),
         certifiedYear: Number.isFinite(year) ? Math.max(1900, Math.min(2100, Math.trunc(year))) : 2025,
         createdAt: typeof judge.createdAt === "string" && judge.createdAt ? judge.createdAt : new Date().toISOString()
       };
@@ -61,18 +59,19 @@ function normalizeJudges(judges: RawJudge[]) {
 
 function normalizeLevel(judge: RawJudge) {
   if (judgeLevelTypes.includes(judge.levelType as JudgeLevelType)) {
-    const levelType = judge.levelType as JudgeLevelType;
-    const nationalLevel = judgeNationalLevels.includes(judge.nationalLevel as JudgeNationalLevel)
-      ? (judge.nationalLevel as JudgeNationalLevel)
-      : "一级";
-    return { levelType, nationalLevel };
+    if (judge.levelType === "国家级" && judge.nationalLevel === "一级") return "国家一级";
+    if (judge.levelType === "国家级" && judge.nationalLevel === "二级") return "国家二级";
+    if (judge.levelType === "国家级" && judge.nationalLevel === "三级") return "国家三级";
+    return judge.levelType as JudgeLevelType;
   }
 
-  if (judge.level === "国家一级") return { levelType: "国家级" as const, nationalLevel: "一级" as const };
-  if (judge.level === "国家二级") return { levelType: "国家级" as const, nationalLevel: "二级" as const };
-  if (judge.level === "国家三级") return { levelType: "国家级" as const, nationalLevel: "三级" as const };
-  if (judge.level === "省级") return { levelType: "省级" as const, nationalLevel: "一级" as const };
-  return { levelType: "市级" as const, nationalLevel: "一级" as const };
+  if (judge.level === "国际级") return "国际级" as const;
+  if (judge.level === "国家级") return "国家级" as const;
+  if (judge.level === "国家一级") return "国家一级" as const;
+  if (judge.level === "国家二级") return "国家二级" as const;
+  if (judge.level === "国家三级") return "国家三级" as const;
+  if (judge.level === "省级") return "省级" as const;
+  return "市级" as const;
 }
 
 function createJudgeId() {

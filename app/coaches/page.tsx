@@ -1,18 +1,16 @@
 import { PageHero } from "@/components/page-hero";
+import { readCoaches } from "@/lib/coach-store";
+import { CoachesClient } from "./coaches-client";
 
-export default function CoachesPage() {
+export default async function CoachesPage() {
+  const coaches = await readCoaches();
+
   return (
     <>
       <PageHero label="人员档案" title="教练员列表">
-        教练员资料待补充。
+        记录教练员编号、姓名、地区、级别与考取年份。
       </PageHero>
-      <section className="container section">
-        <div className="grid">
-          <div style={{ textAlign: "center", padding: "40px 20px", gridColumn: "1 / -1" }}>
-            <p style={{ color: "#999", fontSize: "16px" }}>教练员列表待补充</p>
-          </div>
-        </div>
-      </section>
+      <CoachesClient initialCoaches={coaches} />
     </>
   );
 }

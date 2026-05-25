@@ -2,62 +2,56 @@
 
 import { Plus, Save, X } from "lucide-react";
 import { useMemo, useState } from "react";
-import {
-  judgeGenders,
-  judgeLevelTypes,
-  type Judge,
-  type JudgeGender,
-  type JudgeLevelType
-} from "@/lib/judge-types";
+import { coachGenders, coachLevelTypes, type Coach, type CoachGender, type CoachLevelType } from "@/lib/coach-types";
 
 type Props = {
-  initialJudges: Judge[];
+  initialCoaches: Coach[];
 };
 
-type JudgeDraft = {
+type CoachDraft = {
   number: string;
   name: string;
-  gender: JudgeGender;
+  gender: CoachGender;
   province: string;
   city: string;
-  levelType: JudgeLevelType;
+  levelType: CoachLevelType;
   certifiedYear: string;
 };
 
-const emptyDraft: JudgeDraft = {
+const emptyDraft: CoachDraft = {
   number: "",
   name: "",
   gender: "男",
   province: "辽宁",
   city: "沈阳",
-  levelType: "市级",
+  levelType: "初级",
   certifiedYear: "2025"
 };
 
-export function JudgesClient({ initialJudges }: Props) {
-  const [judges, setJudges] = useState(initialJudges);
+export function CoachesClient({ initialCoaches }: Props) {
+  const [coaches, setCoaches] = useState(initialCoaches);
   const [draft, setDraft] = useState(emptyDraft);
   const [isCreating, setIsCreating] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [notice, setNotice] = useState("");
 
-  const sortedJudges = useMemo(
+  const sortedCoaches = useMemo(
     () =>
-      [...judges].sort(
+      [...coaches].sort(
         (a, b) =>
-          levelWeight(a) - levelWeight(b) ||
+          coachLevelTypes.indexOf(a.levelType) - coachLevelTypes.indexOf(b.levelType) ||
           b.certifiedYear - a.certifiedYear ||
           a.province.localeCompare(b.province, "zh-Hans-CN") ||
           a.city.localeCompare(b.city, "zh-Hans-CN") ||
           a.name.localeCompare(b.name, "zh-Hans-CN")
       ),
-    [judges]
+    [coaches]
   );
 
-  async function addJudge() {
+  async function addCoach() {
     const name = draft.name.trim();
     if (!name) {
-      setNotice("请填写裁判员姓名。");
+      setNotice("请填写教练员姓名。");
       return;
     }
 
@@ -67,8 +61,8 @@ export function JudgesClient({ initialJudges }: Props) {
       return;
     }
 
-    const nextJudge: Judge = {
-      id: createJudgeId(),
+    const nextCoach: Coach = {
+      id: createCoachId(),
       ...(draft.number.trim() ? { number: draft.number.trim() } : {}),
       name,
       gender: draft.gender,
@@ -78,19 +72,19 @@ export function JudgesClient({ initialJudges }: Props) {
       certifiedYear: Math.trunc(year),
       createdAt: new Date().toISOString()
     };
-    const nextJudges = [nextJudge, ...judges];
+    const nextCoaches = [nextCoach, ...coaches];
 
     setIsSaving(true);
     setNotice("正在保存...");
     try {
-      const response = await fetch("/api/judges", {
+      const response = await fetch("/api/coaches", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ judges: nextJudges })
+        body: JSON.stringify({ coaches: nextCoaches })
       });
       if (!response.ok) throw new Error("save");
-      const payload = (await response.json()) as { judges: Judge[] };
-      setJudges(payload.judges || nextJudges);
+      const payload = (await response.json()) as { coaches: Coach[] };
+      setCoaches(payload.coaches || nextCoaches);
       setDraft(emptyDraft);
       setIsCreating(false);
       setNotice("已保存，刷新页面后仍可查看。");
@@ -106,7 +100,7 @@ export function JudgesClient({ initialJudges }: Props) {
       <div className="judges-toolbar">
         <div>
           <span className="eyebrow">在线表格</span>
-          <h2>裁判员信息</h2>
+          <h2>教练员信息</h2>
         </div>
         <button className="button primary" type="button" onClick={() => setIsCreating(true)}>
           <Plus size={16} />
@@ -129,8 +123,8 @@ export function JudgesClient({ initialJudges }: Props) {
             </label>
             <label>
               性别
-              <select value={draft.gender} onChange={(event) => setDraft({ ...draft, gender: event.target.value as JudgeGender })}>
-                {judgeGenders.map((gender) => (
+              <select value={draft.gender} onChange={(event) => setDraft({ ...draft, gender: event.target.value as CoachGender })}>
+                {coachGenders.map((gender) => (
                   <option value={gender} key={gender}>
                     {gender}
                   </option>
@@ -147,8 +141,8 @@ export function JudgesClient({ initialJudges }: Props) {
             </label>
             <label>
               级别
-              <select value={draft.levelType} onChange={(event) => setDraft({ ...draft, levelType: event.target.value as JudgeLevelType })}>
-                {judgeLevelTypes.map((levelType) => (
+              <select value={draft.levelType} onChange={(event) => setDraft({ ...draft, levelType: event.target.value as CoachLevelType })}>
+                {coachLevelTypes.map((levelType) => (
                   <option value={levelType} key={levelType}>
                     {levelType}
                   </option>
@@ -165,7 +159,7 @@ export function JudgesClient({ initialJudges }: Props) {
             </label>
           </div>
           <div className="judges-form-actions">
-            <button className="button primary" type="button" disabled={isSaving} onClick={addJudge}>
+            <button className="button primary" type="button" disabled={isSaving} onClick={addCoach}>
               <Save size={16} />
               {isSaving ? "保存中" : "保存"}
             </button>
@@ -190,23 +184,23 @@ export function JudgesClient({ initialJudges }: Props) {
             </tr>
           </thead>
           <tbody>
-            {sortedJudges.length === 0 ? (
+            {sortedCoaches.length === 0 ? (
               <tr>
-                <td colSpan={6}>暂无裁判员信息，请点击右上角新建。</td>
+                <td colSpan={6}>暂无教练员信息，请点击右上角新建。</td>
               </tr>
             ) : (
-              sortedJudges.map((judge) => (
-                <tr key={judge.id}>
-                  <td>{judge.number || "-"}</td>
-                  <td>{judge.name}</td>
-                  <td>{judge.gender}</td>
+              sortedCoaches.map((coach) => (
+                <tr key={coach.id}>
+                  <td>{coach.number || "-"}</td>
+                  <td>{coach.name}</td>
+                  <td>{coach.gender}</td>
                   <td>
-                    {judge.province} · {judge.city}
+                    {coach.province} · {coach.city}
                   </td>
                   <td>
-                    <span className="status">{judge.levelType}</span>
+                    <span className="status">{coach.levelType}</span>
                   </td>
-                  <td>{judge.certifiedYear}</td>
+                  <td>{coach.certifiedYear}</td>
                 </tr>
               ))
             )}
@@ -217,10 +211,6 @@ export function JudgesClient({ initialJudges }: Props) {
   );
 }
 
-function levelWeight(judge: Judge) {
-  return judgeLevelTypes.indexOf(judge.levelType);
-}
-
-function createJudgeId() {
-  return `judge-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
+function createCoachId() {
+  return `coach-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
 }
