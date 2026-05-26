@@ -2,6 +2,8 @@ import { PageHero } from "@/components/page-hero";
 import { readJudges } from "@/lib/judge-store";
 import { JudgesClient } from "./judges-client";
 
+export const dynamic = "force-dynamic";
+
 export default async function JudgesPage() {
   const judges = await readJudges();
 
