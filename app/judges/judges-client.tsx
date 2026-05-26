@@ -5,9 +5,11 @@ import { useMemo, useState } from "react";
 import {
   judgeGenders,
   judgeLevelTypes,
+  judgeTrainingSessions,
   type Judge,
   type JudgeGender,
-  type JudgeLevelType
+  type JudgeLevelType,
+  type JudgeTrainingSessionId
 } from "@/lib/judge-types";
 
 type Props = {
@@ -21,8 +23,10 @@ type JudgeDraft = {
   province: string;
   city: string;
   levelType: JudgeLevelType;
-  certifiedYear: string;
+  trainingSessionId: JudgeTrainingSessionId;
 };
+
+const liaoningCities = ["沈阳", "大连", "鞍山", "抚顺", "本溪", "丹东", "锦州", "营口", "阜新", "辽阳", "盘锦", "铁岭", "朝阳", "葫芦岛"] as const;
 
 const emptyDraft: JudgeDraft = {
   number: "",
@@ -31,7 +35,7 @@ const emptyDraft: JudgeDraft = {
   province: "辽宁",
   city: "沈阳",
   levelType: "市一级",
-  certifiedYear: "2025"
+  trainingSessionId: "training-wuhan-2025"
 };
 
 export function JudgesClient({ initialJudges }: Props) {
@@ -45,10 +49,11 @@ export function JudgesClient({ initialJudges }: Props) {
     () =>
       [...judges].sort(
         (a, b) =>
+          trainingDateWeight(a.trainingDate) - trainingDateWeight(b.trainingDate) ||
           levelWeight(a) - levelWeight(b) ||
-          b.certifiedYear - a.certifiedYear ||
           a.province.localeCompare(b.province, "zh-Hans-CN") ||
           a.city.localeCompare(b.city, "zh-Hans-CN") ||
+          judgeOrderWeight(a) - judgeOrderWeight(b) ||
           a.name.localeCompare(b.name, "zh-Hans-CN")
       ),
     [judges]
@@ -61,9 +66,9 @@ export function JudgesClient({ initialJudges }: Props) {
       return;
     }
 
-    const year = Number(draft.certifiedYear);
-    if (!Number.isFinite(year) || year < 1900 || year > 2100) {
-      setNotice("请填写正确的考取年份。");
+    const trainingSession = judgeTrainingSessions.find((session) => session.id === draft.trainingSessionId);
+    if (!trainingSession) {
+      setNotice("请选择考取地点。");
       return;
     }
 
@@ -75,11 +80,26 @@ export function JudgesClient({ initialJudges }: Props) {
       province: draft.province.trim() || "辽宁",
       city: draft.city.trim() || "沈阳",
       levelType: draft.levelType,
-      certifiedYear: Math.trunc(year),
+      trainingSessionId: trainingSession.id,
+      trainingLocation: trainingSession.location,
+      trainingDate: trainingSession.trainingDate,
       createdAt: new Date().toISOString()
     };
     const nextJudges = [nextJudge, ...judges];
 
+    const savedJudges = await saveJudges(nextJudges, "已保存，刷新页面后仍可查看。");
+    if (savedJudges) {
+      setDraft(emptyDraft);
+      setIsCreating(false);
+    }
+  }
+
+  async function updateJudgeCity(judgeId: string, city: string) {
+    const nextJudges = judges.map((judge) => (judge.id === judgeId ? { ...judge, province: "辽宁", city } : judge));
+    await saveJudges(nextJudges, "城市已更新。");
+  }
+
+  async function saveJudges(nextJudges: Judge[], successMessage: string) {
     setIsSaving(true);
     setNotice("正在保存...");
     try {
@@ -90,12 +110,13 @@ export function JudgesClient({ initialJudges }: Props) {
       });
       if (!response.ok) throw new Error("save");
       const payload = (await response.json()) as { judges: Judge[] };
-      setJudges(payload.judges || nextJudges);
-      setDraft(emptyDraft);
-      setIsCreating(false);
-      setNotice("已保存，刷新页面后仍可查看。");
+      const savedJudges = payload.judges || nextJudges;
+      setJudges(savedJudges);
+      setNotice(successMessage);
+      return savedJudges;
     } catch {
       setNotice("保存失败，请稍后重试。");
+      return null;
     } finally {
       setIsSaving(false);
     }
@@ -143,7 +164,13 @@ export function JudgesClient({ initialJudges }: Props) {
             </label>
             <label>
               城市
-              <input value={draft.city} onChange={(event) => setDraft({ ...draft, city: event.target.value })} />
+              <select value={draft.city} onChange={(event) => setDraft({ ...draft, city: event.target.value })}>
+                {liaoningCities.map((city) => (
+                  <option value={city} key={city}>
+                    {city}
+                  </option>
+                ))}
+              </select>
             </label>
             <label>
               级别
@@ -156,12 +183,17 @@ export function JudgesClient({ initialJudges }: Props) {
               </select>
             </label>
             <label>
-              考取年份
-              <input
-                inputMode="numeric"
-                value={draft.certifiedYear}
-                onChange={(event) => setDraft({ ...draft, certifiedYear: event.target.value })}
-              />
+              考取地点
+              <select
+                value={draft.trainingSessionId}
+                onChange={(event) => setDraft({ ...draft, trainingSessionId: event.target.value as JudgeTrainingSessionId })}
+              >
+                {judgeTrainingSessions.map((session) => (
+                  <option value={session.id} key={session.id}>
+                    {session.location} · {session.trainingDate}
+                  </option>
+                ))}
+              </select>
             </label>
           </div>
           <div className="judges-form-actions">
@@ -181,32 +213,45 @@ export function JudgesClient({ initialJudges }: Props) {
         <table className="result-table judges-table">
           <thead>
             <tr>
+              <th>序号</th>
               <th>编号</th>
               <th>姓名</th>
               <th>性别</th>
               <th>地区</th>
               <th>级别</th>
-              <th>考取年份</th>
+              <th>考取地点</th>
+              <th>培训日期</th>
             </tr>
           </thead>
           <tbody>
             {sortedJudges.length === 0 ? (
               <tr>
-                <td colSpan={6}>暂无裁判员信息，请点击右上角新建。</td>
+                <td colSpan={8}>暂无裁判员信息，请点击右上角新建。</td>
               </tr>
             ) : (
-              sortedJudges.map((judge) => (
+              sortedJudges.map((judge, index) => (
                 <tr key={judge.id}>
+                  <td>{index + 1}</td>
                   <td>{judge.number || "-"}</td>
                   <td>{judge.name}</td>
                   <td>{judge.gender}</td>
                   <td>
-                    {judge.province} · {judge.city}
+                    <span className="judges-region-editor">
+                      辽宁 ·
+                      <select value={judge.city} disabled={isSaving} onChange={(event) => updateJudgeCity(judge.id, event.target.value)}>
+                        {liaoningCities.map((city) => (
+                          <option value={city} key={city}>
+                            {city}
+                          </option>
+                        ))}
+                      </select>
+                    </span>
                   </td>
                   <td>
                     <span className="status">{judge.levelType}</span>
                   </td>
-                  <td>{judge.certifiedYear}</td>
+                  <td>{judge.trainingLocation}</td>
+                  <td>{judge.trainingDate}</td>
                 </tr>
               ))
             )}
@@ -219,6 +264,18 @@ export function JudgesClient({ initialJudges }: Props) {
 
 function levelWeight(judge: Judge) {
   return judgeLevelTypes.indexOf(judge.levelType);
+}
+
+function trainingDateWeight(trainingDate: string) {
+  const match = trainingDate.match(/(\d{4})年(\d{1,2})月(\d{1,2})日/);
+  if (!match) return Number.MAX_SAFE_INTEGER;
+  const [, year, month, day] = match;
+  return Number(`${year}${month.padStart(2, "0")}${day.padStart(2, "0")}`);
+}
+
+function judgeOrderWeight(judge: Judge) {
+  if (judge.trainingSessionId === "training-shantou-2025" && judge.name === "王猛") return -1;
+  return 0;
 }
 
 function createJudgeId() {

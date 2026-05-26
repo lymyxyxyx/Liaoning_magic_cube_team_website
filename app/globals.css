@@ -2558,13 +2558,26 @@ textarea {
 }
 
 .judges-table {
-  min-width: 800px;
+  min-width: 940px;
 }
 
-.judges-table th:first-child,
-.judges-table td:first-child,
+.judges-region-editor {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+}
+
+.judges-region-editor select {
+  min-height: 32px;
+  min-width: 92px;
+  padding: 4px 8px;
+}
+
 .judges-table th:nth-child(2),
-.judges-table td:nth-child(2) {
+.judges-table td:nth-child(2),
+.judges-table th:nth-child(3),
+.judges-table td:nth-child(3) {
   text-align: left;
 }
 
