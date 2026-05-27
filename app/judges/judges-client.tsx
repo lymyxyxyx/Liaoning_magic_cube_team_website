@@ -5,11 +5,9 @@ import { useMemo, useState } from "react";
 import {
   judgeGenders,
   judgeLevelTypes,
-  judgeTrainingSessions,
   type Judge,
   type JudgeGender,
-  type JudgeLevelType,
-  type JudgeTrainingSessionId
+  type JudgeLevelType
 } from "@/lib/judge-types";
 
 type Props = {
@@ -23,7 +21,8 @@ type JudgeDraft = {
   province: string;
   city: string;
   levelType: JudgeLevelType;
-  trainingSessionId: JudgeTrainingSessionId;
+  trainingLocation: string;
+  trainingDate: string;
 };
 
 const liaoningCities = ["沈阳", "大连", "鞍山", "抚顺", "本溪", "丹东", "锦州", "营口", "阜新", "辽阳", "盘锦", "铁岭", "朝阳", "葫芦岛"] as const;
@@ -35,7 +34,8 @@ const emptyDraft: JudgeDraft = {
   province: "辽宁",
   city: "沈阳",
   levelType: "市一级",
-  trainingSessionId: "training-wuhan-2025"
+  trainingLocation: "",
+  trainingDate: ""
 };
 
 export function JudgesClient({ initialJudges }: Props) {
@@ -66,9 +66,9 @@ export function JudgesClient({ initialJudges }: Props) {
       return;
     }
 
-    const trainingSession = judgeTrainingSessions.find((session) => session.id === draft.trainingSessionId);
-    if (!trainingSession) {
-      setNotice("请选择考取地点。");
+    const trainingLocation = draft.trainingLocation.trim();
+    if (!trainingLocation) {
+      setNotice("请填写考取地点。");
       return;
     }
 
@@ -80,9 +80,9 @@ export function JudgesClient({ initialJudges }: Props) {
       province: draft.province.trim() || "辽宁",
       city: draft.city.trim() || "沈阳",
       levelType: draft.levelType,
-      trainingSessionId: trainingSession.id,
-      trainingLocation: trainingSession.location,
-      trainingDate: trainingSession.trainingDate,
+      trainingSessionId: "manual",
+      trainingLocation,
+      trainingDate: draft.trainingDate.trim(),
       createdAt: new Date().toISOString()
     };
     const nextJudges = [nextJudge, ...judges];
@@ -184,16 +184,19 @@ export function JudgesClient({ initialJudges }: Props) {
             </label>
             <label>
               考取地点
-              <select
-                value={draft.trainingSessionId}
-                onChange={(event) => setDraft({ ...draft, trainingSessionId: event.target.value as JudgeTrainingSessionId })}
-              >
-                {judgeTrainingSessions.map((session) => (
-                  <option value={session.id} key={session.id}>
-                    {session.location} · {session.trainingDate}
-                  </option>
-                ))}
-              </select>
+              <input
+                value={draft.trainingLocation}
+                onChange={(event) => setDraft({ ...draft, trainingLocation: event.target.value })}
+                placeholder="如：辽宁沈阳"
+              />
+            </label>
+            <label>
+              培训日期
+              <input
+                value={draft.trainingDate}
+                onChange={(event) => setDraft({ ...draft, trainingDate: event.target.value })}
+                placeholder="如：2025年8月20日至21日"
+              />
             </label>
           </div>
           <div className="judges-form-actions">

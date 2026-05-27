@@ -94,7 +94,7 @@ function normalizeTrainingSession(judge: RawJudge) {
   const trainingDate = String(judge.trainingDate || "").trim();
   if (trainingLocation || trainingDate) {
     return {
-      id: judgeTrainingSessions[0].id,
+      id: String(judge.trainingSessionId || "manual").trim() || "manual",
       location: trainingLocation || judgeTrainingSessions[0].location,
       trainingDate
     };

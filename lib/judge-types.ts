@@ -32,7 +32,7 @@ export type Judge = {
   province: string;
   city: string;
   levelType: JudgeLevelType;
-  trainingSessionId: JudgeTrainingSessionId;
+  trainingSessionId: JudgeTrainingSessionId | string;
   trainingLocation: string;
   trainingDate: string;
   certifiedYear?: number;
