@@ -40,5 +40,5 @@ const wcaEventChineseNames: Record<string, string> = {
 
 export function formatWcaEventName(id: string, englishName: string) {
   const chinese = wcaEventChineseNames[id] || englishName;
-  return `${id}（${chinese}）`;
+  return `${englishName}（${chinese}）`;
 }
