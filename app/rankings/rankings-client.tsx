@@ -4,6 +4,8 @@ import Link from "next/link";
 import { CalendarClock, ChevronLeft, ChevronRight, Database, ExternalLink, Globe2 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { PageHero } from "@/components/page-hero";
+import { WcaFlag } from "@/components/wca-flag";
+import { formatWcaExportDate } from "@/lib/format";
 
 type RankingMode = "single" | "average";
 type Gender = "all" | "m" | "f";
@@ -45,10 +47,6 @@ const genderLabels: Record<Gender, string> = {
   m: "男",
   f: "女"
 };
-
-function WcaFlag({ country }: { country: string }) {
-  return <span className={`wca-flag flag-${country.toLowerCase().replaceAll(" ", "-")}`} aria-hidden="true" />;
-}
 
 export function RankingsClient() {
   const [events, setEvents] = useState<MetadataOption[]>([]);
@@ -314,14 +312,4 @@ export function RankingsClient() {
   );
 }
 
-function formatWcaExportDate(value: string) {
-  if (!value) return "";
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return value;
-  return new Intl.DateTimeFormat("zh-CN", {
-    timeZone: "Asia/Shanghai",
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit"
-  }).format(date);
-}
+

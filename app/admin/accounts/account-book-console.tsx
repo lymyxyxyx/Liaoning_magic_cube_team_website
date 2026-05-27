@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { Download, Plus, Save, Trash2 } from "lucide-react";
+import { Field } from "@/components/field";
 
 type AccountEntryType = "income" | "expense";
 
@@ -333,25 +334,6 @@ function updateEntry(id: string, next: Partial<AccountEntry>) {
         </aside>
       </div>
     </section>
-  );
-}
-
-function Field({
-  label,
-  value,
-  onChange,
-  type = "text"
-}: {
-  label: string;
-  value: string;
-  onChange: (value: string) => void;
-  type?: string;
-}) {
-  return (
-    <label className="field">
-      {label}
-      <input type={type} value={value} onChange={(event) => onChange(event.target.value)} />
-    </label>
   );
 }
 

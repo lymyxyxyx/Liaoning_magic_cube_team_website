@@ -4,6 +4,8 @@ import Link from "next/link";
 import { CalendarClock, ChevronLeft, ChevronRight, Database, ExternalLink, MapPin } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { PageHero } from "@/components/page-hero";
+import { WcaFlag } from "@/components/wca-flag";
+import { formatWcaExportDate, formatRankCell } from "@/lib/format";
 
 type RankingMode = "single" | "average";
 type Gender = "all" | "m" | "f";
@@ -60,10 +62,6 @@ const memberScopeLabels: Record<MemberScope, string> = {
 };
 
 const fallbackEvents: MetadataOption[] = [{ id: "333", name: "三阶魔方" }];
-
-function WcaFlag({ country }: { country: string }) {
-  return <span className={`wca-flag flag-${country.toLowerCase().replaceAll(" ", "-")}`} aria-hidden="true" />;
-}
 
 export function MeituanRankingsClient() {
   const [events, setEvents] = useState<MetadataOption[]>([]);
@@ -346,18 +344,4 @@ export function MeituanRankingsClient() {
   );
 }
 
-function formatRankCell(value: number | null) {
-  return typeof value === "number" && Number.isFinite(value) ? value : "-";
-}
 
-function formatWcaExportDate(value: string) {
-  if (!value) return "";
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return value;
-  return new Intl.DateTimeFormat("zh-CN", {
-    timeZone: "Asia/Shanghai",
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit"
-  }).format(date);
-}

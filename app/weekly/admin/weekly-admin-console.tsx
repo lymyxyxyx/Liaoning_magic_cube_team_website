@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { Download, Eye, Plus, Save, Table2, Trash2 } from "lucide-react";
 import { useMemo, useState } from "react";
+import { Field } from "@/components/field";
 
 type ParsedResult = {
   rank: number;
@@ -429,31 +430,4 @@ function csvCell(value: string | number) {
   return /[",\n]/.test(text) ? `"${text.replaceAll('"', '""')}"` : text;
 }
 
-function Field({
-  label,
-  value,
-  onChange,
-  full,
-  textarea,
-  type = "text",
-  placeholder
-}: {
-  label: string;
-  value: string;
-  onChange: (value: string) => void;
-  full?: boolean;
-  textarea?: boolean;
-  type?: string;
-  placeholder?: string;
-}) {
-  return (
-    <label className={`field ${full ? "full" : ""}`}>
-      {label}
-      {textarea ? (
-        <textarea placeholder={placeholder} value={value} onChange={(event) => onChange(event.target.value)} />
-      ) : (
-        <input placeholder={placeholder} type={type} value={value} onChange={(event) => onChange(event.target.value)} />
-      )}
-    </label>
-  );
-}
+
