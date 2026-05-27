@@ -2686,6 +2686,10 @@ textarea {
   text-align: left;
 }
 
+.result-table td:first-child {
+  font-weight: 850;
+}
+
 .result-table tbody tr:hover {
   background: #f8fbff;
 }
@@ -4102,6 +4106,109 @@ a.commercial-member-link:hover {
 
   .provincial-result-table td:nth-child(3),
   .provincial-result-table td:nth-child(9) {
+    grid-column: 1 / -1;
+  }
+
+  .result-table-wrap,
+  .competition-table-wrap,
+  .judges-table-wrap {
+    overflow: visible;
+  }
+
+  .result-table,
+  .result-table.all-around-table,
+  .ranking-table,
+  .wca-ranking-results-table,
+  .local-ranking-results-table,
+  .local-ranking-results-table.has-gender-ranks,
+  .competition-list-table,
+  .judges-table {
+    min-width: 0;
+    width: 100%;
+  }
+
+  .result-table thead,
+  .competition-list-table thead,
+  .judges-table thead {
+    display: none;
+  }
+
+  .result-table,
+  .result-table tbody,
+  .result-table tr,
+  .result-table td,
+  .competition-list-table,
+  .competition-list-table tbody,
+  .competition-list-table tr,
+  .competition-list-table td,
+  .judges-table,
+  .judges-table tbody,
+  .judges-table tr,
+  .judges-table td {
+    display: block;
+    width: 100%;
+  }
+
+  .result-table tbody,
+  .competition-list-table tbody,
+  .judges-table tbody {
+    display: grid;
+    gap: 10px;
+    padding: 10px;
+    background: #f3f6fb;
+  }
+
+  .result-table tr,
+  .competition-list-table tr,
+  .judges-table tr {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(118px, 1fr));
+    gap: 7px 10px;
+    padding: 11px;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    background: #fff;
+    box-shadow: 0 8px 18px rgba(23, 32, 51, 0.05);
+  }
+
+  .result-table td,
+  .competition-list-table td,
+  .judges-table td {
+    display: flex;
+    gap: 8px;
+    align-items: baseline;
+    justify-content: flex-start;
+    padding: 0;
+    border: 0;
+    text-align: left;
+    white-space: normal;
+  }
+
+  .result-table td::before,
+  .competition-list-table td::before,
+  .judges-table td::before {
+    content: attr(data-label);
+    color: var(--muted);
+    font-size: 12px;
+    font-weight: 800;
+    flex: 0 0 auto;
+    min-width: 46px;
+    text-align: left;
+  }
+
+  .result-table td:nth-child(1),
+  .result-table td:nth-child(2),
+  .competition-list-table td:nth-child(1),
+  .competition-list-table td:nth-child(2),
+  .judges-table td:nth-child(1),
+  .judges-table td:nth-child(2) {
+    grid-column: 1 / -1;
+    font-weight: 900;
+    justify-content: space-between;
+  }
+
+  .competition-list-table td:last-child,
+  .judges-table td:last-child {
     grid-column: 1 / -1;
   }
 }

@@ -253,8 +253,8 @@ export function RankingsClient() {
                 {!isLoading
                   ? rows.map((row) => (
                       <tr key={`${mode}-${event}-${row.wcaId}`}>
-                        <td>{row.rank}</td>
-                        <td>
+                        <td data-label="排名">{row.rank}</td>
+                        <td data-label="姓名">
                           <Link
                             className="table-person-link"
                             href={`https://www.worldcubeassociation.org/persons/${row.wcaId}`}
@@ -263,21 +263,21 @@ export function RankingsClient() {
                           </Link>
                           <small className="ranking-wca-id">{row.wcaId}</small>
                         </td>
-                        <td>{row.gender === "m" ? "男" : row.gender === "f" ? "女" : "-"}</td>
-                        <td className="score-strong">
+                        <td data-label="性别">{row.gender === "m" ? "男" : row.gender === "f" ? "女" : "-"}</td>
+                        <td data-label="成绩" className="score-strong">
                           {row.result}
                           {row.resultDetails?.length ? (
                             <small className="ranking-result-details">{row.resultDetails.join(" / ")}</small>
                           ) : null}
                         </td>
-                        <td>
+                        <td data-label="地区">
                           <span className="flag-label">
                             <WcaFlag country={row.country} />
                             {row.countryName}
                           </span>
                         </td>
-                        <td>{row.worldRank}</td>
-                        <td>
+                        <td data-label="WR">{row.worldRank}</td>
+                        <td data-label="比赛">
                           {row.competitionId ? (
                             <Link
                               className="table-person-link ranking-competition-link"

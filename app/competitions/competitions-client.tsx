@@ -87,22 +87,22 @@ export function CompetitionsClient() {
                 const categoryInfo = getCompetitionCategory(competition.category);
                 return (
                   <tr key={competition.id}>
-                    <td>{competition.date}</td>
-                    <td>
+                    <td data-label="日期">{competition.date}</td>
+                    <td data-label="比赛类别">
                       <span className={`competition-type type-${competition.category}`}>
                         {categoryInfo?.shortName || "未分类"}
                       </span>
                     </td>
-                    <td>
+                    <td data-label="比赛名称">
                       <Link className="competition-name-link" href={`/competitions/${competition.slug}`}>
                         {competition.name}
                       </Link>
                     </td>
-                    <td>{competition.sponsor || "—"}</td>
-                    <td>{competition.province}</td>
-                    <td>{competition.city}</td>
-                    <td>{competition.venue || competition.address}</td>
-                    <td>
+                    <td data-label="赞助商">{competition.sponsor || "—"}</td>
+                    <td data-label="省份">{competition.province}</td>
+                    <td data-label="城市">{competition.city}</td>
+                    <td data-label="地点">{competition.venue || competition.address}</td>
+                    <td data-label="来源">
                       {competition.dataSourceUrl ? (
                         <Link className="competition-source-link" href={competition.dataSourceUrl} target="_blank">
                           <strong>{competition.dataSource || "资料来源"}</strong>
@@ -115,7 +115,7 @@ export function CompetitionsClient() {
                         </span>
                       )}
                     </td>
-                    <td>
+                    <td data-label="公示/查看">
                       {competition.externalUrl ? (
                         <Link className="competition-source-link" href={competition.externalUrl} target="_blank">
                           <strong>{competition.publicPlatform || "外部平台"}</strong>

@@ -413,7 +413,7 @@ export function LiaoningRankingsClient() {
                 {!isLoading
                   ? rows.map((row) => (
                       <tr key={`${scope}-${mode}-${event}-${row.wcaId}`}>
-                        <td>
+                        <td data-label="姓名">
                           <Link
                             className="table-person-link"
                             href={`https://www.worldcubeassociation.org/persons/${row.wcaId}`}
@@ -422,25 +422,25 @@ export function LiaoningRankingsClient() {
                           </Link>
                           <small className="ranking-wca-id">{row.wcaId}</small>
                         </td>
-                        <td>{row.gender === "m" ? "男" : row.gender === "f" ? "女" : "-"}</td>
-                        <td className="score-strong">
+                        <td data-label="性别">{row.gender === "m" ? "男" : row.gender === "f" ? "女" : "-"}</td>
+                        <td data-label="成绩" className="score-strong">
                           {row.result}
                           {row.resultDetails?.length ? (
                             <small className="ranking-result-details">{row.resultDetails.join(" / ")}</small>
                           ) : null}
                         </td>
-                        <td>{row.province} · {row.city}</td>
-                        <td>{renderRankWithChange(row.rank, row.rankChange)}</td>
-                        <td>{renderRankWithChange(row.officialRank, row.officialRankChange)}</td>
-                        <td>{renderRankWithChange(row.worldRank, row.worldRankChange)}</td>
+                        <td data-label="省市">{row.province} · {row.city}</td>
+                        <td data-label={scopeLabels[scope]}>{renderRankWithChange(row.rank, row.rankChange)}</td>
+                        <td data-label="全国排名">{renderRankWithChange(row.officialRank, row.officialRankChange)}</td>
+                        <td data-label="世界排名">{renderRankWithChange(row.worldRank, row.worldRankChange)}</td>
                         {showGenderRankColumns ? (
                           <>
-                            <td>{formatRankCell(row.genderLocalRank)}</td>
-                            <td>{formatRankCell(row.genderOfficialRank)}</td>
-                            <td>{formatRankCell(row.genderWorldRank)}</td>
+                            <td data-label={`${genderRankLabel}${scopeLabels[scope]}`}>{formatRankCell(row.genderLocalRank)}</td>
+                            <td data-label={`${genderRankLabel}全国排名`}>{formatRankCell(row.genderOfficialRank)}</td>
+                            <td data-label={`${genderRankLabel}世界排名`}>{formatRankCell(row.genderWorldRank)}</td>
                           </>
                         ) : null}
-                        <td>
+                        <td data-label="比赛">
                           {row.competitionId ? (
                             <Link
                               className="table-person-link ranking-competition-link"

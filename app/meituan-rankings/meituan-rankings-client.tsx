@@ -277,7 +277,7 @@ export function MeituanRankingsClient() {
                 {!isLoading
                   ? rows.map((row) => (
                       <tr key={`${mode}-${event}-${row.wcaId}`}>
-                        <td>
+                        <td data-label="姓名">
                           <Link
                             className="table-person-link"
                             href={`https://www.worldcubeassociation.org/persons/${row.wcaId}`}
@@ -286,29 +286,29 @@ export function MeituanRankingsClient() {
                           </Link>
                           <small className="ranking-wca-id">{row.wcaId}</small>
                         </td>
-                        <td>
+                        <td data-label="状态">
                           <span className={`status ${row.memberStatus === "current" ? "status-高" : "status-低"}`}>
                             {row.memberStatus === "current" ? "在职" : "离职"}
                           </span>
                         </td>
-                        <td>{row.gender === "m" ? "男" : row.gender === "f" ? "女" : "-"}</td>
-                        <td className="score-strong">
+                        <td data-label="性别">{row.gender === "m" ? "男" : row.gender === "f" ? "女" : "-"}</td>
+                        <td data-label="成绩" className="score-strong">
                           {row.result}
                           {row.resultDetails?.length ? (
                             <small className="ranking-result-details">{row.resultDetails.join(" / ")}</small>
                           ) : null}
                         </td>
-                        <td>{row.rank}</td>
-                        <td>{row.officialRank}</td>
-                        <td>{row.worldRank}</td>
+                        <td data-label="美团排名">{row.rank}</td>
+                        <td data-label="全国排名">{row.officialRank}</td>
+                        <td data-label="世界排名">{row.worldRank}</td>
                         {showGenderRankColumns ? (
                           <>
-                            <td>{formatRankCell(row.genderGroupRank)}</td>
-                            <td>{formatRankCell(row.genderOfficialRank)}</td>
-                            <td>{formatRankCell(row.genderWorldRank)}</td>
+                            <td data-label={`${genderRankLabel}美团排名`}>{formatRankCell(row.genderGroupRank)}</td>
+                            <td data-label={`${genderRankLabel}全国排名`}>{formatRankCell(row.genderOfficialRank)}</td>
+                            <td data-label={`${genderRankLabel}世界排名`}>{formatRankCell(row.genderWorldRank)}</td>
                           </>
                         ) : null}
-                        <td>
+                        <td data-label="比赛">
                           {row.competitionId ? (
                             <Link
                               className="table-person-link ranking-competition-link"

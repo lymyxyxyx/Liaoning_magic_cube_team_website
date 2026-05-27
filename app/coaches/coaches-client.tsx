@@ -191,16 +191,16 @@ export function CoachesClient({ initialCoaches }: Props) {
             ) : (
               sortedCoaches.map((coach) => (
                 <tr key={coach.id}>
-                  <td>{coach.number || "-"}</td>
-                  <td>{coach.name}</td>
-                  <td>{coach.gender}</td>
-                  <td>
+                  <td data-label="编号">{coach.number || "-"}</td>
+                  <td data-label="姓名">{coach.name}</td>
+                  <td data-label="性别">{coach.gender}</td>
+                  <td data-label="地区">
                     {coach.province} · {coach.city}
                   </td>
-                  <td>
+                  <td data-label="级别">
                     <span className="status">{coach.levelType}</span>
                   </td>
-                  <td>{coach.certifiedYear}</td>
+                  <td data-label="考取年份">{coach.certifiedYear}</td>
                 </tr>
               ))
             )}

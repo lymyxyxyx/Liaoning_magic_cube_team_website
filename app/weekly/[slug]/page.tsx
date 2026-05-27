@@ -129,8 +129,8 @@ export default async function WeeklyDetailPage({ params }: { params: { slug: str
 
                         return (
                           <tr key={`${event.id}-${result.rank}-${result.playerSlug}`}>
-                            <td>{result.rank}</td>
-                            <td>
+                            <td data-label="排名">{result.rank}</td>
+                            <td data-label="姓名">
                               {result.playerSlug ? (
                                 <Link className="table-person-link" href={`/people/${result.playerSlug}`}>
                                   {result.playerName}
@@ -139,22 +139,22 @@ export default async function WeeklyDetailPage({ params }: { params: { slug: str
                                 result.playerName
                               )}
                             </td>
-                            <td>{result.gender}</td>
-                            {hasAgeGroup ? <td>{result.ageGroup || "-"}</td> : null}
+                            <td data-label="性别">{result.gender}</td>
+                            {hasAgeGroup ? <td data-label="年龄组">{result.ageGroup || "-"}</td> : null}
                             {hasAttempts ? (
-                              <td>
+                              <td data-label="段位">
                                 <span className={`level-pill level-${result.level}`}>{result.level}</span>
                               </td>
                             ) : null}
-                            {hasAttempts ? <td className="grade-cell">{result.grade}</td> : null}
-                            <td className="score-strong">{formatAttempt(result.average)}</td>
-                            {hasAttempts ? <td>{formatAttempt(singleBest)}</td> : null}
-                            <td className={`pb-cell ${result.pbRefreshed ? "pb-refreshed" : ""}`}>
+                            {hasAttempts ? <td data-label="等级" className="grade-cell">{result.grade}</td> : null}
+                            <td data-label="平均" className="score-strong">{formatAttempt(result.average)}</td>
+                            {hasAttempts ? <td data-label="本周最快">{formatAttempt(singleBest)}</td> : null}
+                            <td data-label="个人PB" className={`pb-cell ${result.pbRefreshed ? "pb-refreshed" : ""}`}>
                               {formatAttempt(result.personalBest)}
                             </td>
                             {hasAttempts
                               ? result.attempts.map((attempt, index) => (
-                                  <td className={attempt === singleBest ? "fastest-cell" : undefined} key={index}>
+                                  <td data-label={`T${index + 1}`} className={attempt === singleBest ? "fastest-cell" : undefined} key={index}>
                                     {formatAttempt(attempt)}
                                   </td>
                                 ))
@@ -214,8 +214,8 @@ export default async function WeeklyDetailPage({ params }: { params: { slug: str
 
                                 return (
                                   <tr key={`${ageEvent.id}-${result.rank}-${result.playerSlug}`}>
-                                    <td>{result.rank}</td>
-                                    <td>
+                                    <td data-label="排名">{result.rank}</td>
+                                    <td data-label="姓名">
                                       {result.playerSlug ? (
                                         <Link className="table-person-link" href={`/people/${result.playerSlug}`}>
                                           {result.playerName}
@@ -224,18 +224,18 @@ export default async function WeeklyDetailPage({ params }: { params: { slug: str
                                         result.playerName
                                       )}
                                     </td>
-                                    <td>{result.gender}</td>
-                                    <td>
+                                    <td data-label="性别">{result.gender}</td>
+                                    <td data-label="段位">
                                       <span className={`level-pill level-${result.level}`}>{result.level}</span>
                                     </td>
-                                    <td className="grade-cell">{result.grade}</td>
-                                    <td className="score-strong">{formatAttempt(result.average)}</td>
-                                    {ageBest ? <td>{formatAttempt(singleBest)}</td> : null}
-                                    <td className={`pb-cell ${result.pbRefreshed ? "pb-refreshed" : ""}`}>
+                                    <td data-label="等级" className="grade-cell">{result.grade}</td>
+                                    <td data-label="平均" className="score-strong">{formatAttempt(result.average)}</td>
+                                    {ageBest ? <td data-label="本周最快">{formatAttempt(singleBest)}</td> : null}
+                                    <td data-label="个人PB" className={`pb-cell ${result.pbRefreshed ? "pb-refreshed" : ""}`}>
                                       {formatAttempt(result.personalBest)}
                                     </td>
                                     {result.attempts.map((attempt, index) => (
-                                      <td className={attempt === singleBest ? "fastest-cell" : undefined} key={index}>
+                                      <td data-label={`T${index + 1}`} className={attempt === singleBest ? "fastest-cell" : undefined} key={index}>
                                         {formatAttempt(attempt)}
                                       </td>
                                     ))}

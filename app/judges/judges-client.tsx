@@ -234,11 +234,11 @@ export function JudgesClient({ initialJudges }: Props) {
             ) : (
               sortedJudges.map((judge, index) => (
                 <tr key={judge.id}>
-                  <td>{index + 1}</td>
-                  <td>{judge.number || "-"}</td>
-                  <td>{judge.name}</td>
-                  <td>{judge.gender}</td>
-                  <td>
+                  <td data-label="序号">{index + 1}</td>
+                  <td data-label="编号">{judge.number || "-"}</td>
+                  <td data-label="姓名">{judge.name}</td>
+                  <td data-label="性别">{judge.gender}</td>
+                  <td data-label="地区">
                     <span className="judges-region-editor">
                       辽宁 ·
                       <select value={judge.city} disabled={isSaving} onChange={(event) => updateJudgeCity(judge.id, event.target.value)}>
@@ -250,11 +250,11 @@ export function JudgesClient({ initialJudges }: Props) {
                       </select>
                     </span>
                   </td>
-                  <td>
+                  <td data-label="级别">
                     <span className="status">{judge.levelType}</span>
                   </td>
-                  <td>{judge.trainingLocation}</td>
-                  <td>{judge.trainingDate}</td>
+                  <td data-label="考取地点">{judge.trainingLocation}</td>
+                  <td data-label="培训日期">{judge.trainingDate}</td>
                 </tr>
               ))
             )}
