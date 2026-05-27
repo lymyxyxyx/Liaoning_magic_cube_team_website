@@ -2763,7 +2763,7 @@ textarea {
 }
 
 .judges-table {
-  min-width: 940px;
+  min-width: 1020px;
 }
 
 .judges-region-editor {
@@ -2784,6 +2784,23 @@ textarea {
 .judges-table th:nth-child(3),
 .judges-table td:nth-child(3) {
   text-align: left;
+}
+
+.judges-table td input,
+.judges-table td select {
+  width: 100%;
+  min-width: 80px;
+  min-height: 32px;
+  padding: 4px 7px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  font: inherit;
+  font-size: 13px;
+  background: var(--surface);
+}
+
+.judges-table td:last-child {
+  white-space: nowrap;
 }
 
 .level-pill {

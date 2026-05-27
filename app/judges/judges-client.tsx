@@ -44,6 +44,8 @@ export function JudgesClient({ initialJudges }: Props) {
   const [isCreating, setIsCreating] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [notice, setNotice] = useState("");
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editDraft, setEditDraft] = useState<Judge | null>(null);
 
   const sortedJudges = useMemo(
     () =>
@@ -97,6 +99,31 @@ export function JudgesClient({ initialJudges }: Props) {
   async function updateJudgeCity(judgeId: string, city: string) {
     const nextJudges = judges.map((judge) => (judge.id === judgeId ? { ...judge, province: "辽宁", city } : judge));
     await saveJudges(nextJudges, "城市已更新。");
+  }
+
+  function startEdit(judge: Judge) {
+    setEditingId(judge.id);
+    setEditDraft({ ...judge });
+  }
+
+  function cancelEdit() {
+    setEditingId(null);
+    setEditDraft(null);
+  }
+
+  function updateEditDraft(patch: Partial<Judge>) {
+    if (!editDraft) return;
+    setEditDraft({ ...editDraft, ...patch });
+  }
+
+  async function saveEdit() {
+    if (!editDraft) return;
+    const nextJudges = judges.map((judge) => (judge.id === editDraft.id ? editDraft : judge));
+    const saved = await saveJudges(nextJudges, "已更新。");
+    if (saved) {
+      setEditingId(null);
+      setEditDraft(null);
+    }
   }
 
   async function saveJudges(nextJudges: Judge[], successMessage: string) {
@@ -224,39 +251,94 @@ export function JudgesClient({ initialJudges }: Props) {
               <th>级别</th>
               <th>考取地点</th>
               <th>培训日期</th>
+              <th>操作</th>
             </tr>
           </thead>
           <tbody>
             {sortedJudges.length === 0 ? (
               <tr>
-                <td colSpan={8}>暂无裁判员信息，请点击右上角新建。</td>
+                <td colSpan={9}>暂无裁判员信息，请点击右上角新建。</td>
               </tr>
             ) : (
-              sortedJudges.map((judge, index) => (
-                <tr key={judge.id}>
-                  <td data-label="序号">{index + 1}</td>
-                  <td data-label="编号">{judge.number || "-"}</td>
-                  <td data-label="姓名">{judge.name}</td>
-                  <td data-label="性别">{judge.gender}</td>
-                  <td data-label="地区">
-                    <span className="judges-region-editor">
-                      辽宁 ·
-                      <select value={judge.city} disabled={isSaving} onChange={(event) => updateJudgeCity(judge.id, event.target.value)}>
-                        {liaoningCities.map((city) => (
-                          <option value={city} key={city}>
-                            {city}
-                          </option>
-                        ))}
-                      </select>
-                    </span>
-                  </td>
-                  <td data-label="级别">
-                    <span className="status">{judge.levelType}</span>
-                  </td>
-                  <td data-label="考取地点">{judge.trainingLocation}</td>
-                  <td data-label="培训日期">{judge.trainingDate}</td>
-                </tr>
-              ))
+              sortedJudges.map((judge, index) => {
+                const isEditing = editingId === judge.id;
+                return (
+                  <tr key={judge.id}>
+                    <td data-label="序号">{index + 1}</td>
+                    {isEditing && editDraft ? (
+                      <>
+                        <td data-label="编号">
+                          <input value={editDraft.number || ""} onChange={(e) => updateEditDraft({ number: e.target.value })} placeholder="可选" />
+                        </td>
+                        <td data-label="姓名">
+                          <input value={editDraft.name} onChange={(e) => updateEditDraft({ name: e.target.value })} />
+                        </td>
+                        <td data-label="性别">
+                          <select value={editDraft.gender} onChange={(e) => updateEditDraft({ gender: e.target.value as JudgeGender })}>
+                            {judgeGenders.map((gender) => (
+                              <option value={gender} key={gender}>{gender}</option>
+                            ))}
+                          </select>
+                        </td>
+                        <td data-label="地区">
+                          <span className="judges-region-editor">
+                            辽宁 ·
+                            <select value={editDraft.city} onChange={(e) => updateEditDraft({ city: e.target.value })}>
+                              {liaoningCities.map((city) => (
+                                <option value={city} key={city}>{city}</option>
+                              ))}
+                            </select>
+                          </span>
+                        </td>
+                        <td data-label="级别">
+                          <select value={editDraft.levelType} onChange={(e) => updateEditDraft({ levelType: e.target.value as JudgeLevelType })}>
+                            {judgeLevelTypes.map((level) => (
+                              <option value={level} key={level}>{level}</option>
+                            ))}
+                          </select>
+                        </td>
+                        <td data-label="考取地点">
+                          <input value={editDraft.trainingLocation} onChange={(e) => updateEditDraft({ trainingLocation: e.target.value })} />
+                        </td>
+                        <td data-label="培训日期">
+                          <input value={editDraft.trainingDate} onChange={(e) => updateEditDraft({ trainingDate: e.target.value })} />
+                        </td>
+                        <td data-label="操作">
+                          <div className="judges-form-actions">
+                            <button className="button primary" type="button" disabled={isSaving} onClick={saveEdit}>
+                              保存
+                            </button>
+                            <button className="button button--ghost" type="button" disabled={isSaving} onClick={cancelEdit}>
+                              取消
+                            </button>
+                          </div>
+                        </td>
+                      </>
+                    ) : (
+                      <>
+                        <td data-label="编号">{judge.number || "-"}</td>
+                        <td data-label="姓名">{judge.name}</td>
+                        <td data-label="性别">{judge.gender}</td>
+                        <td data-label="地区">
+                          <span className="judges-region-editor">
+                            辽宁 · {judge.city}
+                          </span>
+                        </td>
+                        <td data-label="级别">
+                          <span className="status">{judge.levelType}</span>
+                        </td>
+                        <td data-label="考取地点">{judge.trainingLocation}</td>
+                        <td data-label="培训日期">{judge.trainingDate}</td>
+                        <td data-label="操作">
+                          <button className="button" type="button" onClick={() => startEdit(judge)}>
+                            编辑
+                          </button>
+                        </td>
+                      </>
+                    )}
+                  </tr>
+                );
+              })
             )}
           </tbody>
         </table>

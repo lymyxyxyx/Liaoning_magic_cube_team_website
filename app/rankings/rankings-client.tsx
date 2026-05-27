@@ -5,7 +5,7 @@ import { CalendarClock, ChevronLeft, ChevronRight, Database, ExternalLink, Globe
 import { useEffect, useMemo, useState } from "react";
 import { PageHero } from "@/components/page-hero";
 import { WcaFlag } from "@/components/wca-flag";
-import { formatWcaExportDate } from "@/lib/format";
+import { formatWcaExportDate, formatWcaEventName } from "@/lib/format";
 
 type RankingMode = "single" | "average";
 type Gender = "all" | "m" | "f";
@@ -131,7 +131,7 @@ export function RankingsClient() {
 
   return (
     <>
-      <PageHero className="ranking-page-hero" label="WCA 官方数据本地库" title={`${countryName} ${eventName}排名`}>
+      <PageHero className="ranking-page-hero" label="WCA 官方数据本地库" title={`${countryName} ${formatWcaEventName(event, eventName)}排名`}>
         WCA 官方口径，本地 PostgreSQL 查询。
       </PageHero>
 
@@ -149,7 +149,7 @@ export function RankingsClient() {
               <select value={event} onChange={(changeEvent) => updateFilter({ event: changeEvent.target.value })}>
                 {events.map((item) => (
                   <option value={item.id} key={item.id}>
-                    {item.name}
+                    {formatWcaEventName(item.id, item.name)}
                   </option>
                 ))}
               </select>
@@ -206,7 +206,7 @@ export function RankingsClient() {
               <span className="eyebrow">
                 {countryName} · {modeLabels[mode]} · {genderLabels[gender]} · 第 {page} 页
               </span>
-              <h2>{eventName}排名 <small>{firstRank}-{lastRank}</small></h2>
+              <h2>{formatWcaEventName(event, eventName)}排名 <small>{firstRank}-{lastRank}</small></h2>
             </div>
             <div className="ranking-source-line">
               <Database size={16} />

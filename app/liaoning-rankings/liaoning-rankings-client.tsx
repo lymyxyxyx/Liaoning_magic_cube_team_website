@@ -5,7 +5,7 @@ import { ArrowDown, ArrowUp, CalendarClock, ChevronLeft, ChevronRight, Database,
 import { useEffect, useMemo, useState } from "react";
 import { PageHero } from "@/components/page-hero";
 import { WcaFlag } from "@/components/wca-flag";
-import { formatWcaExportDate, formatRankCell } from "@/lib/format";
+import { formatWcaExportDate, formatRankCell, formatWcaEventName } from "@/lib/format";
 
 type RankingMode = "single" | "average";
 type Gender = "all" | "m" | "f";
@@ -141,7 +141,10 @@ export function LiaoningRankingsClient() {
     return () => controller.abort();
   }, [event, province, city, scope, mode, gender, page]);
 
-  const eventName = useMemo(() => events.find((item) => item.id === event)?.name || event, [events, event]);
+  const eventName = useMemo(() => {
+    const found = events.find((item) => item.id === event);
+    return found ? formatWcaEventName(found.id, found.name) : event;
+  }, [events, event]);
   const rows = rankings?.rows || [];
   const provinces = rankings?.provinces?.length ? rankings.provinces : ["辽宁"];
   const cities = rankings?.cities?.length ? rankings.cities : ["沈阳"];
@@ -312,7 +315,7 @@ export function LiaoningRankingsClient() {
               <select value={event} onChange={(changeEvent) => updateFilter({ event: changeEvent.target.value })}>
                 {events.map((item) => (
                   <option value={item.id} key={item.id}>
-                    {item.name}
+                    {formatWcaEventName(item.id, item.name)}
                   </option>
                 ))}
               </select>
