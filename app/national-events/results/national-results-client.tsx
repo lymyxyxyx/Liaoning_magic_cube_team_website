@@ -149,14 +149,14 @@ export function LazyNationalResultsTable(props: LazyTableProps) {
                 className={isShenyangTeam(row.team) ? "shenyang-team-row" : undefined}
                 key={`${props.event}-${props.group}-${row.rank || rowIndex}-${row.name}`}
               >
-                <td>{row.rank || "-"}</td>
-                <td>{row.name}</td>
-                <td>{row.gender}</td>
-                <td>{row.team}</td>
-                <td>{row.first || "-"}</td>
-                <td>{row.second || "-"}</td>
-                <td>{row.third || "-"}</td>
-                <td>{row.final || "-"}</td>
+                <td data-label="名次">{row.rank || "-"}</td>
+                <td data-label="姓名">{row.name}</td>
+                <td data-label="性别">{row.gender}</td>
+                <td data-label="代表队">{row.team}</td>
+                <td data-label="第一次">{row.first || "-"}</td>
+                <td data-label="第二次">{row.second || "-"}</td>
+                <td data-label="第三次">{row.third || "-"}</td>
+                <td data-label={props.event === "三盲" ? "最终成绩（三次最佳）" : "最终成绩（三次平均）"}>{row.final || "-"}</td>
               </tr>
             ))}
           </tbody>
@@ -185,11 +185,11 @@ export function LazyNationalResultsTable(props: LazyTableProps) {
                 className={isShenyangTeam(row.team) ? "shenyang-team-row" : undefined}
                 key={`${props.event}-${props.group}-${row.rank || rowIndex}-${row.name}`}
               >
-                <td>{row.rank || "-"}</td>
-                <td>{row.name}</td>
-                <td>{row.gender}</td>
-                <td>{row.team}</td>
-                <td>{row.final}</td>
+                <td data-label="名次">{row.rank || "-"}</td>
+                <td data-label="姓名">{row.name}</td>
+                <td data-label="性别">{row.gender}</td>
+                <td data-label="代表队">{row.team}</td>
+                <td data-label="最终成绩">{row.final}</td>
               </tr>
             ))}
           </tbody>
@@ -218,12 +218,12 @@ export function LazyNationalResultsTable(props: LazyTableProps) {
               className={isShenyangTeam(row.team) ? "shenyang-team-row" : undefined}
               key={`${props.group}-${row.rank}-${row.team}-${row.captain}`}
             >
-              <td>{row.rank}</td>
-              <td>{row.team}</td>
-              <td>{row.group}</td>
-              <td>{row.captain}</td>
-              <td>{row.members.join("、")}</td>
-              <td>{row.final}</td>
+              <td data-label="名次">{row.rank}</td>
+              <td data-label="代表队">{row.team}</td>
+              <td data-label="组别">{row.group}</td>
+              <td data-label="队长">{row.captain}</td>
+              <td data-label="队员">{row.members.join("、")}</td>
+              <td data-label="最终成绩">{row.final}</td>
             </tr>
           ))}
         </tbody>

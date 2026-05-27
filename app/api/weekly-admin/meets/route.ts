@@ -1,5 +1,17 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getPostgresPool } from "@/lib/postgres";
+import { weeklyPlayerPeople } from "@/lib/weekly-players";
+
+const weeklyCookieName = "liaoning_weekly_session";
+const weeklyCookieValue = "authenticated";
+
+function hasWeeklySession(request: NextRequest) {
+  return request.cookies.get(weeklyCookieName)?.value === weeklyCookieValue;
+}
+
+const playerSlugByPlayerName = new Map(
+  weeklyPlayerPeople.map((p) => [p.name, p.slug])
+);
 
 type WeeklyResultInput = {
   rank: number;
@@ -29,6 +41,10 @@ type WeeklyMeetInput = {
 };
 
 export async function POST(request: NextRequest) {
+  if (!hasWeeklySession(request)) {
+    return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
+  }
+
   const payload = (await request.json().catch(() => null)) as WeeklyMeetInput | null;
   const validationError = validatePayload(payload);
   if (validationError) return NextResponse.json({ message: validationError }, { status: 400 });
@@ -86,7 +102,7 @@ export async function POST(request: NextRequest) {
           id,
           result.rank,
           result.playerName,
-          "",
+          playerSlugByPlayerName.get(result.playerName) || "",
           result.gender,
           result.ageGroup || null,
           result.level || "",

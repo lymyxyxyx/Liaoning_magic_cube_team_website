@@ -192,15 +192,15 @@ export default function ProvincialCompetitionPage() {
                     <tbody>
                       {group.rows.map((row, rowIndex) => (
                         <tr className={["1", "2", "3"].includes(row.rank) ? "podium-row" : undefined} key={`${group.key}-${row.code}-${row.event}-${rowIndex}`}>
-                          <td>{formatCell(row.rank)}</td>
-                          <td>{row.code}</td>
-                          <td>{row.name}</td>
-                          <td>{row.gender}</td>
-                          <td>{row.age ?? "-"}</td>
-                          <td>{formatCell(row.first)}</td>
-                          <td>{formatCell(row.second)}</td>
-                          <td>{formatCell(row.third)}</td>
-                          <td>{formatCell(row.best)}</td>
+                          <td data-label="名次">{formatCell(row.rank)}</td>
+                          <td data-label="编号">{row.code}</td>
+                          <td data-label="姓名">{row.name}</td>
+                          <td data-label="性别">{row.gender}</td>
+                          <td data-label="年龄">{row.age ?? "-"}</td>
+                          <td data-label="第1轮">{formatCell(row.first)}</td>
+                          <td data-label="第2轮">{formatCell(row.second)}</td>
+                          <td data-label="第3轮">{formatCell(row.third)}</td>
+                          <td data-label="最佳成绩">{formatCell(row.best)}</td>
                         </tr>
                       ))}
                     </tbody>

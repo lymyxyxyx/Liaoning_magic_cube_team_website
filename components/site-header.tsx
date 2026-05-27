@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Shield, Settings, ChevronDown } from "lucide-react";
+import { Shield, Settings, ChevronDown, Menu } from "lucide-react";
 
 type NavItem = {
   href?: string;
@@ -79,6 +79,41 @@ export function SiteHeader() {
           );
         })}
       </nav>
+      <details className="mobile-nav">
+        <summary>
+          <Menu size={17} />
+          菜单
+        </summary>
+        <div className="mobile-nav-panel">
+          {navItems.map((item) => {
+            const hasChildren = item.children && item.children.length > 0;
+
+            if (!hasChildren) {
+              return (
+                <Link href={item.href || "/"} key={item.label}>
+                  {item.label}
+                </Link>
+              );
+            }
+
+            return (
+              <details className="mobile-nav-group" key={item.label}>
+                <summary>
+                  {item.label}
+                  <ChevronDown size={15} />
+                </summary>
+                <div>
+                  {item.children?.map((child) => (
+                    <Link key={child.href} href={child.href}>
+                      {child.label}
+                    </Link>
+                  ))}
+                </div>
+              </details>
+            );
+          })}
+        </div>
+      </details>
       <a className="admin-link" href={adminHref} title="后台管理">
         <Settings size={18} />
         <span>后台</span>
