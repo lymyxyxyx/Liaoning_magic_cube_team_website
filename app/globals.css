@@ -113,6 +113,7 @@ main {
   color: #344054;
   font-size: 14px;
   font-weight: 650;
+  white-space: nowrap;
 }
 
 .main-nav a:hover,
@@ -2396,6 +2397,139 @@ textarea {
   border-top-color: #f0d58b;
 }
 
+.provincial-section {
+  display: grid;
+  gap: 16px;
+}
+
+.provincial-info-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.provincial-info-card {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  min-height: 92px;
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fff;
+}
+
+.provincial-info-card svg {
+  flex: 0 0 auto;
+  color: var(--blue);
+}
+
+.provincial-info-card div {
+  display: grid;
+  gap: 5px;
+}
+
+.provincial-info-card span {
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.provincial-info-card strong {
+  color: #111827;
+  font-size: 16px;
+  line-height: 1.45;
+}
+
+.provincial-result-index {
+  margin-bottom: 0;
+}
+
+.provincial-results {
+  display: grid;
+  gap: 12px;
+  scroll-margin-top: 90px;
+}
+
+.provincial-results-heading {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  align-items: flex-end;
+}
+
+.provincial-results-heading h2 {
+  margin: 4px 0 0;
+  font-size: 28px;
+}
+
+.provincial-results-heading p {
+  max-width: 420px;
+  margin: 0;
+  color: var(--muted);
+  font-size: 14px;
+  font-weight: 750;
+  text-align: right;
+}
+
+.provincial-result-list {
+  display: grid;
+  gap: 12px;
+}
+
+.provincial-result-group {
+  overflow: hidden;
+  scroll-margin-top: 90px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fff;
+  content-visibility: auto;
+  contain-intrinsic-size: 88px 620px;
+}
+
+.provincial-result-group header {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: center;
+  padding: 14px 16px;
+  background: #f8fafc;
+}
+
+.provincial-result-group h3 {
+  margin: 0;
+  color: #111827;
+  font-size: 17px;
+}
+
+.provincial-result-group header span {
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.provincial-result-table {
+  min-width: 880px;
+}
+
+.provincial-result-table td:nth-child(2),
+.provincial-result-table td:nth-child(3),
+.provincial-result-table td:nth-child(6),
+.provincial-result-table td:nth-child(7),
+.provincial-result-table td:nth-child(8),
+.provincial-result-table td:nth-child(9) {
+  white-space: nowrap;
+}
+
+.provincial-result-table .podium-row {
+  background: #fffaf0;
+}
+
+.provincial-result-table .podium-row td {
+  border-top-color: #f2d7a1;
+}
+
 .national-layout {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -3657,8 +3791,19 @@ a.commercial-member-link:hover {
   .national-overview,
   .national-layout,
   .national-note-band,
+  .provincial-info-grid,
   .weekly-join {
     grid-template-columns: 1fr;
+  }
+
+  .provincial-results-heading {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .provincial-results-heading p {
+    max-width: none;
+    text-align: left;
   }
 
   .national-stop-grid {
@@ -3756,5 +3901,10 @@ a.commercial-member-link:hover {
   .national-stat-row,
   .national-qualifier-summary {
     grid-template-columns: 1fr;
+  }
+
+  .provincial-result-group header {
+    align-items: flex-start;
+    flex-direction: column;
   }
 }
