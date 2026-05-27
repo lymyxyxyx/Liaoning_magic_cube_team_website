@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Download, Eye, Save, Table2 } from "lucide-react";
+import { Download, Eye, Plus, Save, Table2, Trash2 } from "lucide-react";
 import { useMemo, useState } from "react";
 
 type ParsedResult = {
@@ -17,9 +17,20 @@ type ParsedResult = {
   attempts: (number | "DNF")[];
 };
 
+type SubEventInput = {
+  id: string;
+  eventName: string;
+  kind: "age_group" | "other";
+  groupName: string;
+  isAllAround: boolean;
+  rawText: string;
+};
+
 const sampleRows = `姓名\t性别\t年龄组\t段位\t等级\t平均\t个人PB\tT1\tT2\tT3\tT4\tT5\t刷新PB
 张三\t男\tU8\t一段\tA\t12.34\t11.88\t12.10\t12.45\tDNF\t12.30\t12.28\t是
 李四\t女\tU10\t二段\tB\t13.56\t13.20\t13.70\t13.40\t13.60\t13.55\t13.50\t否`;
+
+let subEventIdCounter = 0;
 
 export function WeeklyAdminConsole() {
   const currentYear = new Date().getFullYear();
@@ -36,11 +47,34 @@ export function WeeklyAdminConsole() {
     threeAgeIntro: "三阶为周赛主要项目，后续可继续补充年龄组榜单。"
   });
   const [rawText, setRawText] = useState(sampleRows);
+  const [subEvents, setSubEvents] = useState<SubEventInput[]>([]);
   const [notice, setNotice] = useState("");
   const [isSaving, setIsSaving] = useState(false);
 
   const parsed = useMemo(() => parseWeeklyRows(rawText), [rawText]);
   const sortedRows = parsed.rows;
+
+  function addSubEvent() {
+    setSubEvents((prev) => [
+      ...prev,
+      {
+        id: String(++subEventIdCounter),
+        eventName: "",
+        kind: "other",
+        groupName: "",
+        isAllAround: false,
+        rawText: ""
+      }
+    ]);
+  }
+
+  function removeSubEvent(id: string) {
+    setSubEvents((prev) => prev.filter((e) => e.id !== id));
+  }
+
+  function updateSubEvent(id: string, patch: Partial<SubEventInput>) {
+    setSubEvents((prev) => prev.map((e) => (e.id === id ? { ...e, ...patch } : e)));
+  }
 
   function saveMeet() {
     setNotice("");
@@ -48,8 +82,21 @@ export function WeeklyAdminConsole() {
       setNotice(`请先修正 ${parsed.errors.length} 个解析问题。`);
       return;
     }
-    if (sortedRows.length === 0) {
-      setNotice("请先粘贴成绩数据。");
+    if (sortedRows.length === 0 && subEvents.every((e) => parseWeeklyRows(e.rawText).rows.length === 0)) {
+      setNotice("请至少粘贴一条成绩数据。");
+      return;
+    }
+
+    const subEventPayloads = subEvents
+      .map((e) => {
+        const subParsed = parseWeeklyRows(e.rawText);
+        return { ...e, parsed: subParsed };
+      })
+      .filter((e) => e.parsed.rows.length > 0);
+
+    const hasSubErrors = subEventPayloads.some((e) => e.parsed.errors.length > 0);
+    if (hasSubErrors) {
+      setNotice("其他项目中存在解析问题，请修正后再保存。");
       return;
     }
 
@@ -71,7 +118,14 @@ export function WeeklyAdminConsole() {
           .filter(Boolean),
         pbNote: meta.pbNote,
         threeAgeIntro: meta.threeAgeIntro,
-        results: sortedRows
+        results: sortedRows,
+        events: subEventPayloads.map((e) => ({
+          eventName: e.eventName,
+          kind: e.kind,
+          groupName: e.groupName || undefined,
+          isAllAround: e.isAllAround,
+          results: e.parsed.rows
+        }))
       })
     })
       .then((response) => {
@@ -172,6 +226,67 @@ export function WeeklyAdminConsole() {
           </Link>
         </div>
         {notice ? <p className="admin-inline-notice">{notice}</p> : null}
+      </div>
+
+      <div className="admin-card weekly-admin-card">
+        <div className="admin-card-heading">
+          <div>
+            <h2>其他项目</h2>
+            <p>可添加年龄组拆分（U6/U8/U10/U12/成人）、二阶、金字塔、枫叶、镜面、女子组、全能等。</p>
+          </div>
+        </div>
+        {subEvents.map((event) => {
+          const subParsed = parseWeeklyRows(event.rawText);
+          return (
+            <div className="sub-event-card" key={event.id}>
+              <div className="sub-event-header">
+                <Field label="项目名称" value={event.eventName} onChange={(value) => updateSubEvent(event.id, { eventName: value })} />
+                <select
+                  className="field sub-event-kind"
+                  value={event.kind}
+                  onChange={(e) => updateSubEvent(event.id, { kind: e.target.value as "age_group" | "other" })}
+                >
+                  <option value="other">其他项目</option>
+                  <option value="age_group">年龄组</option>
+                </select>
+                <Field label="组别名称" value={event.groupName} onChange={(value) => updateSubEvent(event.id, { groupName: value })} />
+                <label className="field sub-event-checkbox">
+                  <input
+                    type="checkbox"
+                    checked={event.isAllAround}
+                    onChange={(e) => updateSubEvent(event.id, { isAllAround: e.target.checked })}
+                  />
+                  全能
+                </label>
+                <button className="button sub-event-remove" type="button" onClick={() => removeSubEvent(event.id)}>
+                  <Trash2 size={16} />
+                </button>
+              </div>
+              <textarea
+                className="weekly-paste-box"
+                placeholder="粘贴该项目的成绩数据（表头+成绩）"
+                value={event.rawText}
+                onChange={(e) => updateSubEvent(event.id, { rawText: e.target.value })}
+              />
+              {subParsed.rows.length > 0 ? (
+                <div className="sub-event-preview">
+                  <span className="admin-local-count">{subParsed.rows.length} 条</span>
+                  {subParsed.errors.length > 0 ? (
+                    <div className="weekly-parse-errors">
+                      {subParsed.errors.slice(0, 4).map((err) => (<p key={err}>{err}</p>))}
+                    </div>
+                  ) : null}
+                </div>
+              ) : null}
+            </div>
+          );
+        })}
+        <div className="admin-entry-actions">
+          <button className="button" type="button" onClick={addSubEvent}>
+            <Plus size={17} />
+            添加子项目
+          </button>
+        </div>
       </div>
 
       <section className="weekly-event-section">

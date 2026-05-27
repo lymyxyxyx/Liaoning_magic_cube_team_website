@@ -26,6 +26,14 @@ type WeeklyResultInput = {
   attempts: (number | "DNF")[];
 };
 
+type EventInput = {
+  eventName: string;
+  kind?: "main" | "age_group" | "other";
+  groupName?: string;
+  isAllAround?: boolean;
+  results: WeeklyResultInput[];
+};
+
 type WeeklyMeetInput = {
   weekNumber: number;
   year: number;
@@ -38,6 +46,7 @@ type WeeklyMeetInput = {
   pbNote?: string;
   threeAgeIntro?: string;
   results: WeeklyResultInput[];
+  events?: EventInput[];
 };
 
 export async function POST(request: NextRequest) {
@@ -53,9 +62,12 @@ export async function POST(request: NextRequest) {
   const id = `weekly-${meet.weekNumber}`;
   const slug = id;
   const title = `辽宁魔方少儿战队第${meet.weekNumber}周周赛总结（${meet.year}年第${meet.yearWeek}周）`;
-  const mainEventId = `${id}-three`;
   const pool = getPostgresPool();
   const client = await pool.connect();
+
+  const allEvents: EventInput[] = meet.events?.length
+    ? meet.events
+    : [{ eventName: meet.event || "三阶", kind: "main", results: meet.results }];
 
   try {
     await client.query("BEGIN");
@@ -85,45 +97,53 @@ export async function POST(request: NextRequest) {
       await client.query("INSERT INTO weekly_meet_intros (meet_id, seq, text) VALUES ($1,$2,$3)", [id, index, text.trim()]);
     }
 
-    await client.query(
-      `INSERT INTO weekly_events (id, meet_id, kind, title, event_name, group_name, is_all_around, seq)
-       VALUES ($1,$2,'main',$3,$4,NULL,FALSE,0)`,
-      [mainEventId, id, `三阶比赛第${meet.yearWeek}周`, meet.event || "三阶"]
-    );
+    let resultCount = 0;
+    for (const [eventIndex, event] of allEvents.entries()) {
+      const eventId = `${id}-event-${eventIndex}`;
+      const kind = event.kind || (eventIndex === 0 ? "main" : "other");
+      const eventTitle = `${event.eventName}比赛第${meet.yearWeek}周`;
 
-    for (const result of meet.results) {
-      const inserted = await client.query<{ id: number }>(
-        `INSERT INTO weekly_results
-          (event_id, meet_id, rank, player_name, player_slug, gender, age_group, level, grade, average, personal_best, pb_refreshed)
-         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)
-         RETURNING id`,
-        [
-          mainEventId,
-          id,
-          result.rank,
-          result.playerName,
-          playerSlugByPlayerName.get(result.playerName) || "",
-          result.gender,
-          result.ageGroup || null,
-          result.level || "",
-          result.grade || "",
-          result.average,
-          result.personalBest,
-          Boolean(result.pbRefreshed)
-        ]
+      await client.query(
+        `INSERT INTO weekly_events (id, meet_id, kind, title, event_name, group_name, is_all_around, seq)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8)`,
+        [eventId, id, kind, eventTitle, event.eventName, event.groupName || null, Boolean(event.isAllAround), eventIndex]
       );
-      const resultId = inserted.rows[0].id;
-      for (const [index, attempt] of result.attempts.slice(0, 5).entries()) {
-        await client.query("INSERT INTO weekly_attempts (result_id, seq, value) VALUES ($1,$2,$3)", [
-          resultId,
-          index + 1,
-          attempt === "DNF" ? null : attempt
-        ]);
+
+      for (const result of event.results) {
+        const inserted = await client.query<{ id: number }>(
+          `INSERT INTO weekly_results
+            (event_id, meet_id, rank, player_name, player_slug, gender, age_group, level, grade, average, personal_best, pb_refreshed)
+           VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)
+           RETURNING id`,
+          [
+            eventId,
+            id,
+            result.rank,
+            result.playerName,
+            playerSlugByPlayerName.get(result.playerName) || "",
+            result.gender,
+            result.ageGroup || null,
+            result.level || "",
+            result.grade || "",
+            result.average,
+            result.personalBest,
+            Boolean(result.pbRefreshed)
+          ]
+        );
+        const resultId = inserted.rows[0].id;
+        for (const [index, attempt] of result.attempts.slice(0, 5).entries()) {
+          await client.query("INSERT INTO weekly_attempts (result_id, seq, value) VALUES ($1,$2,$3)", [
+            resultId,
+            index + 1,
+            attempt === "DNF" ? null : attempt
+          ]);
+        }
+        resultCount++;
       }
     }
 
     await client.query("COMMIT");
-    return NextResponse.json({ slug, title, count: meet.results.length });
+    return NextResponse.json({ slug, title, count: resultCount });
   } catch (error) {
     await client.query("ROLLBACK");
     console.error("weekly-admin save failed", error);
@@ -140,12 +160,22 @@ function validatePayload(payload: WeeklyMeetInput | null) {
   if (!Number.isInteger(payload.yearWeek) || payload.yearWeek <= 0) return "年度周次不正确";
   if (!payload.dateLabel?.trim()) return "请填写周赛周期";
   if (!payload.summary?.trim()) return "请填写摘要";
-  if (!Array.isArray(payload.results) || payload.results.length === 0) return "请至少录入一条成绩";
-  for (const result of payload.results) {
-    if (!result.playerName?.trim()) return "存在未填写姓名的成绩";
-    if (result.gender !== "男" && result.gender !== "女") return `${result.playerName} 的性别不正确`;
-    if (!Number.isFinite(result.average)) return `${result.playerName} 的平均成绩不正确`;
-    if (!Number.isFinite(result.personalBest)) return `${result.playerName} 的个人 PB 不正确`;
+  const allEvents = payload.events?.length
+    ? payload.events
+    : [{ eventName: payload.event || "三阶", results: payload.results }];
+
+  let totalResults = 0;
+  for (const event of allEvents) {
+    if (!event.eventName?.trim()) return "存在未填写项目名称的事件";
+    if (!Array.isArray(event.results)) return `${event.eventName} 缺少成绩数据`;
+    totalResults += event.results.length;
+    for (const result of event.results) {
+      if (!result.playerName?.trim()) return `${event.eventName} 中存在未填写姓名的成绩`;
+      if (result.gender !== "男" && result.gender !== "女") return `${event.eventName} 中 ${result.playerName} 的性别不正确`;
+      if (!Number.isFinite(result.average)) return `${event.eventName} 中 ${result.playerName} 的平均成绩不正确`;
+      if (!Number.isFinite(result.personalBest)) return `${event.eventName} 中 ${result.playerName} 的个人 PB 不正确`;
+    }
   }
+  if (totalResults === 0) return "请至少录入一条成绩";
   return "";
 }
