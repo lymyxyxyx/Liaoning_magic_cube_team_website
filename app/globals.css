@@ -474,14 +474,6 @@ main {
   align-items: center;
 }
 
-.page-hero {
-  display: flex;
-  justify-content: space-between;
-  gap: 26px;
-  align-items: flex-end;
-  padding: 42px 0 18px;
-}
-
 .detail-layout {
   display: grid;
   grid-template-columns: minmax(0, 0.8fr) minmax(300px, 1.2fr);
@@ -1176,9 +1168,7 @@ main {
   .admin-entry-actions {
     grid-template-columns: 1fr;
   }
-}
 
-@media (max-width: 640px) {
   .admin-login-shell {
     width: min(100% - 28px, 1080px);
     padding: 28px 0 42px;
@@ -1206,6 +1196,16 @@ main {
 
   .admin-login-heading h2 {
     font-size: 21px;
+  }
+
+  .commercial-edit-toolbar,
+  .commercial-team-header {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .commercial-member-editor {
+    grid-template-columns: 1fr;
   }
 }
 
@@ -3483,14 +3483,12 @@ textarea {
   background: #ee1c25;
 }
 
-.flag-usa,
 .flag-united-states {
   background:
     linear-gradient(#b22234 0 8%, #fff 8% 16%, #b22234 16% 24%, #fff 24% 32%, #b22234 32% 40%, #fff 40% 48%, #b22234 48% 56%, #fff 56% 64%, #b22234 64% 72%, #fff 72% 80%, #b22234 80% 88%, #fff 88% 96%, #b22234 96%),
     #fff;
 }
 
-.flag-usa::before,
 .flag-united-states::before {
   position: absolute;
   inset: 0 auto auto 0;
@@ -3723,18 +3721,6 @@ a.commercial-member-link:hover {
 
 .button--ghost:hover {
   background: var(--soft);
-}
-
-@media (max-width: 640px) {
-  .commercial-edit-toolbar,
-  .commercial-team-header {
-    align-items: stretch;
-    flex-direction: column;
-  }
-
-  .commercial-member-editor {
-    grid-template-columns: 1fr;
-  }
 }
 
 @media (max-width: 920px) {
