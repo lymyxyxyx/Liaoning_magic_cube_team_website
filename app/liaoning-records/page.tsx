@@ -1,9 +1,15 @@
 import Link from "next/link";
 import { Database, ExternalLink, Trophy } from "lucide-react";
 import { PageHero } from "@/components/page-hero";
-import { getLiaoningRecords, type LocalRecordEvent, type LocalRecordResult } from "@/lib/local-records";
+import { getLiaoningRecords, type LocalRecordEvent, type LocalRecordGender, type LocalRecordResult } from "@/lib/local-records";
 
 export const dynamic = "force-dynamic";
+
+const genderOptions: { value: LocalRecordGender; label: string; title: string }[] = [
+  { value: "all", label: "不限", title: "当前辽宁纪录" },
+  { value: "m", label: "男子", title: "当前辽宁男子纪录" },
+  { value: "f", label: "女子", title: "当前辽宁女子纪录" }
+];
 
 function recordLabel(record: LocalRecordResult | undefined) {
   if (!record) return "暂无";
@@ -46,11 +52,26 @@ function RecordCell({ record }: { record?: LocalRecordResult }) {
   );
 }
 
-export default async function LiaoningRecordsPage() {
+function pickGender(value: string | string[] | undefined): LocalRecordGender {
+  const next = Array.isArray(value) ? value[0] : value;
+  return next === "m" || next === "f" ? next : "all";
+}
+
+function genderHref(gender: LocalRecordGender) {
+  return gender === "all" ? "/liaoning-records" : `/liaoning-records?gender=${gender}`;
+}
+
+export default async function LiaoningRecordsPage({
+  searchParams
+}: {
+  searchParams?: { gender?: string | string[] };
+}) {
+  const selectedGender = pickGender(searchParams?.gender);
+  const selectedGenderOption = genderOptions.find((option) => option.value === selectedGender) || genderOptions[0];
   let records: LocalRecordEvent[] = [];
   let dataError = "";
   try {
-    records = await getLiaoningRecords();
+    records = await getLiaoningRecords(selectedGender);
   } catch {
     dataError = "无法读取辽宁纪录数据，请确认 WCA 数据库已同步。";
   }
@@ -70,10 +91,23 @@ export default async function LiaoningRecordsPage() {
           </Link>
         }
       >
-        按本站辽宁本地名单关联 WCA 官方成绩，展示各 WCA 项目的辽宁单次与平均纪录。
+        按本站辽宁本地名单关联 WCA 官方成绩，展示各 WCA 项目的辽宁单次、平均、男子与女子纪录。
       </PageHero>
 
       <section className="container section local-rankings-section liaoning-records-section">
+        <nav className="liaoning-record-gender-tabs" aria-label="辽宁纪录分类">
+          {genderOptions.map((option) => (
+            <Link
+              aria-current={selectedGender === option.value ? "page" : undefined}
+              className={selectedGender === option.value ? "active" : ""}
+              href={genderHref(option.value)}
+              key={option.value}
+            >
+              {option.label}
+            </Link>
+          ))}
+        </nav>
+
         <div className="national-qualifier-summary">
           <div className="stat">
             <strong>{records.length}</strong>
@@ -93,12 +127,13 @@ export default async function LiaoningRecordsPage() {
           <div className="section-header">
             <div>
               <span className="eyebrow">Records</span>
-              <h2>当前辽宁纪录</h2>
+              <h2>{selectedGenderOption.title}</h2>
             </div>
             <div className="ranking-source-line">
               <Database size={16} />
               <span>WCA PostgreSQL</span>
               <span>本站辽宁名单</span>
+              <span>{selectedGenderOption.label}</span>
             </div>
           </div>
 

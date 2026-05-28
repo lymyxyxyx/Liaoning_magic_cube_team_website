@@ -5,6 +5,7 @@ import { getPostgresPool } from "@/lib/postgres";
 import { formatWcaAttempt, formatWcaResult } from "@/lib/wca-result-format";
 
 type RecordMode = "single" | "average";
+export type LocalRecordGender = "all" | "m" | "f";
 
 type RawRecordRow = {
   mode: RecordMode;
@@ -55,8 +56,9 @@ export type LocalRecordEvent = {
   average?: LocalRecordResult;
 };
 
-function buildRecordSql(tableName: "wca_ranks_single" | "wca_ranks_average", mode: RecordMode) {
+function buildRecordSql(tableName: "wca_ranks_single" | "wca_ranks_average", mode: RecordMode, gender: LocalRecordGender) {
   const resultColumn = mode === "average" ? "average" : "best";
+  const genderWhere = gender === "all" ? "" : "AND person.gender = $3";
   return `
     WITH local_profiles AS (
       SELECT *
@@ -141,11 +143,12 @@ function buildRecordSql(tableName: "wca_ranks_single" | "wca_ranks_average", mod
     WHERE rank.best::int > 0
       AND rank.world_rank::int > 0
       AND rank.country_rank::int > 0
+      ${genderWhere}
     ORDER BY rank.event_id, rank.world_rank::int, rank.best::int, rank.person_id
   `;
 }
 
-export async function getLiaoningRecords(): Promise<LocalRecordEvent[]> {
+export async function getLiaoningRecords(gender: LocalRecordGender = "all"): Promise<LocalRecordEvent[]> {
   const localProfiles = await readLocalProfiles();
   const profiles = localProfiles
     .filter((profile) => profile.visible && profile.wcaId)
@@ -158,9 +161,16 @@ export async function getLiaoningRecords(): Promise<LocalRecordEvent[]> {
   if (profiles.length === 0) return [];
 
   const pool = getPostgresPool();
+  const profilePayload = JSON.stringify(profiles);
   const [singleResult, averageResult] = await Promise.all([
-    pool.query<RawRecordRow>(buildRecordSql("wca_ranks_single", "single"), [JSON.stringify(profiles), "single"]),
-    pool.query<RawRecordRow>(buildRecordSql("wca_ranks_average", "average"), [JSON.stringify(profiles), "average"])
+    pool.query<RawRecordRow>(
+      buildRecordSql("wca_ranks_single", "single", gender),
+      gender === "all" ? [profilePayload, "single"] : [profilePayload, "single", gender]
+    ),
+    pool.query<RawRecordRow>(
+      buildRecordSql("wca_ranks_average", "average", gender),
+      gender === "all" ? [profilePayload, "average"] : [profilePayload, "average", gender]
+    )
   ]);
 
   const events = new Map<string, LocalRecordEvent>();

@@ -3138,6 +3138,38 @@ textarea {
   padding-top: 12px;
 }
 
+.liaoning-record-gender-tabs {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  width: min(420px, 100%);
+  min-height: 40px;
+  margin-bottom: 16px;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fff;
+}
+
+.liaoning-record-gender-tabs a {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-right: 1px solid var(--line);
+  color: #344054;
+  font-size: 13px;
+  font-weight: 900;
+  text-decoration: none;
+}
+
+.liaoning-record-gender-tabs a:last-child {
+  border-right: 0;
+}
+
+.liaoning-record-gender-tabs a.active {
+  background: var(--blue);
+  color: #fff;
+}
+
 .liaoning-records-table {
   min-width: 1180px;
   table-layout: fixed;
@@ -4038,9 +4070,16 @@ a.commercial-member-link:hover {
   }
 
   .mobile-nav-panel {
+    position: absolute;
+    top: calc(100% + 8px);
+    left: 0;
+    right: 0;
+    z-index: 40;
     display: grid;
     gap: 6px;
-    margin-top: 8px;
+    margin-top: 0;
+    max-height: min(68vh, 520px);
+    overflow: auto;
     padding: 10px;
     border: 1px solid var(--line);
     border-radius: 8px;
@@ -4049,6 +4088,7 @@ a.commercial-member-link:hover {
   }
 
   .mobile-nav-panel > a,
+  .mobile-nav-close,
   .mobile-nav-group > summary,
   .mobile-nav-group a {
     display: flex;
@@ -4062,7 +4102,15 @@ a.commercial-member-link:hover {
     font-weight: 750;
   }
 
+  .mobile-nav-close {
+    border: 1px solid var(--line);
+    background: var(--soft);
+    cursor: pointer;
+    font: inherit;
+  }
+
   .mobile-nav-panel > a:hover,
+  .mobile-nav-close:hover,
   .mobile-nav-group > summary:hover,
   .mobile-nav-group[open] > summary,
   .mobile-nav-group a:hover {

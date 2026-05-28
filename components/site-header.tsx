@@ -1,5 +1,8 @@
+"use client";
+
 import Link from "next/link";
-import { Shield, Settings, ChevronDown, Menu } from "lucide-react";
+import { type SyntheticEvent, useEffect, useRef } from "react";
+import { Shield, Settings, ChevronDown, Menu, X } from "lucide-react";
 
 type NavItem = {
   href?: string;
@@ -29,10 +32,47 @@ const navItems: NavItem[] = [
 
 export function SiteHeader() {
   const adminHref = process.env.NODE_ENV === "production" ? "https://lncubing.com/admin" : "/admin";
+  const headerRef = useRef<HTMLElement>(null);
+
+  function closeMenus() {
+    headerRef.current?.querySelectorAll<HTMLDetailsElement>("details[open]").forEach((item) => {
+      item.open = false;
+    });
+  }
+
+  function closePeerMenus(current: HTMLDetailsElement) {
+    headerRef.current?.querySelectorAll<HTMLDetailsElement>("details[open]").forEach((item) => {
+      if (item !== current && item.parentElement === current.parentElement) {
+        item.open = false;
+      }
+    });
+  }
+
+  function handleDetailsToggle(event: SyntheticEvent<HTMLDetailsElement>) {
+    if (event.currentTarget.open) closePeerMenus(event.currentTarget);
+  }
+
+  useEffect(() => {
+    function handlePointerDown(event: PointerEvent) {
+      const target = event.target;
+      if (target instanceof Node && !headerRef.current?.contains(target)) closeMenus();
+    }
+
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key === "Escape") closeMenus();
+    }
+
+    document.addEventListener("pointerdown", handlePointerDown);
+    document.addEventListener("keydown", handleKeyDown);
+    return () => {
+      document.removeEventListener("pointerdown", handlePointerDown);
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, []);
 
   return (
-    <header className="site-header">
-      <Link className="brand" href="/">
+    <header className="site-header" ref={headerRef}>
+      <Link className="brand" href="/" onClick={closeMenus}>
         <span className="brand-mark" aria-hidden="true">
           <Shield size={20} />
         </span>
@@ -47,21 +87,21 @@ export function SiteHeader() {
 
           if (!hasChildren) {
             return (
-              <Link href={item.href || "/"} key={item.label}>
+              <Link href={item.href || "/"} key={item.label} onClick={closeMenus}>
                 {item.label}
               </Link>
             );
           }
 
           return (
-            <details className="nav-dropdown" key={item.label}>
+            <details className="nav-dropdown" key={item.label} onToggle={handleDetailsToggle}>
               <summary>
                 {item.label}
                 <ChevronDown size={16} />
               </summary>
               <div className="nav-dropdown-menu">
                 {item.children?.map((child) => (
-                  <Link key={child.href} href={child.href}>
+                  <Link key={child.href} href={child.href} onClick={closeMenus}>
                     {child.label}
                   </Link>
                 ))}
@@ -70,32 +110,36 @@ export function SiteHeader() {
           );
         })}
       </nav>
-      <details className="mobile-nav">
+      <details className="mobile-nav" onToggle={handleDetailsToggle}>
         <summary>
           <Menu size={17} />
           菜单
         </summary>
         <div className="mobile-nav-panel">
+          <button className="mobile-nav-close" type="button" onClick={closeMenus}>
+            <X size={16} />
+            关闭菜单
+          </button>
           {navItems.map((item) => {
             const hasChildren = item.children && item.children.length > 0;
 
             if (!hasChildren) {
               return (
-                <Link href={item.href || "/"} key={item.label}>
+                <Link href={item.href || "/"} key={item.label} onClick={closeMenus}>
                   {item.label}
                 </Link>
               );
             }
 
             return (
-              <details className="mobile-nav-group" key={item.label}>
+              <details className="mobile-nav-group" key={item.label} onToggle={handleDetailsToggle}>
                 <summary>
                   {item.label}
                   <ChevronDown size={15} />
                 </summary>
                 <div>
                   {item.children?.map((child) => (
-                    <Link key={child.href} href={child.href}>
+                    <Link key={child.href} href={child.href} onClick={closeMenus}>
                       {child.label}
                     </Link>
                   ))}
@@ -105,7 +149,7 @@ export function SiteHeader() {
           })}
         </div>
       </details>
-      <a className="admin-link" href={adminHref} title="后台管理">
+      <a className="admin-link" href={adminHref} title="后台管理" onClick={closeMenus}>
         <Settings size={18} />
         <span>后台</span>
       </a>
