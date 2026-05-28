@@ -10,30 +10,20 @@ type NavItem = {
 const navItems: NavItem[] = [
   { href: "/", label: "首页" },
   {
-    label: "排名",
+    label: "WCA排名",
     children: [
-      { href: "/rankings", label: "WCA排名" },
+      { href: "/rankings", label: "官方排名" },
       { href: "/liaoning-rankings", label: "辽宁排名" }
     ]
   },
-  { href: "/provincial-competition", label: "省赛专题" },
-  { href: "/national-events", label: "国赛专题（棋牌中心）" },
-  { href: "/commercial-teams", label: "商业战队" },
-  {
-    label: "人员（待补充）",
-    children: [
-      { href: "/athletes", label: "运动员（待补充）" },
-      { href: "/coaches", label: "教练员（录入中）" },
-      { href: "/judges", label: "裁判员（录入中）" }
-    ]
-  },
-  {
-    label: "赛事活动",
-    children: [
-      { href: "/competitions", label: "赛事活动" },
-      { href: "/weekly", label: "周赛" }
-    ]
-  }
+  { href: "/commercial-teams", label: "商业战队合作" },
+  { href: "/athletes", label: "运动员" },
+  { href: "/coaches", label: "教练员" },
+  { href: "/judges", label: "裁判员" },
+  { href: "/national-events", label: "国赛（棋牌）" },
+  { href: "/provincial-competition", label: "省赛" },
+  { href: "/competitions", label: "市赛" },
+  { href: "/weekly", label: "周赛" }
 ];
 
 export function SiteHeader() {

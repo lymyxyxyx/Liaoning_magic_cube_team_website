@@ -1,4 +1,5 @@
 import { getPostgresPool } from "@/lib/postgres";
+import { weeklyMeets } from "@/lib/weekly";
 import type { WeeklyMeet, WeeklyEvent, WeeklyResult, WeeklyAttempt, Gender } from "@/lib/weekly";
 
 type MeetRow = {
@@ -50,32 +51,33 @@ type AttemptRow = {
 };
 
 export async function getWeeklyMeets(): Promise<WeeklyMeet[]> {
-  const pool = getPostgresPool();
-  const meetsResult = await pool.query<MeetRow>(
-    "SELECT * FROM weekly_meets ORDER BY week_number DESC"
-  );
-  if (meetsResult.rows.length === 0) return [];
+  try {
+    const pool = getPostgresPool();
+    const meetsResult = await pool.query<MeetRow>(
+      "SELECT * FROM weekly_meets ORDER BY week_number DESC"
+    );
+    if (meetsResult.rows.length === 0) return [];
 
-  const meetIds = meetsResult.rows.map((r) => r.id);
-  const introsResult = await pool.query<{ meet_id: string; seq: number; text: string }>(
-    "SELECT * FROM weekly_meet_intros WHERE meet_id = ANY($1) ORDER BY meet_id, seq",
-    [meetIds]
-  );
-  const mainResultsResult = await pool.query<ResultRow>(
-    `SELECT wr.* FROM weekly_results wr
+    const meetIds = meetsResult.rows.map((r) => r.id);
+    const introsResult = await pool.query<{ meet_id: string; seq: number; text: string }>(
+      "SELECT * FROM weekly_meet_intros WHERE meet_id = ANY($1) ORDER BY meet_id, seq",
+      [meetIds]
+    );
+    const mainResultsResult = await pool.query<ResultRow>(
+      `SELECT wr.* FROM weekly_results wr
      JOIN weekly_events we ON we.id = wr.event_id AND we.meet_id = wr.meet_id
      WHERE wr.meet_id = ANY($1) AND we.kind = 'main'
      ORDER BY wr.meet_id, wr.rank`,
-    [meetIds]
-  );
+      [meetIds]
+    );
 
-  const introsByMeet = groupBy(introsResult.rows, (r) => r.meet_id);
-  const mainResultsByMeet = groupBy(mainResultsResult.rows, (r) => r.meet_id);
-  const emptyAttempts = new Map<number, AttemptRow[]>();
+    const introsByMeet = groupBy(introsResult.rows, (r) => r.meet_id);
+    const mainResultsByMeet = groupBy(mainResultsResult.rows, (r) => r.meet_id);
+    const emptyAttempts = new Map<number, AttemptRow[]>();
 
-  return meetsResult.rows.map((meetRow) => {
-    const rawResults = mainResultsByMeet.get(meetRow.id) || [];
-    return {
+    return meetsResult.rows.map((meetRow) => {
+      const rawResults = mainResultsByMeet.get(meetRow.id) || [];
+      return {
       id: meetRow.id,
       slug: meetRow.slug,
       title: meetRow.title,
@@ -92,18 +94,22 @@ export async function getWeeklyMeets(): Promise<WeeklyMeet[]> {
       results: rawResults.map((r) => buildResult(r, emptyAttempts)),
       threeAgeGroups: [],
       events: []
-    };
-  });
+      };
+    });
+  } catch {
+    return weeklyMeets;
+  }
 }
 
 export async function getWeeklyMeetBySlug(slug: string): Promise<WeeklyMeet | null> {
-  const pool = getPostgresPool();
-  const meetResult = await pool.query<MeetRow>(
-    "SELECT * FROM weekly_meets WHERE slug = $1",
-    [slug]
-  );
-  if (meetResult.rows.length === 0) return null;
-  const meetRow = meetResult.rows[0];
+  try {
+    const pool = getPostgresPool();
+    const meetResult = await pool.query<MeetRow>(
+      "SELECT * FROM weekly_meets WHERE slug = $1",
+      [slug]
+    );
+    if (meetResult.rows.length === 0) return null;
+    const meetRow = meetResult.rows[0];
 
   const [introsResult, eventsResult, resultsResult] = await Promise.all([
     pool.query<{ meet_id: string; seq: number; text: string }>(
@@ -148,7 +154,7 @@ export async function getWeeklyMeetBySlug(slug: string): Promise<WeeklyMeet | nu
   const ageGroupEvents = eventsResult.rows.filter((e) => e.kind === "age_group");
   const otherEvents = eventsResult.rows.filter((e) => e.kind === "other");
 
-  return {
+    return {
     id: meetRow.id,
     slug: meetRow.slug,
     title: meetRow.title,
@@ -165,7 +171,10 @@ export async function getWeeklyMeetBySlug(slug: string): Promise<WeeklyMeet | nu
     results: mainEvent ? (resultsByEvent.get(mainEvent.id) || []).map((r) => buildResult(r, attemptsByResult)) : [],
     threeAgeGroups: ageGroupEvents.map(buildEvent),
     events: otherEvents.map(buildEvent)
-  };
+    };
+  } catch {
+    return weeklyMeets.find((meet) => meet.slug === slug) || null;
+  }
 }
 
 function buildResult(row: ResultRow, attemptsByResult: Map<number, AttemptRow[]>): WeeklyResult {
