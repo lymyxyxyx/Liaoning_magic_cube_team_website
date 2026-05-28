@@ -49,8 +49,17 @@ export async function GET(request: NextRequest) {
   const gender = cleanGender(params.get("gender"));
   const page = Math.max(1, Math.min(5000, Number(params.get("page") || 1) || 1));
   const offset = (page - 1) * pageSize;
+  const isWorld = country === "WORLD";
+  const isContinent = country.startsWith("CONTINENT:");
+  const continentId = isContinent ? country.replace("CONTINENT:", "") : "";
+  const locationWhere = isWorld
+    ? ""
+    : isContinent
+      ? 'AND cn."continentId" = $2'
+      : "AND p.country_id = $2";
+  const rankColumn = isWorld ? "world_rank" : isContinent ? "continent_rank" : "country_rank";
   const genderWhere = gender === "all" ? "" : "AND p.gender = $3";
-  const queryParams: (string | number)[] = [event, country];
+  const queryParams: (string | number)[] = [event, isContinent ? continentId : country];
   if (gender !== "all") queryParams.push(gender);
   queryParams.push(pageSize + 1, offset);
   const limitParam = queryParams.length - 1;
@@ -61,7 +70,7 @@ export async function GET(request: NextRequest) {
   const sqlWithCompetition = `
     WITH page_ranks AS (
       SELECT
-        r.country_rank::int AS rank,
+        r.${rankColumn}::int AS rank,
         r.world_rank::int AS "worldRank",
         r.person_id AS "wcaId",
         r.event_id,
@@ -74,10 +83,10 @@ export async function GET(request: NextRequest) {
       JOIN wca_persons p ON p.wca_id = r.person_id AND p.sub_id = '1'
       LEFT JOIN wca_countries cn ON cn.id = p.country_id
       WHERE r.event_id = $1
-        AND p.country_id = $2
-        AND r.country_rank::int > 0
+        ${locationWhere}
+        AND r.${rankColumn}::int > 0
         ${genderWhere}
-      ORDER BY r.country_rank::int, r.world_rank::int, r.person_id
+      ORDER BY r.${rankColumn}::int, r.world_rank::int, r.person_id
       LIMIT $${limitParam} OFFSET $${offsetParam}
     )
     SELECT
@@ -139,7 +148,7 @@ export async function GET(request: NextRequest) {
 
   const fallbackSql = `
     SELECT
-      r.country_rank::int AS rank,
+      r.${rankColumn}::int AS rank,
       r.world_rank::int AS "worldRank",
       r.person_id AS "wcaId",
       p.name AS name,
@@ -157,10 +166,10 @@ export async function GET(request: NextRequest) {
     JOIN wca_persons p ON p.wca_id = r.person_id AND p.sub_id = '1'
     LEFT JOIN wca_countries cn ON cn.id = p.country_id
     WHERE r.event_id = $1
-      AND p.country_id = $2
-      AND r.country_rank::int > 0
+      ${locationWhere}
+      AND r.${rankColumn}::int > 0
       ${genderWhere}
-    ORDER BY r.country_rank::int, r.world_rank::int, r.person_id
+    ORDER BY r.${rankColumn}::int, r.world_rank::int, r.person_id
     LIMIT $${limitParam} OFFSET $${offsetParam}
   `;
 

@@ -10,10 +10,12 @@ import { formatWcaExportDate, formatWcaEventName } from "@/lib/format";
 
 type RankingMode = "single" | "average";
 type Gender = "all" | "m" | "f";
+type RegionScope = "world" | "continent" | "country";
 
 type MetadataOption = {
   id: string;
   name: string;
+  nameZh?: string;
 };
 
 type RankingRow = {
@@ -52,9 +54,12 @@ const genderLabels: Record<Gender, string> = {
 export function RankingsClient() {
   const [events, setEvents] = useState<MetadataOption[]>([]);
   const [countries, setCountries] = useState<MetadataOption[]>([]);
+  const [continents, setContinents] = useState<MetadataOption[]>([]);
   const [lastExportDate, setLastExportDate] = useState("");
   const [event, setEvent] = useState("333");
+  const [scope, setScope] = useState<RegionScope>("country");
   const [country, setCountry] = useState("China");
+  const [continent, setContinent] = useState("_Asia");
   const [mode, setMode] = useState<RankingMode>("average");
   const [gender, setGender] = useState<Gender>("all");
   const [page, setPage] = useState(1);
@@ -70,6 +75,7 @@ export function RankingsClient() {
         if (cancelled) return;
         setEvents(payload.events || []);
         setCountries(payload.countries || []);
+        setContinents(payload.continents || []);
         setLastExportDate(payload.lastExportDate || "");
       })
       .catch(() => {
@@ -82,9 +88,10 @@ export function RankingsClient() {
 
   useEffect(() => {
     const controller = new AbortController();
+    const regionId = scope === "world" ? "WORLD" : scope === "continent" ? `CONTINENT:${continent}` : country;
     const params = new URLSearchParams({
       event,
-      country,
+      country: regionId,
       mode,
       gender,
       page: String(page)
@@ -110,21 +117,36 @@ export function RankingsClient() {
       });
 
     return () => controller.abort();
-  }, [event, country, mode, gender, page]);
+  }, [event, country, continent, scope, mode, gender, page]);
 
   const eventName = useMemo(() => events.find((item) => item.id === event)?.name || event, [events, event]);
   const countryName = useMemo(
-    () => countries.find((item) => item.id === country)?.name || country,
-    [countries, country]
+    () => {
+      if (scope === "world") return "世界";
+      if (scope === "continent") return continents.find((item) => item.id === continent)?.nameZh || continent;
+      return countries.find((item) => item.id === country)?.name || country;
+    },
+    [continents, countries, country, continent, scope]
   );
   const rows = rankings?.rows || [];
   const firstRank = rows[0]?.rank || (page - 1) * 100 + 1;
   const lastRank = rows.length ? rows[rows.length - 1].rank : page * 100;
   const updateDateLabel = formatWcaExportDate(lastExportDate);
 
-  function updateFilter(next: Partial<{ event: string; country: string; mode: RankingMode; gender: Gender }>) {
+  function updateFilter(
+    next: Partial<{
+      event: string;
+      country: string;
+      continent: string;
+      scope: RegionScope;
+      mode: RankingMode;
+      gender: Gender;
+    }>
+  ) {
     if (next.event) setEvent(next.event);
     if (next.country) setCountry(next.country);
+    if (next.continent) setContinent(next.continent);
+    if (next.scope) setScope(next.scope);
     if (next.mode) setMode(next.mode);
     if (next.gender) setGender(next.gender);
     setPage(1);
@@ -157,11 +179,39 @@ export function RankingsClient() {
             </label>
 
             <label className="ranking-field">
+              <span>排名范围</span>
+              <select value={scope} onChange={(changeEvent) => updateFilter({ scope: changeEvent.target.value as RegionScope })}>
+                <option value="world">世界</option>
+                <option value="continent">大洲</option>
+                <option value="country">国家</option>
+              </select>
+            </label>
+
+            <label className="ranking-field">
+              <span>大洲</span>
+              <select
+                value={continent}
+                disabled={scope !== "continent"}
+                onChange={(changeEvent) => updateFilter({ continent: changeEvent.target.value })}
+              >
+                {continents.map((item) => (
+                  <option value={item.id} key={item.id}>
+                    {item.name.replace("_", "")} ({item.nameZh || item.name})
+                  </option>
+                ))}
+              </select>
+            </label>
+
+            <label className="ranking-field">
               <span>地区</span>
-              <select value={country} onChange={(changeEvent) => updateFilter({ country: changeEvent.target.value })}>
+              <select
+                value={country}
+                disabled={scope !== "country"}
+                onChange={(changeEvent) => updateFilter({ country: changeEvent.target.value })}
+              >
                 {countries.map((item) => (
                   <option value={item.id} key={item.id}>
-                    {item.name}
+                    {item.nameZh && item.nameZh !== item.name ? `${item.name} (${item.nameZh})` : item.name}
                   </option>
                 ))}
               </select>

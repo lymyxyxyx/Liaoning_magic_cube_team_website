@@ -3033,7 +3033,9 @@ textarea {
 .local-ranking-results-table.has-gender-ranks td:nth-child(9),
 .local-ranking-results-table.has-gender-ranks th:nth-child(10),
 .local-ranking-results-table.has-gender-ranks td:nth-child(10) {
-  width: 108px;
+  width: 96px;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
 }
 
 .local-ranking-results-table.has-gender-ranks th:nth-child(11),
