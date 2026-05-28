@@ -58,8 +58,10 @@ export async function GET(request: NextRequest) {
       ? "AND cn.continent_id = $2"
       : "AND p.country_id = $2";
   const rankColumn = isWorld ? "world_rank" : isContinent ? "continent_rank" : "country_rank";
-  const genderWhere = gender === "all" ? "" : "AND p.gender = $3";
-  const queryParams: (string | number)[] = [event, isContinent ? continentId : country];
+  const regionParam = isContinent ? continentId : country;
+  const queryParams: (string | number)[] = [event];
+  if (!isWorld) queryParams.push(regionParam);
+  const genderWhere = gender === "all" ? "" : `AND p.gender = $${isWorld ? 2 : 3}`;
   if (gender !== "all") queryParams.push(gender);
   queryParams.push(pageSize + 1, offset);
   const limitParam = queryParams.length - 1;
