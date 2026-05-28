@@ -15,11 +15,11 @@ const navItems: NavItem[] = [
   {
     label: "WCA排名",
     children: [
-      { href: "/rankings", label: "官方排名" },
-      { href: "/liaoning-rankings", label: "辽宁排名" },
-      { href: "/liaoning-records", label: "辽宁纪录" }
+      { href: "/rankings", label: "官方排名" }
     ]
   },
+  { href: "/liaoning-rankings", label: "辽宁排名" },
+  { href: "/liaoning-records", label: "辽宁纪录" },
   { href: "/commercial-teams", label: "商业战队合作" },
   { href: "/athletes", label: "运动员" },
   { href: "/coaches", label: "教练员" },
