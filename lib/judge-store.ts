@@ -45,6 +45,7 @@ function normalizeJudges(judges: RawJudge[]) {
       const trainingSession = normalizeTrainingSession(judge);
       const gender = judgeGenders.includes(judge.gender as JudgeGender) ? (judge.gender as JudgeGender) : "男";
       const year = Number(judge.certifiedYear || 2025);
+      const displayOrder = Number(judge.displayOrder);
       return {
         id,
         ...(String(judge.number || "").trim() ? { number: String(judge.number || "").trim() } : {}),
@@ -52,6 +53,7 @@ function normalizeJudges(judges: RawJudge[]) {
         gender,
         province: String(judge.province || "辽宁").trim() || "辽宁",
         city: String(judge.city || "沈阳").trim() || "沈阳",
+        ...(Number.isFinite(displayOrder) ? { displayOrder } : {}),
         levelType,
         trainingSessionId: trainingSession.id,
         trainingLocation: trainingSession.location,

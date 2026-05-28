@@ -27,6 +27,7 @@ export type JudgeTrainingSessionId = (typeof judgeTrainingSessions)[number]["id"
 export type Judge = {
   id: string;
   number?: string;
+  displayOrder?: number;
   name: string;
   gender: JudgeGender;
   province: string;

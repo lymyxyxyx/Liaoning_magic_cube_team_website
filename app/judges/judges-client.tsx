@@ -1,6 +1,6 @@
 "use client";
 
-import { Plus, Save, X } from "lucide-react";
+import { ArrowDown, ArrowUp, Plus, Save, X } from "lucide-react";
 import { useMemo, useState } from "react";
 import {
   judgeGenders,
@@ -51,8 +51,9 @@ export function JudgesClient({ initialJudges }: Props) {
     () =>
       [...judges].sort(
         (a, b) =>
-          trainingDateWeight(a.trainingDate) - trainingDateWeight(b.trainingDate) ||
+          displayOrderWeight(a) - displayOrderWeight(b) ||
           levelWeight(a) - levelWeight(b) ||
+          trainingDateWeight(a.trainingDate) - trainingDateWeight(b.trainingDate) ||
           a.province.localeCompare(b.province, "zh-Hans-CN") ||
           a.city.localeCompare(b.city, "zh-Hans-CN") ||
           judgeOrderWeight(a) - judgeOrderWeight(b) ||
@@ -82,6 +83,7 @@ export function JudgesClient({ initialJudges }: Props) {
       province: draft.province.trim() || "辽宁",
       city: draft.city.trim() || "沈阳",
       levelType: draft.levelType,
+      displayOrder: Date.now() + Math.random(),
       trainingSessionId: "manual",
       trainingLocation,
       trainingDate: draft.trainingDate.trim(),
@@ -126,6 +128,20 @@ export function JudgesClient({ initialJudges }: Props) {
     }
   }
 
+  async function moveJudge(judgeId: string, direction: "up" | "down") {
+    const index = sortedJudges.findIndex((judge) => judge.id === judgeId);
+    const targetIndex = direction === "up" ? index - 1 : index + 1;
+    if (index < 0 || targetIndex < 0 || targetIndex >= sortedJudges.length) return;
+    const current = sortedJudges[index];
+    const target = sortedJudges[targetIndex];
+    const nextJudges = judges.map((judge) => {
+      if (judge.id === current.id) return { ...judge, displayOrder: target.displayOrder ?? targetIndex + 1 };
+      if (judge.id === target.id) return { ...judge, displayOrder: current.displayOrder ?? index + 1 };
+      return judge;
+    });
+    await saveJudges(nextJudges, "顺序已更新。");
+  }
+
   async function saveJudges(nextJudges: Judge[], successMessage: string) {
     setIsSaving(true);
     setNotice("正在保存...");
@@ -163,6 +179,18 @@ export function JudgesClient({ initialJudges }: Props) {
       </div>
 
       {notice ? <p className="judges-notice">{notice}</p> : null}
+      <div className="judges-level-guide">
+        <strong>级别说明：</strong>
+        {judgeLevelTypes.map((level) => {
+          const badge = levelBadge(level);
+          return (
+            <span className={`judge-level-badge judge-level-badge--${badge.tone}`} key={level}>
+              <span>{badge.stars}</span>
+              <span>{level}</span>
+            </span>
+          );
+        })}
+      </div>
 
       {isCreating ? (
         <div className="judges-create-card">
@@ -325,13 +353,24 @@ export function JudgesClient({ initialJudges }: Props) {
                           </span>
                         </td>
                         <td data-label="级别">
-                          <span className="status">{judge.levelType}</span>
+                          <span className={`judge-level-badge judge-level-badge--${levelBadge(judge.levelType).tone}`}>
+                            <span>{levelBadge(judge.levelType).stars}</span>
+                            <span>{judge.levelType}</span>
+                          </span>
                         </td>
                         <td data-label="考取地点">{judge.trainingLocation}</td>
                         <td data-label="培训日期">{judge.trainingDate}</td>
                         <td data-label="操作">
                           <button className="button" type="button" onClick={() => startEdit(judge)}>
                             编辑
+                          </button>
+                          <button className="button" type="button" onClick={() => moveJudge(judge.id, "up")}>
+                            <ArrowUp size={14} />
+                            上移
+                          </button>
+                          <button className="button" type="button" onClick={() => moveJudge(judge.id, "down")}>
+                            <ArrowDown size={14} />
+                            下移
                           </button>
                         </td>
                       </>
@@ -348,7 +387,20 @@ export function JudgesClient({ initialJudges }: Props) {
 }
 
 function levelWeight(judge: Judge) {
+  if (judge.levelType === "国家一级") return -1;
   return judgeLevelTypes.indexOf(judge.levelType);
+}
+
+function displayOrderWeight(judge: Judge) {
+  return typeof judge.displayOrder === "number" ? judge.displayOrder : Number.MAX_SAFE_INTEGER;
+}
+
+function levelBadge(level: JudgeLevelType) {
+  if (level === "国际级") return { stars: "★★★★★", tone: "intl" };
+  if (level === "国家级" || level === "国家一级") return { stars: "★★★★", tone: "national" };
+  if (level === "国家二级" || level === "国家三级") return { stars: "★★★", tone: "national-2" };
+  if (level === "省一级" || level === "省二级" || level === "省三级") return { stars: "★★", tone: "province" };
+  return { stars: "★", tone: "city" };
 }
 
 function trainingDateWeight(trainingDate: string) {

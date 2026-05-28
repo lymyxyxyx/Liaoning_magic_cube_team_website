@@ -2728,6 +2728,34 @@ textarea {
   font-weight: 750;
 }
 
+.judges-level-guide {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  border: 1px solid #dce4f6;
+  border-radius: 8px;
+  background: #f8faff;
+  font-size: 13px;
+}
+
+.judge-level-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 9px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.judge-level-badge--intl { background: #ffe8b0; color: #7a5400; }
+.judge-level-badge--national { background: #ffe0e0; color: #9f1c1c; }
+.judge-level-badge--national-2 { background: #ffeeda; color: #8a4b00; }
+.judge-level-badge--province { background: #dff2ff; color: #0b4f8a; }
+.judge-level-badge--city { background: #e8f7e8; color: #1f6a36; }
+
 .judges-create-card {
   display: grid;
   gap: 14px;
