@@ -48,7 +48,7 @@ const modeLabels: Record<RankingMode, string> = {
 };
 
 const genderLabels: Record<Gender, string> = {
-  all: "所有",
+  all: "不限",
   m: "男",
   f: "女"
 };

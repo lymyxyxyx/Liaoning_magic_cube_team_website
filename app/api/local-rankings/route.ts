@@ -47,6 +47,8 @@ type RawLocalRankingRow = {
   value1: number | null;
   value2: number | null;
   value3: number | null;
+  value4: number | null;
+  value5: number | null;
 };
 
 type LocalRankSnapshotRow = {
@@ -199,6 +201,8 @@ export async function GET(request: NextRequest) {
       br.value1,
       br.value2,
       br.value3,
+      br.value4,
+      br.value5,
       CASE
         WHEN c.id IS NULL THEN ''
         ELSE CONCAT(c.year, '-', LPAD(c.month, 2, '0'), '-', LPAD(c.day, 2, '0'))
@@ -225,7 +229,19 @@ export async function GET(request: NextRequest) {
           FROM wca_result_attempts attempt
           WHERE attempt.result_id = result.id AND attempt.attempt_number = '3'
           LIMIT 1
-        ) AS value3
+        ) AS value3,
+        (
+          SELECT attempt.value::int
+          FROM wca_result_attempts attempt
+          WHERE attempt.result_id = result.id AND attempt.attempt_number = '4'
+          LIMIT 1
+        ) AS value4,
+        (
+          SELECT attempt.value::int
+          FROM wca_result_attempts attempt
+          WHERE attempt.result_id = result.id AND attempt.attempt_number = '5'
+          LIMIT 1
+        ) AS value5
       FROM wca_results result
       LEFT JOIN wca_competitions result_competition ON result_competition.id = result.competition_id
       WHERE result.person_id = page_ranks."wcaId"
@@ -261,7 +277,9 @@ export async function GET(request: NextRequest) {
       '' AS date,
       NULL::int AS value1,
       NULL::int AS value2,
-      NULL::int AS value3
+      NULL::int AS value3,
+      NULL::int AS value4,
+      NULL::int AS value5
     FROM ${rankingTable} r
     JOIN wca_persons p ON p.wca_id = r.person_id AND p.sub_id = '1'
     LEFT JOIN wca_countries cn ON cn.id = p.country_id
@@ -308,8 +326,8 @@ export async function GET(request: NextRequest) {
       genderWorldRank: row.genderWorldRank,
       result: formatWcaResult(event, row.best, mode),
       resultDetails:
-        event === "333fm" && mode === "average"
-          ? [row.value1, row.value2, row.value3]
+        mode === "average"
+          ? [row.value1, row.value2, row.value3, row.value4, row.value5]
               .filter((value): value is number => typeof value === "number")
               .map((value) => formatWcaAttempt(event, value))
           : [],

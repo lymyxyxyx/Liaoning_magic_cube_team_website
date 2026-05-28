@@ -58,7 +58,7 @@ const modeLabels: Record<RankingMode, string> = {
 };
 
 const genderLabels: Record<Gender, string> = {
-  all: "所有",
+  all: "不限",
   m: "男",
   f: "女"
 };
@@ -400,17 +400,18 @@ export function LiaoningRankingsClient() {
                     </>
                   ) : null}
                   <th>比赛</th>
+                  <th>平均明细</th>
                 </tr>
               </thead>
               <tbody>
                 {isLoading ? (
                   <tr>
-                    <td colSpan={showGenderRankColumns ? 11 : 8}>加载中...</td>
+                    <td colSpan={showGenderRankColumns ? 12 : 9}>加载中...</td>
                   </tr>
                 ) : null}
                 {!isLoading && rows.length === 0 ? (
                   <tr>
-                    <td colSpan={showGenderRankColumns ? 11 : 8}>当前筛选没有辽宁本地排名数据。</td>
+                    <td colSpan={showGenderRankColumns ? 12 : 9}>当前筛选没有辽宁本地排名数据。</td>
                   </tr>
                 ) : null}
                 {!isLoading
@@ -428,9 +429,6 @@ export function LiaoningRankingsClient() {
                         <td data-label="性别">{row.gender === "m" ? "男" : row.gender === "f" ? "女" : "-"}</td>
                         <td data-label="成绩" className="score-strong">
                           {row.result}
-                          {row.resultDetails?.length ? (
-                            <small className="ranking-result-details">{row.resultDetails.join(" / ")}</small>
-                          ) : null}
                         </td>
                         <td data-label="省市">{row.province} · {row.city}</td>
                         <td data-label={scopeLabels[scope]}>{row.rank}</td>
@@ -458,6 +456,13 @@ export function LiaoningRankingsClient() {
                             </Link>
                           ) : (
                             <span className="muted-cell">未匹配比赛</span>
+                          )}
+                        </td>
+                        <td data-label="平均明细">
+                          {row.resultDetails?.length ? (
+                            <small className="ranking-result-details">{row.resultDetails.join(" / ")}</small>
+                          ) : (
+                            <span className="muted-cell">-</span>
                           )}
                         </td>
                       </tr>
