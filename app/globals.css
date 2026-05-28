@@ -3517,9 +3517,19 @@ textarea {
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  background: #fff;
+}
+
+.wca-flag.flag-emoji img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.wca-flag.flag-emoji span {
   font-size: 16px;
   line-height: 1;
-  background: #fff;
 }
 
 .flag-china {

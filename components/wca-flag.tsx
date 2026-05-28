@@ -5,8 +5,28 @@ function iso2ToFlagEmoji(iso2: string) {
 }
 
 export function WcaFlag({ country, iso2 }: { country: string; iso2?: string | null }) {
-  const normalizedIso2 = iso2?.trim().toUpperCase();
-  const emoji = normalizedIso2 ? iso2ToFlagEmoji(normalizedIso2) : "";
+  const normalizedIso2 = iso2?.trim().toLowerCase();
+  if (normalizedIso2 && /^[a-z]{2}$/.test(normalizedIso2)) {
+    return (
+      <span className="wca-flag flag-emoji" aria-hidden="true">
+        <img
+          src={`/flags/${normalizedIso2}.svg`}
+          width={28}
+          height={20}
+          alt=""
+          loading="lazy"
+          onError={(event) => {
+            const target = event.currentTarget;
+            target.style.display = "none";
+            const fallback = target.nextElementSibling as HTMLElement | null;
+            if (fallback) fallback.style.display = "inline";
+          }}
+        />
+        <span style={{ display: "none" }}>{iso2ToFlagEmoji(normalizedIso2)}</span>
+      </span>
+    );
+  }
+  const emoji = iso2?.trim() ? iso2ToFlagEmoji(iso2.trim()) : "";
   if (emoji) {
     return (
       <span className="wca-flag flag-emoji" aria-hidden="true">
