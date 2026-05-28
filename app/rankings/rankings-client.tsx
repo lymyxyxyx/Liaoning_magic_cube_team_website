@@ -284,17 +284,18 @@ export function RankingsClient() {
                   <th>地区</th>
                   <th>WR</th>
                   <th>比赛</th>
+                  <th>平均明细</th>
                 </tr>
               </thead>
               <tbody>
                 {isLoading ? (
                   <tr>
-                    <td colSpan={7}>加载中...</td>
+                    <td colSpan={8}>加载中...</td>
                   </tr>
                 ) : null}
                 {!isLoading && rows.length === 0 ? (
                   <tr>
-                    <td colSpan={7}>当前筛选没有排名数据。</td>
+                    <td colSpan={8}>当前筛选没有排名数据。</td>
                   </tr>
                 ) : null}
                 {!isLoading
@@ -313,9 +314,6 @@ export function RankingsClient() {
                         <td data-label="性别">{row.gender === "m" ? "男" : row.gender === "f" ? "女" : "-"}</td>
                         <td data-label="成绩" className="score-strong">
                           {row.result}
-                          {row.resultDetails?.length ? (
-                            <small className="ranking-result-details">{row.resultDetails.join(" / ")}</small>
-                          ) : null}
                         </td>
                         <td data-label="地区">
                           <span className="flag-label">
@@ -338,6 +336,13 @@ export function RankingsClient() {
                             </Link>
                           ) : (
                             <span className="muted-cell">未匹配比赛</span>
+                          )}
+                        </td>
+                        <td data-label="平均明细">
+                          {row.resultDetails?.length ? (
+                            <small className="ranking-result-details">{row.resultDetails.join(" / ")}</small>
+                          ) : (
+                            <span className="muted-cell">-</span>
                           )}
                         </td>
                       </tr>
