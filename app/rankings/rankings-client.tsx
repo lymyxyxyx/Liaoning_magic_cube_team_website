@@ -5,6 +5,7 @@ import { CalendarClock, ChevronLeft, ChevronRight, Database, ExternalLink, Globe
 import { useEffect, useMemo, useState } from "react";
 import { PageHero } from "@/components/page-hero";
 import { WcaFlag } from "@/components/wca-flag";
+import { getCubingCompetitionNameZhByWcaId } from "@/lib/cubing-competition-name";
 import { formatWcaExportDate, formatWcaEventName } from "@/lib/format";
 
 type RankingMode = "single" | "average";
@@ -281,7 +282,7 @@ export function RankingsClient() {
                               className="table-person-link ranking-competition-link"
                               href={`https://www.worldcubeassociation.org/competitions/${row.competitionId}`}
                             >
-                              <span>{row.competitionName}</span>
+                              <span>{getCubingCompetitionNameZhByWcaId(row.competitionId) || row.competitionName}</span>
                               <ExternalLink size={14} />
                             </Link>
                           ) : (
@@ -311,5 +312,4 @@ export function RankingsClient() {
     </>
   );
 }
-
 
