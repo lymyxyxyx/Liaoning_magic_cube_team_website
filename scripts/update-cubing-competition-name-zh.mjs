@@ -53,22 +53,53 @@ function mergeInto(target, source) {
 const rootDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const outPath = path.join(rootDir, "data", "cubing-competition-name-zh.json");
 
-const indexEn = curl("https://cubing.com/competition?lang=en");
-const years = getYearOptionsFromEnglishPage(indexEn);
-
 const zhByUrl = new Map();
 
-for (const year of years) {
-  const url = `https://cubing.com/competition?lang=zh_cn&year=${encodeURIComponent(year)}`;
-  const html = curl(url);
-  mergeInto(zhByUrl, parseCompetitionAnchors(html));
+function buildUrl(params) {
+  const searchParams = new URLSearchParams(params);
+  return `https://cubing.com/competition?${searchParams.toString()}`;
 }
 
-// Also cover "current" view (may include next year).
-mergeInto(zhByUrl, parseCompetitionAnchors(curl("https://cubing.com/competition?lang=zh_cn&year=current")));
+function crawlCompetitionListPages(params) {
+  const merged = new Map();
+  for (let page = 1; page <= 200; page += 1) {
+    const url = buildUrl({ ...params, page: page === 1 ? "" : String(page) });
+    const html = curl(url);
+    const items = parseCompetitionAnchors(html);
+    const before = merged.size;
+    mergeInto(merged, items);
+    const after = merged.size;
+    if (items.size === 0) break;
+    if (after === before) break;
+  }
+  return merged;
+}
+
+// Crawl the full list (handles pagination) - this is the only reliable way to capture older competitions.
+mergeInto(
+  zhByUrl,
+  crawlCompetitionListPages({
+    lang: "zh_cn",
+    year: "",
+    type: "",
+    province: "",
+    event: ""
+  })
+);
+
+// Also crawl "current" view (sometimes differs from the full list).
+mergeInto(
+  zhByUrl,
+  crawlCompetitionListPages({
+    lang: "zh_cn",
+    year: "current",
+    type: "",
+    province: "",
+    event: ""
+  })
+);
 
 const result = Object.fromEntries(Array.from(zhByUrl.entries()).sort(([a], [b]) => a.localeCompare(b)));
 
 writeFileSync(outPath, JSON.stringify(result, null, 2) + "\n", "utf8");
 process.stdout.write(`Wrote ${Object.keys(result).length} items -> ${outPath}\n`);
-
