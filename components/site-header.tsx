@@ -12,12 +12,7 @@ type NavItem = {
 
 const navItems: NavItem[] = [
   { href: "/", label: "首页" },
-  {
-    label: "WCA排名",
-    children: [
-      { href: "/rankings", label: "官方排名" }
-    ]
-  },
+  { href: "/rankings", label: "WCA排名" },
   { href: "/liaoning-rankings", label: "辽宁排名" },
   { href: "/liaoning-records", label: "辽宁纪录" },
   { href: "/commercial-teams", label: "商业战队合作" },

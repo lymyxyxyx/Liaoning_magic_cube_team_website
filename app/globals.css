@@ -4427,6 +4427,71 @@ a.commercial-member-link:hover {
   .judges-table td:last-child {
     grid-column: 1 / -1;
   }
+
+  .liaoning-records-table {
+    min-width: 0;
+    table-layout: auto;
+  }
+
+  .liaoning-records-table tbody {
+    gap: 12px;
+  }
+
+  .liaoning-records-table tr {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+
+  .liaoning-records-table td {
+    display: block;
+    padding: 0;
+  }
+
+  .liaoning-records-table td::before {
+    content: none;
+  }
+
+  .liaoning-records-table td:first-child {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    padding-bottom: 9px;
+    border-bottom: 1px solid var(--line);
+  }
+
+  .liaoning-records-table td:nth-child(2),
+  .liaoning-records-table td:nth-child(3) {
+    display: grid;
+    grid-template-columns: 72px minmax(0, 1fr);
+    gap: 10px;
+    align-items: start;
+  }
+
+  .liaoning-records-table td:nth-child(2)::before,
+  .liaoning-records-table td:nth-child(3)::before {
+    content: attr(data-label);
+    color: var(--muted);
+    font-size: 12px;
+    font-weight: 850;
+    line-height: 24px;
+  }
+
+  .liaoning-record-cell {
+    min-width: 0;
+  }
+
+  .liaoning-record-person,
+  .liaoning-record-competition {
+    display: inline;
+    width: auto;
+    overflow-wrap: anywhere;
+  }
+
+  .liaoning-record-meta,
+  .liaoning-record-date,
+  .liaoning-record-attempts {
+    overflow-wrap: anywhere;
+  }
 }
 
 @media (max-width: 560px) {
