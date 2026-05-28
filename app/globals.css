@@ -3134,6 +3134,105 @@ textarea {
   white-space: normal;
 }
 
+.liaoning-records-section {
+  padding-top: 12px;
+}
+
+.liaoning-records-table {
+  min-width: 1180px;
+  table-layout: fixed;
+}
+
+.liaoning-records-table th:first-child,
+.liaoning-records-table td:first-child {
+  width: 260px;
+  text-align: left;
+}
+
+.liaoning-records-table th:nth-child(2),
+.liaoning-records-table td:nth-child(2),
+.liaoning-records-table th:nth-child(3),
+.liaoning-records-table td:nth-child(3) {
+  width: 460px;
+  text-align: left;
+  vertical-align: top;
+}
+
+.liaoning-record-event-id {
+  display: block;
+  margin-top: 4px;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.liaoning-record-cell {
+  display: grid;
+  gap: 6px;
+  align-content: start;
+}
+
+.liaoning-record-cell > div:first-child {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.liaoning-record-cell strong {
+  font-size: 18px;
+  font-variant-numeric: tabular-nums;
+}
+
+.liaoning-record-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 34px;
+  height: 22px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--red) 12%, #fff);
+  color: var(--red);
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.liaoning-record-person,
+.liaoning-record-competition {
+  display: inline-flex;
+  gap: 5px;
+  align-items: center;
+  width: fit-content;
+  color: var(--blue);
+  font-weight: 850;
+  text-decoration: none;
+}
+
+.liaoning-record-person:hover,
+.liaoning-record-competition:hover {
+  text-decoration: underline;
+}
+
+.liaoning-record-meta,
+.liaoning-record-date,
+.liaoning-record-attempts {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 750;
+}
+
+.liaoning-record-attempts {
+  font-variant-numeric: tabular-nums;
+  white-space: normal;
+}
+
+.liaoning-record-empty {
+  display: flex;
+  align-items: center;
+  min-height: 92px;
+  color: var(--muted);
+  font-weight: 800;
+}
+
 .local-eligibility-card {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(320px, 0.78fr);

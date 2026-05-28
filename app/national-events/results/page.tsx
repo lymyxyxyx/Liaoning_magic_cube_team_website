@@ -207,7 +207,7 @@ export default function NationalResultsPage({
   searchParams?: { station?: string | string[] };
 }) {
   const selectedStation = pickStation(searchParams?.station);
-  const shouldLazyLoadResultGroups = selectedStation !== stationParamMap.first;
+  const shouldLazyLoadResultGroups = !selectedStation;
   const filteredResults = filterRowsByStation(nationalResults, selectedStation);
   const filteredAllAroundResults = filterRowsByStation(nationalAllAroundResults, selectedStation);
   const filteredRelayResults = filterRowsByStation(nationalRelayResults, selectedStation);
