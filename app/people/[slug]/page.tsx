@@ -4,6 +4,7 @@ import { ExternalLink } from "lucide-react";
 import { AchievementBadge, RoleTags } from "@/components/cards";
 import {
   getAchievementsForPerson,
+  getCompetitionDisplayName,
   getPersonBySlug,
   getPersonCompetitions,
   people
@@ -77,7 +78,7 @@ export default function PersonDetailPage({ params }: { params: { slug: string } 
             {competitions.map((item) =>
               item.competition ? (
                 <Link className="timeline-item" href={`/competitions/${item.competition.slug}`} key={item.competitionId}>
-                  <strong>{item.competition.name}</strong>
+                  <strong>{getCompetitionDisplayName(item.competition)}</strong>
                   <span>
                     {item.type} · {item.competition.date} · {item.note || "备注待补充"}
                   </span>

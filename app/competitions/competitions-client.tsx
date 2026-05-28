@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
-import { competitionCategories, competitions, getCompetitionCategory } from "@/lib/data";
+import { competitionCategories, competitions, getCompetitionCategory, getCompetitionDisplayName } from "@/lib/data";
 
 const pageSize = 20;
 const getSortableDate = (date: string) => {
@@ -95,7 +95,7 @@ export function CompetitionsClient() {
                     </td>
                     <td data-label="比赛名称">
                       <Link className="competition-name-link" href={`/competitions/${competition.slug}`}>
-                        {competition.name}
+                        {getCompetitionDisplayName(competition)}
                       </Link>
                     </td>
                     <td data-label="赞助商">{competition.sponsor || "—"}</td>

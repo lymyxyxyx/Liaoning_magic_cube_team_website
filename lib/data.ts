@@ -1,4 +1,7 @@
 import { weeklyPlayerPeople } from "@/lib/weekly-players";
+import cubingCompetitionNameZh from "@/data/cubing-competition-name-zh.json";
+
+const cubingCompetitionNameZhByUrl = cubingCompetitionNameZh as Record<string, string>;
 
 export type PersonRole = "运动员" | "教练员" | "裁判员" | "组织者";
 export type CompletionLevel = "低" | "中" | "高";
@@ -32,6 +35,7 @@ export type Competition = {
   id: string;
   slug: string;
   name: string;
+  nameZh?: string;
   category: CompetitionCategoryId;
   date: string;
   province: string;
@@ -175,6 +179,11 @@ export const competitionCategories: CompetitionCategory[] = [
 
 export function getCompetitionCategory(categoryId: CompetitionCategoryId) {
   return competitionCategories.find((category) => category.id === categoryId);
+}
+
+export function getCompetitionDisplayName(competition: Competition) {
+  const derivedNameZh = competition.externalUrl ? cubingCompetitionNameZhByUrl[competition.externalUrl] : undefined;
+  return competition.nameZh || derivedNameZh || competition.name;
 }
 
 const shenyangOpenCompetitions: Competition[] = Array.from({ length: 32 }, (_, index) => {

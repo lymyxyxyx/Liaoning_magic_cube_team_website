@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { ArrowDown, ArrowUp, CalendarClock, ChevronLeft, ChevronRight, Database, ExternalLink, MapPin, Minus } from "lucide-react";
+import { CalendarClock, ChevronLeft, ChevronRight, Database, ExternalLink, MapPin } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { PageHero } from "@/components/page-hero";
 import { WcaFlag } from "@/components/wca-flag";
@@ -431,9 +431,9 @@ export function LiaoningRankingsClient() {
                           ) : null}
                         </td>
                         <td data-label="省市">{row.province} · {row.city}</td>
-                        <td data-label={scopeLabels[scope]}>{renderRankWithChange(row.rank, row.rankChange)}</td>
-                        <td data-label="全国排名">{renderRankWithChange(row.officialRank, row.officialRankChange)}</td>
-                        <td data-label="世界排名">{renderRankWithChange(row.worldRank, row.worldRankChange)}</td>
+                        <td data-label={scopeLabels[scope]}>{row.rank}</td>
+                        <td data-label="全国排名">{row.officialRank}</td>
+                        <td data-label="世界排名">{row.worldRank}</td>
                         {showGenderRankColumns ? (
                           <>
                             <td data-label={`${genderRankLabel}${scopeLabels[scope]}`}>{formatRankCell(row.genderLocalRank)}</td>
@@ -478,27 +478,4 @@ export function LiaoningRankingsClient() {
     </>
   );
 }
-
-function renderRankWithChange(value: number, change: number | null) {
-  const state = change === null ? "none" : change > 0 ? "up" : change < 0 ? "down" : "same";
-  const changeValue = change === null || change === 0 ? "" : Math.abs(change);
-  const label =
-    change === null
-      ? "暂无历史变化"
-      : change > 0
-        ? `上升 ${change} 名`
-        : change < 0
-          ? `下降 ${Math.abs(change)} 名`
-          : "持平";
-  return (
-    <span className={`rank-change rank-change-${state}`} title={label}>
-      <span>{value}</span>
-      {state === "up" ? <ArrowUp size={14} /> : null}
-      {state === "down" ? <ArrowDown size={14} /> : null}
-      {state === "same" ? <Minus size={14} /> : null}
-      {changeValue ? <small>{changeValue}</small> : null}
-    </span>
-  );
-}
-
 

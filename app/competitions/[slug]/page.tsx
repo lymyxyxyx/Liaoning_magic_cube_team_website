@@ -8,6 +8,7 @@ import {
   getAchievementPerson,
   getCompetitionBySlug,
   getCompetitionCategory,
+  getCompetitionDisplayName,
   getCompetitionPeople
 } from "@/lib/data";
 import { notFound } from "next/navigation";
@@ -26,14 +27,15 @@ export default function CompetitionDetailPage({ params }: { params: { slug: stri
   const relatedPeople = getCompetitionPeople(competition.id);
   const relatedAchievements = achievements.filter((achievement) => achievement.competitionId === competition.id);
   const category = getCompetitionCategory(competition.category);
+  const displayName = getCompetitionDisplayName(competition);
 
   return (
     <section className="container section">
-      <Image className="event-cover" src={competition.cover} alt={`${competition.name}封面`} width={1160} height={652} />
+      <Image className="event-cover" src={competition.cover} alt={`${displayName}封面`} width={1160} height={652} />
       <div className="detail-layout" style={{ marginTop: 22 }}>
         <aside className="profile-panel">
           <span className="eyebrow">赛事活动</span>
-          <h1>{competition.name}</h1>
+          <h1>{displayName}</h1>
           <div className="tag-row">
             {category ? <span className="tag">{category.name}</span> : null}
             {competition.tags.map((tag) => (

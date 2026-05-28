@@ -1,7 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { Award, CalendarDays, MapPin, UserRound } from "lucide-react";
-import { getCompetitionCategory, type Competition, type Person } from "@/lib/data";
+import { getCompetitionCategory, getCompetitionDisplayName, type Competition, type Person } from "@/lib/data";
 
 export function RoleTags({ roles }: { roles: string[] }) {
   return (
@@ -34,17 +34,18 @@ export function PersonCard({ person }: { person: Person }) {
 
 export function CompetitionCard({ competition }: { competition: Competition }) {
   const category = getCompetitionCategory(competition.category);
+  const displayName = getCompetitionDisplayName(competition);
 
   return (
     <Link className="event-card" href={`/competitions/${competition.slug}`}>
-      <Image src={competition.cover} alt={`${competition.name}封面`} width={560} height={320} />
+      <Image src={competition.cover} alt={`${displayName}封面`} width={560} height={320} />
       <div className="event-card-body">
         <div className="card-kicker">
           <CalendarDays size={15} />
           {competition.date}
           {category ? ` · ${category.shortName}` : ""}
         </div>
-        <h3>{competition.name}</h3>
+        <h3>{displayName}</h3>
         <p>{competition.summary}</p>
         <div className="meta-line">
           <MapPin size={15} />

@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { AchievementBadge } from "@/components/cards";
 import { PageHero } from "@/components/page-hero";
-import { achievements, getAchievementCompetition, getAchievementPerson } from "@/lib/data";
+import { achievements, getAchievementCompetition, getAchievementPerson, getCompetitionDisplayName } from "@/lib/data";
 
 export default function AchievementsPage() {
   return (
@@ -17,7 +17,7 @@ export default function AchievementsPage() {
             return (
               <Link href={person ? `/people/${person.slug}` : "/achievements"} key={achievement.id}>
                 <AchievementBadge
-                  description={`${achievement.year} · ${person?.name || "相关人员"}${competition ? ` · ${competition.name}` : ""}。${achievement.description}`}
+                  description={`${achievement.year} · ${person?.name || "相关人员"}${competition ? ` · ${getCompetitionDisplayName(competition)}` : ""}。${achievement.description}`}
                   title={achievement.title}
                   type={achievement.type}
                 />
