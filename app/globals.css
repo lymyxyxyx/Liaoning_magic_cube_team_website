@@ -3488,12 +3488,20 @@ textarea {
 
 .wca-flag {
   position: relative;
+  overflow: hidden;
   display: inline-block;
   flex: 0 0 auto;
   width: 28px;
   height: 20px;
+  border-radius: 2px;
   border: 1px solid rgba(0, 0, 0, 0.08);
   box-shadow: 0 5px 14px rgba(25, 39, 62, 0.18);
+}
+
+.wca-flag.flag-svg svg {
+  display: block;
+  width: 100%;
+  height: 100%;
 }
 
 .flag-china {
