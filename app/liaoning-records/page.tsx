@@ -108,21 +108,6 @@ export default async function LiaoningRecordsPage({
           ))}
         </nav>
 
-        <div className="national-qualifier-summary">
-          <div className="stat">
-            <strong>{records.length}</strong>
-            <span>已覆盖项目</span>
-          </div>
-          <div className="stat">
-            <strong>{singleCount}</strong>
-            <span>单次纪录</span>
-          </div>
-          <div className="stat">
-            <strong>{averageCount}</strong>
-            <span>平均纪录</span>
-          </div>
-        </div>
-
         <section className="weekly-event-section ranking-results-section liaoning-records-table-section">
           <div className="section-header">
             <div>
