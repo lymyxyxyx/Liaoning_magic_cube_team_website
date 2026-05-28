@@ -6,6 +6,7 @@ import { useEffect, useMemo, useState } from "react";
 import { PageHero } from "@/components/page-hero";
 import { WcaFlag } from "@/components/wca-flag";
 import { getCubingCompetitionNameZhByWcaId } from "@/lib/cubing-competition-name";
+import { formatCountryLabel } from "@/lib/country-label";
 import { formatWcaExportDate, formatWcaEventName } from "@/lib/format";
 
 type RankingMode = "single" | "average";
@@ -319,7 +320,7 @@ export function RankingsClient() {
                         <td data-label="地区">
                           <span className="flag-label">
                             <WcaFlag country={row.country} iso2={row.countryIso2} />
-                            {row.countryName}
+                            {formatCountryLabel(row.countryName, row.countryIso2)}
                           </span>
                         </td>
                         <td data-label="WR">{row.worldRank}</td>
