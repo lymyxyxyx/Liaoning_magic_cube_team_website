@@ -3,6 +3,7 @@ import { SiteHeader } from "@/components/site-header";
 import "./globals.css";
 
 export const metadata: Metadata = {
+  metadataBase: new URL("https://lncubing.com"),
   title: "辽宁地区魔方信息查询网",
   description:
     "辽宁地区魔方信息查询网目前为测试阶段的非官方资料整理页面，站内信息主要依据公开资料和人工采集整理，仅供查询参考。"
