@@ -1,4 +1,19 @@
-export function WcaFlag({ country }: { country: string }) {
+export function WcaFlag({ country, iso2 }: { country: string; iso2?: string | null }) {
+  const normalizedIso2 = iso2?.trim().toLowerCase();
+  if (normalizedIso2 && /^[a-z]{2}$/.test(normalizedIso2)) {
+    return (
+      <span className="wca-flag flag-svg" aria-hidden="true">
+        <img
+          src={`https://flagcdn.com/h20/${normalizedIso2}.png`}
+          srcSet={`https://flagcdn.com/h20/${normalizedIso2}.png 1x, https://flagcdn.com/h40/${normalizedIso2}.png 2x`}
+          width={28}
+          height={20}
+          alt=""
+          loading="lazy"
+        />
+      </span>
+    );
+  }
   const countryKey = country.toLowerCase().replaceAll(" ", "-");
   if (countryKey === "china") {
     return (

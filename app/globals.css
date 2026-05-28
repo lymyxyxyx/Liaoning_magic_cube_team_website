@@ -3506,6 +3506,13 @@ textarea {
   height: 100%;
 }
 
+.wca-flag.flag-svg img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
 .flag-china {
   background: #ee1c25;
 }

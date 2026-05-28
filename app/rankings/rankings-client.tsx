@@ -25,6 +25,7 @@ type RankingRow = {
   name: string;
   country: string;
   countryName: string;
+  countryIso2?: string | null;
   gender: string;
   result: string;
   resultDetails: string[];
@@ -317,7 +318,7 @@ export function RankingsClient() {
                         </td>
                         <td data-label="地区">
                           <span className="flag-label">
-                            <WcaFlag country={row.country} />
+                            <WcaFlag country={row.country} iso2={row.countryIso2} />
                             {row.countryName}
                           </span>
                         </td>

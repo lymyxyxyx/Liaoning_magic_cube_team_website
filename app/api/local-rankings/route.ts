@@ -38,6 +38,7 @@ type RawLocalRankingRow = {
   name: string;
   country: string;
   countryName: string;
+  countryIso2: string | null;
   gender: string;
   best: number;
   competitionId: string | null;
@@ -169,6 +170,7 @@ export async function GET(request: NextRequest) {
         p.name AS name,
         p.country_id AS country,
         COALESCE(cn.name, p.country_id) AS "countryName",
+        cn.iso2 AS "countryIso2",
         p.gender AS gender
       FROM ${rankingTable} r
       JOIN wca_persons p ON p.wca_id = r.person_id AND p.sub_id = '1'
@@ -188,6 +190,7 @@ export async function GET(request: NextRequest) {
       page_ranks.name,
       page_ranks.country,
       page_ranks."countryName",
+      page_ranks."countryIso2",
       page_ranks.gender,
       page_ranks.best,
       ${genderRankSelect}
@@ -248,6 +251,7 @@ export async function GET(request: NextRequest) {
       p.name AS name,
       p.country_id AS country,
       COALESCE(cn.name, p.country_id) AS "countryName",
+      cn.iso2 AS "countryIso2",
       p.gender AS gender,
       r.best::int AS best,
       NULL::int AS "genderOfficialRank",

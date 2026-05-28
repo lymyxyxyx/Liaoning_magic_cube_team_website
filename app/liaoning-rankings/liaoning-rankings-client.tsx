@@ -32,6 +32,7 @@ type LocalRankingRow = {
   name: string;
   country: string;
   countryName: string;
+  countryIso2?: string | null;
   gender: string;
   result: string;
   resultDetails: string[];
@@ -448,7 +449,7 @@ export function LiaoningRankingsClient() {
                               className="table-person-link ranking-competition-link"
                               href={`https://www.worldcubeassociation.org/competitions/${row.competitionId}`}
                             >
-                              <WcaFlag country={row.country} />
+                              <WcaFlag country={row.country} iso2={row.countryIso2} />
                               <span>
                                 {getCubingCompetitionNameZhByWcaId(row.competitionId, row.competitionName) ||
                                   row.competitionName}
