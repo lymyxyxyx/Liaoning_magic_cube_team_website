@@ -4497,6 +4497,22 @@ a.commercial-member-link:hover {
 @media (max-width: 560px) {
   .page-hero {
     width: min(520px, calc(100% - 56px));
+    margin-top: 18px;
+    gap: 14px;
+    padding: 16px 16px 14px;
+  }
+
+  .page-hero h1 {
+    margin: 6px 0 8px;
+  }
+
+  .page-hero p {
+    font-size: 14px;
+    line-height: 1.55;
+  }
+
+  .hero-actions {
+    margin-top: 12px;
   }
 
   .site-header {
