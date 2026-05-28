@@ -9,38 +9,34 @@ export async function GET() {
   const pool = getPostgresPool();
   const [events, countries, lastExportDate] = await Promise.all([
     pool.query<{ id: string; name: string }>('SELECT id, name FROM wca_events ORDER BY rank::int, id'),
-    pool.query<{ id: string; name: string; continentId: string; nameZh: string }>(
-      'SELECT id, name, continent_id AS "continentId", CASE id ' +
-        "WHEN 'China' THEN '中国' " +
-        "WHEN 'Hong Kong' THEN '中国香港' " +
-        "WHEN 'Macau' THEN '中国澳门' " +
-        "WHEN 'Chinese Taipei' THEN '中国台北' " +
-        "WHEN 'United States' THEN '美国' " +
-        "WHEN 'Japan' THEN '日本' " +
-        "WHEN 'South Korea' THEN '韩国' " +
-        "WHEN 'Singapore' THEN '新加坡' " +
-        "WHEN 'Malaysia' THEN '马来西亚' " +
-        "WHEN 'Thailand' THEN '泰国' " +
-        "WHEN 'Indonesia' THEN '印度尼西亚' " +
-        "WHEN 'Philippines' THEN '菲律宾' " +
-        "WHEN 'Vietnam' THEN '越南' " +
-        "WHEN 'Australia' THEN '澳大利亚' " +
-        "WHEN 'Canada' THEN '加拿大' " +
-        "WHEN 'United Kingdom' THEN '英国' " +
-        "WHEN 'France' THEN '法国' " +
-        "WHEN 'Germany' THEN '德国' " +
-        "WHEN 'Italy' THEN '意大利' " +
-        "WHEN 'Spain' THEN '西班牙' " +
-        "WHEN 'Poland' THEN '波兰' " +
-        "WHEN 'Russia' THEN '俄罗斯' " +
-        "WHEN 'India' THEN '印度' " +
-        "WHEN 'Brazil' THEN '巴西' " +
-        "WHEN 'Mexico' THEN '墨西哥' " +
-        "WHEN 'South Africa' THEN '南非' " +
-        'ELSE name END AS "nameZh" FROM wca_countries ORDER BY name'
+    pool.query<{ id: string; name: string; continentId: string; iso2: string | null }>(
+      'SELECT id, name, continent_id AS "continentId", iso2 FROM wca_countries ORDER BY name'
     ),
     readLastExportDateFromPostgres()
   ]);
+
+  const zhDisplay = new Intl.DisplayNames(["zh-CN"], { type: "region" });
+  const fallbackZh: Record<string, string> = {
+    China: "中国",
+    "Hong Kong": "中国香港",
+    Macau: "中国澳门",
+    "Chinese Taipei": "中国台北",
+    "United States": "美国",
+    "United Kingdom": "英国",
+    "South Korea": "韩国",
+    "North Korea": "朝鲜"
+  };
+  const countriesWithZh = countries.rows.map((country) => {
+    const normalizedIso2 = country.iso2?.trim().toUpperCase();
+    const inferredZh =
+      normalizedIso2 && /^[A-Z]{2}$/.test(normalizedIso2) ? zhDisplay.of(normalizedIso2) || "" : "";
+    return {
+      id: country.id,
+      name: country.name,
+      continentId: country.continentId,
+      nameZh: fallbackZh[country.id] || inferredZh || country.name
+    };
+  });
 
   const continentNameMap: Record<string, string> = {
     "_Africa": "非洲",
@@ -52,14 +48,14 @@ export async function GET() {
   };
   const continents = Array.from(
     new Map(
-      countries.rows
+      countriesWithZh
         .filter((country) => country.continentId && continentNameMap[country.continentId])
         .map((country) => [country.continentId, { id: country.continentId, name: country.continentId, nameZh: continentNameMap[country.continentId] }])
     ).values()
   );
 
   return NextResponse.json(
-    { events: events.rows, countries: countries.rows, continents, lastExportDate },
+    { events: events.rows, countries: countriesWithZh, continents, lastExportDate },
     { headers: wcaMetadataCacheHeaders }
   );
 }

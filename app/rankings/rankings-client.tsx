@@ -187,35 +187,31 @@ export function RankingsClient() {
               </select>
             </label>
 
-            <label className="ranking-field">
-              <span>大洲</span>
-              <select
-                value={continent}
-                disabled={scope !== "continent"}
-                onChange={(changeEvent) => updateFilter({ continent: changeEvent.target.value })}
-              >
-                {continents.map((item) => (
-                  <option value={item.id} key={item.id}>
-                    {item.name.replace("_", "")} ({item.nameZh || item.name})
-                  </option>
-                ))}
-              </select>
-            </label>
+            {scope === "continent" ? (
+              <label className="ranking-field">
+                <span>大洲</span>
+                <select value={continent} onChange={(changeEvent) => updateFilter({ continent: changeEvent.target.value })}>
+                  {continents.map((item) => (
+                    <option value={item.id} key={item.id}>
+                      {item.name.replace("_", "")} ({item.nameZh || item.name})
+                    </option>
+                  ))}
+                </select>
+              </label>
+            ) : null}
 
-            <label className="ranking-field">
-              <span>地区</span>
-              <select
-                value={country}
-                disabled={scope !== "country"}
-                onChange={(changeEvent) => updateFilter({ country: changeEvent.target.value })}
-              >
-                {countries.map((item) => (
-                  <option value={item.id} key={item.id}>
-                    {item.nameZh && item.nameZh !== item.name ? `${item.name} (${item.nameZh})` : item.name}
-                  </option>
-                ))}
-              </select>
-            </label>
+            {scope === "country" ? (
+              <label className="ranking-field">
+                <span>地区</span>
+                <select value={country} onChange={(changeEvent) => updateFilter({ country: changeEvent.target.value })}>
+                  {countries.map((item) => (
+                    <option value={item.id} key={item.id}>
+                      {item.nameZh && item.nameZh !== item.name ? `${item.name} (${item.nameZh})` : item.name}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            ) : null}
 
             <div className="ranking-field">
               <span>还原类型</span>
