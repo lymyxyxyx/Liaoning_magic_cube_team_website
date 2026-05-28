@@ -4497,22 +4497,32 @@ a.commercial-member-link:hover {
 @media (max-width: 560px) {
   .page-hero {
     width: min(520px, calc(100% - 56px));
-    margin-top: 18px;
-    gap: 14px;
-    padding: 16px 16px 14px;
+    margin-top: 14px;
+    gap: 10px;
+    padding: 12px 14px 10px;
+  }
+
+  .page-hero.ranking-page-hero {
+    padding-top: 12px;
+    padding-bottom: 10px;
+  }
+
+  .page-hero.ranking-page-hero h1 {
+    margin: 4px 0 6px;
+    font-size: 22px;
   }
 
   .page-hero h1 {
-    margin: 6px 0 8px;
+    margin: 6px 0 6px;
   }
 
   .page-hero p {
     font-size: 14px;
-    line-height: 1.55;
+    line-height: 1.45;
   }
 
   .hero-actions {
-    margin-top: 12px;
+    margin-top: 10px;
   }
 
   .site-header {
