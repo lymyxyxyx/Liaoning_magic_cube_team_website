@@ -1267,6 +1267,15 @@ textarea {
   font: inherit;
 }
 
+select {
+  -webkit-appearance: none;
+  appearance: none;
+  padding-right: 32px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%23667085' stroke-width='1.5' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+}
+
 textarea {
   min-height: 100px;
   resize: vertical;
@@ -3527,65 +3536,6 @@ textarea {
   gap: 8px;
 }
 
-.wca-ranking-table-wrap {
-  overflow: auto;
-  background: var(--surface);
-}
-
-.wca-ranking-table {
-  width: 100%;
-  min-width: 920px;
-  border-collapse: collapse;
-  font-size: 20px;
-}
-
-.wca-ranking-table th,
-.wca-ranking-table td {
-  padding: 13px 12px;
-  border-bottom: 1px solid #d7d7d7;
-  text-align: left;
-  vertical-align: middle;
-}
-
-.wca-ranking-table th {
-  color: #262b33;
-  font-size: 20px;
-  font-weight: 850;
-}
-
-.wca-ranking-table tbody tr:nth-child(even) {
-  background: #eeeeee;
-}
-
-.wca-ranking-table tbody tr:nth-child(odd) {
-  background: #fff;
-}
-
-.wca-ranking-table th:first-child,
-.wca-ranking-table td:first-child,
-.wca-ranking-table th:nth-child(3),
-.wca-ranking-table td:nth-child(3),
-.wca-ranking-table th:last-child,
-.wca-ranking-table td:last-child {
-  width: 86px;
-  text-align: center;
-}
-
-.wca-ranking-table td:nth-child(2) {
-  min-width: 360px;
-}
-
-.wca-ranking-table td:nth-child(5) {
-  min-width: 360px;
-}
-
-.wca-ranking-table small {
-  display: block;
-  margin-top: 3px;
-  color: #667085;
-  font-size: 12px;
-  font-weight: 750;
-}
 
 .wca-orange-link,
 .competition-link {
@@ -4207,6 +4157,115 @@ a.commercial-member-link:hover {
   .competition-category-toggle {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
+
+  .weekly-list {
+    max-height: none;
+    overflow: visible;
+    padding-right: 0;
+  }
+
+  .result-table-wrap,
+  .competition-table-wrap,
+  .judges-table-wrap {
+    overflow: visible;
+  }
+
+  .result-table,
+  .result-table.all-around-table,
+  .ranking-table,
+  .wca-ranking-results-table,
+  .local-ranking-results-table,
+  .local-ranking-results-table.has-gender-ranks,
+  .competition-list-table,
+  .judges-table {
+    min-width: 0;
+    width: 100%;
+  }
+
+  .result-table thead,
+  .competition-list-table thead,
+  .judges-table thead {
+    display: none;
+  }
+
+  .result-table,
+  .result-table tbody,
+  .result-table tr,
+  .result-table td,
+  .competition-list-table,
+  .competition-list-table tbody,
+  .competition-list-table tr,
+  .competition-list-table td,
+  .judges-table,
+  .judges-table tbody,
+  .judges-table tr,
+  .judges-table td {
+    display: block;
+    width: 100%;
+  }
+
+  .result-table tbody,
+  .competition-list-table tbody,
+  .judges-table tbody {
+    display: grid;
+    gap: 10px;
+    padding: 10px;
+    background: #f3f6fb;
+  }
+
+  .result-table tr,
+  .competition-list-table tr,
+  .judges-table tr {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(118px, 1fr));
+    gap: 7px 10px;
+    padding: 11px;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    background: #fff;
+    box-shadow: 0 8px 18px rgba(23, 32, 51, 0.05);
+  }
+
+  .result-table td,
+  .competition-list-table td,
+  .judges-table td {
+    display: flex;
+    gap: 8px;
+    align-items: baseline;
+    justify-content: flex-start;
+    padding: 0;
+    border: 0;
+    text-align: left;
+    white-space: normal;
+  }
+
+  .result-table td::before,
+  .competition-list-table td::before,
+  .judges-table td::before {
+    content: attr(data-label);
+    color: var(--muted);
+    font-size: 12px;
+    font-weight: 800;
+    flex: 0 0 auto;
+    min-width: 46px;
+    text-align: left;
+  }
+
+  .result-table td:nth-child(1),
+  .result-table td:nth-child(2),
+  .competition-list-table td:nth-child(1),
+  .competition-list-table td:nth-child(2),
+  .judges-table td:nth-child(1),
+  .judges-table td:nth-child(2) {
+    grid-column: 1 / -1;
+    font-weight: 900;
+    justify-content: space-between;
+  }
+
+  .competition-list-table td:last-child,
+  .judges-table td:last-child {
+    grid-column: 1 / -1;
+  }
 }
 
 @media (max-width: 760px) {
@@ -4325,109 +4384,6 @@ a.commercial-member-link:hover {
     grid-column: 1 / -1;
   }
 
-  .result-table-wrap,
-  .competition-table-wrap,
-  .judges-table-wrap {
-    overflow: visible;
-  }
-
-  .result-table,
-  .result-table.all-around-table,
-  .ranking-table,
-  .wca-ranking-results-table,
-  .local-ranking-results-table,
-  .local-ranking-results-table.has-gender-ranks,
-  .competition-list-table,
-  .judges-table {
-    min-width: 0;
-    width: 100%;
-  }
-
-  .result-table thead,
-  .competition-list-table thead,
-  .judges-table thead {
-    display: none;
-  }
-
-  .result-table,
-  .result-table tbody,
-  .result-table tr,
-  .result-table td,
-  .competition-list-table,
-  .competition-list-table tbody,
-  .competition-list-table tr,
-  .competition-list-table td,
-  .judges-table,
-  .judges-table tbody,
-  .judges-table tr,
-  .judges-table td {
-    display: block;
-    width: 100%;
-  }
-
-  .result-table tbody,
-  .competition-list-table tbody,
-  .judges-table tbody {
-    display: grid;
-    gap: 10px;
-    padding: 10px;
-    background: #f3f6fb;
-  }
-
-  .result-table tr,
-  .competition-list-table tr,
-  .judges-table tr {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(118px, 1fr));
-    gap: 7px 10px;
-    padding: 11px;
-    border: 1px solid var(--line);
-    border-radius: 8px;
-    background: #fff;
-    box-shadow: 0 8px 18px rgba(23, 32, 51, 0.05);
-  }
-
-  .result-table td,
-  .competition-list-table td,
-  .judges-table td {
-    display: flex;
-    gap: 8px;
-    align-items: baseline;
-    justify-content: flex-start;
-    padding: 0;
-    border: 0;
-    text-align: left;
-    white-space: normal;
-  }
-
-  .result-table td::before,
-  .competition-list-table td::before,
-  .judges-table td::before {
-    content: attr(data-label);
-    color: var(--muted);
-    font-size: 12px;
-    font-weight: 800;
-    flex: 0 0 auto;
-    min-width: 46px;
-    text-align: left;
-  }
-
-  .result-table td:nth-child(1),
-  .result-table td:nth-child(2),
-  .competition-list-table td:nth-child(1),
-  .competition-list-table td:nth-child(2),
-  .judges-table td:nth-child(1),
-  .judges-table td:nth-child(2) {
-    grid-column: 1 / -1;
-    font-weight: 900;
-    justify-content: space-between;
-  }
-
-  .competition-list-table td:last-child,
-  .judges-table td:last-child {
-    grid-column: 1 / -1;
-  }
-
   .liaoning-records-table {
     min-width: 0;
     table-layout: auto;
@@ -4497,7 +4453,7 @@ a.commercial-member-link:hover {
 
   .liaoning-records-table-section,
   .liaoning-records-table-section .result-table-wrap {
-    overflow-x: hidden;
+    overflow-x: clip;
   }
 
   .liaoning-record-cell {

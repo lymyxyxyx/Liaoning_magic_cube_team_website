@@ -77,34 +77,6 @@ data/wca_china_333_rankings.json
 
 这些文件不建议提交。
 
-## 上传 GitHub
-
-建议提交：
-
-- `app/`
-- `components/`
-- `lib/`
-- `public/`
-- `scripts/`
-- `README.md`
-- `data/README.md`
-- `.gitignore`
-- `package.json`
-- `package-lock.json`
-- `tsconfig.json`
-- `next.config.mjs`
-
-不要提交：
-
-- `node_modules/`
-- `.next/`
-- `*.sql`
-- `WCA_export*/`
-- `data/*.sqlite`
-- `data/*.json`
-- `.env*`
-- `*.tsbuildinfo`
-
 ## 生产部署
 
 当前生产环境在阿里云国内服务器：

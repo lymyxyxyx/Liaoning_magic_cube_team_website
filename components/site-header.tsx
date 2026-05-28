@@ -12,17 +12,32 @@ type NavItem = {
 
 const navItems: NavItem[] = [
   { href: "/", label: "首页" },
-  { href: "/rankings", label: "WCA排名" },
-  { href: "/liaoning-rankings", label: "辽宁排名" },
-  { href: "/liaoning-records", label: "辽宁纪录" },
-  { href: "/commercial-teams", label: "商业战队合作" },
-  { href: "/athletes", label: "运动员" },
-  { href: "/coaches", label: "教练员" },
-  { href: "/judges", label: "裁判员" },
-  { href: "/national-events", label: "国赛（棋牌）" },
-  { href: "/provincial-competition", label: "省赛" },
-  { href: "/competitions", label: "市赛" },
-  { href: "/weekly", label: "周赛" }
+  {
+    label: "排名",
+    children: [
+      { href: "/rankings", label: "WCA排名" },
+      { href: "/liaoning-rankings", label: "辽宁排名" },
+      { href: "/liaoning-records", label: "辽宁纪录" }
+    ]
+  },
+  {
+    label: "人员",
+    children: [
+      { href: "/athletes", label: "运动员" },
+      { href: "/coaches", label: "教练员" },
+      { href: "/judges", label: "裁判员" },
+      { href: "/commercial-teams", label: "商业战队合作" }
+    ]
+  },
+  {
+    label: "赛事",
+    children: [
+      { href: "/national-events", label: "国赛（棋牌）" },
+      { href: "/provincial-competition", label: "省赛" },
+      { href: "/competitions", label: "市赛" },
+      { href: "/weekly", label: "周赛" }
+    ]
+  }
 ];
 
 export function SiteHeader() {

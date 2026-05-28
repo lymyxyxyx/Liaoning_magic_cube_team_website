@@ -67,6 +67,7 @@ The repository includes templates for recovery and new environments:
 Dockerfile.example
 docker-compose.example.yml
 .env.example
+nginx.example.conf
 ```
 
 Do not commit real production secrets. For a new server, copy the examples on the server and fill in real values there:

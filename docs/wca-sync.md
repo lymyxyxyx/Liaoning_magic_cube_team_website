@@ -26,19 +26,11 @@ If the export is unchanged, it exits without downloading.
 
 ## Server Commands
 
-Run from the deployed app directory:
+Run inside the already-running `web` container:
 
 ```bash
-cd /opt/ln-cubing/app
-sudo docker compose run --rm web npm run wca:check
-sudo docker compose run --rm web npm run wca:update
-```
-
-If the server only supports the older Compose command:
-
-```bash
-sudo docker-compose run --rm web npm run wca:check
-sudo docker-compose run --rm web npm run wca:update
+sudo docker exec ln-cubing-web npm run wca:check
+sudo docker exec ln-cubing-web npm run wca:update
 ```
 
 `wca:update` requires `DATABASE_URL` to be available in the `web` container.
@@ -85,10 +77,10 @@ The ranking pages read from PostgreSQL, so they only show new WCA results after 
 sudo crontab -e
 ```
 
-Recommended schedule, once per day in the early morning:
+Recommended schedule, multiple times per day to pick up WCA export updates promptly:
 
 ```cron
-30 4 * * * cd /opt/ln-cubing/app && /usr/bin/docker compose run --rm web npm run wca:update >> /opt/ln-cubing/logs/wca_cron.log 2>&1
+30 10,14,16,18,22 * * * /usr/bin/flock -n /tmp/ln-cubing-wca-update.lock /usr/bin/docker exec ln-cubing-web npm run wca:update >> /opt/ln-cubing/logs/wca_cron.log 2>&1
 ```
 
 The updater checks `/app/data/wca_state/last_export_date.txt` first. If WCA has not published a newer export, it exits without downloading the TSV package.
@@ -96,6 +88,5 @@ The updater checks `/app/data/wca_state/last_export_date.txt` first. If WCA has 
 After adding or changing ranking indexes in this project, run the updater once manually so PostgreSQL rebuilds the imported WCA tables with the latest index set:
 
 ```bash
-cd /opt/ln-cubing/app
-sudo docker compose run --rm web npm run wca:update
+sudo docker exec ln-cubing-web npm run wca:update
 ```
