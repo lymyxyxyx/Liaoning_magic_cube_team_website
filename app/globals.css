@@ -4434,12 +4434,14 @@ a.commercial-member-link:hover {
   }
 
   .liaoning-records-table tbody {
-    gap: 12px;
+    gap: 10px;
+    padding: 8px;
   }
 
   .liaoning-records-table tr {
     grid-template-columns: 1fr;
     gap: 10px;
+    padding: 10px;
   }
 
   .liaoning-records-table td {
@@ -4491,6 +4493,29 @@ a.commercial-member-link:hover {
   .liaoning-record-date,
   .liaoning-record-attempts {
     overflow-wrap: anywhere;
+  }
+
+  .liaoning-records-table-section,
+  .liaoning-records-table-section .result-table-wrap {
+    overflow-x: hidden;
+  }
+
+  .liaoning-record-cell {
+    gap: 5px;
+  }
+
+  .liaoning-record-cell > div:first-child {
+    gap: 7px;
+  }
+
+  .liaoning-record-cell strong {
+    font-size: 16px;
+  }
+
+  .liaoning-record-badge {
+    min-width: 30px;
+    height: 20px;
+    font-size: 11px;
   }
 }
 
