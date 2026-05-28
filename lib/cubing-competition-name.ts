@@ -10,6 +10,14 @@ function toKebabish(input: string) {
     .replace(/-+/g, "-");
 }
 
+function slugifyCompetitionName(name: string) {
+  return name
+    .replace(/&/g, " ")
+    .replace(/[^A-Za-z0-9]+/g, "-")
+    .replace(/-+/g, "-")
+    .replace(/^-+|-+$/g, "");
+}
+
 function buildCandidates(wcaCompetitionId: string) {
   const candidates = new Set<string>();
   candidates.add(wcaCompetitionId);
@@ -19,14 +27,22 @@ function buildCandidates(wcaCompetitionId: string) {
   return Array.from(candidates).filter(Boolean);
 }
 
-export function getCubingCompetitionNameZhByWcaId(wcaCompetitionId: string) {
-  const trimmed = wcaCompetitionId.trim();
-  if (!trimmed) return null;
-  for (const slug of buildCandidates(trimmed)) {
+export function getCubingCompetitionNameZhByWcaId(wcaCompetitionId: string, competitionName?: string) {
+  const candidates = new Set<string>();
+  const trimmedId = wcaCompetitionId.trim();
+  if (trimmedId) {
+    for (const slug of buildCandidates(trimmedId)) candidates.add(slug);
+  }
+  const trimmedName = competitionName?.trim();
+  if (trimmedName) {
+    const fromName = slugifyCompetitionName(trimmedName);
+    if (fromName) candidates.add(fromName);
+  }
+
+  for (const slug of candidates) {
     const url = `https://cubing.com/competition/${slug}`;
     const nameZh = cubingCompetitionNameZhByUrl[url];
     if (nameZh) return nameZh;
   }
   return null;
 }
-

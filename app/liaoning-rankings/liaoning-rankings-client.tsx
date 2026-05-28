@@ -449,7 +449,10 @@ export function LiaoningRankingsClient() {
                               href={`https://www.worldcubeassociation.org/competitions/${row.competitionId}`}
                             >
                               <WcaFlag country={row.country} />
-                              <span>{getCubingCompetitionNameZhByWcaId(row.competitionId) || row.competitionName}</span>
+                              <span>
+                                {getCubingCompetitionNameZhByWcaId(row.competitionId, row.competitionName) ||
+                                  row.competitionName}
+                              </span>
                               <ExternalLink size={14} />
                             </Link>
                           ) : (

@@ -282,7 +282,10 @@ export function RankingsClient() {
                               className="table-person-link ranking-competition-link"
                               href={`https://www.worldcubeassociation.org/competitions/${row.competitionId}`}
                             >
-                              <span>{getCubingCompetitionNameZhByWcaId(row.competitionId) || row.competitionName}</span>
+                              <span>
+                                {getCubingCompetitionNameZhByWcaId(row.competitionId, row.competitionName) ||
+                                  row.competitionName}
+                              </span>
                               <ExternalLink size={14} />
                             </Link>
                           ) : (
@@ -312,4 +315,3 @@ export function RankingsClient() {
     </>
   );
 }
-
