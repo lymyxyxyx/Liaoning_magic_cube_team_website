@@ -8,6 +8,6 @@ export async function GET() {
     await getPostgresPool().query("SELECT 1");
     return NextResponse.json({ status: "ok", db: "ok" });
   } catch {
-    return NextResponse.json({ status: "ok", db: "error" }, { status: 200 });
+    return NextResponse.json({ status: "error", db: "error" }, { status: 503 });
   }
 }

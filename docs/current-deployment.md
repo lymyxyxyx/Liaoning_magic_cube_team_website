@@ -1,6 +1,6 @@
 # Current Deployment
 
-Updated: 2026-05-25
+Updated: 2026-05-28
 
 ## Primary Server
 
@@ -61,11 +61,56 @@ These are intentionally kept on the server and are not tracked in Git:
 /opt/ln-cubing/backups
 ```
 
+The repository includes templates for recovery and new environments:
+
+```text
+Dockerfile.example
+docker-compose.example.yml
+.env.example
+```
+
+Do not commit real production secrets. For a new server, copy the examples on the server and fill in real values there:
+
+```bash
+cp Dockerfile.example Dockerfile
+cp docker-compose.example.yml docker-compose.yml
+cp .env.example .env.production
+```
+
 Current production `APP_URL` should be:
 
 ```text
 APP_URL=https://lncubing.com
 ```
+
+## Runtime Data Backups
+
+Server-entered runtime data should be backed up regularly, but should not be blindly committed to GitHub.
+
+Back up these server-local paths before risky deploys, data imports, migrations, or manual cleanup:
+
+```text
+/opt/ln-cubing/data/local-profiles.json
+/opt/ln-cubing/data/judges.json
+/opt/ln-cubing/data/commercial-teams.json
+/opt/ln-cubing/data/account-books.json
+/opt/ln-cubing/data/wca_state
+PostgreSQL database ln_cubing
+```
+
+Recommended server-side backup pattern:
+
+```bash
+ssh admin@39.106.199.195 'ts=$(date +%Y%m%d%H%M%S) && mkdir -p /opt/ln-cubing/backups/runtime-$ts && cp -a /opt/ln-cubing/data/*.json /opt/ln-cubing/data/wca_state /opt/ln-cubing/backups/runtime-$ts/ 2>/dev/null || true && cd /opt/ln-cubing/app && sudo docker compose exec -T postgres pg_dump -U "$POSTGRES_USER" "$POSTGRES_DB" > /opt/ln-cubing/backups/runtime-$ts/ln_cubing.sql && echo /opt/ln-cubing/backups/runtime-$ts'
+```
+
+Recommended local copy pattern:
+
+```bash
+scp -r admin@39.106.199.195:/opt/ln-cubing/backups/runtime-YYYYMMDDHHMMSS /path/to/local/backups/
+```
+
+Only commit runtime data to GitHub after reviewing that it is public, stable, and intentionally versioned. Public list data such as judges or commercial teams may be committed if that is the chosen source of truth. Account books, feedback, credentials, WCA raw exports, generated databases, and private local profile working files should stay out of GitHub.
 
 ## Health Checks
 

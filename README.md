@@ -4,6 +4,12 @@
 
 ## 本地运行
 
+如果当前终端找不到 `npm`，并且本机使用 `nvm` 管理 Node，可以先切到项目使用的 Node 22：
+
+```bash
+source scripts/use-node.sh
+```
+
 ```bash
 npm install
 npm run dev
@@ -23,37 +29,53 @@ npm run dev -- -p 3002
 
 ## WCA 排名数据
 
-WCA 原始 SQL 和生成后的 SQLite/JSON 文件都不提交到 GitHub。仓库只提交生成脚本和页面代码。
+当前 `/rankings` 和 `/liaoning-rankings` 都从 PostgreSQL WCA 同步表查询。仓库只提交同步脚本和页面代码，不提交 WCA 原始导出文件、生成数据文件或生产数据库内容。
 
-本地 WCA 排名页依赖：
-
-```text
-data/wca_rankings.sqlite
-```
-
-生成方式：
-
-1. 下载或准备 WCA 官方导出的 `WCA_export.sql`。
-2. 放到脚本默认读取的位置：
+首次部署或新环境需要先配置：
 
 ```text
-../WCA_export_v2_114_20260424T000025Z.sql/WCA_export.sql
+DATABASE_URL=postgresql://user:password@host:port/database
 ```
 
-3. 在项目根目录运行：
+初始化应用表：
+
+```bash
+npm run db:init
+```
+
+同步 WCA 官方公开 TSV 导出到 PostgreSQL：
+
+```bash
+npm run wca:update
+```
+
+同步脚本会访问 WCA 官方导出 API，下载 TSV 包，导入这些 PostgreSQL 表：
+
+```text
+wca_persons
+wca_events
+wca_countries
+wca_competitions
+wca_results
+wca_result_attempts
+wca_ranks_single
+wca_ranks_average
+```
+
+本地历史 SQLite 生成脚本仍保留给旧版/调试用途：
 
 ```bash
 python3 scripts/build_wca_china_333_rankings.py
 ```
 
-脚本会生成：
+该脚本会生成以下文件，但当前 `/rankings` API 不再依赖它们：
 
 ```text
 data/wca_rankings.sqlite
 data/wca_china_333_rankings.json
 ```
 
-其中 SQLite 是当前 `/rankings` 页面 API 的主要数据源；JSON 只是保留给旧版/调试用，不建议提交。
+这些文件不建议提交。
 
 ## 上传 GitHub
 
