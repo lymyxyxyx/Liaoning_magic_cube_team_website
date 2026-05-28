@@ -3513,6 +3513,15 @@ textarea {
   object-fit: cover;
 }
 
+.wca-flag.flag-emoji {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  line-height: 1;
+  background: #fff;
+}
+
 .flag-china {
   background: #ee1c25;
 }

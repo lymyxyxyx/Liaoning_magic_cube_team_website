@@ -1,16 +1,16 @@
+function iso2ToFlagEmoji(iso2: string) {
+  const upper = iso2.toUpperCase();
+  if (!/^[A-Z]{2}$/.test(upper)) return "";
+  return String.fromCodePoint(...Array.from(upper).map((char) => 127397 + char.charCodeAt(0)));
+}
+
 export function WcaFlag({ country, iso2 }: { country: string; iso2?: string | null }) {
-  const normalizedIso2 = iso2?.trim().toLowerCase();
-  if (normalizedIso2 && /^[a-z]{2}$/.test(normalizedIso2)) {
+  const normalizedIso2 = iso2?.trim().toUpperCase();
+  const emoji = normalizedIso2 ? iso2ToFlagEmoji(normalizedIso2) : "";
+  if (emoji) {
     return (
-      <span className="wca-flag flag-svg" aria-hidden="true">
-        <img
-          src={`https://flagcdn.com/h20/${normalizedIso2}.png`}
-          srcSet={`https://flagcdn.com/h20/${normalizedIso2}.png 1x, https://flagcdn.com/h40/${normalizedIso2}.png 2x`}
-          width={28}
-          height={20}
-          alt=""
-          loading="lazy"
-        />
+      <span className="wca-flag flag-emoji" aria-hidden="true">
+        <span>{emoji}</span>
       </span>
     );
   }
