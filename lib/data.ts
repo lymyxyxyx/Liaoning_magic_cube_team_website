@@ -1,5 +1,5 @@
 import { weeklyPlayerPeople } from "@/lib/weekly-players";
-import cubingCompetitionNameZh from "@/data/cubing-competition-name-zh.json";
+import cubingCompetitionNameZh from "../data/cubing-competition-name-zh.json";
 
 const cubingCompetitionNameZhByUrl = cubingCompetitionNameZh as Record<string, string>;
 
