@@ -55,7 +55,7 @@ export async function GET(request: NextRequest) {
   const locationWhere = isWorld
     ? ""
     : isContinent
-      ? 'AND cn."continentId" = $2'
+      ? "AND cn.continent_id = $2"
       : "AND p.country_id = $2";
   const rankColumn = isWorld ? "world_rank" : isContinent ? "continent_rank" : "country_rank";
   const genderWhere = gender === "all" ? "" : "AND p.gender = $3";

@@ -10,7 +10,7 @@ export async function GET() {
   const [events, countries, lastExportDate] = await Promise.all([
     pool.query<{ id: string; name: string }>('SELECT id, name FROM wca_events ORDER BY rank::int, id'),
     pool.query<{ id: string; name: string; continentId: string; nameZh: string }>(
-      'SELECT id, name, "continentId", CASE id ' +
+      'SELECT id, name, continent_id AS "continentId", CASE id ' +
         "WHEN 'China' THEN '中国' " +
         "WHEN 'Hong Kong' THEN '中国香港' " +
         "WHEN 'Macau' THEN '中国澳门' " +
