@@ -4495,6 +4495,10 @@ a.commercial-member-link:hover {
 }
 
 @media (max-width: 560px) {
+  .page-hero {
+    width: min(520px, calc(100% - 56px));
+  }
+
   .site-header {
     gap: 12px;
   }
