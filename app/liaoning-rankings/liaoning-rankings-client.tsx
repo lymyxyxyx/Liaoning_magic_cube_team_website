@@ -153,7 +153,10 @@ export function LiaoningRankingsClient() {
   const areaLabel = scope === "province" ? `${province}省` : `${city}市`;
   const updateDateLabel = formatWcaExportDate(lastExportDate);
   const showGenderRankColumns = gender !== "all";
+  const showAverageDetailsColumn = mode === "average";
   const genderRankLabel = gender === "m" ? "男子" : "女子";
+  const baseColumnCount = showGenderRankColumns ? 11 : 8;
+  const totalColumnCount = baseColumnCount + (showAverageDetailsColumn ? 1 : 0);
 
   function updateFilter(next: Partial<{ event: string; province: string; city: string; scope: Scope; mode: RankingMode; gender: Gender }>) {
     if (next.event) setEvent(next.event);
@@ -400,18 +403,18 @@ export function LiaoningRankingsClient() {
                     </>
                   ) : null}
                   <th>比赛</th>
-                  <th>平均明细</th>
+                  {showAverageDetailsColumn ? <th>平均明细</th> : null}
                 </tr>
               </thead>
               <tbody>
                 {isLoading ? (
                   <tr>
-                    <td colSpan={showGenderRankColumns ? 12 : 9}>加载中...</td>
+                    <td colSpan={totalColumnCount}>加载中...</td>
                   </tr>
                 ) : null}
                 {!isLoading && rows.length === 0 ? (
                   <tr>
-                    <td colSpan={showGenderRankColumns ? 12 : 9}>当前筛选没有辽宁本地排名数据。</td>
+                    <td colSpan={totalColumnCount}>当前筛选没有辽宁本地排名数据。</td>
                   </tr>
                 ) : null}
                 {!isLoading
@@ -458,13 +461,15 @@ export function LiaoningRankingsClient() {
                             <span className="muted-cell">未匹配比赛</span>
                           )}
                         </td>
-                        <td data-label="平均明细">
-                          {row.resultDetails?.length ? (
-                            <small className="ranking-result-details">{row.resultDetails.join(" / ")}</small>
-                          ) : (
-                            <span className="muted-cell">-</span>
-                          )}
-                        </td>
+                        {showAverageDetailsColumn ? (
+                          <td data-label="平均明细">
+                            {row.resultDetails?.length ? (
+                              <small className="ranking-result-details">{row.resultDetails.join(" / ")}</small>
+                            ) : (
+                              <span className="muted-cell">-</span>
+                            )}
+                          </td>
+                        ) : null}
                       </tr>
                     ))
                   : null}
