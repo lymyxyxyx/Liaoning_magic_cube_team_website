@@ -1134,7 +1134,26 @@ const wcaLiaoningCompetitions: Competition[] = [
 export const competitions: Competition[] = [
   ...wcaLiaoningCompetitions,
   ...shenyangOpenCompetitions,
-  // 省赛专题与其它活动赛事后续补齐
+  {
+    id: "c-liaoning-province-open-2026",
+    slug: "liaoning-province-open-2026",
+    name: "2026年辽宁省魔方运动公开赛",
+    category: "liaoning-province-open",
+    date: "2026-05-17",
+    province: "辽宁",
+    city: "沈阳",
+    venue: "沈阳市浑南区欧亚长青城",
+    address: "辽宁省沈阳市浑南区欧亚长青城",
+    tags: ["省赛专题", "省赛"],
+    cover: "/visuals/event-shenyang.svg",
+    dataSource: "省赛专题",
+    dataSourceUrl: "/provincial-competition",
+    summary: "辽宁省级公开赛事（省赛专题对应场次）。",
+    description: "本条目对应站内“省赛专题”页面收录的 2026 年辽宁省魔方运动公开赛，成绩详见专题页面。",
+    status: "已整理",
+    completeness: "高",
+    featured: true
+  }
 ];
 
 export const relations: PersonCompetition[] = [
