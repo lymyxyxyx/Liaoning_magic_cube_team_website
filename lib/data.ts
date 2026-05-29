@@ -195,6 +195,16 @@ const shenyangOpenCompetitions: Competition[] = Array.from({ length: 32 }, (_, i
       publicMethod: "点击查看",
       externalUrl: "https://cubing.com/competition/Cubing-Shenyang-The-31st-Open-2026"
     },
+    30: {
+      name: "“GAN魔方杯”沈阳市第三十届魔方公开赛暨首届沈阳市魔方运动协会成绩认定赛",
+      date: "2024-12-15",
+      venue: "中街盛京大家庭负一共享大厅",
+      address: "辽宁省沈阳市中街盛京大家庭负一共享大厅",
+      sponsor: "GAN魔方、沈阳中街盛京大家庭",
+      dataSource: "赛事规程（人工录入）",
+      publicPlatform: "待补充",
+      publicMethod: "后续整理"
+    },
     29: {
       date: "2024-06-09",
       venue: "沈河区文化路81号万达广场（沈阳文化路店）一楼",
