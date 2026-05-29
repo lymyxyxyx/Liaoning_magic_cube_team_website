@@ -21,6 +21,7 @@ export async function GET() {
     "Hong Kong": "中国香港",
     Macau: "中国澳门",
     "Chinese Taipei": "中国台北",
+    Taiwan: "中国台北",
     "United States": "美国",
     "United Kingdom": "英国",
     "South Korea": "韩国",
@@ -28,13 +29,14 @@ export async function GET() {
   };
   const countriesWithZh = countries.rows.map((country) => {
     const normalizedIso2 = country.iso2?.trim().toUpperCase();
+    const displayName = normalizedIso2 === "TW" || country.id === "Taiwan" ? "Chinese Taipei" : country.name;
     const inferredZh =
       normalizedIso2 && /^[A-Z]{2}$/.test(normalizedIso2) ? zhDisplay.of(normalizedIso2) || "" : "";
     return {
       id: country.id,
-      name: country.name,
+      name: displayName,
       continentId: country.continentId,
-      nameZh: fallbackZh[country.id] || inferredZh || country.name
+      nameZh: normalizedIso2 === "TW" ? "中国台北" : fallbackZh[country.id] || inferredZh || displayName
     };
   });
 
