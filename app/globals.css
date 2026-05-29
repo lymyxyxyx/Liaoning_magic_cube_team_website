@@ -2054,14 +2054,10 @@ textarea {
   color: var(--yellow);
 }
 
-.type-national-tour {
+.type-national-chess-card,
+.type-national-social-sports {
   background: #fff0f0;
   color: var(--red);
-}
-
-.type-weekly-meet {
-  background: #f1ecff;
-  color: #5b3aa4;
 }
 
 .national-topic-section {

@@ -19,13 +19,12 @@ export function CompetitionsClient() {
   const [page, setPage] = useState(1);
 
   const liaoningSummary = useMemo(() => {
+    const liaoningCompetitions = competitions.filter((competition) => competition.province === "辽宁");
     return {
-      city: competitions.filter((competition) => competition.category === "shenyang-city-open").length,
-      province: competitions.filter((competition) => competition.category === "liaoning-province-open").length,
-      national: competitions.filter((competition) => competition.category === "national-tour").length,
-      weekly: competitions.filter((competition) => competition.category === "weekly-meet").length,
-      wca: competitions.filter((competition) => competition.category === "wca-official").length,
-      total: competitions.length
+      city: liaoningCompetitions.filter((competition) => competition.category === "shenyang-city-open").length,
+      province: liaoningCompetitions.filter((competition) => competition.category === "liaoning-province-open").length,
+      wca: liaoningCompetitions.filter((competition) => competition.category === "wca-official").length,
+      total: liaoningCompetitions.length
     };
   }, []);
 
@@ -58,29 +57,19 @@ export function CompetitionsClient() {
       <div className="competition-list-panel">
         <div className="result-stats-grid" style={{ marginBottom: 16 }}>
           <div className="result-stat-card">
-            <span className="result-stat-label">比赛列表 · 市赛</span>
+            <span className="result-stat-label">辽宁范围内 · 市赛</span>
             <strong className="result-stat-value">{liaoningSummary.city}</strong>
-            <span className="result-stat-note">沈阳市魔方公开赛</span>
+            <span className="result-stat-note">统计范围：省份为辽宁</span>
           </div>
           <div className="result-stat-card">
-            <span className="result-stat-label">比赛列表 · 省赛</span>
+            <span className="result-stat-label">辽宁范围内 · 省赛</span>
             <strong className="result-stat-value">{liaoningSummary.province}</strong>
-            <span className="result-stat-note">省赛专题收录</span>
+            <span className="result-stat-note">统计范围：省份为辽宁</span>
           </div>
           <div className="result-stat-card">
-            <span className="result-stat-label">比赛列表 · 国赛</span>
-            <strong className="result-stat-value">{liaoningSummary.national}</strong>
-            <span className="result-stat-note">巡回赛与总决赛</span>
-          </div>
-          <div className="result-stat-card">
-            <span className="result-stat-label">比赛列表 · 周赛</span>
-            <strong className="result-stat-value">{liaoningSummary.weekly}</strong>
-            <span className="result-stat-note">已结构化周赛</span>
-          </div>
-          <div className="result-stat-card">
-            <span className="result-stat-label">比赛列表 · WCA</span>
+            <span className="result-stat-label">辽宁范围内 · WCA</span>
             <strong className="result-stat-value">{liaoningSummary.wca}</strong>
-            <span className="result-stat-note">辽宁 WCA 官方赛</span>
+            <span className="result-stat-note">统计范围：省份为辽宁</span>
           </div>
         </div>
         <div className="competition-filter-row">
