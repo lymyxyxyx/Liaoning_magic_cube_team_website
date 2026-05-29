@@ -1,20 +1,36 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 600">
-  <rect width="900" height="600" fill="#ffffff"/>
+  <rect width="900" height="600" fill="#fff"/>
   <g transform="translate(450 300)">
-    <circle r="150" fill="#1c4ea1"/>
-    <circle r="132" fill="#ffffff"/>
-    <circle r="112" fill="#d81e2f"/>
-    <g fill="#ffffff" transform="scale(1.05)">
-      <path d="M0-66c17 0 31 12 35 28l3 11 10 5c15 7 24 22 24 39 0 24-19 43-42 43-10 0-20-3-27-9l-8-6-9 5c-8 5-17 8-27 8-23 0-42-19-42-43 0-17 9-32 24-39l10-5 3-11c4-16 18-28 36-28z"/>
-      <path d="M0-52c11 0 20 8 22 18l2 7 7 3c10 5 17 15 17 26 0 16-13 28-28 28-7 0-13-2-18-6l-5-4-6 4c-5 3-11 5-17 5-15 0-28-12-28-28 0-11 7-21 17-26l7-3 2-7c2-10 11-18 22-18z" fill="#d81e2f"/>
-      <circle cx="0" cy="10" r="24" fill="#ffffff"/>
+    <path
+      d="M0-202C55-202 86-155 73-109C112-140 166-128 195-80C224-31 200 31 151 43C201 53 232 105 213 157C193 210 132 230 90 200C95 252 54 292 0 292C-54 292-95 252-90 200C-132 230-193 210-213 157C-232 105-201 53-151 43C-200 31-224-31-195-80C-166-128-112-140-73-109C-86-155-55-202 0-202Z"
+      fill="#fff"
+      stroke="#004a9f"
+      stroke-linejoin="round"
+      stroke-width="34"
+    />
+    <path
+      d="M0-202C55-202 86-155 73-109C112-140 166-128 195-80C224-31 200 31 151 43C201 53 232 105 213 157C193 210 132 230 90 200C95 252 54 292 0 292C-54 292-95 252-90 200C-132 230-193 210-213 157C-232 105-201 53-151 43C-200 31-224-31-195-80C-166-128-112-140-73-109C-86-155-55-202 0-202Z"
+      fill="none"
+      stroke="#d71920"
+      stroke-linejoin="round"
+      stroke-width="18"
+    />
+
+    <g transform="translate(0 -92)">
+      <circle r="55" fill="#004a9f"/>
+      <path
+        d="M0-46L8-18L29-38L18-10L46-16L20 0L46 16L18 10L29 38L8 18L0 46L-8 18L-29 38L-18 10L-46 16L-20 0L-46-16L-18-10L-29-38L-8-18Z"
+        fill="#fff"
+      />
+      <circle r="18" fill="#004a9f" stroke="#fff" stroke-width="8"/>
     </g>
-    <g transform="translate(0 10) scale(0.75)">
-      <circle cx="-54" cy="-8" r="12" fill="#0085c7"/>
-      <circle cx="-27" cy="-8" r="12" fill="#000000"/>
-      <circle cx="0" cy="-8" r="12" fill="#e01d25"/>
-      <circle cx="27" cy="-8" r="12" fill="#f4c300"/>
-      <circle cx="54" cy="-8" r="12" fill="#009f3d"/>
+
+    <g transform="translate(0 78)" fill="none" stroke-width="12">
+      <circle cx="-58" cy="-12" r="31" stroke="#0085c7"/>
+      <circle cx="0" cy="-12" r="31" stroke="#000"/>
+      <circle cx="58" cy="-12" r="31" stroke="#df0024"/>
+      <circle cx="-29" cy="20" r="31" stroke="#f4c300"/>
+      <circle cx="29" cy="20" r="31" stroke="#009f3d"/>
     </g>
   </g>
 </svg>
