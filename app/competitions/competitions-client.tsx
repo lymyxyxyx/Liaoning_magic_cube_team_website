@@ -14,9 +14,18 @@ const getShenyangOpenEdition = (slug: string) => {
   return match ? Number(match[1]) : 0;
 };
 
+const categoryIds = new Set(["全部", ...competitionCategories.map((item) => item.id)]);
+
 export function CompetitionsClient() {
   const [category, setCategory] = useState("全部");
   const [page, setPage] = useState(1);
+
+  useEffect(() => {
+    const requestedCategory = new URLSearchParams(window.location.search).get("category");
+    if (requestedCategory && categoryIds.has(requestedCategory)) {
+      setCategory(requestedCategory);
+    }
+  }, []);
 
   const liaoningSummary = useMemo(() => {
     const liaoningCompetitions = competitions.filter((competition) => competition.province === "辽宁");

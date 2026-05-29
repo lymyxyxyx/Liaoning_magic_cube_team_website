@@ -17,15 +17,21 @@ const navItems: NavItem[] = [
   { href: "/liaoning-records", label: "辽宁纪录" },
   { href: "/judges", label: "裁判员" },
   { href: "/commercial-teams", label: "商业战队" },
-  { href: "/competitions", label: "比赛" },
-  { href: "/provincial-competition", label: "省赛" },
-  { href: "/national-events", label: "国赛" },
+  {
+    label: "比赛",
+    children: [
+      { href: "/competitions", label: "全部比赛" },
+      { href: "/competitions?category=shenyang-city-open", label: "市赛" },
+      { href: "/provincial-competition", label: "省赛" },
+      { href: "/national-events", label: "国赛" },
+      { href: "/weekly", label: "周赛" }
+    ]
+  },
   {
     label: "更多",
     children: [
       { href: "/athletes", label: "运动员" },
-      { href: "/coaches", label: "教练员" },
-      { href: "/weekly", label: "周赛" }
+      { href: "/coaches", label: "教练员" }
     ]
   }
 ];
