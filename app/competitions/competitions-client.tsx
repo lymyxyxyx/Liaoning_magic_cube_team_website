@@ -18,6 +18,16 @@ export function CompetitionsClient() {
   const [category, setCategory] = useState("全部");
   const [page, setPage] = useState(1);
 
+  const liaoningSummary = useMemo(() => {
+    const liaoningCompetitions = competitions.filter((competition) => competition.province === "辽宁");
+    return {
+      city: liaoningCompetitions.filter((competition) => competition.category === "shenyang-city-open").length,
+      province: liaoningCompetitions.filter((competition) => competition.category === "liaoning-province-open").length,
+      wca: liaoningCompetitions.filter((competition) => competition.category === "wca-official").length,
+      total: liaoningCompetitions.length
+    };
+  }, []);
+
   const filteredCompetitions = useMemo(() => {
     return competitions
       .filter((competition) => {
@@ -45,6 +55,23 @@ export function CompetitionsClient() {
   return (
     <section className="container section competition-list-section">
       <div className="competition-list-panel">
+        <div className="result-stats-grid" style={{ marginBottom: 16 }}>
+          <div className="result-stat-card">
+            <span className="result-stat-label">辽宁范围内 · 市赛</span>
+            <strong className="result-stat-value">{liaoningSummary.city}</strong>
+            <span className="result-stat-note">统计范围：省份为辽宁</span>
+          </div>
+          <div className="result-stat-card">
+            <span className="result-stat-label">辽宁范围内 · 省赛</span>
+            <strong className="result-stat-value">{liaoningSummary.province}</strong>
+            <span className="result-stat-note">统计范围：省份为辽宁</span>
+          </div>
+          <div className="result-stat-card">
+            <span className="result-stat-label">辽宁范围内 · WCA</span>
+            <strong className="result-stat-value">{liaoningSummary.wca}</strong>
+            <span className="result-stat-note">统计范围：省份为辽宁</span>
+          </div>
+        </div>
         <div className="competition-filter-row">
           <div className="competition-filter-field competition-filter-field-wide">
             <span>类型</span>
