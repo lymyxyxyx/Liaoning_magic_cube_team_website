@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowDown, ArrowUp, Plus, Save, X } from "lucide-react";
+import { ArrowDown, ArrowUp, Plus, Save, Trash2, X } from "lucide-react";
 import { useMemo, useState } from "react";
 import {
   judgeGenders,
@@ -52,6 +52,8 @@ export function JudgesClient({ initialJudges }: Props) {
       [...judges].sort(
         (a, b) =>
           displayOrderWeight(a) - displayOrderWeight(b) ||
+          levelGroupWeight(a) - levelGroupWeight(b) ||
+          nationalPrimaryWeight(a) - nationalPrimaryWeight(b) ||
           levelWeight(a) - levelWeight(b) ||
           trainingDateWeight(a.trainingDate) - trainingDateWeight(b.trainingDate) ||
           a.province.localeCompare(b.province, "zh-Hans-CN") ||
@@ -61,6 +63,8 @@ export function JudgesClient({ initialJudges }: Props) {
       ),
     [judges]
   );
+
+  const nextSerialNumber = useMemo(() => getNextSerialNumber(judges), [judges]);
 
   async function addJudge() {
     const name = draft.name.trim();
@@ -77,7 +81,7 @@ export function JudgesClient({ initialJudges }: Props) {
 
     const nextJudge: Judge = {
       id: createJudgeId(),
-      ...(draft.number.trim() ? { number: draft.number.trim() } : {}),
+      number: (draft.number.trim() || nextSerialNumber).trim(),
       name,
       gender: draft.gender,
       province: draft.province.trim() || "辽宁",
@@ -140,6 +144,16 @@ export function JudgesClient({ initialJudges }: Props) {
       return judge;
     });
     await saveJudges(nextJudges, "顺序已更新。");
+  }
+
+  async function deleteJudge(judgeId: string) {
+    const target = judges.find((judge) => judge.id === judgeId);
+    if (!target) return;
+    const ok = window.confirm(`确认删除裁判员「${target.name}」？此操作不可撤销。`);
+    if (!ok) return;
+    const nextJudges = judges.filter((judge) => judge.id !== judgeId);
+    const saved = await saveJudges(nextJudges, "已删除。");
+    if (saved && editingId === judgeId) cancelEdit();
   }
 
   async function saveJudges(nextJudges: Judge[], successMessage: string) {
@@ -364,6 +378,10 @@ export function JudgesClient({ initialJudges }: Props) {
                           <button className="button" type="button" onClick={() => startEdit(judge)}>
                             编辑
                           </button>
+                          <button className="button button--danger" type="button" disabled={isSaving} onClick={() => deleteJudge(judge.id)}>
+                            <Trash2 size={14} />
+                            删除
+                          </button>
                           <button className="button" type="button" onClick={() => moveJudge(judge.id, "up")}>
                             <ArrowUp size={14} />
                             上移
@@ -386,8 +404,27 @@ export function JudgesClient({ initialJudges }: Props) {
   );
 }
 
+function getNextSerialNumber(judges: Judge[]) {
+  const existing = new Set(judges.map((judge) => String(judge.number || "").trim()).filter(Boolean));
+  for (let index = 1; index < 10000; index += 1) {
+    const candidate = String(index);
+    if (!existing.has(candidate)) return candidate;
+  }
+  return String(Date.now());
+}
+
+function levelGroupWeight(judge: Judge) {
+  if (judge.levelType === "国家一级") return 0;
+  if (judge.levelType.startsWith("市")) return 2;
+  return 1;
+}
+
+function nationalPrimaryWeight(judge: Judge) {
+  if (judge.levelType !== "国家一级") return 0;
+  return trainingDateWeight(judge.trainingDate);
+}
+
 function levelWeight(judge: Judge) {
-  if (judge.levelType === "国家一级") return -1;
   return judgeLevelTypes.indexOf(judge.levelType);
 }
 

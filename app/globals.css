@@ -3886,6 +3886,15 @@ a.commercial-member-link:hover {
   background: var(--soft);
 }
 
+.button--danger {
+  border-color: rgba(176, 0, 32, 0.22);
+  color: #b00020;
+}
+
+.button--danger:hover {
+  background: rgba(176, 0, 32, 0.06);
+}
+
 @media (max-width: 920px) {
   .ranking-filter-card {
     grid-template-columns: repeat(2, minmax(0, 1fr));
