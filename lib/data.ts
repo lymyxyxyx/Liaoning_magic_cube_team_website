@@ -177,9 +177,10 @@ const shenyangOpenCompetitions: Competition[] = Array.from({ length: 32 }, (_, i
   const knownEditions: Record<
     number,
     Pick<Competition, "date" | "venue" | "address" | "publicPlatform" | "publicMethod" | "externalUrl"> &
-      Partial<Pick<Competition, "name" | "sponsor" | "threeByThreeChampion" | "dataSource" | "dataSourceUrl">>
+      Partial<Pick<Competition, "name" | "nameZh" | "sponsor" | "threeByThreeChampion" | "dataSource" | "dataSourceUrl">>
   > = {
     32: {
+      nameZh: "第32届沈阳市魔方公开赛",
       date: "2026-04-26",
       venue: "沈河区青年大街123号嘉里城4楼",
       address: "辽宁省沈阳市沈河区青年大街123号嘉里城4楼",
@@ -188,6 +189,7 @@ const shenyangOpenCompetitions: Competition[] = Array.from({ length: 32 }, (_, i
       externalUrl: "https://cubing.com/competition/Cubing-Shenyang-32nd-Open-2026"
     },
     31: {
+      nameZh: "第31届沈阳市魔方公开赛",
       date: "2026-02-01",
       venue: "沈河区中街路115号盛京百货大家庭一楼",
       address: "辽宁省沈阳市沈河区中街路115号盛京百货大家庭一楼",
@@ -196,7 +198,7 @@ const shenyangOpenCompetitions: Competition[] = Array.from({ length: 32 }, (_, i
       externalUrl: "https://cubing.com/competition/Cubing-Shenyang-The-31st-Open-2026"
     },
     30: {
-      name: "“GAN魔方杯”沈阳市第三十届魔方公开赛暨首届沈阳市魔方运动协会成绩认定赛",
+      nameZh: "第30届沈阳市魔方公开赛",
       date: "2024-12-15",
       venue: "中街盛京大家庭负一共享大厅",
       address: "辽宁省沈阳市中街盛京大家庭负一共享大厅",
