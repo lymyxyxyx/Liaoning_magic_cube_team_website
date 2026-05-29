@@ -14,12 +14,6 @@ const getShenyangOpenEdition = (slug: string) => {
   return match ? Number(match[1]) : 0;
 };
 
-const categoryOrder: Record<string, number> = {
-  "wca-official": 1,
-  "shenyang-city-open": 2,
-  "liaoning-province-open": 3
-};
-
 export function CompetitionsClient() {
   const [category, setCategory] = useState("全部");
   const [page, setPage] = useState(1);
@@ -40,10 +34,6 @@ export function CompetitionsClient() {
         return category === "全部" || competition.category === category;
       })
       .sort((a, b) => {
-        if (category === "全部" && a.category !== b.category) {
-          return (categoryOrder[a.category] ?? 999) - (categoryOrder[b.category] ?? 999);
-        }
-
         if (a.category === "shenyang-city-open" && b.category === "shenyang-city-open") {
           return getShenyangOpenEdition(b.slug) - getShenyangOpenEdition(a.slug);
         }
