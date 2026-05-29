@@ -14,7 +14,7 @@ const zhDisplayNames = new Intl.DisplayNames(["zh-CN"], { type: "region" });
 export function formatCountryLabel(countryName: string, iso2?: string | null) {
   const normalizedIso2 = iso2?.trim().toUpperCase() || "";
   if (countryName === "Chinese Taipei" || normalizedIso2 === "TW") {
-    return "中国台北";
+    return "Chinese Taipei（中国台北）";
   }
   const zhName =
     fallbackCountryZh[countryName] ||

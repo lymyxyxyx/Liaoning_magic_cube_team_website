@@ -126,7 +126,12 @@ export function RankingsClient() {
     () => {
       if (scope === "world") return "世界";
       if (scope === "continent") return continents.find((item) => item.id === continent)?.nameZh || continent;
-      return countries.find((item) => item.id === country)?.nameZh || countries.find((item) => item.id === country)?.name || country;
+      const selectedCountry = countries.find((item) => item.id === country);
+      return selectedCountry
+        ? selectedCountry.nameZh && selectedCountry.nameZh !== selectedCountry.name
+          ? `${selectedCountry.name}（${selectedCountry.nameZh}）`
+          : selectedCountry.name
+        : country;
     },
     [continents, countries, country, continent, scope]
   );
@@ -208,7 +213,7 @@ export function RankingsClient() {
                 <select value={country} onChange={(changeEvent) => updateFilter({ country: changeEvent.target.value })}>
                   {countries.map((item) => (
                     <option value={item.id} key={item.id}>
-                      {item.nameZh || item.name}
+                      {item.nameZh && item.nameZh !== item.name ? `${item.name}（${item.nameZh}）` : item.name}
                     </option>
                   ))}
                 </select>

@@ -6,6 +6,16 @@ function iso2ToFlagEmoji(iso2: string) {
 
 export function WcaFlag({ country, iso2 }: { country: string; iso2?: string | null }) {
   const normalizedIso2 = iso2?.trim().toLowerCase();
+  const countryKey = country.toLowerCase().replaceAll(" ", "-");
+
+  if (normalizedIso2 === "tw" || countryKey === "chinese-taipei") {
+    return (
+      <span className="wca-flag flag-svg" aria-hidden="true">
+        <img src="/flags/tw.svg" width={28} height={20} alt="" loading="lazy" />
+      </span>
+    );
+  }
+
   if (normalizedIso2 && /^[a-z]{2}$/.test(normalizedIso2)) {
     return (
       <span className="wca-flag flag-emoji" aria-hidden="true">
@@ -31,14 +41,6 @@ export function WcaFlag({ country, iso2 }: { country: string; iso2?: string | nu
     return (
       <span className="wca-flag flag-emoji" aria-hidden="true">
         <span>{emoji}</span>
-      </span>
-    );
-  }
-  const countryKey = country.toLowerCase().replaceAll(" ", "-");
-  if (countryKey === "chinese-taipei") {
-    return (
-      <span className="wca-flag flag-svg" aria-hidden="true">
-        <img src="/flags/tw.svg" width={28} height={20} alt="" loading="lazy" />
       </span>
     );
   }
