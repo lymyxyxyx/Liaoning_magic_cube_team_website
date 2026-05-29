@@ -51,13 +51,13 @@ export function JudgesClient({ initialJudges }: Props) {
     () =>
       [...judges].sort(
         (a, b) =>
-          displayOrderWeight(a) - displayOrderWeight(b) ||
           levelGroupWeight(a) - levelGroupWeight(b) ||
           nationalPrimaryWeight(a) - nationalPrimaryWeight(b) ||
           levelWeight(a) - levelWeight(b) ||
           trainingDateWeight(a.trainingDate) - trainingDateWeight(b.trainingDate) ||
           a.province.localeCompare(b.province, "zh-Hans-CN") ||
           a.city.localeCompare(b.city, "zh-Hans-CN") ||
+          displayOrderWeight(a) - displayOrderWeight(b) ||
           judgeOrderWeight(a) - judgeOrderWeight(b) ||
           a.name.localeCompare(b.name, "zh-Hans-CN")
       ),
