@@ -2060,6 +2060,38 @@ textarea {
   color: var(--red);
 }
 
+.sum-ranks-filter-card {
+  grid-template-columns: minmax(260px, 1fr) minmax(260px, 0.8fr);
+}
+
+.sum-ranks-table-wrap {
+  overflow-x: auto;
+}
+
+.sum-ranks-table {
+  min-width: 1380px;
+}
+
+.sum-ranks-table th,
+.sum-ranks-table td {
+  white-space: nowrap;
+}
+
+.sum-ranks-table th:nth-child(n + 5),
+.sum-ranks-table td:nth-child(n + 5) {
+  text-align: center;
+}
+
+.sum-ranks-table td.sum-rank-top {
+  color: #00a42a;
+  font-weight: 850;
+}
+
+.sum-ranks-table td.sum-rank-missing {
+  color: #bd1616;
+  font-weight: 850;
+}
+
 .national-topic-section {
   display: grid;
   gap: 22px;
