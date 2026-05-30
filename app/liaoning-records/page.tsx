@@ -81,7 +81,7 @@ export default async function LiaoningRecordsPage({
   return (
     <>
       <PageHero
-        className="ranking-page-hero"
+        className="ranking-page-hero local-ranking-page-hero"
         label="本地省市归属"
         title="辽宁纪录"
         actions={

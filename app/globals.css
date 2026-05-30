@@ -1983,6 +1983,10 @@ textarea {
   width: min(1480px, calc(100% - 36px));
 }
 
+.page-hero.competition-page-hero {
+  width: min(1480px, calc(100% - 36px));
+}
+
 .result-stats-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -3168,6 +3172,10 @@ textarea {
 }
 
 .local-rankings-section {
+  width: min(1360px, calc(100% - 36px));
+}
+
+.page-hero.local-ranking-page-hero {
   width: min(1360px, calc(100% - 36px));
 }
 

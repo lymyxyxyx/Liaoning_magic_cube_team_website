@@ -207,7 +207,7 @@ export function LiaoningRankingsClient() {
 
   return (
     <>
-      <PageHero className="ranking-page-hero" label="本地省市归属" title={`${areaLabel} ${eventName}排名`}>
+      <PageHero className="ranking-page-hero local-ranking-page-hero" label="本地省市归属" title={`${areaLabel} ${eventName}排名`}>
         本站省市归属名单关联 WCA 官方成绩。
       </PageHero>
 
