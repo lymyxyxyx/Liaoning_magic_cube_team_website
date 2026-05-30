@@ -1,5 +1,5 @@
 :root {
-  color-scheme: light;
+  color-scheme: light dark;
   --ink: #172033;
   --muted: #66748a;
   --line: #d9e2ee;
@@ -15,6 +15,28 @@
   --page-bg: #f3f6fb;
   --shadow: 0 18px 45px rgba(23, 32, 51, 0.1);
   --shadow-soft: 0 10px 28px rgba(23, 32, 51, 0.07);
+  --surface-2: #f8fafc;
+  --header-bg: rgba(255, 255, 255, 0.9);
+  --text-body: #344054;
+  --text-strong: #111827;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --ink: #dce6f5;
+    --muted: #7b8fa8;
+    --line: #243149;
+    --surface: #19233a;
+    --soft: #1e2b42;
+    --page-bg: #0f1621;
+    --red-soft: #2e1215;
+    --shadow: 0 18px 45px rgba(0, 0, 0, 0.45);
+    --shadow-soft: 0 10px 28px rgba(0, 0, 0, 0.35);
+    --surface-2: #1c2740;
+    --header-bg: rgba(15, 22, 34, 0.92);
+    --text-body: #94a3b8;
+    --text-strong: #dce6f5;
+  }
 }
 
 * {
@@ -120,7 +142,7 @@ main {
   align-items: center;
   padding: 14px clamp(18px, 5vw, 64px);
   border-bottom: 1px solid rgba(217, 226, 238, 0.92);
-  background: rgba(255, 255, 255, 0.9);
+  background: var(--header-bg);
   backdrop-filter: blur(14px);
   box-shadow: 0 8px 24px rgba(23, 32, 51, 0.05);
 }
@@ -177,7 +199,7 @@ main {
   min-height: 40px;
   padding: 0 13px;
   border-radius: 8px;
-  color: #344054;
+  color: var(--text-body);
   font-size: 13px;
   font-weight: 650;
   white-space: nowrap;
@@ -259,6 +281,28 @@ main {
   margin: 0 auto;
 }
 
+.hero-band {
+  background: linear-gradient(160deg, #0d1829 0%, #1a3257 100%);
+  padding-bottom: 12px;
+}
+
+.hero-band .hero-copy h1 {
+  color: #dce6f5;
+}
+
+.hero-band .hero-copy p {
+  color: #8fa8c8;
+}
+
+.hero-band .eyebrow {
+  color: #6ba3f0;
+}
+
+.hero-band .hero-panel {
+  border-color: rgba(255, 255, 255, 0.1);
+  box-shadow: 0 18px 45px rgba(0, 0, 0, 0.35);
+}
+
 .split-hero {
   display: grid;
   grid-template-columns: minmax(0, 1.1fr) minmax(300px, 0.9fr);
@@ -301,7 +345,7 @@ main {
 .hero-copy p,
 .page-hero p {
   margin: 0;
-  color: #526071;
+  color: var(--muted);
   font-size: 15.5px;
   line-height: 1.72;
 }
@@ -445,7 +489,7 @@ main {
 
 .stat strong {
   display: block;
-  color: #111827;
+  color: var(--text-strong);
   font-size: 24px;
 }
 
@@ -778,7 +822,7 @@ main {
   border-radius: 8px;
   padding: 0 10px;
   background: #fff;
-  color: #344054;
+  color: var(--text-body);
   font: inherit;
   font-size: 13px;
   font-weight: 800;
@@ -888,7 +932,7 @@ main {
   border-radius: 8px;
   padding: 0 10px;
   background: #fff;
-  color: #344054;
+  color: var(--text-body);
   font-size: 13px;
   font-weight: 800;
   cursor: pointer;
@@ -1012,7 +1056,7 @@ main {
 .admin-login-identity p {
   max-width: 540px;
   margin: 0;
-  color: #526071;
+  color: var(--muted);
   font-size: 16px;
   line-height: 1.7;
 }
@@ -1365,7 +1409,7 @@ main {
 }
 
 label {
-  color: #344054;
+  color: var(--text-body);
   font-size: 13px;
   font-weight: 750;
 }
@@ -1377,7 +1421,7 @@ textarea {
   border: 1px solid var(--line);
   border-radius: 8px;
   padding: 11px 12px;
-  background: #fff;
+  background: var(--surface);
   color: var(--ink);
   font: inherit;
 }
@@ -1513,7 +1557,7 @@ textarea {
 }
 
 .weekly-list-item.pending {
-  color: #526071;
+  color: var(--muted);
   background: #f7f9fc;
 }
 
@@ -1553,7 +1597,7 @@ textarea {
 
 .big-stack-leader p {
   margin: 8px 0 0;
-  color: #344054;
+  color: var(--text-body);
   font-size: 18px;
   font-weight: 850;
 }
@@ -1619,7 +1663,7 @@ textarea {
   padding: 3px 8px;
   border-radius: 999px;
   background: var(--soft);
-  color: #526071;
+  color: var(--muted);
   font-size: 12px;
   font-style: normal;
   font-weight: 850;
@@ -1662,7 +1706,7 @@ textarea {
   place-items: center;
   border-radius: 999px;
   background: var(--soft);
-  color: #344054;
+  color: var(--text-body);
   font-size: 13px;
   font-weight: 850;
 }
@@ -1741,7 +1785,7 @@ textarea {
 .weekly-join p {
   max-width: 780px;
   margin: 0;
-  color: #344054;
+  color: var(--text-body);
   line-height: 1.8;
 }
 
@@ -1786,7 +1830,7 @@ textarea {
 
 .weekly-intro p {
   margin: 0;
-  color: #344054;
+  color: var(--text-body);
   line-height: 1.8;
 }
 
@@ -1918,12 +1962,12 @@ textarea {
   padding: 18px;
   border: 1px dashed #b8c3d1;
   border-radius: 8px;
-  background: #f8fafc;
+  background: var(--surface-2);
   color: var(--muted);
 }
 
 .competition-empty strong {
-  color: #344054;
+  color: var(--text-body);
   font-size: 18px;
 }
 
@@ -1950,7 +1994,7 @@ textarea {
   gap: 2px;
   padding: 16px 18px;
   border-bottom: 1px solid var(--line);
-  background: #f8fafc;
+  background: var(--surface-2);
 }
 
 .result-stat-label {
@@ -2012,7 +2056,7 @@ textarea {
   border: 0;
   border-right: 1px solid var(--line);
   background: #fff;
-  color: #344054;
+  color: var(--text-body);
   font: inherit;
   font-size: 13px;
   font-weight: 750;
@@ -2056,7 +2100,7 @@ textarea {
   padding: 10px 12px;
   border-top: 1px solid var(--line);
   border-bottom: 1px solid var(--line);
-  background: #f8fafc;
+  background: var(--surface-2);
   color: var(--muted);
   text-align: left;
   font-size: 12px;
@@ -2077,7 +2121,7 @@ textarea {
 }
 
 .competition-list-table tbody tr:hover {
-  background: #f8fafc;
+  background: var(--surface-2);
 }
 
 .competition-list-table tbody tr:last-child td {
@@ -2118,7 +2162,7 @@ textarea {
 
 .competition-source-link strong,
 .competition-source-pending strong {
-  color: #344054;
+  color: var(--text-body);
   font-size: 14px;
   font-weight: 850;
 }
@@ -2160,7 +2204,7 @@ textarea {
   border: 1px solid var(--line);
   border-radius: 8px;
   background: #fff;
-  color: #344054;
+  color: var(--text-body);
   font: inherit;
   font-size: 13px;
   font-weight: 750;
@@ -2307,7 +2351,7 @@ textarea {
   padding: 16px;
   border: 1px solid var(--line);
   border-radius: 8px;
-  background: #f8fafc;
+  background: var(--surface-2);
 }
 
 .national-stop.final {
@@ -2336,7 +2380,7 @@ textarea {
   gap: 7px;
   align-items: center;
   margin: 12px 0 0;
-  color: #344054;
+  color: var(--text-body);
   font-size: 14px;
   font-weight: 750;
 }
@@ -2419,7 +2463,7 @@ textarea {
 }
 
 .national-result-index-group strong {
-  color: #111827;
+  color: var(--text-strong);
   font-size: 14px;
 }
 
@@ -2456,7 +2500,7 @@ textarea {
 }
 
 .national-result-index-section > div:first-child strong {
-  color: #111827;
+  color: var(--text-strong);
   font-size: 14px;
   font-weight: 900;
 }
@@ -2478,7 +2522,7 @@ textarea {
 }
 
 .national-result-index-event > span {
-  color: #111827;
+  color: var(--text-strong);
   font-size: 13px;
   font-weight: 900;
   line-height: 28px;
@@ -2498,11 +2542,11 @@ textarea {
   padding: 4px 8px;
   border: 1px solid var(--line);
   border-radius: 8px;
-  color: #344054;
+  color: var(--text-body);
   font-size: 12px;
   font-weight: 800;
   text-decoration: none;
-  background: #f8fafc;
+  background: var(--surface-2);
 }
 
 .national-result-index a:hover,
@@ -2528,7 +2572,7 @@ textarea {
   gap: 12px;
   align-items: center;
   padding: 14px 16px;
-  background: #f8fafc;
+  background: var(--surface-2);
   cursor: pointer;
 }
 
@@ -2605,7 +2649,7 @@ textarea {
 .national-result-table th,
 .national-all-around-table th,
 .national-relay-table th {
-  color: #344054;
+  color: var(--text-body);
   background: #f3f7fc;
   font-size: 13px;
   font-weight: 850;
@@ -2685,7 +2729,7 @@ textarea {
 }
 
 .provincial-info-card strong {
-  color: #111827;
+  color: var(--text-strong);
   font-size: 16px;
   line-height: 1.45;
 }
@@ -2744,12 +2788,12 @@ textarea {
   align-items: center;
   padding: 14px 16px;
   border-left: 4px solid var(--red);
-  background: #f8fafc;
+  background: var(--surface-2);
 }
 
 .provincial-result-group h3 {
   margin: 0;
-  color: #111827;
+  color: var(--text-strong);
   font-size: 15.5px;
 }
 
@@ -2787,7 +2831,7 @@ textarea {
 }
 
 .provincial-result-table td:last-child {
-  color: #111827;
+  color: var(--text-strong);
   font-weight: 850;
 }
 
@@ -2833,7 +2877,7 @@ textarea {
   gap: 9px;
   margin: 0;
   padding-left: 20px;
-  color: #344054;
+  color: var(--text-body);
   line-height: 1.75;
 }
 
@@ -2875,7 +2919,7 @@ textarea {
   position: sticky;
   top: 0;
   z-index: 1;
-  background: #f8fafc;
+  background: var(--surface-2);
   color: var(--muted);
   font-size: 12px;
   font-weight: 700;
@@ -2897,7 +2941,7 @@ textarea {
 }
 
 .result-table tbody tr:hover {
-  background: #f8fafc;
+  background: var(--surface-2);
 }
 
 .result-table tbody tr:last-child td {
@@ -2988,7 +3032,7 @@ textarea {
 .judges-form-grid label {
   display: grid;
   gap: 6px;
-  color: #344054;
+  color: var(--text-body);
   font-size: 13px;
   font-weight: 850;
 }
@@ -3139,7 +3183,7 @@ textarea {
   border: 0;
   border-right: 1px solid var(--line);
   background: #fff;
-  color: #344054;
+  color: var(--text-body);
   font: inherit;
   font-size: 13px;
   font-weight: 750;
@@ -3375,7 +3419,7 @@ textarea {
   align-items: center;
   justify-content: center;
   border-right: 1px solid var(--line);
-  color: #344054;
+  color: var(--text-body);
   font-size: 13px;
   font-weight: 900;
   text-decoration: none;
@@ -3506,7 +3550,7 @@ textarea {
   gap: 8px;
   margin: 0;
   padding-left: 22px;
-  color: #344054;
+  color: var(--text-body);
   line-height: 1.7;
 }
 
@@ -3590,7 +3634,7 @@ textarea {
   border: 1px solid var(--line);
   border-radius: 8px;
   background: #fff;
-  color: #526071;
+  color: var(--muted);
   font-size: 13px;
   font-weight: 750;
 }
@@ -3800,7 +3844,7 @@ textarea {
   border-radius: 8px;
   padding: 0 14px;
   background: #fff;
-  color: #344054;
+  color: var(--text-body);
   font-weight: 700;
   font-size: 13px;
   cursor: pointer;
@@ -4242,7 +4286,7 @@ a.commercial-member-link:hover {
     padding: 0 12px;
     border: 1px solid var(--line);
     border-radius: 8px;
-    color: #344054;
+    color: var(--text-body);
     font-size: 13px;
     font-weight: 750;
     list-style: none;
@@ -4283,7 +4327,7 @@ a.commercial-member-link:hover {
     justify-content: space-between;
     padding: 0 10px;
     border-radius: 8px;
-    color: #344054;
+    color: var(--text-body);
     font-size: 13px;
     font-weight: 750;
   }
@@ -4446,7 +4490,7 @@ a.commercial-member-link:hover {
     display: grid;
     gap: 10px;
     padding: 10px;
-    background: #f3f6fb;
+    background: var(--page-bg);
   }
 
   .result-table tr,
@@ -4543,7 +4587,7 @@ a.commercial-member-link:hover {
     display: grid;
     gap: 10px;
     padding: 10px;
-    background: #f3f6fb;
+    background: var(--page-bg);
   }
 
   .national-result-table tr,
@@ -4800,5 +4844,218 @@ a.commercial-member-link:hover {
   .national-all-around-table tr,
   .national-relay-table tr {
     grid-template-columns: 1fr;
+  }
+}
+
+/* ── Dark mode structural overrides ── */
+@media (prefers-color-scheme: dark) {
+  .page-hero {
+    background: var(--surface);
+  }
+
+  .ranking-toggle,
+  .competition-filter-toggle {
+    background: var(--surface);
+  }
+
+  .ranking-toggle button,
+  .competition-filter-toggle button {
+    background: var(--surface);
+    color: var(--ink);
+  }
+
+  .ranking-toggle button.active,
+  .competition-filter-toggle button.active {
+    background: var(--blue);
+    color: #fff;
+  }
+
+  .competition-filter-row,
+  .competition-list-count {
+    background: var(--surface);
+  }
+
+  .competition-pagination {
+    background: var(--surface);
+    border-color: var(--line);
+  }
+
+  .competition-pagination button,
+  .wca-pagination button {
+    background: var(--surface);
+    color: var(--ink);
+  }
+
+  .competition-list-table tbody tr {
+    background: var(--surface);
+  }
+
+  .competition-list-table tbody tr:hover,
+  .result-table tbody tr:hover {
+    background: var(--soft);
+  }
+
+  .liaoning-record-gender-tabs {
+    background: var(--surface);
+  }
+
+  .liaoning-record-gender-tabs a {
+    color: var(--ink);
+  }
+
+  .mobile-nav > summary {
+    background: var(--surface);
+    border-color: var(--line);
+    color: var(--ink);
+  }
+
+  .mobile-nav-panel {
+    background: var(--surface);
+  }
+
+  .mobile-nav-panel > a,
+  .mobile-nav-close,
+  .mobile-nav-group > summary,
+  .mobile-nav-group a {
+    color: var(--ink);
+  }
+
+  .mobile-nav-close {
+    background: var(--soft);
+  }
+
+  /* Mobile card-view tables */
+  .result-table tbody,
+  .competition-list-table tbody,
+  .judges-table tbody,
+  .national-result-table tbody,
+  .national-all-around-table tbody,
+  .national-relay-table tbody,
+  .liaoning-records-table tbody {
+    background: var(--page-bg);
+  }
+
+  .result-table tr,
+  .competition-list-table tr,
+  .judges-table tr,
+  .national-result-table tr,
+  .national-all-around-table tr,
+  .national-relay-table tr,
+  .admin-local-table .result-table tr {
+    background: var(--surface);
+    border-color: var(--line);
+  }
+
+  /* WCA rankings */
+  .wca-page-meta span,
+  .wca-search-chip {
+    background: var(--surface);
+    color: var(--ink);
+  }
+
+  .wca-region-field button,
+  .wca-select-field select {
+    background: var(--surface);
+    color: var(--ink);
+    border-color: var(--line);
+  }
+
+  .wca-region-field,
+  .wca-select-field span,
+  .wca-control-label {
+    color: var(--ink);
+  }
+
+  /* National results */
+  .national-result-index {
+    background: var(--surface);
+  }
+
+  .national-result-index-section {
+    background: var(--surface);
+    border-color: var(--line);
+  }
+
+  .national-qualifier-event summary,
+  .result-stat-card {
+    background: var(--soft);
+  }
+
+  .national-results-loading {
+    background: var(--surface);
+  }
+
+  .national-note-band,
+  .national-stop {
+    background: var(--soft);
+  }
+
+  .national-stop.final {
+    background: color-mix(in srgb, var(--blue) 12%, var(--surface));
+    border-color: var(--line);
+  }
+
+  /* Provincial */
+  .provincial-info-card,
+  .provincial-result-group {
+    background: var(--surface);
+  }
+
+  /* Weekly */
+  .weekly-list-item.pending {
+    background: var(--soft);
+  }
+
+  .weekly-age-note,
+  .weekly-join {
+    background: var(--soft);
+    border-color: var(--line);
+  }
+
+  .wca-state {
+    background: var(--soft);
+  }
+
+  .judges-notice,
+  .judges-level-guide {
+    background: var(--soft);
+    border-color: var(--line);
+    color: var(--ink);
+  }
+
+  /* Admin */
+  .account-history-item,
+  .admin-feedback-item {
+    background: var(--surface);
+  }
+
+  .admin-login-input-wrap {
+    background: var(--surface);
+  }
+
+  .admin-profile-filters button,
+  .city-quick-picks button {
+    background: var(--surface);
+    color: var(--ink);
+  }
+
+  .local-contact-box input,
+  .local-contact-box select {
+    background: var(--surface);
+  }
+
+  /* Podium highlights */
+  .podium-1 {
+    background: color-mix(in srgb, var(--gold) 10%, var(--surface));
+    border-color: color-mix(in srgb, var(--gold) 40%, var(--line));
+  }
+
+  .provincial-result-table .podium-row {
+    background: color-mix(in srgb, var(--gold) 8%, var(--surface));
+  }
+
+  /* Hero band in dark mode */
+  .hero-band {
+    background: linear-gradient(160deg, #0a1220 0%, #122041 100%);
   }
 }

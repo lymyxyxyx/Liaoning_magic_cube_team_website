@@ -5,24 +5,26 @@ import { Trophy } from "lucide-react";
 export default function HomePage() {
   return (
     <>
-      <section className="split-hero">
-        <div className="hero-copy animate-in">
-          <span className="eyebrow">辽宁魔方</span>
-          <h1>辽宁地区魔方信息查询网</h1>
-          <p>
-            汇集辽宁地区魔方选手的 WCA 排名、赛事记录、荣誉经历与周赛成绩，为选手、家长和魔方爱好者提供一站式信息查询。
-          </p>
-          <div className="hero-actions">
-            <Link className="button primary" href="/liaoning-rankings">
-              <Trophy size={18} />
-              查看辽宁排名
-            </Link>
+      <div className="hero-band">
+        <section className="split-hero">
+          <div className="hero-copy animate-in">
+            <span className="eyebrow">辽宁魔方</span>
+            <h1>辽宁地区魔方信息查询网</h1>
+            <p>
+              汇集辽宁地区魔方选手的 WCA 排名、赛事记录、荣誉经历与周赛成绩，为选手、家长和魔方爱好者提供一站式信息查询。
+            </p>
+            <div className="hero-actions">
+              <Link className="button primary" href="/liaoning-rankings">
+                <Trophy size={18} />
+                查看辽宁排名
+              </Link>
+            </div>
           </div>
-        </div>
-        <div className="hero-panel animate-in-delay">
-          <Image src="/visuals/home-cube.svg" alt="辽宁地区魔方信息查询网视觉图" width={720} height={540} priority />
-        </div>
-      </section>
+          <div className="hero-panel animate-in-delay">
+            <Image src="/visuals/home-cube.svg" alt="辽宁地区魔方信息查询网视觉图" width={720} height={540} priority />
+          </div>
+        </section>
+      </div>
       <div className="container home-entries animate-in-delay-2">
         <Link href="/liaoning-rankings" className="home-entry">
           <strong>辽宁排名</strong>
