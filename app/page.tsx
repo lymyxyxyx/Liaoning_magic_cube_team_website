@@ -26,17 +26,17 @@ export default function HomePage() {
         </section>
       </div>
       <div className="container home-entries animate-in-delay-2">
-        <Link href="/liaoning-rankings" className="home-entry">
-          <strong>辽宁排名</strong>
-          <span>按 WCA 官方数据筛选辽宁选手排名</span>
+        <Link href="/liaoning-records" className="home-entry">
+          <strong>辽宁纪录</strong>
+          <span>各 WCA 项目辽宁单次与平均纪录</span>
+        </Link>
+        <Link href="/commercial-teams" className="home-entry">
+          <strong>商业战队</strong>
+          <span>GAN、Speed ACE 等品牌赞助战队成员</span>
         </Link>
         <Link href="/competitions" className="home-entry">
-          <strong>赛事记录</strong>
+          <strong>比赛列表</strong>
           <span>沈阳市赛、辽宁省赛、WCA 官方赛事</span>
-        </Link>
-        <Link href="/weekly" className="home-entry">
-          <strong>周赛系统</strong>
-          <span>每周训练赛成绩追踪与排名</span>
         </Link>
       </div>
     </>
