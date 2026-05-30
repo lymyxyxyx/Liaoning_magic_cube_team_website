@@ -1366,6 +1366,17 @@ main {
   .commercial-member-editor {
     grid-template-columns: 1fr;
   }
+
+  /* ── Footer: 单列堆叠 ── */
+  .footer-inner {
+    grid-template-columns: 1fr;
+    gap: 12px;
+    padding: 16px 18px;
+  }
+
+  .footer-nav {
+    gap: 10px;
+  }
 }
 
 .timeline {
@@ -4554,9 +4565,29 @@ a.commercial-member-link:hover {
   .judges-table td:last-child {
     grid-column: 1 / -1;
   }
-}
 
-@media (max-width: 760px) {
+  /* ── Home entries: 3→1 列 ── */
+  .home-entries {
+    grid-template-columns: 1fr;
+  }
+
+  /* ── Judges 表单: 5→2 列 ── */
+  .judges-form-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  /* ── 综合排名筛选: 2→1 列 ── */
+  .sum-ranks-filter-card {
+    grid-template-columns: 1fr;
+  }
+
+  /* ── 综合排名表: 改善触屏横向滚动体验 ── */
+  .sum-ranks-table-wrap {
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: thin;
+  }
+
+  /* ── 国赛表格: 卡片视图（从 760px 提前到 900px）── */
   .national-qualifier-table-wrap {
     overflow: visible;
   }
@@ -4565,6 +4596,7 @@ a.commercial-member-link:hover {
   .national-all-around-table,
   .national-relay-table {
     min-width: 0;
+    width: 100%;
   }
 
   .national-result-table thead,
@@ -4661,7 +4693,9 @@ a.commercial-member-link:hover {
     font-weight: 900;
     justify-content: space-between;
   }
+}
 
+@media (max-width: 760px) {
   .provincial-result-table td:nth-child(2),
   .provincial-result-table td:nth-child(4) {
     grid-column: auto;
@@ -4724,6 +4758,7 @@ a.commercial-member-link:hover {
 
   .liaoning-record-cell {
     min-width: 0;
+    gap: 5px;
   }
 
   .liaoning-record-person,
@@ -4742,10 +4777,6 @@ a.commercial-member-link:hover {
   .liaoning-records-table-section,
   .liaoning-records-table-section .result-table-wrap {
     overflow-x: clip;
-  }
-
-  .liaoning-record-cell {
-    gap: 5px;
   }
 
   .liaoning-record-cell > div:first-child {
@@ -4844,6 +4875,16 @@ a.commercial-member-link:hover {
   .provincial-result-group header {
     align-items: flex-start;
     flex-direction: column;
+  }
+
+  /* ── Judges 表单: 2→1 列 ── */
+  .judges-form-grid {
+    grid-template-columns: 1fr;
+  }
+
+  /* ── 综合排名: 小屏缩小字号便于横向滚动阅读 ── */
+  .sum-ranks-table {
+    font-size: 12px;
   }
 }
 
@@ -4949,6 +4990,7 @@ a.commercial-member-link:hover {
   .national-result-table tr,
   .national-all-around-table tr,
   .national-relay-table tr,
+  .liaoning-records-table tr,
   .admin-local-table .result-table tr {
     background: var(--surface);
     border-color: var(--line);

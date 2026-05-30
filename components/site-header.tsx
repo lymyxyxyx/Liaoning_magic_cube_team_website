@@ -13,11 +13,11 @@ type NavItem = {
 const navItems: NavItem[] = [
   { href: "/", label: "首页" },
   { href: "/rankings", label: "WCA排名" },
-  { href: "/sum-of-ranks", label: "排名总和" },
+  { href: "/sum-of-ranks", label: "综合排名" },
   { href: "/liaoning-rankings", label: "辽宁排名" },
   { href: "/liaoning-records", label: "辽宁纪录" },
-  { href: "/judges", label: "裁判员" },
-  { href: "/commercial-teams", label: "商业战队" },
+  { href: "/judges", label: "裁判信息" },
+  { href: "/commercial-teams", label: "商业战队成员" },
   {
     label: "比赛",
     children: [

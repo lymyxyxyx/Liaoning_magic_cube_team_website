@@ -31,8 +31,8 @@ export default function HomePage() {
           <span>各 WCA 项目辽宁单次与平均纪录</span>
         </Link>
         <Link href="/commercial-teams" className="home-entry">
-          <strong>商业战队</strong>
-          <span>GAN、Speed ACE 等品牌赞助战队成员</span>
+          <strong>商业战队成员</strong>
+          <span>GAN、魔域、魔方格等品牌赞助战队成员</span>
         </Link>
         <Link href="/competitions" className="home-entry">
           <strong>比赛列表</strong>
