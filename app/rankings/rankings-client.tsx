@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { CalendarClock, ChevronLeft, ChevronRight, Database, ExternalLink, Globe2 } from "lucide-react";
+import { CalendarClock, ChevronLeft, ChevronRight, ExternalLink } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { PageHero } from "@/components/page-hero";
 import { WcaFlag } from "@/components/wca-flag";
@@ -167,12 +167,6 @@ export function RankingsClient() {
 
       <section className="container section rankings-workspace">
         <section className="weekly-event-section ranking-filter-section">
-          <div className="section-header">
-            <div>
-              <span className="eyebrow">筛选条件</span>
-              <h2>排名查询</h2>
-            </div>
-          </div>
           <div className="ranking-filter-card" aria-label="排名筛选">
             <label className="ranking-field">
               <span>项目</span>
@@ -257,19 +251,12 @@ export function RankingsClient() {
         <section className="weekly-event-section ranking-results-section">
           <div className="section-header">
             <div>
-              <span className="eyebrow">
-                {countryName} · {modeLabels[mode]} · {genderLabels[gender]} · 第 {page} 页
-              </span>
-              <h2>{formatWcaEventName(event, eventName)}排名 <small>{firstRank}-{lastRank}</small></h2>
+              <h2>{formatWcaEventName(event, eventName)}排名 <small>{firstRank}–{lastRank}</small></h2>
             </div>
             <div className="ranking-source-line">
-              <Database size={16} />
-              <span>PostgreSQL API</span>
-              <Globe2 size={16} />
-              <span>WCA ID 关联</span>
               {updateDateLabel ? (
                 <>
-                  <CalendarClock size={16} />
+                  <CalendarClock size={14} />
                   <span>数据更新 {updateDateLabel}</span>
                 </>
               ) : null}

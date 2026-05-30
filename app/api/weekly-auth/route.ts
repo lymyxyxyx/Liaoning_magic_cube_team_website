@@ -1,11 +1,20 @@
 import { NextRequest, NextResponse } from "next/server";
+import { createSessionToken } from "@/lib/auth";
 
 const weeklyCookieName = "liaoning_weekly_session";
-const weeklyCookieValue = "authenticated";
 const weeklyNextCookieName = "liaoning_weekly_next";
 
 function isSecureRequest(request: NextRequest) {
   return request.nextUrl.protocol === "https:" || request.headers.get("x-forwarded-proto") === "https";
+}
+
+function timingSafeStringEqual(a: string, b: string): boolean {
+  if (a.length !== b.length) return false;
+  let diff = 0;
+  for (let i = 0; i < a.length; i++) {
+    diff |= a.charCodeAt(i) ^ b.charCodeAt(i);
+  }
+  return diff === 0;
 }
 
 export async function POST(request: NextRequest) {
@@ -18,15 +27,17 @@ export async function POST(request: NextRequest) {
   const password = String(formData.get("password") || "");
   const nextPath = getSafeNextPath(request.cookies.get(weeklyNextCookieName)?.value || null);
 
-  if (password !== weeklyPassword) {
+  if (!timingSafeStringEqual(password, weeklyPassword)) {
     const loginUrl = request.nextUrl.clone();
     loginUrl.pathname = "/weekly/admin/login/error";
     loginUrl.search = "";
     return NextResponse.redirect(loginUrl, { status: 303 });
   }
 
+  const token = await createSessionToken(weeklyPassword);
+
   const response = createRelativeRedirect(nextPath);
-  response.cookies.set(weeklyCookieName, weeklyCookieValue, {
+  response.cookies.set(weeklyCookieName, token, {
     httpOnly: true,
     sameSite: "lax",
     secure: isSecureRequest(request),

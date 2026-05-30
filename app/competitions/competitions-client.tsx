@@ -64,21 +64,18 @@ export function CompetitionsClient() {
   return (
     <section className="container section competition-list-section">
       <div className="competition-list-panel">
-        <div className="result-stats-grid" style={{ marginBottom: 16 }}>
+        <div className="result-stats-grid">
           <div className="result-stat-card">
-            <span className="result-stat-label">辽宁范围内 · 市赛</span>
+            <span className="result-stat-label">辽宁 · 市赛</span>
             <strong className="result-stat-value">{liaoningSummary.city}</strong>
-            <span className="result-stat-note">统计范围：省份为辽宁</span>
           </div>
           <div className="result-stat-card">
-            <span className="result-stat-label">辽宁范围内 · 省赛</span>
+            <span className="result-stat-label">辽宁 · 省赛</span>
             <strong className="result-stat-value">{liaoningSummary.province}</strong>
-            <span className="result-stat-note">统计范围：省份为辽宁</span>
           </div>
           <div className="result-stat-card">
-            <span className="result-stat-label">辽宁范围内 · WCA</span>
+            <span className="result-stat-label">辽宁 · WCA</span>
             <strong className="result-stat-value">{liaoningSummary.wca}</strong>
-            <span className="result-stat-note">统计范围：省份为辽宁</span>
           </div>
         </div>
         <div className="competition-filter-row">

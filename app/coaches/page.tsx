@@ -8,7 +8,7 @@ export default async function CoachesPage() {
   return (
     <>
       <PageHero label="人员档案" title="教练员列表">
-        记录教练员编号、姓名、地区、级别与考取年份。
+        记录教练员编号、姓名、地区、级别与资质信息。
       </PageHero>
       <CoachesClient initialCoaches={coaches} />
     </>

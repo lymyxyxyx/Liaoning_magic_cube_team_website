@@ -13,7 +13,6 @@
   --yellow: #a86b00;
   --gold: #b7791f;
   --page-bg: #f3f6fb;
-  --accent: #2563eb;
   --shadow: 0 18px 45px rgba(23, 32, 51, 0.1);
   --shadow-soft: 0 10px 28px rgba(23, 32, 51, 0.07);
 }
@@ -27,7 +26,18 @@ body {
   background: var(--page-bg);
   color: var(--ink);
   font-size: 15px;
-  font-family: Inter, "PingFang SC", "Microsoft YaHei", Arial, sans-serif;
+  font-family: "Geist", "PingFang SC", "Microsoft YaHei", Arial, sans-serif;
+}
+
+@keyframes fade-in-up {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 a {
@@ -45,14 +55,58 @@ main {
 }
 
 .site-footer {
-  padding: 22px clamp(18px, 5vw, 64px) 28px;
   border-top: 1px solid var(--line);
-  color: var(--muted);
-  font-size: 12px;
-  text-align: center;
+  background: var(--surface);
 }
 
-.site-footer a:hover {
+.footer-inner {
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  gap: 24px;
+  align-items: center;
+  padding: 20px clamp(18px, 5vw, 64px);
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.footer-brand {
+  display: grid;
+  gap: 4px;
+}
+
+.footer-brand strong {
+  font-size: 14px;
+}
+
+.footer-brand span {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.footer-nav {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.footer-nav a {
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 600;
+  transition: color 0.15s ease;
+}
+
+.footer-nav a:hover {
+  color: var(--blue);
+}
+
+.footer-meta a {
+  color: var(--muted);
+  font-size: 12px;
+  transition: color 0.15s ease;
+}
+
+.footer-meta a:hover {
   color: var(--blue);
 }
 
@@ -127,6 +181,7 @@ main {
   font-size: 13px;
   font-weight: 650;
   white-space: nowrap;
+  transition: background 0.15s ease, color 0.15s ease;
 }
 
 .main-nav a:hover,
@@ -193,6 +248,7 @@ main {
   border: 1px solid var(--line);
   background: var(--surface);
   box-shadow: 0 6px 18px rgba(23, 32, 51, 0.05);
+  transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
 }
 
 .container,
@@ -282,9 +338,56 @@ main {
 }
 
 .eyebrow {
-  color: var(--red);
-  font-size: 13px;
-  font-weight: 800;
+  color: var(--blue);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.animate-in {
+  animation: fade-in-up 0.5s ease-out both;
+}
+
+.animate-in-delay {
+  animation: fade-in-up 0.5s ease-out 0.1s both;
+}
+
+.animate-in-delay-2 {
+  animation: fade-in-up 0.5s ease-out 0.2s both;
+}
+
+.home-entries {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+  margin-top: 32px;
+}
+
+.home-entry {
+  display: grid;
+  gap: 6px;
+  padding: 20px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--surface);
+  box-shadow: var(--shadow-soft);
+  transition: box-shadow 0.2s ease, border-color 0.2s ease;
+}
+
+.home-entry:hover {
+  border-color: var(--blue);
+  box-shadow: 0 8px 28px rgba(36, 87, 197, 0.1);
+}
+
+.home-entry strong {
+  font-size: 17px;
+}
+
+.home-entry span {
+  color: var(--muted);
+  font-size: 14px;
+  line-height: 1.5;
 }
 
 .hero-actions,
@@ -299,6 +402,12 @@ main {
   border: 1px solid var(--line);
   background: var(--surface);
   box-shadow: 0 6px 16px rgba(23, 32, 51, 0.05);
+  transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.button:hover:not(:disabled) {
+  border-color: var(--blue);
+  color: var(--blue);
 }
 
 .button:disabled {
@@ -311,6 +420,12 @@ main {
   color: #fff;
   background: var(--blue);
   box-shadow: 0 12px 22px rgba(36, 87, 197, 0.2);
+}
+
+.button.primary:hover:not(:disabled) {
+  background: var(--blue-deep);
+  border-color: var(--blue-deep);
+  box-shadow: 0 12px 22px rgba(36, 87, 197, 0.3);
 }
 
 .stat-band {
@@ -1814,9 +1929,9 @@ textarea {
 
 .competition-list-panel {
   border: 1px solid var(--line);
-  border-radius: 8px;
+  border-radius: 10px;
   background: var(--surface);
-  box-shadow: var(--shadow);
+  box-shadow: var(--shadow-soft);
   overflow: hidden;
 }
 
@@ -1824,32 +1939,65 @@ textarea {
   width: min(1480px, calc(100% - 36px));
 }
 
+.result-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.result-stat-card {
+  display: grid;
+  gap: 2px;
+  padding: 16px 18px;
+  border-bottom: 1px solid var(--line);
+  background: #f8fafc;
+}
+
+.result-stat-label {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.result-stat-value {
+  font-size: 28px;
+  line-height: 1.2;
+  color: var(--ink);
+}
+
+.result-stat-note {
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 700;
+}
+
 .competition-filter-row {
   display: grid;
   grid-template-columns: 1fr;
-  gap: 14px;
+  gap: 10px;
   align-items: start;
-  padding: 18px;
+  padding: 14px 18px;
   border-bottom: 1px solid var(--line);
   background: #fff;
 }
 
 .competition-filter-field {
   display: grid;
-  gap: 8px;
+  gap: 6px;
 }
 
 .competition-filter-field span {
-  color: #344054;
-  font-size: 13px;
-  font-weight: 750;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
 }
 
 .competition-filter-toggle {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   overflow: hidden;
-  min-height: 44px;
+  min-height: 38px;
   border: 1px solid var(--line);
   border-radius: 8px;
   background: #fff;
@@ -1866,17 +2014,18 @@ textarea {
   background: #fff;
   color: #344054;
   font: inherit;
-  font-size: 14px;
-  font-weight: 800;
+  font-size: 13px;
+  font-weight: 750;
   cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
 }
 
 .competition-filter-toggle button:last-child {
   border-right: 0;
 }
 
-.competition-filter-toggle button:hover {
-  background: #f8fafc;
+.competition-filter-toggle button:hover:not(.active) {
+  background: var(--soft);
 }
 
 .competition-filter-toggle button.active {
@@ -1886,9 +2035,9 @@ textarea {
 
 .competition-list-count {
   margin: 0;
-  padding: 14px 18px;
+  padding: 10px 18px;
   color: var(--muted);
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 700;
 }
 
@@ -1900,32 +2049,39 @@ textarea {
   width: 100%;
   min-width: 1280px;
   border-collapse: collapse;
-  font-size: 15px;
+  font-size: 14px;
 }
 
 .competition-list-table th {
-  padding: 12px;
+  padding: 10px 12px;
   border-top: 1px solid var(--line);
   border-bottom: 1px solid var(--line);
   background: #f8fafc;
-  color: #344054;
+  color: var(--muted);
   text-align: left;
-  font-size: 13px;
-  font-weight: 850;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
 }
 
 .competition-list-table td {
-  padding: 13px 12px;
+  padding: 11px 12px;
   border-bottom: 1px solid var(--line);
   vertical-align: top;
 }
 
 .competition-list-table tbody tr {
   background: #fff;
+  transition: background 0.12s ease;
 }
 
 .competition-list-table tbody tr:hover {
   background: #f8fafc;
+}
+
+.competition-list-table tbody tr:last-child td {
+  border-bottom: 0;
 }
 
 .competition-list-table td:first-child {
@@ -1987,56 +2143,57 @@ textarea {
   justify-content: flex-end;
   gap: 10px;
   align-items: center;
-  padding: 16px 18px;
+  padding: 12px 18px;
   border-top: 1px solid var(--line);
   background: #fff;
 }
 
 .competition-pagination span {
   color: var(--muted);
-  font-size: 14px;
-  font-weight: 750;
+  font-size: 13px;
+  font-weight: 700;
 }
 
 .competition-pagination button {
-  min-height: 38px;
+  min-height: 34px;
   padding: 0 14px;
   border: 1px solid var(--line);
   border-radius: 8px;
   background: #fff;
   color: #344054;
   font: inherit;
-  font-size: 14px;
-  font-weight: 800;
+  font-size: 13px;
+  font-weight: 750;
   cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
 }
 
 .competition-pagination button:hover:not(:disabled) {
-  color: #fff;
-  background: var(--blue);
+  color: var(--blue);
+  background: var(--soft);
   border-color: var(--blue);
 }
 
 .competition-pagination button:disabled {
   cursor: not-allowed;
-  opacity: 0.45;
+  opacity: 0.4;
 }
 
 .competition-name-link {
   color: var(--blue);
-  font-weight: 850;
+  font-weight: 750;
 }
 
 .competition-type {
   display: inline-flex;
   justify-content: center;
   min-width: 74px;
-  padding: 4px 8px;
-  border-radius: 8px;
+  padding: 3px 8px;
+  border-radius: 6px;
   background: #eef4ff;
   color: #1f4c9a;
-  font-size: 13px;
-  font-weight: 850;
+  font-size: 12px;
+  font-weight: 750;
 }
 
 .type-wca-official {
@@ -2691,7 +2848,7 @@ textarea {
 .result-table-wrap {
   overflow: auto;
   border: 1px solid var(--line);
-  border-radius: 8px;
+  border-radius: 10px;
   background: var(--surface);
 }
 
@@ -2708,7 +2865,7 @@ textarea {
 
 .result-table th,
 .result-table td {
-  padding: 10px 11px;
+  padding: 10px 12px;
   border-bottom: 1px solid var(--line);
   text-align: center;
   white-space: nowrap;
@@ -2718,9 +2875,12 @@ textarea {
   position: sticky;
   top: 0;
   z-index: 1;
-  background: #f1f5f9;
-  color: #344054;
-  font-size: 13px;
+  background: #f8fafc;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
 }
 
 .result-table td:nth-child(2),
@@ -2729,16 +2889,29 @@ textarea {
 }
 
 .result-table td:first-child {
-  font-weight: 850;
+  font-weight: 800;
+}
+
+.result-table tbody tr {
+  transition: background 0.12s ease;
 }
 
 .result-table tbody tr:hover {
-  background: #f8fbff;
+  background: #f8fafc;
+}
+
+.result-table tbody tr:last-child td {
+  border-bottom: 0;
 }
 
 .table-person-link {
   color: var(--blue);
   font-weight: 800;
+  transition: opacity 0.15s ease;
+}
+
+.table-person-link:hover {
+  opacity: 0.75;
 }
 
 .judges-workspace {
@@ -2895,9 +3068,9 @@ textarea {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 10px;
-  padding: 12px;
+  padding: 14px 16px;
   border: 1px solid var(--line);
-  border-radius: 8px;
+  border-radius: 10px;
   background: var(--surface);
 }
 
@@ -2911,31 +3084,32 @@ textarea {
 
 .ranking-filter-section .section-header h2,
 .ranking-results-section .section-header h2 {
-  font-size: 22px;
+  font-size: 20px;
 }
 
 .ranking-results-section .section-header h2 small {
   color: var(--muted);
-  font-size: 14px;
-  font-weight: 750;
+  font-size: 13px;
+  font-weight: 700;
 }
 
 .ranking-field {
   display: grid;
-  gap: 6px;
+  gap: 5px;
 }
 
 .ranking-field span {
-  color: #344054;
-  font-size: 13px;
-  font-weight: 750;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
 }
 
 .ranking-toggle {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   overflow: hidden;
-  min-height: 36px;
+  min-height: 34px;
   border: 1px solid var(--line);
   border-radius: 8px;
   background: #fff;
@@ -2968,12 +3142,17 @@ textarea {
   color: #344054;
   font: inherit;
   font-size: 13px;
-  font-weight: 800;
+  font-weight: 750;
   cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
 }
 
 .ranking-toggle button:last-child {
   border-right: 0;
+}
+
+.ranking-toggle button:hover:not(.active) {
+  background: var(--soft);
 }
 
 .ranking-toggle button.active {
@@ -2988,12 +3167,12 @@ textarea {
 .ranking-source-line {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
+  gap: 6px;
   align-items: center;
   justify-content: flex-end;
   color: var(--muted);
-  font-size: 13px;
-  font-weight: 750;
+  font-size: 12px;
+  font-weight: 700;
 }
 
 .ranking-table {
@@ -3606,27 +3785,43 @@ textarea {
 .wca-pagination {
   display: flex;
   justify-content: center;
-  gap: 14px;
+  gap: 10px;
   align-items: center;
   margin-top: 18px;
 }
 
 .wca-pagination button {
   display: inline-flex;
-  gap: 7px;
+  gap: 6px;
   align-items: center;
   justify-content: center;
-  min-height: 40px;
+  min-height: 36px;
   border: 1px solid var(--line);
   border-radius: 8px;
-  padding: 0 12px;
+  padding: 0 14px;
   background: #fff;
   color: #344054;
-  font-weight: 750;
+  font-weight: 700;
+  font-size: 13px;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+}
+
+.wca-pagination button:hover:not(:disabled) {
+  color: var(--blue);
+  border-color: var(--blue);
+  background: var(--soft);
 }
 
 .wca-pagination button:disabled {
-  opacity: 0.45;
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.wca-pagination span {
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 700;
 }
 
 .wca-flag {
@@ -3753,7 +3948,7 @@ textarea {
 }
 
 .wca-count {
-  color: var(--accent);
+  color: var(--blue);
 }
 
 .commercial-team-description {
@@ -3783,12 +3978,12 @@ textarea {
 }
 
 a.commercial-member-link:hover {
-  border-color: var(--accent);
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 12%, transparent);
+  border-color: var(--blue);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--blue) 12%, transparent);
 }
 
 .commercial-member-link.commercial-member-editor {
-  border-color: var(--accent);
+  border-color: var(--blue);
 }
 
 .commercial-member-card {
@@ -3844,8 +4039,8 @@ a.commercial-member-link:hover {
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 10px;
   padding: 14px;
-  border-color: var(--accent);
-  background: color-mix(in srgb, var(--accent) 4%, transparent);
+  border-color: var(--blue);
+  background: color-mix(in srgb, var(--blue) 4%, transparent);
 }
 
 .commercial-member-editor label {
@@ -3895,8 +4090,8 @@ a.commercial-member-link:hover {
   font-size: 11px;
   font-weight: 600;
   font-family: var(--font-mono, monospace);
-  background: color-mix(in srgb, var(--accent) 10%, transparent);
-  color: var(--accent);
+  background: color-mix(in srgb, var(--blue) 10%, transparent);
+  color: var(--blue);
   white-space: nowrap;
 }
 

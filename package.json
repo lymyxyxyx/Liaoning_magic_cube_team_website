@@ -10,9 +10,11 @@
     "typecheck": "tsc --noEmit",
     "wca:check": "node scripts/update_wca_data.mjs --check",
     "wca:update": "node scripts/update_wca_data.mjs",
+    "wca:cleanup": "node scripts/cleanup-wca.mjs",
     "db:init": "node scripts/init-app-db.mjs"
   },
   "dependencies": {
+    "geist": "^1.7.1",
     "lucide-react": "^0.468.0",
     "next": "14.2.16",
     "pg": "^8.20.0",

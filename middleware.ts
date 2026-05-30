@@ -1,25 +1,28 @@
 import { NextRequest, NextResponse } from "next/server";
+import { verifySessionToken } from "@/lib/auth";
 
 const adminCookieName = "liaoning_admin_session";
-const adminCookieValue = "authenticated";
 const adminNextCookieName = "liaoning_admin_next";
 const weeklyCookieName = "liaoning_weekly_session";
-const weeklyCookieValue = "authenticated";
 const weeklyNextCookieName = "liaoning_weekly_next";
 
-function hasAdminSession(request: NextRequest) {
-  return request.cookies.get(adminCookieName)?.value === adminCookieValue;
+async function hasAdminSession(request: NextRequest) {
+  const token = request.cookies.get(adminCookieName)?.value;
+  if (!token) return false;
+  return verifySessionToken(token);
 }
 
-function hasWeeklySession(request: NextRequest) {
-  return request.cookies.get(weeklyCookieName)?.value === weeklyCookieValue;
+async function hasWeeklySession(request: NextRequest) {
+  const token = request.cookies.get(weeklyCookieName)?.value;
+  if (!token) return false;
+  return verifySessionToken(token);
 }
 
 function isSecureRequest(request: NextRequest) {
   return request.nextUrl.protocol === "https:" || request.headers.get("x-forwarded-proto") === "https";
 }
 
-export function middleware(request: NextRequest) {
+export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
   const host = request.headers.get("host") || "";
 
@@ -29,7 +32,7 @@ export function middleware(request: NextRequest) {
     return NextResponse.redirect(canonicalUrl);
   }
 
-  if (pathname.startsWith("/admin") && !pathname.startsWith("/admin/login") && !hasAdminSession(request)) {
+  if (pathname.startsWith("/admin") && !pathname.startsWith("/admin/login") && !(await hasAdminSession(request))) {
     const loginUrl = request.nextUrl.clone();
     loginUrl.pathname = "/admin/login";
     loginUrl.search = "";
@@ -44,7 +47,7 @@ export function middleware(request: NextRequest) {
     return response;
   }
 
-  if (pathname.startsWith("/weekly/admin") && !pathname.startsWith("/weekly/admin/login") && !hasWeeklySession(request)) {
+  if (pathname.startsWith("/weekly/admin") && !pathname.startsWith("/weekly/admin/login") && !(await hasWeeklySession(request))) {
     const loginUrl = request.nextUrl.clone();
     loginUrl.pathname = "/weekly/admin/login";
     loginUrl.search = "";
@@ -59,19 +62,19 @@ export function middleware(request: NextRequest) {
     return response;
   }
 
-  if (pathname === "/api/account-books" && !hasAdminSession(request)) {
+  if (pathname === "/api/account-books" && !(await hasAdminSession(request))) {
     return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
   }
 
-  if (pathname === "/api/local-profiles" && request.method !== "GET" && !hasAdminSession(request)) {
+  if (pathname === "/api/local-profiles" && request.method !== "GET" && !(await hasAdminSession(request))) {
     return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
   }
 
-  if (pathname.startsWith("/api/admin") && !hasAdminSession(request)) {
+  if (pathname.startsWith("/api/admin") && !(await hasAdminSession(request))) {
     return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
   }
 
-  if (pathname.startsWith("/api/weekly-admin") && !hasWeeklySession(request)) {
+  if (pathname.startsWith("/api/weekly-admin") && !(await hasWeeklySession(request))) {
     return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
   }
 

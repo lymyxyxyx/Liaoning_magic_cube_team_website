@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { CalendarClock, ChevronLeft, ChevronRight, Database, ExternalLink, MapPin } from "lucide-react";
+import { CalendarClock, ChevronLeft, ChevronRight, ExternalLink } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { PageHero } from "@/components/page-hero";
 import { WcaFlag } from "@/components/wca-flag";
@@ -270,12 +270,6 @@ export function LiaoningRankingsClient() {
         </details>
 
         <section className="weekly-event-section ranking-filter-section">
-          <div className="section-header">
-            <div>
-              <span className="eyebrow">本地筛选</span>
-              <h2>省市排名查询</h2>
-            </div>
-          </div>
           <div className="ranking-filter-card local-ranking-filter-card" aria-label="辽宁排名筛选">
             <div className="ranking-field">
               <span>榜单类型</span>
@@ -363,19 +357,12 @@ export function LiaoningRankingsClient() {
         <section className="weekly-event-section ranking-results-section">
           <div className="section-header">
             <div>
-              <span className="eyebrow">
-                {areaLabel} · {scopeLabels[scope]} · {modeLabels[mode]} · {genderLabels[gender]}
-              </span>
               <h2>{eventName}榜单 <small>本页 {rows.length} 人</small></h2>
             </div>
             <div className="ranking-source-line">
-              <MapPin size={16} />
-              <span>本站省市归属</span>
-              <Database size={16} />
-              <span>WCA PostgreSQL</span>
               {updateDateLabel ? (
                 <>
-                  <CalendarClock size={16} />
+                  <CalendarClock size={14} />
                   <span>数据更新 {updateDateLabel}</span>
                 </>
               ) : null}

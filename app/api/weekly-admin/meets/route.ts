@@ -1,12 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getPostgresPool } from "@/lib/postgres";
 import { weeklyPlayerPeople } from "@/lib/weekly-players";
+import { verifySessionToken } from "@/lib/auth";
 
 const weeklyCookieName = "liaoning_weekly_session";
-const weeklyCookieValue = "authenticated";
 
-function hasWeeklySession(request: NextRequest) {
-  return request.cookies.get(weeklyCookieName)?.value === weeklyCookieValue;
+async function hasWeeklySession(request: NextRequest) {
+  const token = request.cookies.get(weeklyCookieName)?.value;
+  if (!token) return false;
+  return verifySessionToken(token);
 }
 
 const playerSlugByPlayerName = new Map(
@@ -50,7 +52,7 @@ type WeeklyMeetInput = {
 };
 
 export async function POST(request: NextRequest) {
-  if (!hasWeeklySession(request)) {
+  if (!(await hasWeeklySession(request))) {
     return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
   }
 

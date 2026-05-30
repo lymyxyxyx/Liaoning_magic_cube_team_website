@@ -32,7 +32,7 @@ export default async function WeeklyPage() {
         label="队内周赛"
         title="辽宁魔方少儿战队周赛"
       >
-        周赛用于记录队内选手的阶段成绩。选手不需要先注册账号，也可以先作为自然人档案平铺录入，后续登录后再关联个人主页。
+        记录队内选手的阶段成绩，选手无需注册即可录入，后续可关联个人主页。
       </PageHero>
 
       <section className="container section">
@@ -63,7 +63,6 @@ export default async function WeeklyPage() {
         <div className="section-header weekly-list-header">
           <div>
             <h2>历史周赛</h2>
-            <p>已录入的周赛可直接查看详情，尚未整理的周赛先占位，后续可把图片逐期转成结构化成绩。</p>
           </div>
         </div>
         <div className="recorded-week-list">
@@ -164,7 +163,6 @@ export default async function WeeklyPage() {
 
         <section className="weekly-join">
           <div>
-            <span className="eyebrow">参与周赛</span>
             <h2>参赛、积分与奖品</h2>
             <p>
               参加周赛即可领取积分，兑换奖品。周赛规则及奖品设置可扫描下方二维码，关注辽宁魔方俱乐部公众号，点击"周赛"了解详情。

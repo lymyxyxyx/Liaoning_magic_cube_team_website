@@ -5,8 +5,8 @@ const principles = ["先做小，不做大而全", "历史资料允许不完整"
 export default function AboutPage() {
   return (
     <>
-      <PageHero label="项目共识" title="关于辽宁地区魔方信息查询网">
-        本网站为辽宁地区魔方玩家建立魔方信息查询平台，汇总魔方选手、排名、赛事活动、荣誉经历等资料，让选手、家长、合作单位和魔方爱好者都能清楚查询本地魔方信息。
+      <PageHero label="关于本站" title="关于辽宁地区魔方信息查询网">
+        汇总辽宁地区魔方选手、排名、赛事活动与荣誉经历等资料，供选手、家长和魔方爱好者查询。
       </PageHero>
       <section className="container section">
         <div className="grid two">

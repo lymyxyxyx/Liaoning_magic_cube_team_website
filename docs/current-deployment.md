@@ -135,3 +135,32 @@ Aliyun has:
 ```text
 30 10,14,16,18,22 * * * /usr/bin/flock -n /tmp/ln-cubing-wca-update.lock /usr/bin/docker exec ln-cubing-web npm run wca:update >> /opt/ln-cubing/logs/wca_cron.log 2>&1
 ```
+
+- WCA cleanup cron (daily at 3:00 AM, removes old ZIPs and rotates logs):
+
+```text
+0 3 * * * cd /opt/ln-cubing/app && sudo docker exec ln-cubing-web npm run wca:cleanup >> /opt/ln-cubing/logs/wca_cleanup.log 2>&1
+```
+
+- Automated backup cron (daily at 2:30 AM, keeps last 7 backups):
+
+```text
+30 2 * * * /opt/ln-cubing/app/scripts/backup.sh --keep 7 >> /opt/ln-cubing/logs/backup.log 2>&1
+```
+
+## Adding AUTH_SECRET (Required After Auth Upgrade)
+
+The authentication system now uses HMAC-signed session tokens. You must set `AUTH_SECRET` in the production environment:
+
+```bash
+# Generate a secret on the server
+ssh admin@39.106.199.195 'openssl rand -hex 32'
+
+# Add it to .env.production on the server
+ssh admin@39.106.199.195 'echo "AUTH_SECRET=<generated-value>" >> /opt/ln-cubing/app/.env.production'
+
+# Restart to apply
+ssh admin@39.106.199.195 'cd /opt/ln-cubing/app && sudo docker compose restart web'
+```
+
+After this change, all existing admin sessions will be invalidated (users will need to log in again).

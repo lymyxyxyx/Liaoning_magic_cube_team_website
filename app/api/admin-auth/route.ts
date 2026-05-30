@@ -1,11 +1,20 @@
 import { NextRequest, NextResponse } from "next/server";
+import { createSessionToken } from "@/lib/auth";
 
 const adminCookieName = "liaoning_admin_session";
-const adminCookieValue = "authenticated";
 const adminNextCookieName = "liaoning_admin_next";
 
 function isSecureRequest(request: NextRequest) {
   return request.nextUrl.protocol === "https:" || request.headers.get("x-forwarded-proto") === "https";
+}
+
+function timingSafeStringEqual(a: string, b: string): boolean {
+  if (a.length !== b.length) return false;
+  let diff = 0;
+  for (let i = 0; i < a.length; i++) {
+    diff |= a.charCodeAt(i) ^ b.charCodeAt(i);
+  }
+  return diff === 0;
 }
 
 export async function POST(request: NextRequest) {
@@ -17,7 +26,7 @@ export async function POST(request: NextRequest) {
   const payload = await readAuthPayload(request);
   const nextPath = getSafeNextPath(request.nextUrl.searchParams.get("next") || request.cookies.get(adminNextCookieName)?.value || null);
 
-  if (payload.password !== adminPassword) {
+  if (!timingSafeStringEqual(payload.password, adminPassword)) {
     if (payload.source === "form") {
       const loginUrl = request.nextUrl.clone();
       loginUrl.pathname = "/admin/login/error";
@@ -28,11 +37,13 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ message: "Invalid password" }, { status: 401 });
   }
 
+  const token = await createSessionToken(adminPassword);
+
   const response =
     payload.source === "form"
       ? createRelativeRedirect(nextPath)
       : NextResponse.json({ ok: true });
-  response.cookies.set(adminCookieName, adminCookieValue, {
+  response.cookies.set(adminCookieName, token, {
     httpOnly: true,
     sameSite: "lax",
     secure: isSecureRequest(request),
