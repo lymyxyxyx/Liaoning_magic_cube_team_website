@@ -219,6 +219,10 @@ async function queryLocalSumOfRanks(rankingTable: string, eventIds: string[], li
       SELECT DISTINCT person_id, name, country_id, country_name, country_iso2
       FROM filtered_ranks
     ),
+    participant_count AS (
+      SELECT COUNT(*)::int AS total
+      FROM participants
+    ),
     scored AS (
       SELECT
         participant.person_id AS "wcaId",
@@ -226,11 +230,12 @@ async function queryLocalSumOfRanks(rankingTable: string, eventIds: string[], li
         participant.country_id AS country,
         participant.country_name AS "countryName",
         participant.country_iso2 AS "countryIso2",
-        SUM(COALESCE(rank_row.region_rank, penalty.penalty, 1))::int AS sum,
-        jsonb_object_agg(event_ids.event_id, COALESCE(rank_row.region_rank, penalty.penalty, 1) ORDER BY event_ids.event_order) AS "ranksByEvent",
+        SUM(COALESCE(rank_row.region_rank, penalty.penalty, participant_count.total + 1))::int AS sum,
+        jsonb_object_agg(event_ids.event_id, COALESCE(rank_row.region_rank, penalty.penalty, participant_count.total + 1) ORDER BY event_ids.event_order) AS "ranksByEvent",
         jsonb_object_agg(event_ids.event_id, rank_row.region_rank IS NULL ORDER BY event_ids.event_order) AS "missingByEvent"
       FROM participants participant
       CROSS JOIN event_ids
+      CROSS JOIN participant_count
       LEFT JOIN filtered_ranks rank_row ON rank_row.person_id = participant.person_id AND rank_row.event_id = event_ids.event_id
       LEFT JOIN penalties penalty ON penalty.event_id = event_ids.event_id
       GROUP BY participant.person_id, participant.name, participant.country_id, participant.country_name, participant.country_iso2
