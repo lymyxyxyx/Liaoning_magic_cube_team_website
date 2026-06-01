@@ -64,7 +64,8 @@ export async function GET(request: NextRequest) {
   const regionParam = isContinent ? continentId : country;
   const queryParams: (string | number)[] = [event];
   if (!isWorld) queryParams.push(regionParam);
-  const genderWhere = gender === "all" ? "" : `AND p.gender = $${isWorld ? 2 : 3}`;
+  const genderParamIndex = isWorld ? 2 : 3;
+  const genderWhere = gender === "all" ? "" : `AND p.gender = $${genderParamIndex}`;
   if (gender !== "all") queryParams.push(gender);
   queryParams.push(pageSize + 1, offset);
   const limitParam = queryParams.length - 1;
@@ -72,130 +73,293 @@ export async function GET(request: NextRequest) {
   const rankingTable = rankingTables[mode];
   const resultColumn = mode === "average" ? "average" : "best";
 
-  const sqlWithCompetition = `
-    WITH page_ranks AS (
-      SELECT
-        r.${rankColumn}::int AS rank,
-        r.world_rank::int AS "worldRank",
-        r.person_id AS "wcaId",
-        r.event_id,
-        r.best::int AS best,
-        p.name AS name,
-        p.country_id AS country,
-        COALESCE(cn.name, p.country_id) AS "countryName",
-        cn.iso2 AS "countryIso2",
-        p.gender AS gender
-      FROM ${rankingTable} r
-      JOIN wca_persons p ON p.wca_id = r.person_id AND p.sub_id = '1'
-      LEFT JOIN wca_countries cn ON cn.id = p.country_id
-      WHERE r.event_id = $1
-        ${locationWhere}
-        AND r.${rankColumn}::int > 0
-        ${genderWhere}
-      ORDER BY r.${rankColumn}::int, r.world_rank::int, r.person_id
-      LIMIT $${limitParam} OFFSET $${offsetParam}
-    )
-    SELECT
-      page_ranks.rank,
-      page_ranks."worldRank",
-      page_ranks."wcaId",
-      page_ranks.name,
-      page_ranks.country,
-      page_ranks."countryName",
-      page_ranks."countryIso2",
-      page_ranks.gender,
-      page_ranks.best,
-      COALESCE(br.competition_id, '') AS "competitionId",
-      COALESCE(c.name, br.competition_id, '') AS "competitionName",
-      br.value1,
-      br.value2,
-      br.value3,
-      br.value4,
-      br.value5,
-      CASE
-        WHEN c.id IS NULL THEN ''
-        ELSE CONCAT(c.year, '-', LPAD(c.month, 2, '0'), '-', LPAD(c.day, 2, '0'))
-      END AS date
-    FROM page_ranks
-    LEFT JOIN LATERAL (
-      SELECT
-        result.competition_id,
-        (
-          SELECT attempt.value::int
-          FROM wca_result_attempts attempt
-          WHERE attempt.result_id = result.id AND attempt.attempt_number = '1'
+  const sqlWithCompetition =
+    gender === "all"
+      ? `
+        WITH page_ranks AS (
+          SELECT
+            r.${rankColumn}::int AS rank,
+            r.world_rank::int AS "worldRank",
+            r.person_id AS "wcaId",
+            r.event_id,
+            r.best::int AS best,
+            p.name AS name,
+            p.country_id AS country,
+            COALESCE(cn.name, p.country_id) AS "countryName",
+            cn.iso2 AS "countryIso2",
+            p.gender AS gender
+          FROM ${rankingTable} r
+          JOIN wca_persons p ON p.wca_id = r.person_id AND p.sub_id = '1'
+          LEFT JOIN wca_countries cn ON cn.id = p.country_id
+          WHERE r.event_id = $1
+            ${locationWhere}
+            AND r.${rankColumn}::int > 0
+            ${genderWhere}
+          ORDER BY r.${rankColumn}::int, r.world_rank::int, r.person_id
+          LIMIT $${limitParam} OFFSET $${offsetParam}
+        )
+        SELECT
+          page_ranks.rank,
+          page_ranks."worldRank",
+          page_ranks."wcaId",
+          page_ranks.name,
+          page_ranks.country,
+          page_ranks."countryName",
+          page_ranks."countryIso2",
+          page_ranks.gender,
+          page_ranks.best,
+          COALESCE(br.competition_id, '') AS "competitionId",
+          COALESCE(c.name, br.competition_id, '') AS "competitionName",
+          br.value1,
+          br.value2,
+          br.value3,
+          br.value4,
+          br.value5,
+          CASE
+            WHEN c.id IS NULL THEN ''
+            ELSE CONCAT(c.year, '-', LPAD(c.month, 2, '0'), '-', LPAD(c.day, 2, '0'))
+          END AS date
+        FROM page_ranks
+        LEFT JOIN LATERAL (
+          SELECT
+            result.competition_id,
+            (
+              SELECT attempt.value::int
+              FROM wca_result_attempts attempt
+              WHERE attempt.result_id = result.id AND attempt.attempt_number = '1'
+              LIMIT 1
+            ) AS value1,
+            (
+              SELECT attempt.value::int
+              FROM wca_result_attempts attempt
+              WHERE attempt.result_id = result.id AND attempt.attempt_number = '2'
+              LIMIT 1
+            ) AS value2,
+            (
+              SELECT attempt.value::int
+              FROM wca_result_attempts attempt
+              WHERE attempt.result_id = result.id AND attempt.attempt_number = '3'
+              LIMIT 1
+            ) AS value3
+            ,(
+              SELECT attempt.value::int
+              FROM wca_result_attempts attempt
+              WHERE attempt.result_id = result.id AND attempt.attempt_number = '4'
+              LIMIT 1
+            ) AS value4
+            ,(
+              SELECT attempt.value::int
+              FROM wca_result_attempts attempt
+              WHERE attempt.result_id = result.id AND attempt.attempt_number = '5'
+              LIMIT 1
+            ) AS value5
+          FROM wca_results result
+          LEFT JOIN wca_competitions result_competition ON result_competition.id = result.competition_id
+          WHERE result.person_id = page_ranks."wcaId"
+            AND result.event_id = page_ranks.event_id
+            AND result.${resultColumn} = page_ranks.best::text
+            AND result.${resultColumn} NOT IN ('0', '-1', '-2')
+          ORDER BY
+            result_competition.year::int DESC NULLS LAST,
+            result_competition.month::int DESC NULLS LAST,
+            result_competition.day::int DESC NULLS LAST,
+            result.competition_id
           LIMIT 1
-        ) AS value1,
-        (
-          SELECT attempt.value::int
-          FROM wca_result_attempts attempt
-          WHERE attempt.result_id = result.id AND attempt.attempt_number = '2'
+        ) br ON true
+        LEFT JOIN wca_competitions c ON c.id = br.competition_id
+        ORDER BY page_ranks.rank, page_ranks."worldRank", page_ranks."wcaId"
+      `
+      : `
+        WITH filtered_ranks AS (
+          SELECT
+            r.${rankColumn}::int AS "regionRank",
+            r.world_rank::int AS "overallWorldRank",
+            r.person_id AS "wcaId",
+            r.event_id,
+            r.best::int AS best,
+            p.name AS name,
+            p.country_id AS country,
+            COALESCE(cn.name, p.country_id) AS "countryName",
+            cn.iso2 AS "countryIso2",
+            p.gender AS gender
+          FROM ${rankingTable} r
+          JOIN wca_persons p ON p.wca_id = r.person_id AND p.sub_id = '1'
+          LEFT JOIN wca_countries cn ON cn.id = p.country_id
+          WHERE r.event_id = $1
+            ${locationWhere}
+            AND r.${rankColumn}::int > 0
+            AND p.gender = $${genderParamIndex}
+        ),
+        ranked_ranks AS (
+          SELECT
+            ROW_NUMBER() OVER (ORDER BY "regionRank", "overallWorldRank", "wcaId")::int AS rank,
+            ROW_NUMBER() OVER (ORDER BY "overallWorldRank", "regionRank", "wcaId")::int AS "worldRank",
+            "wcaId",
+            event_id,
+            best,
+            name,
+            country,
+            "countryName",
+            "countryIso2",
+            gender
+          FROM filtered_ranks
+        ),
+        page_ranks AS (
+          SELECT *
+          FROM ranked_ranks
+          ORDER BY rank, "worldRank", "wcaId"
+          LIMIT $${limitParam} OFFSET $${offsetParam}
+        )
+        SELECT
+          page_ranks.rank,
+          page_ranks."worldRank",
+          page_ranks."wcaId",
+          page_ranks.name,
+          page_ranks.country,
+          page_ranks."countryName",
+          page_ranks."countryIso2",
+          page_ranks.gender,
+          page_ranks.best,
+          COALESCE(br.competition_id, '') AS "competitionId",
+          COALESCE(c.name, br.competition_id, '') AS "competitionName",
+          br.value1,
+          br.value2,
+          br.value3,
+          br.value4,
+          br.value5,
+          CASE
+            WHEN c.id IS NULL THEN ''
+            ELSE CONCAT(c.year, '-', LPAD(c.month, 2, '0'), '-', LPAD(c.day, 2, '0'))
+          END AS date
+        FROM page_ranks
+        LEFT JOIN LATERAL (
+          SELECT
+            result.competition_id,
+            (
+              SELECT attempt.value::int
+              FROM wca_result_attempts attempt
+              WHERE attempt.result_id = result.id AND attempt.attempt_number = '1'
+              LIMIT 1
+            ) AS value1,
+            (
+              SELECT attempt.value::int
+              FROM wca_result_attempts attempt
+              WHERE attempt.result_id = result.id AND attempt.attempt_number = '2'
+              LIMIT 1
+            ) AS value2,
+            (
+              SELECT attempt.value::int
+              FROM wca_result_attempts attempt
+              WHERE attempt.result_id = result.id AND attempt.attempt_number = '3'
+              LIMIT 1
+            ) AS value3
+            ,(
+              SELECT attempt.value::int
+              FROM wca_result_attempts attempt
+              WHERE attempt.result_id = result.id AND attempt.attempt_number = '4'
+              LIMIT 1
+            ) AS value4
+            ,(
+              SELECT attempt.value::int
+              FROM wca_result_attempts attempt
+              WHERE attempt.result_id = result.id AND attempt.attempt_number = '5'
+              LIMIT 1
+            ) AS value5
+          FROM wca_results result
+          LEFT JOIN wca_competitions result_competition ON result_competition.id = result.competition_id
+          WHERE result.person_id = page_ranks."wcaId"
+            AND result.event_id = page_ranks.event_id
+            AND result.${resultColumn} = page_ranks.best::text
+            AND result.${resultColumn} NOT IN ('0', '-1', '-2')
+          ORDER BY
+            result_competition.year::int DESC NULLS LAST,
+            result_competition.month::int DESC NULLS LAST,
+            result_competition.day::int DESC NULLS LAST,
+            result.competition_id
           LIMIT 1
-        ) AS value2,
-        (
-          SELECT attempt.value::int
-          FROM wca_result_attempts attempt
-          WHERE attempt.result_id = result.id AND attempt.attempt_number = '3'
-          LIMIT 1
-        ) AS value3
-        ,(
-          SELECT attempt.value::int
-          FROM wca_result_attempts attempt
-          WHERE attempt.result_id = result.id AND attempt.attempt_number = '4'
-          LIMIT 1
-        ) AS value4
-        ,(
-          SELECT attempt.value::int
-          FROM wca_result_attempts attempt
-          WHERE attempt.result_id = result.id AND attempt.attempt_number = '5'
-          LIMIT 1
-        ) AS value5
-      FROM wca_results result
-      LEFT JOIN wca_competitions result_competition ON result_competition.id = result.competition_id
-      WHERE result.person_id = page_ranks."wcaId"
-        AND result.event_id = page_ranks.event_id
-        AND result.${resultColumn} = page_ranks.best::text
-        AND result.${resultColumn} NOT IN ('0', '-1', '-2')
-      ORDER BY
-        result_competition.year::int DESC NULLS LAST,
-        result_competition.month::int DESC NULLS LAST,
-        result_competition.day::int DESC NULLS LAST,
-        result.competition_id
-      LIMIT 1
-    ) br ON true
-    LEFT JOIN wca_competitions c ON c.id = br.competition_id
-    ORDER BY page_ranks.rank, page_ranks."worldRank", page_ranks."wcaId"
-  `;
+        ) br ON true
+        LEFT JOIN wca_competitions c ON c.id = br.competition_id
+        ORDER BY page_ranks.rank, page_ranks."worldRank", page_ranks."wcaId"
+      `;
 
-  const fallbackSql = `
-    SELECT
-      r.${rankColumn}::int AS rank,
-      r.world_rank::int AS "worldRank",
-      r.person_id AS "wcaId",
-      p.name AS name,
-      p.country_id AS country,
-      COALESCE(cn.name, p.country_id) AS "countryName",
-      cn.iso2 AS "countryIso2",
-      p.gender AS gender,
-      r.best::int AS best,
-      '' AS "competitionId",
-      '' AS "competitionName",
-      '' AS date,
-      NULL::int AS value1,
-      NULL::int AS value2,
-      NULL::int AS value3,
-      NULL::int AS value4,
-      NULL::int AS value5
-    FROM ${rankingTable} r
-    JOIN wca_persons p ON p.wca_id = r.person_id AND p.sub_id = '1'
-    LEFT JOIN wca_countries cn ON cn.id = p.country_id
-    WHERE r.event_id = $1
-      ${locationWhere}
-      AND r.${rankColumn}::int > 0
-      ${genderWhere}
-    ORDER BY r.${rankColumn}::int, r.world_rank::int, r.person_id
-    LIMIT $${limitParam} OFFSET $${offsetParam}
-  `;
+  const fallbackSql =
+    gender === "all"
+      ? `
+        SELECT
+          r.${rankColumn}::int AS rank,
+          r.world_rank::int AS "worldRank",
+          r.person_id AS "wcaId",
+          p.name AS name,
+          p.country_id AS country,
+          COALESCE(cn.name, p.country_id) AS "countryName",
+          cn.iso2 AS "countryIso2",
+          p.gender AS gender,
+          r.best::int AS best,
+          '' AS "competitionId",
+          '' AS "competitionName",
+          '' AS date,
+          NULL::int AS value1,
+          NULL::int AS value2,
+          NULL::int AS value3,
+          NULL::int AS value4,
+          NULL::int AS value5
+        FROM ${rankingTable} r
+        JOIN wca_persons p ON p.wca_id = r.person_id AND p.sub_id = '1'
+        LEFT JOIN wca_countries cn ON cn.id = p.country_id
+        WHERE r.event_id = $1
+          ${locationWhere}
+          AND r.${rankColumn}::int > 0
+          ${genderWhere}
+        ORDER BY r.${rankColumn}::int, r.world_rank::int, r.person_id
+        LIMIT $${limitParam} OFFSET $${offsetParam}
+      `
+      : `
+        WITH filtered_ranks AS (
+          SELECT
+            r.${rankColumn}::int AS "regionRank",
+            r.world_rank::int AS "overallWorldRank",
+            r.person_id AS "wcaId",
+            r.event_id,
+            r.best::int AS best,
+            p.name AS name,
+            p.country_id AS country,
+            COALESCE(cn.name, p.country_id) AS "countryName",
+            cn.iso2 AS "countryIso2",
+            p.gender AS gender
+          FROM ${rankingTable} r
+          JOIN wca_persons p ON p.wca_id = r.person_id AND p.sub_id = '1'
+          LEFT JOIN wca_countries cn ON cn.id = p.country_id
+          WHERE r.event_id = $1
+            ${locationWhere}
+            AND r.${rankColumn}::int > 0
+            AND p.gender = $${genderParamIndex}
+        ),
+        ranked_ranks AS (
+          SELECT
+            ROW_NUMBER() OVER (ORDER BY "regionRank", "overallWorldRank", "wcaId")::int AS rank,
+            ROW_NUMBER() OVER (ORDER BY "overallWorldRank", "regionRank", "wcaId")::int AS "worldRank",
+            "wcaId",
+            name,
+            country,
+            "countryName",
+            "countryIso2",
+            gender,
+            best,
+            '' AS "competitionId",
+            '' AS "competitionName",
+            '' AS date,
+            NULL::int AS value1,
+            NULL::int AS value2,
+            NULL::int AS value3,
+            NULL::int AS value4,
+            NULL::int AS value5
+          FROM filtered_ranks
+        )
+        SELECT *
+        FROM ranked_ranks
+        ORDER BY rank, "worldRank", "wcaId"
+        LIMIT $${limitParam} OFFSET $${offsetParam}
+      `;
 
   let rawRows: RawRankingRow[];
   try {
