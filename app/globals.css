@@ -4223,11 +4223,11 @@ a.commercial-member-link:hover {
 
 @media (max-width: 620px) {
   .ranking-filter-card {
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .local-ranking-filter-card {
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 
@@ -4277,9 +4277,9 @@ a.commercial-member-link:hover {
 
   .site-header {
     grid-template-columns: minmax(0, 1fr) auto;
-    gap: 12px;
+    gap: 8px 10px;
     align-items: center;
-    padding: 12px 18px;
+    padding: 9px 14px;
   }
 
   .brand {
@@ -4299,14 +4299,14 @@ a.commercial-member-link:hover {
 
   .mobile-nav > summary {
     display: inline-flex;
-    min-height: 38px;
+    min-height: 32px;
     align-items: center;
-    gap: 8px;
-    padding: 0 12px;
+    gap: 6px;
+    padding: 0 10px;
     border: 1px solid var(--line);
     border-radius: 8px;
     color: var(--text-body);
-    font-size: 13px;
+    font-size: 12px;
     font-weight: 750;
     list-style: none;
     background: #fff;
@@ -4581,15 +4581,17 @@ a.commercial-member-link:hover {
   }
 
   .ranking-results-section .wca-ranking-results-table {
-    min-width: 1040px;
+    min-width: 760px;
+    table-layout: fixed;
   }
 
   .ranking-results-section .local-ranking-results-table {
-    min-width: 1120px;
+    min-width: 920px;
+    table-layout: fixed;
   }
 
   .ranking-results-section .local-ranking-results-table.has-gender-ranks {
-    min-width: 1340px;
+    min-width: 1120px;
   }
 
   .ranking-results-section .result-table thead {
@@ -4615,10 +4617,74 @@ a.commercial-member-link:hover {
   .ranking-results-section .result-table td {
     display: table-cell;
     width: auto;
-    padding: 10px 12px;
+    padding: 8px 9px;
     border-bottom: 1px solid var(--line);
     text-align: center;
     white-space: nowrap;
+  }
+
+  .ranking-results-section .table-person-link {
+    font-size: 13px;
+    line-height: 1.2;
+  }
+
+  .ranking-results-section .ranking-wca-id,
+  .ranking-results-section .ranking-result-details {
+    font-size: 11px;
+  }
+
+  .ranking-results-section .wca-ranking-results-table th:nth-child(1),
+  .ranking-results-section .wca-ranking-results-table td:nth-child(1) {
+    width: 44px;
+  }
+
+  .ranking-results-section .wca-ranking-results-table th:nth-child(2),
+  .ranking-results-section .wca-ranking-results-table td:nth-child(2) {
+    width: 142px;
+    min-width: 0;
+  }
+
+  .ranking-results-section .wca-ranking-results-table th:nth-child(3),
+  .ranking-results-section .wca-ranking-results-table td:nth-child(3) {
+    width: 40px;
+  }
+
+  .ranking-results-section .wca-ranking-results-table th:nth-child(4),
+  .ranking-results-section .wca-ranking-results-table td:nth-child(4) {
+    width: 76px;
+  }
+
+  .ranking-results-section .wca-ranking-results-table th:nth-child(5),
+  .ranking-results-section .wca-ranking-results-table td:nth-child(5) {
+    width: 112px;
+    min-width: 0;
+  }
+
+  .ranking-results-section .wca-ranking-results-table th:nth-child(6),
+  .ranking-results-section .wca-ranking-results-table td:nth-child(6) {
+    width: 52px;
+  }
+
+  .ranking-results-section .local-ranking-results-table th:first-child,
+  .ranking-results-section .local-ranking-results-table td:first-child {
+    width: 142px;
+    min-width: 0;
+  }
+
+  .ranking-results-section .local-ranking-results-table th:nth-child(2),
+  .ranking-results-section .local-ranking-results-table td:nth-child(2) {
+    width: 40px;
+  }
+
+  .ranking-results-section .local-ranking-results-table th:nth-child(3),
+  .ranking-results-section .local-ranking-results-table td:nth-child(3) {
+    width: 76px;
+  }
+
+  .ranking-results-section .local-ranking-results-table th:nth-child(4),
+  .ranking-results-section .local-ranking-results-table td:nth-child(4) {
+    width: 92px;
+    min-width: 0;
   }
 
   .ranking-results-section .result-table td::before {
@@ -4890,20 +4956,21 @@ a.commercial-member-link:hover {
 
 @media (max-width: 560px) {
   .page-hero {
-    width: min(520px, calc(100% - 56px));
-    margin-top: 14px;
-    gap: 10px;
-    padding: 12px 14px 10px;
+    width: min(520px, calc(100% - 32px));
+    margin-top: 10px;
+    gap: 8px;
+    padding: 10px 12px 8px;
   }
 
   .page-hero.ranking-page-hero {
-    padding-top: 12px;
-    padding-bottom: 10px;
+    padding-top: 10px;
+    padding-bottom: 8px;
   }
 
   .page-hero.ranking-page-hero h1 {
-    margin: 4px 0 6px;
-    font-size: 22px;
+    margin: 3px 0 0;
+    font-size: 20px;
+    line-height: 1.12;
   }
 
   .page-hero h1 {
@@ -4915,21 +4982,102 @@ a.commercial-member-link:hover {
     line-height: 1.45;
   }
 
+  .page-hero.ranking-page-hero p {
+    display: none;
+  }
+
+  .page-hero.ranking-page-hero .eyebrow {
+    font-size: 12px;
+  }
+
+  .rankings-workspace,
+  .local-rankings-section {
+    width: min(520px, calc(100% - 32px));
+    padding-top: 8px;
+  }
+
+  .ranking-filter-card {
+    gap: 8px;
+    padding: 10px;
+    border-radius: 8px;
+  }
+
+  .ranking-field {
+    gap: 4px;
+  }
+
+  .ranking-field span {
+    font-size: 11px;
+  }
+
+  .ranking-field select {
+    min-height: 34px;
+    padding: 5px 30px 5px 9px;
+    font-size: 13px;
+  }
+
+  .ranking-toggle {
+    min-height: 34px;
+    border-radius: 7px;
+  }
+
+  .ranking-toggle button {
+    font-size: 12px;
+  }
+
+  .ranking-results-section {
+    margin-top: 10px;
+  }
+
+  .ranking-results-section .section-header {
+    align-items: end;
+    gap: 8px;
+    margin-bottom: 8px;
+  }
+
+  .ranking-filter-section,
+  .ranking-results-section {
+    padding: 0;
+  }
+
+  .ranking-results-section .section-header h2 {
+    font-size: 21px;
+    line-height: 1.16;
+  }
+
+  .ranking-results-section .section-header h2 small {
+    font-size: 12px;
+  }
+
+  .ranking-source-line {
+    font-size: 11px;
+    line-height: 1.3;
+  }
+
   .hero-actions {
     margin-top: 10px;
   }
 
   .site-header {
-    gap: 12px;
+    gap: 7px 9px;
+    padding: 8px 14px;
   }
 
   .brand {
-    gap: 9px;
+    gap: 8px;
   }
 
   .brand-mark {
-    width: 36px;
-    height: 36px;
+    width: 32px;
+    height: 32px;
+  }
+
+  .brand strong {
+    font-size: 15px;
+  }
+
+  .mobile-nav > summary {
+    min-height: 30px;
   }
 
   .brand small {
@@ -4937,8 +5085,8 @@ a.commercial-member-link:hover {
   }
 
   .admin-link {
-    width: 38px;
-    min-height: 38px;
+    width: 34px;
+    min-height: 34px;
     padding: 0;
   }
 
