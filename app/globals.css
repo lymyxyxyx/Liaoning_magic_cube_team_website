@@ -4566,6 +4566,100 @@ a.commercial-member-link:hover {
     grid-column: 1 / -1;
   }
 
+  .ranking-results-section .result-table-wrap {
+    overflow-x: auto;
+    overflow-y: hidden;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: thin;
+  }
+
+  .ranking-results-section .result-table,
+  .ranking-results-section .ranking-table {
+    display: table;
+    width: 100%;
+    min-width: 900px;
+  }
+
+  .ranking-results-section .wca-ranking-results-table {
+    min-width: 1040px;
+  }
+
+  .ranking-results-section .local-ranking-results-table {
+    min-width: 1120px;
+  }
+
+  .ranking-results-section .local-ranking-results-table.has-gender-ranks {
+    min-width: 1340px;
+  }
+
+  .ranking-results-section .result-table thead {
+    display: table-header-group;
+  }
+
+  .ranking-results-section .result-table tbody {
+    display: table-row-group;
+    padding: 0;
+    background: transparent;
+  }
+
+  .ranking-results-section .result-table tr {
+    display: table-row;
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
+  }
+
+  .ranking-results-section .result-table th,
+  .ranking-results-section .result-table td {
+    display: table-cell;
+    width: auto;
+    padding: 10px 12px;
+    border-bottom: 1px solid var(--line);
+    text-align: center;
+    white-space: nowrap;
+  }
+
+  .ranking-results-section .result-table td::before {
+    content: none;
+  }
+
+  .ranking-results-section .result-table th:nth-child(2),
+  .ranking-results-section .result-table td:nth-child(2),
+  .ranking-results-section .local-ranking-results-table th:first-child,
+  .ranking-results-section .local-ranking-results-table td:first-child {
+    text-align: left;
+  }
+
+  .ranking-results-section .wca-ranking-results-table th:nth-child(7),
+  .ranking-results-section .wca-ranking-results-table td:nth-child(7),
+  .ranking-results-section .local-ranking-results-table th:nth-child(8),
+  .ranking-results-section .local-ranking-results-table td:nth-child(8),
+  .ranking-results-section .local-ranking-results-table.has-gender-ranks th:nth-child(11),
+  .ranking-results-section .local-ranking-results-table.has-gender-ranks td:nth-child(11) {
+    white-space: normal;
+    text-align: left;
+  }
+
+  .ranking-results-section .local-ranking-results-table:not(.has-gender-ranks) th:nth-child(9),
+  .ranking-results-section .local-ranking-results-table:not(.has-gender-ranks) td:nth-child(9),
+  .ranking-results-section .local-ranking-results-table.has-gender-ranks th:nth-child(12),
+  .ranking-results-section .local-ranking-results-table.has-gender-ranks td:nth-child(12) {
+    white-space: normal;
+    text-align: left;
+  }
+
+  .ranking-results-section .local-ranking-results-table.has-gender-ranks th:nth-child(8),
+  .ranking-results-section .local-ranking-results-table.has-gender-ranks td:nth-child(8),
+  .ranking-results-section .local-ranking-results-table.has-gender-ranks th:nth-child(9),
+  .ranking-results-section .local-ranking-results-table.has-gender-ranks td:nth-child(9),
+  .ranking-results-section .local-ranking-results-table.has-gender-ranks th:nth-child(10),
+  .ranking-results-section .local-ranking-results-table.has-gender-ranks td:nth-child(10) {
+    text-align: center;
+    white-space: nowrap;
+  }
+
   /* ── Home entries: 3→1 列 ── */
   .home-entries {
     grid-template-columns: 1fr;
