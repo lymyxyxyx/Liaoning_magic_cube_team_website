@@ -51,14 +51,13 @@ export function JudgesClient({ initialJudges }: Props) {
     () =>
       [...judges].sort(
         (a, b) =>
+          displayOrderWeight(a) - displayOrderWeight(b) ||
           levelGroupWeight(a) - levelGroupWeight(b) ||
           nationalPrimaryWeight(a) - nationalPrimaryWeight(b) ||
           levelWeight(a) - levelWeight(b) ||
           trainingDateWeight(a.trainingDate) - trainingDateWeight(b.trainingDate) ||
           a.province.localeCompare(b.province, "zh-Hans-CN") ||
           a.city.localeCompare(b.city, "zh-Hans-CN") ||
-          displayOrderWeight(a) - displayOrderWeight(b) ||
-          judgeOrderWeight(a) - judgeOrderWeight(b) ||
           a.name.localeCompare(b.name, "zh-Hans-CN")
       ),
     [judges]
@@ -136,12 +135,12 @@ export function JudgesClient({ initialJudges }: Props) {
     const index = sortedJudges.findIndex((judge) => judge.id === judgeId);
     const targetIndex = direction === "up" ? index - 1 : index + 1;
     if (index < 0 || targetIndex < 0 || targetIndex >= sortedJudges.length) return;
-    const current = sortedJudges[index];
-    const target = sortedJudges[targetIndex];
+    const reorderedJudges = [...sortedJudges];
+    [reorderedJudges[index], reorderedJudges[targetIndex]] = [reorderedJudges[targetIndex], reorderedJudges[index]];
+    const displayOrderById = new Map(reorderedJudges.map((judge, orderIndex) => [judge.id, orderIndex + 1]));
     const nextJudges = judges.map((judge) => {
-      if (judge.id === current.id) return { ...judge, displayOrder: target.displayOrder ?? targetIndex + 1 };
-      if (judge.id === target.id) return { ...judge, displayOrder: current.displayOrder ?? index + 1 };
-      return judge;
+      const displayOrder = displayOrderById.get(judge.id);
+      return displayOrder ? { ...judge, displayOrder } : judge;
     });
     await saveJudges(nextJudges, "顺序已更新。");
   }
@@ -445,11 +444,6 @@ function trainingDateWeight(trainingDate: string) {
   if (!match) return Number.MAX_SAFE_INTEGER;
   const [, year, month, day] = match;
   return Number(`${year}${month.padStart(2, "0")}${day.padStart(2, "0")}`);
-}
-
-function judgeOrderWeight(judge: Judge) {
-  if (judge.trainingSessionId === "training-shantou-2025" && judge.name === "王猛") return -1;
-  return 0;
 }
 
 function createJudgeId() {

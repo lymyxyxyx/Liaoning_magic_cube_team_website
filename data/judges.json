@@ -1,188 +1,7 @@
 [
   {
-    "id": "judge-2025-wuhan-wang-jingang",
-    "name": "王金钢",
-    "gender": "男",
-    "province": "辽宁",
-    "city": "沈阳",
-    "levelType": "国家一级",
-    "trainingSessionId": "training-wuhan-2025",
-    "trainingLocation": "湖北武汉",
-    "trainingDate": "2025年8月20日至21日",
-    "certifiedYear": 2025,
-    "createdAt": "2026-05-25T00:00:00.000+08:00"
-  },
-  {
-    "id": "judge-2025-wuhan-cao-sheng",
-    "name": "曹晟",
-    "gender": "男",
-    "province": "辽宁",
-    "city": "沈阳",
-    "levelType": "国家一级",
-    "trainingSessionId": "training-wuhan-2025",
-    "trainingLocation": "湖北武汉",
-    "trainingDate": "2025年8月20日至21日",
-    "certifiedYear": 2025,
-    "createdAt": "2026-05-25T00:00:00.000+08:00"
-  },
-  {
-    "id": "judge-2025-wuhan-liu-yiming",
-    "name": "刘一鸣",
-    "gender": "男",
-    "province": "辽宁",
-    "city": "沈阳",
-    "levelType": "国家一级",
-    "trainingSessionId": "training-wuhan-2025",
-    "trainingLocation": "湖北武汉",
-    "trainingDate": "2025年8月20日至21日",
-    "certifiedYear": 2025,
-    "createdAt": "2026-05-25T00:00:00.000+08:00"
-  },
-  {
-    "id": "judge-2025-wuhan-wu-yuheng",
-    "name": "吴雨衡",
-    "gender": "男",
-    "province": "辽宁",
-    "city": "沈阳",
-    "levelType": "国家一级",
-    "trainingSessionId": "training-wuhan-2025",
-    "trainingLocation": "湖北武汉",
-    "trainingDate": "2025年8月20日至21日",
-    "certifiedYear": 2025,
-    "createdAt": "2026-05-25T00:00:00.000+08:00"
-  },
-  {
-    "id": "judge-2025-wuhan-xu-huiling",
-    "name": "许慧玲",
-    "gender": "女",
-    "province": "辽宁",
-    "city": "沈阳",
-    "levelType": "国家一级",
-    "trainingSessionId": "training-wuhan-2025",
-    "trainingLocation": "湖北武汉",
-    "trainingDate": "2025年8月20日至21日",
-    "certifiedYear": 2025,
-    "createdAt": "2026-05-25T00:00:00.000+08:00"
-  },
-  {
-    "id": "judge-2025-wuhan-yang-linlin",
-    "name": "杨林林",
-    "gender": "女",
-    "province": "辽宁",
-    "city": "沈阳",
-    "levelType": "国家一级",
-    "trainingSessionId": "training-wuhan-2025",
-    "trainingLocation": "湖北武汉",
-    "trainingDate": "2025年8月20日至21日",
-    "certifiedYear": 2025,
-    "createdAt": "2026-05-25T00:00:00.000+08:00"
-  },
-  {
-    "id": "judge-2025-wuhan-tao-ye",
-    "name": "陶冶",
-    "gender": "男",
-    "province": "辽宁",
-    "city": "沈阳",
-    "levelType": "国家一级",
-    "trainingSessionId": "training-wuhan-2025",
-    "trainingLocation": "湖北武汉",
-    "trainingDate": "2025年8月20日至21日",
-    "certifiedYear": 2025,
-    "createdAt": "2026-05-25T00:00:00.000+08:00"
-  },
-  {
-    "id": "judge-2025-wuhan-xu-ziqi",
-    "name": "徐子奇",
-    "gender": "男",
-    "province": "辽宁",
-    "city": "沈阳",
-    "levelType": "国家一级",
-    "trainingSessionId": "training-wuhan-2025",
-    "trainingLocation": "湖北武汉",
-    "trainingDate": "2025年8月20日至21日",
-    "certifiedYear": 2025,
-    "createdAt": "2026-05-25T00:00:00.000+08:00"
-  },
-  {
-    "id": "judge-2025-wuhan-wang-yanhong",
-    "name": "王艳鸿",
-    "gender": "女",
-    "province": "辽宁",
-    "city": "沈阳",
-    "levelType": "国家一级",
-    "trainingSessionId": "training-wuhan-2025",
-    "trainingLocation": "湖北武汉",
-    "trainingDate": "2025年8月20日至21日",
-    "certifiedYear": 2025,
-    "createdAt": "2026-05-25T00:00:00.000+08:00"
-  },
-  {
-    "id": "judge-2025-wuhan-pan-wei",
-    "name": "潘威",
-    "gender": "女",
-    "province": "辽宁",
-    "city": "沈阳",
-    "levelType": "国家一级",
-    "trainingSessionId": "training-wuhan-2025",
-    "trainingLocation": "湖北武汉",
-    "trainingDate": "2025年8月20日至21日",
-    "certifiedYear": 2025,
-    "createdAt": "2026-05-25T00:00:00.000+08:00"
-  },
-  {
-    "id": "judge-2025-wuhan-xu-li",
-    "name": "徐丽",
-    "gender": "女",
-    "province": "辽宁",
-    "city": "沈阳",
-    "levelType": "国家一级",
-    "trainingSessionId": "training-wuhan-2025",
-    "trainingLocation": "湖北武汉",
-    "trainingDate": "2025年8月20日至21日",
-    "certifiedYear": 2025,
-    "createdAt": "2026-05-25T00:00:00.000+08:00"
-  },
-  {
-    "id": "judge-2025-wuhan-yang-yongqi",
-    "name": "杨泳淇",
-    "gender": "女",
-    "province": "辽宁",
-    "city": "沈阳",
-    "levelType": "国家一级",
-    "trainingSessionId": "training-wuhan-2025",
-    "trainingLocation": "湖北武汉",
-    "trainingDate": "2025年8月20日至21日",
-    "certifiedYear": 2025,
-    "createdAt": "2026-05-25T00:00:00.000+08:00"
-  },
-  {
-    "id": "judge-2025-wuhan-li-yang",
-    "name": "李洋",
-    "gender": "男",
-    "province": "辽宁",
-    "city": "沈阳",
-    "levelType": "国家一级",
-    "trainingSessionId": "training-wuhan-2025",
-    "trainingLocation": "湖北武汉",
-    "trainingDate": "2025年8月20日至21日",
-    "certifiedYear": 2025,
-    "createdAt": "2026-05-25T00:00:00.000+08:00"
-  },
-  {
-    "id": "judge-2025-wuhan-wang-wei",
-    "name": "王微",
-    "gender": "女",
-    "province": "辽宁",
-    "city": "沈阳",
-    "levelType": "国家一级",
-    "trainingSessionId": "training-wuhan-2025",
-    "trainingLocation": "湖北武汉",
-    "trainingDate": "2025年8月20日至21日",
-    "certifiedYear": 2025,
-    "createdAt": "2026-05-25T00:00:00.000+08:00"
-  },
-  {
     "id": "judge-2025-shantou-wang-meng",
+    "displayOrder": 1,
     "name": "王猛",
     "gender": "男",
     "province": "辽宁",
@@ -195,6 +14,202 @@
     "createdAt": "2026-05-25T00:00:00.000+08:00"
   },
   {
+    "id": "judge-2025-wuhan-li-yang",
+    "displayOrder": 2,
+    "name": "李洋",
+    "gender": "男",
+    "province": "辽宁",
+    "city": "沈阳",
+    "levelType": "国家一级",
+    "trainingSessionId": "training-wuhan-2025",
+    "trainingLocation": "湖北武汉",
+    "trainingDate": "2025年8月20日至21日",
+    "certifiedYear": 2025,
+    "createdAt": "2026-05-25T00:00:00.000+08:00"
+  },
+  {
+    "id": "judge-2025-wuhan-wang-jingang",
+    "name": "王金钢",
+    "gender": "男",
+    "province": "辽宁",
+    "city": "沈阳",
+    "levelType": "国家一级",
+    "trainingSessionId": "training-wuhan-2025",
+    "trainingLocation": "湖北武汉",
+    "trainingDate": "2025年8月20日至21日",
+    "certifiedYear": 2025,
+    "createdAt": "2026-05-25T00:00:00.000+08:00",
+    "displayOrder": 3
+  },
+  {
+    "id": "judge-2025-wuhan-cao-sheng",
+    "name": "曹晟",
+    "gender": "男",
+    "province": "辽宁",
+    "city": "沈阳",
+    "levelType": "国家一级",
+    "trainingSessionId": "training-wuhan-2025",
+    "trainingLocation": "湖北武汉",
+    "trainingDate": "2025年8月20日至21日",
+    "certifiedYear": 2025,
+    "createdAt": "2026-05-25T00:00:00.000+08:00",
+    "displayOrder": 4
+  },
+  {
+    "id": "judge-2025-wuhan-liu-yiming",
+    "name": "刘一鸣",
+    "gender": "男",
+    "province": "辽宁",
+    "city": "沈阳",
+    "levelType": "国家一级",
+    "trainingSessionId": "training-wuhan-2025",
+    "trainingLocation": "湖北武汉",
+    "trainingDate": "2025年8月20日至21日",
+    "certifiedYear": 2025,
+    "createdAt": "2026-05-25T00:00:00.000+08:00",
+    "displayOrder": 5
+  },
+  {
+    "id": "judge-2025-wuhan-wu-yuheng",
+    "name": "吴雨衡",
+    "gender": "男",
+    "province": "辽宁",
+    "city": "沈阳",
+    "levelType": "国家一级",
+    "trainingSessionId": "training-wuhan-2025",
+    "trainingLocation": "湖北武汉",
+    "trainingDate": "2025年8月20日至21日",
+    "certifiedYear": 2025,
+    "createdAt": "2026-05-25T00:00:00.000+08:00",
+    "displayOrder": 6
+  },
+  {
+    "id": "judge-2025-wuhan-xu-huiling",
+    "name": "许慧玲",
+    "gender": "女",
+    "province": "辽宁",
+    "city": "沈阳",
+    "levelType": "国家一级",
+    "trainingSessionId": "training-wuhan-2025",
+    "trainingLocation": "湖北武汉",
+    "trainingDate": "2025年8月20日至21日",
+    "certifiedYear": 2025,
+    "createdAt": "2026-05-25T00:00:00.000+08:00",
+    "displayOrder": 7
+  },
+  {
+    "id": "judge-2025-wuhan-yang-linlin",
+    "name": "杨林林",
+    "gender": "女",
+    "province": "辽宁",
+    "city": "沈阳",
+    "levelType": "国家一级",
+    "trainingSessionId": "training-wuhan-2025",
+    "trainingLocation": "湖北武汉",
+    "trainingDate": "2025年8月20日至21日",
+    "certifiedYear": 2025,
+    "createdAt": "2026-05-25T00:00:00.000+08:00",
+    "displayOrder": 8
+  },
+  {
+    "id": "judge-2025-wuhan-tao-ye",
+    "name": "陶冶",
+    "gender": "男",
+    "province": "辽宁",
+    "city": "沈阳",
+    "levelType": "国家一级",
+    "trainingSessionId": "training-wuhan-2025",
+    "trainingLocation": "湖北武汉",
+    "trainingDate": "2025年8月20日至21日",
+    "certifiedYear": 2025,
+    "createdAt": "2026-05-25T00:00:00.000+08:00",
+    "displayOrder": 9
+  },
+  {
+    "id": "judge-2025-wuhan-xu-ziqi",
+    "name": "徐子奇",
+    "gender": "男",
+    "province": "辽宁",
+    "city": "沈阳",
+    "levelType": "国家一级",
+    "trainingSessionId": "training-wuhan-2025",
+    "trainingLocation": "湖北武汉",
+    "trainingDate": "2025年8月20日至21日",
+    "certifiedYear": 2025,
+    "createdAt": "2026-05-25T00:00:00.000+08:00",
+    "displayOrder": 10
+  },
+  {
+    "id": "judge-2025-wuhan-wang-yanhong",
+    "name": "王艳鸿",
+    "gender": "女",
+    "province": "辽宁",
+    "city": "沈阳",
+    "levelType": "国家一级",
+    "trainingSessionId": "training-wuhan-2025",
+    "trainingLocation": "湖北武汉",
+    "trainingDate": "2025年8月20日至21日",
+    "certifiedYear": 2025,
+    "createdAt": "2026-05-25T00:00:00.000+08:00",
+    "displayOrder": 11
+  },
+  {
+    "id": "judge-2025-wuhan-pan-wei",
+    "name": "潘威",
+    "gender": "女",
+    "province": "辽宁",
+    "city": "沈阳",
+    "levelType": "国家一级",
+    "trainingSessionId": "training-wuhan-2025",
+    "trainingLocation": "湖北武汉",
+    "trainingDate": "2025年8月20日至21日",
+    "certifiedYear": 2025,
+    "createdAt": "2026-05-25T00:00:00.000+08:00",
+    "displayOrder": 12
+  },
+  {
+    "id": "judge-2025-wuhan-xu-li",
+    "name": "徐丽",
+    "gender": "女",
+    "province": "辽宁",
+    "city": "沈阳",
+    "levelType": "国家一级",
+    "trainingSessionId": "training-wuhan-2025",
+    "trainingLocation": "湖北武汉",
+    "trainingDate": "2025年8月20日至21日",
+    "certifiedYear": 2025,
+    "createdAt": "2026-05-25T00:00:00.000+08:00",
+    "displayOrder": 13
+  },
+  {
+    "id": "judge-2025-wuhan-yang-yongqi",
+    "name": "杨泳淇",
+    "gender": "女",
+    "province": "辽宁",
+    "city": "沈阳",
+    "levelType": "国家一级",
+    "trainingSessionId": "training-wuhan-2025",
+    "trainingLocation": "湖北武汉",
+    "trainingDate": "2025年8月20日至21日",
+    "certifiedYear": 2025,
+    "createdAt": "2026-05-25T00:00:00.000+08:00",
+    "displayOrder": 14
+  },
+  {
+    "id": "judge-2025-wuhan-wang-wei",
+    "name": "王微",
+    "gender": "女",
+    "province": "辽宁",
+    "city": "沈阳",
+    "levelType": "国家一级",
+    "trainingSessionId": "training-wuhan-2025",
+    "trainingLocation": "湖北武汉",
+    "trainingDate": "2025年8月20日至21日",
+    "certifiedYear": 2025,
+    "createdAt": "2026-05-25T00:00:00.000+08:00",
+    "displayOrder": 15
+  },
+  {
     "id": "judge-2025-shantou-jiang-hongyu",
     "name": "姜宏禹",
     "gender": "男",
@@ -205,7 +220,8 @@
     "trainingLocation": "广东汕头",
     "trainingDate": "2025年7月23日至24日",
     "certifiedYear": 2025,
-    "createdAt": "2026-05-25T00:00:00.000+08:00"
+    "createdAt": "2026-05-25T00:00:00.000+08:00",
+    "displayOrder": 16
   },
   {
     "id": "judge-2025-shantou-li-xiaojian",
@@ -218,7 +234,8 @@
     "trainingLocation": "广东汕头",
     "trainingDate": "2025年7月23日至24日",
     "certifiedYear": 2025,
-    "createdAt": "2026-05-25T00:00:00.000+08:00"
+    "createdAt": "2026-05-25T00:00:00.000+08:00",
+    "displayOrder": 17
   },
   {
     "id": "judge-2025-pingyin-zheng-guanwen",
@@ -231,7 +248,8 @@
     "trainingLocation": "山东济南平阴",
     "trainingDate": "2025年11月19日至20日",
     "certifiedYear": 2025,
-    "createdAt": "2026-05-25T00:00:00.000+08:00"
+    "createdAt": "2026-05-25T00:00:00.000+08:00",
+    "displayOrder": 18
   },
   {
     "id": "judge-2025-pingyin-zhao-shuo",
@@ -244,7 +262,8 @@
     "trainingLocation": "山东济南平阴",
     "trainingDate": "2025年11月19日至20日",
     "certifiedYear": 2025,
-    "createdAt": "2026-05-25T00:00:00.000+08:00"
+    "createdAt": "2026-05-25T00:00:00.000+08:00",
+    "displayOrder": 19
   },
   {
     "id": "judge-2025-pingyin-gai-shanshan",
@@ -257,7 +276,8 @@
     "trainingLocation": "山东济南平阴",
     "trainingDate": "2025年11月19日至20日",
     "certifiedYear": 2025,
-    "createdAt": "2026-05-25T00:00:00.000+08:00"
+    "createdAt": "2026-05-25T00:00:00.000+08:00",
+    "displayOrder": 20
   },
   {
     "id": "judge-2025-pingyin-zhang-xiaoyue",
@@ -270,7 +290,8 @@
     "trainingLocation": "山东济南平阴",
     "trainingDate": "2025年11月19日至20日",
     "certifiedYear": 2025,
-    "createdAt": "2026-05-25T00:00:00.000+08:00"
+    "createdAt": "2026-05-25T00:00:00.000+08:00",
+    "displayOrder": 21
   },
   {
     "id": "judge-2025-pingyin-yang-sai",
@@ -283,7 +304,8 @@
     "trainingLocation": "山东济南平阴",
     "trainingDate": "2025年11月19日至20日",
     "certifiedYear": 2025,
-    "createdAt": "2026-05-25T00:00:00.000+08:00"
+    "createdAt": "2026-05-25T00:00:00.000+08:00",
+    "displayOrder": 22
   },
   {
     "id": "judge-2025-pingyin-su-li-anqi",
@@ -296,7 +318,8 @@
     "trainingLocation": "山东济南平阴",
     "trainingDate": "2025年11月19日至20日",
     "certifiedYear": 2025,
-    "createdAt": "2026-05-25T00:00:00.000+08:00"
+    "createdAt": "2026-05-25T00:00:00.000+08:00",
+    "displayOrder": 23
   },
   {
     "id": "judge-2025-fuping-zhang-tao",
@@ -309,7 +332,8 @@
     "trainingLocation": "陕西富平",
     "trainingDate": "2025年10月15日至16日",
     "certifiedYear": 2025,
-    "createdAt": "2026-05-25T00:00:00.000+08:00"
+    "createdAt": "2026-05-25T00:00:00.000+08:00",
+    "displayOrder": 24
   },
   {
     "id": "judge-2025-fuping-liu-ying",
@@ -322,7 +346,8 @@
     "trainingLocation": "陕西富平",
     "trainingDate": "2025年10月15日至16日",
     "certifiedYear": 2025,
-    "createdAt": "2026-05-25T00:00:00.000+08:00"
+    "createdAt": "2026-05-25T00:00:00.000+08:00",
+    "displayOrder": 25
   },
   {
     "id": "judge-2025-fuping-song-feng",
@@ -335,7 +360,8 @@
     "trainingLocation": "陕西富平",
     "trainingDate": "2025年10月15日至16日",
     "certifiedYear": 2025,
-    "createdAt": "2026-05-25T00:00:00.000+08:00"
+    "createdAt": "2026-05-25T00:00:00.000+08:00",
+    "displayOrder": 26
   },
   {
     "id": "judge-2025-fuping-li-silin",
@@ -348,7 +374,8 @@
     "trainingLocation": "陕西富平",
     "trainingDate": "2025年10月15日至16日",
     "certifiedYear": 2025,
-    "createdAt": "2026-05-25T00:00:00.000+08:00"
+    "createdAt": "2026-05-25T00:00:00.000+08:00",
+    "displayOrder": 27
   },
   {
     "id": "judge-2025-fuping-bi-siwen",
@@ -361,7 +388,8 @@
     "trainingLocation": "陕西富平",
     "trainingDate": "2025年10月15日至16日",
     "certifiedYear": 2025,
-    "createdAt": "2026-05-25T00:00:00.000+08:00"
+    "createdAt": "2026-05-25T00:00:00.000+08:00",
+    "displayOrder": 28
   },
   {
     "id": "judge-2025-fuping-jin-jiaqi",
@@ -374,7 +402,8 @@
     "trainingLocation": "陕西富平",
     "trainingDate": "2025年10月15日至16日",
     "certifiedYear": 2025,
-    "createdAt": "2026-05-25T00:00:00.000+08:00"
+    "createdAt": "2026-05-25T00:00:00.000+08:00",
+    "displayOrder": 29
   },
   {
     "id": "judge-2025-fuping-li-mingxin",
@@ -387,7 +416,8 @@
     "trainingLocation": "陕西富平",
     "trainingDate": "2025年10月15日至16日",
     "certifiedYear": 2025,
-    "createdAt": "2026-05-25T00:00:00.000+08:00"
+    "createdAt": "2026-05-25T00:00:00.000+08:00",
+    "displayOrder": 30
   },
   {
     "id": "judge-2025-fuping-liu-yingying",
@@ -400,7 +430,8 @@
     "trainingLocation": "陕西富平",
     "trainingDate": "2025年10月15日至16日",
     "certifiedYear": 2025,
-    "createdAt": "2026-05-25T00:00:00.000+08:00"
+    "createdAt": "2026-05-25T00:00:00.000+08:00",
+    "displayOrder": 31
   },
   {
     "id": "judge-2025-beijing-li-dongyi",
@@ -413,7 +444,8 @@
     "trainingLocation": "北京市东城区",
     "trainingDate": "2025年12月30日至12月31日",
     "certifiedYear": 2025,
-    "createdAt": "2026-05-25T00:00:00.000+08:00"
+    "createdAt": "2026-05-25T00:00:00.000+08:00",
+    "displayOrder": 32
   },
   {
     "id": "judge-2025-beijing-zhou-jie",
@@ -426,7 +458,8 @@
     "trainingLocation": "北京市东城区",
     "trainingDate": "2025年12月30日至12月31日",
     "certifiedYear": 2025,
-    "createdAt": "2026-05-25T00:00:00.000+08:00"
+    "createdAt": "2026-05-25T00:00:00.000+08:00",
+    "displayOrder": 33
   },
   {
     "id": "judge-2025-beijing-ma-yingying",
@@ -439,7 +472,8 @@
     "trainingLocation": "北京市东城区",
     "trainingDate": "2025年12月30日至12月31日",
     "certifiedYear": 2025,
-    "createdAt": "2026-05-25T00:00:00.000+08:00"
+    "createdAt": "2026-05-25T00:00:00.000+08:00",
+    "displayOrder": 34
   },
   {
     "id": "judge-2025-beijing-liu-chenxi",
@@ -452,7 +486,8 @@
     "trainingLocation": "北京市东城区",
     "trainingDate": "2025年12月30日至12月31日",
     "certifiedYear": 2025,
-    "createdAt": "2026-05-25T00:00:00.000+08:00"
+    "createdAt": "2026-05-25T00:00:00.000+08:00",
+    "displayOrder": 35
   },
   {
     "id": "judge-2025-beijing-zheng-jiaoyang",
@@ -465,7 +500,8 @@
     "trainingLocation": "北京市东城区",
     "trainingDate": "2025年12月30日至12月31日",
     "certifiedYear": 2025,
-    "createdAt": "2026-05-25T00:00:00.000+08:00"
+    "createdAt": "2026-05-25T00:00:00.000+08:00",
+    "displayOrder": 36
   },
   {
     "id": "judge-2025-beijing-zhang-ning",
@@ -478,7 +514,8 @@
     "trainingLocation": "北京市东城区",
     "trainingDate": "2025年12月30日至12月31日",
     "certifiedYear": 2025,
-    "createdAt": "2026-05-25T00:00:00.000+08:00"
+    "createdAt": "2026-05-25T00:00:00.000+08:00",
+    "displayOrder": 37
   },
   {
     "id": "judge-2025-beijing-shi-zhan",
@@ -491,7 +528,8 @@
     "trainingLocation": "北京市东城区",
     "trainingDate": "2025年12月30日至12月31日",
     "certifiedYear": 2025,
-    "createdAt": "2026-05-25T00:00:00.000+08:00"
+    "createdAt": "2026-05-25T00:00:00.000+08:00",
+    "displayOrder": 38
   },
   {
     "id": "judge-2025-beijing-liu-yufeng",
@@ -504,7 +542,8 @@
     "trainingLocation": "北京市东城区",
     "trainingDate": "2025年12月30日至12月31日",
     "certifiedYear": 2025,
-    "createdAt": "2026-05-25T00:00:00.000+08:00"
+    "createdAt": "2026-05-25T00:00:00.000+08:00",
+    "displayOrder": 39
   },
   {
     "id": "judge-2025-beijing-li-bo",
@@ -517,7 +556,8 @@
     "trainingLocation": "北京市东城区",
     "trainingDate": "2025年12月30日至12月31日",
     "certifiedYear": 2025,
-    "createdAt": "2026-05-25T00:00:00.000+08:00"
+    "createdAt": "2026-05-25T00:00:00.000+08:00",
+    "displayOrder": 40
   },
   {
     "id": "judge-2025-beijing-guo-da",
@@ -530,7 +570,8 @@
     "trainingLocation": "北京市东城区",
     "trainingDate": "2025年12月30日至12月31日",
     "certifiedYear": 2025,
-    "createdAt": "2026-05-25T00:00:00.000+08:00"
+    "createdAt": "2026-05-25T00:00:00.000+08:00",
+    "displayOrder": 41
   },
   {
     "id": "judge-2025-beijing-fang-ning",
@@ -543,7 +584,8 @@
     "trainingLocation": "北京市东城区",
     "trainingDate": "2025年12月30日至12月31日",
     "certifiedYear": 2025,
-    "createdAt": "2026-05-25T00:00:00.000+08:00"
+    "createdAt": "2026-05-25T00:00:00.000+08:00",
+    "displayOrder": 42
   },
   {
     "id": "judge-2025-wuhan-zhang-minxing",
@@ -556,6 +598,7 @@
     "trainingLocation": "湖北武汉",
     "trainingDate": "2025年8月20日至21日",
     "certifiedYear": 2025,
-    "createdAt": "2026-05-26T00:00:00.000+08:00"
+    "createdAt": "2026-05-26T00:00:00.000+08:00",
+    "displayOrder": 43
   }
 ]
