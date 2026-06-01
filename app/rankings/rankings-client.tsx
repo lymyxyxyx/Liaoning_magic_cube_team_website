@@ -300,7 +300,7 @@ export function RankingsClient() {
                   <th>地区</th>
                   <th>WR</th>
                   <th>比赛</th>
-                  <th>平均明细</th>
+                  <th>成绩明细</th>
                 </tr>
               </thead>
               <tbody>
@@ -355,7 +355,7 @@ export function RankingsClient() {
                             <span className="muted-cell">未匹配比赛</span>
                           )}
                         </td>
-                        <td data-label="平均明细">
+                        <td data-label="成绩明细">
                           {row.resultDetails?.length ? (
                             <small className="ranking-result-details">{row.resultDetails.join(" / ")}</small>
                           ) : (

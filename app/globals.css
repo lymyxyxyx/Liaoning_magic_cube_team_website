@@ -4867,24 +4867,28 @@ a.commercial-member-link:hover {
   }
 
   .liaoning-records-table {
-    min-width: 0;
-    table-layout: auto;
+    min-width: 720px;
+    table-layout: fixed;
   }
 
   .liaoning-records-table tbody {
-    gap: 10px;
-    padding: 8px;
+    display: table-row-group;
+    padding: 0;
   }
 
   .liaoning-records-table tr {
-    grid-template-columns: 1fr;
-    gap: 10px;
-    padding: 10px;
+    display: table-row;
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
   }
 
   .liaoning-records-table td {
-    display: block;
-    padding: 0;
+    display: table-cell;
+    padding: 8px 9px;
+    border-bottom: 1px solid var(--line);
+    vertical-align: top;
   }
 
   .liaoning-records-table td::before {
@@ -4892,33 +4896,23 @@ a.commercial-member-link:hover {
   }
 
   .liaoning-records-table td:first-child {
-    display: flex;
-    justify-content: space-between;
-    gap: 12px;
-    padding-bottom: 9px;
-    border-bottom: 1px solid var(--line);
+    width: 96px;
+    padding-bottom: 8px;
   }
 
   .liaoning-records-table td:nth-child(2),
   .liaoning-records-table td:nth-child(3) {
-    display: grid;
-    grid-template-columns: 72px minmax(0, 1fr);
-    gap: 10px;
-    align-items: start;
+    width: 312px;
   }
 
   .liaoning-records-table td:nth-child(2)::before,
   .liaoning-records-table td:nth-child(3)::before {
-    content: attr(data-label);
-    color: var(--muted);
-    font-size: 12px;
-    font-weight: 850;
-    line-height: 24px;
+    content: none;
   }
 
   .liaoning-record-cell {
     min-width: 0;
-    gap: 5px;
+    gap: 4px;
   }
 
   .liaoning-record-person,
@@ -4936,7 +4930,7 @@ a.commercial-member-link:hover {
 
   .liaoning-records-table-section,
   .liaoning-records-table-section .result-table-wrap {
-    overflow-x: clip;
+    overflow-x: auto;
   }
 
   .liaoning-record-cell > div:first-child {
@@ -4944,7 +4938,7 @@ a.commercial-member-link:hover {
   }
 
   .liaoning-record-cell strong {
-    font-size: 16px;
+    font-size: 15px;
   }
 
   .liaoning-record-badge {

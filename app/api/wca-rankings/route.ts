@@ -374,13 +374,9 @@ export async function GET(request: NextRequest) {
   const rows = rawRows.slice(0, pageSize).map((row) => ({
     ...row,
     result: formatWcaResult(event, row.best, mode),
-    resultDetails:
-      mode === "average"
-        ? [row.value1, row.value2, row.value3]
-            .concat([row.value4, row.value5])
-            .filter((value): value is number => typeof value === "number")
-            .map((value) => formatWcaAttempt(event, value))
-        : [],
+    resultDetails: [row.value1, row.value2, row.value3, row.value4, row.value5]
+      .filter((value): value is number => typeof value === "number")
+      .map((value) => formatWcaAttempt(event, value)),
     competitionId: row.competitionId || "",
     competitionName: row.competitionName || "",
     date: row.date || ""
