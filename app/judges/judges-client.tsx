@@ -54,10 +54,11 @@ export function JudgesClient({ initialJudges }: Props) {
     () =>
       [...judges].sort(
         (a, b) =>
-          displayOrderWeight(a) - displayOrderWeight(b) ||
+          pinnedJudgeWeight(a) - pinnedJudgeWeight(b) ||
           levelGroupWeight(a) - levelGroupWeight(b) ||
-          nationalPrimaryWeight(a) - nationalPrimaryWeight(b) ||
+          nationalPrimaryCityWeight(a) - nationalPrimaryCityWeight(b) ||
           levelWeight(a) - levelWeight(b) ||
+          displayOrderWeight(a) - displayOrderWeight(b) ||
           trainingDateWeight(a.trainingDate) - trainingDateWeight(b.trainingDate) ||
           a.province.localeCompare(b.province, "zh-Hans-CN") ||
           a.city.localeCompare(b.city, "zh-Hans-CN") ||
@@ -138,6 +139,10 @@ export function JudgesClient({ initialJudges }: Props) {
     const index = sortedJudges.findIndex((judge) => judge.id === judgeId);
     const targetIndex = direction === "up" ? index - 1 : index + 1;
     if (index < 0 || targetIndex < 0 || targetIndex >= sortedJudges.length) return;
+    if (!canReorderTogether(sortedJudges[index], sortedJudges[targetIndex])) {
+      setNotice("当前按级别和城市分组排序，只能在同一分组内调整顺序。");
+      return;
+    }
     const reorderedJudges = [...sortedJudges];
     [reorderedJudges[index], reorderedJudges[targetIndex]] = [reorderedJudges[targetIndex], reorderedJudges[index]];
     await saveJudgeOrder(reorderedJudges);
@@ -156,6 +161,9 @@ export function JudgesClient({ initialJudges }: Props) {
   function dragOverJudge(event: DragEvent<HTMLTableRowElement>, judgeId: string) {
     const sourceId = draggedJudgeId || event.dataTransfer.getData("text/plain");
     if (!sourceId || sourceId === judgeId || isSaving) return;
+    const sourceJudge = sortedJudges.find((judge) => judge.id === sourceId);
+    const targetJudge = sortedJudges.find((judge) => judge.id === judgeId);
+    if (!sourceJudge || !targetJudge || !canReorderTogether(sourceJudge, targetJudge)) return;
     event.preventDefault();
     event.dataTransfer.dropEffect = "move";
     const rowRect = event.currentTarget.getBoundingClientRect();
@@ -179,6 +187,12 @@ export function JudgesClient({ initialJudges }: Props) {
     const sourceJudgeId = draggedJudgeId || event.dataTransfer.getData("text/plain");
     endJudgeDrag();
     if (!sourceJudgeId || sourceJudgeId === targetJudgeId || isSaving) return;
+    const sourceJudge = sortedJudges.find((judge) => judge.id === sourceJudgeId);
+    const targetJudge = sortedJudges.find((judge) => judge.id === targetJudgeId);
+    if (!sourceJudge || !targetJudge || !canReorderTogether(sourceJudge, targetJudge)) {
+      setNotice("当前按级别和城市分组排序，只能在同一分组内调整顺序。");
+      return;
+    }
     const reorderedJudges = reorderJudges(sortedJudges, sourceJudgeId, targetJudgeId, dragOverPlacement);
     if (!reorderedJudges) return;
     await saveJudgeOrder(reorderedJudges);
@@ -495,9 +509,16 @@ function levelGroupWeight(judge: Judge) {
   return 1;
 }
 
-function nationalPrimaryWeight(judge: Judge) {
+function pinnedJudgeWeight(judge: Judge) {
+  if (judge.name === "王猛") return 0;
+  if (judge.name === "李洋") return 1;
+  return 2;
+}
+
+function nationalPrimaryCityWeight(judge: Judge) {
   if (judge.levelType !== "国家一级") return 0;
-  return trainingDateWeight(judge.trainingDate);
+  const cityIndex = liaoningCities.findIndex((city) => city === judge.city);
+  return cityIndex >= 0 ? cityIndex : Number.MAX_SAFE_INTEGER;
 }
 
 function levelWeight(judge: Judge) {
@@ -506,6 +527,14 @@ function levelWeight(judge: Judge) {
 
 function displayOrderWeight(judge: Judge) {
   return typeof judge.displayOrder === "number" ? judge.displayOrder : Number.MAX_SAFE_INTEGER;
+}
+
+function canReorderTogether(a: Judge, b: Judge) {
+  return reorderBucket(a) === reorderBucket(b);
+}
+
+function reorderBucket(judge: Judge) {
+  return [pinnedJudgeWeight(judge), levelGroupWeight(judge), nationalPrimaryCityWeight(judge), levelWeight(judge)].join(":");
 }
 
 function reorderJudges(judges: Judge[], sourceJudgeId: string, targetJudgeId: string, placement: "before" | "after") {
