@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowDown, ArrowUp, GripVertical, Plus, Save, Trash2, X } from "lucide-react";
+import { GripVertical, Plus, Save, Trash2, X } from "lucide-react";
 import { type DragEvent, useMemo, useState } from "react";
 import {
   judgeGenders,
@@ -133,19 +133,6 @@ export function JudgesClient({ initialJudges }: Props) {
       setEditingId(null);
       setEditDraft(null);
     }
-  }
-
-  async function moveJudge(judgeId: string, direction: "up" | "down") {
-    const index = sortedJudges.findIndex((judge) => judge.id === judgeId);
-    const targetIndex = direction === "up" ? index - 1 : index + 1;
-    if (index < 0 || targetIndex < 0 || targetIndex >= sortedJudges.length) return;
-    if (!canReorderTogether(sortedJudges[index], sortedJudges[targetIndex])) {
-      setNotice("当前按级别和城市分组排序，只能在同一分组内调整顺序。");
-      return;
-    }
-    const reorderedJudges = [...sortedJudges];
-    [reorderedJudges[index], reorderedJudges[targetIndex]] = [reorderedJudges[targetIndex], reorderedJudges[index]];
-    await saveJudgeOrder(reorderedJudges);
   }
 
   function startJudgeDrag(event: DragEvent<HTMLElement>, judgeId: string) {
@@ -471,14 +458,6 @@ export function JudgesClient({ initialJudges }: Props) {
                           <button className="button button--danger" type="button" disabled={isSaving} onClick={() => deleteJudge(judge.id)}>
                             <Trash2 size={14} />
                             删除
-                          </button>
-                          <button className="button" type="button" onClick={() => moveJudge(judge.id, "up")}>
-                            <ArrowUp size={14} />
-                            上移
-                          </button>
-                          <button className="button" type="button" onClick={() => moveJudge(judge.id, "down")}>
-                            <ArrowDown size={14} />
-                            下移
                           </button>
                         </td>
                       </>
