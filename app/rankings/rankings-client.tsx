@@ -59,7 +59,7 @@ export function RankingsClient() {
   const [continents, setContinents] = useState<MetadataOption[]>([]);
   const [lastExportDate, setLastExportDate] = useState("");
   const [event, setEvent] = useState("333");
-  const [scope, setScope] = useState<RegionScope>("country");
+  const [scope, setScope] = useState<RegionScope>("world");
   const [country, setCountry] = useState("China");
   const [continent, setContinent] = useState("_Asia");
   const [mode, setMode] = useState<RankingMode>("average");
@@ -68,6 +68,7 @@ export function RankingsClient() {
   const [rankings, setRankings] = useState<RankingsResponse | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
+  const [liaoningWcaIds, setLiaoningWcaIds] = useState<Set<string>>(() => new Set());
 
   useEffect(() => {
     let cancelled = false;
@@ -82,6 +83,29 @@ export function RankingsClient() {
       })
       .catch(() => {
         if (!cancelled) setError("无法读取 WCA 项目和国家列表。");
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+    fetch("/api/local-profiles", { cache: "no-cache" })
+      .then((response) => response.json())
+      .then((payload) => {
+        if (cancelled) return;
+        const next = new Set<string>();
+        const profiles = Array.isArray(payload?.profiles) ? payload.profiles : [];
+        for (const profile of profiles) {
+          if (profile?.visible && String(profile?.province || "").trim() === "辽宁" && typeof profile?.wcaId === "string") {
+            next.add(profile.wcaId.trim().toUpperCase());
+          }
+        }
+        setLiaoningWcaIds(next);
+      })
+      .catch(() => {
+        // ignore: rankings page should still work even without local profile data
       });
     return () => {
       cancelled = true;
@@ -299,6 +323,7 @@ export function RankingsClient() {
                             className="table-person-link"
                             href={`https://www.worldcubeassociation.org/persons/${row.wcaId}`}
                           >
+                            {liaoningWcaIds.has(row.wcaId) ? <span className="liaoning-record-badge">辽宁</span> : null}
                             {row.name}
                           </Link>
                           <small className="ranking-wca-id">{row.wcaId}</small>
