@@ -1,7 +1,7 @@
 "use client";
 
-import { ArrowDown, ArrowUp, Plus, Save, Trash2, X } from "lucide-react";
-import { useMemo, useState } from "react";
+import { ArrowDown, ArrowUp, GripVertical, Plus, Save, Trash2, X } from "lucide-react";
+import { type DragEvent, useMemo, useState } from "react";
 import {
   judgeGenders,
   judgeLevelTypes,
@@ -46,6 +46,9 @@ export function JudgesClient({ initialJudges }: Props) {
   const [notice, setNotice] = useState("");
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editDraft, setEditDraft] = useState<Judge | null>(null);
+  const [draggedJudgeId, setDraggedJudgeId] = useState<string | null>(null);
+  const [dragOverJudgeId, setDragOverJudgeId] = useState<string | null>(null);
+  const [dragOverPlacement, setDragOverPlacement] = useState<"before" | "after">("before");
 
   const sortedJudges = useMemo(
     () =>
@@ -137,6 +140,51 @@ export function JudgesClient({ initialJudges }: Props) {
     if (index < 0 || targetIndex < 0 || targetIndex >= sortedJudges.length) return;
     const reorderedJudges = [...sortedJudges];
     [reorderedJudges[index], reorderedJudges[targetIndex]] = [reorderedJudges[targetIndex], reorderedJudges[index]];
+    await saveJudgeOrder(reorderedJudges);
+  }
+
+  function startJudgeDrag(event: DragEvent<HTMLElement>, judgeId: string) {
+    if (isSaving || editingId) {
+      event.preventDefault();
+      return;
+    }
+    setDraggedJudgeId(judgeId);
+    event.dataTransfer.effectAllowed = "move";
+    event.dataTransfer.setData("text/plain", judgeId);
+  }
+
+  function dragOverJudge(event: DragEvent<HTMLTableRowElement>, judgeId: string) {
+    const sourceId = draggedJudgeId || event.dataTransfer.getData("text/plain");
+    if (!sourceId || sourceId === judgeId || isSaving) return;
+    event.preventDefault();
+    event.dataTransfer.dropEffect = "move";
+    const rowRect = event.currentTarget.getBoundingClientRect();
+    const placement = event.clientY > rowRect.top + rowRect.height / 2 ? "after" : "before";
+    setDragOverJudgeId(judgeId);
+    setDragOverPlacement(placement);
+  }
+
+  function leaveJudgeDrag(judgeId: string) {
+    if (dragOverJudgeId === judgeId) setDragOverJudgeId(null);
+  }
+
+  function endJudgeDrag() {
+    setDraggedJudgeId(null);
+    setDragOverJudgeId(null);
+    setDragOverPlacement("before");
+  }
+
+  async function dropJudge(event: DragEvent<HTMLTableRowElement>, targetJudgeId: string) {
+    event.preventDefault();
+    const sourceJudgeId = draggedJudgeId || event.dataTransfer.getData("text/plain");
+    endJudgeDrag();
+    if (!sourceJudgeId || sourceJudgeId === targetJudgeId || isSaving) return;
+    const reorderedJudges = reorderJudges(sortedJudges, sourceJudgeId, targetJudgeId, dragOverPlacement);
+    if (!reorderedJudges) return;
+    await saveJudgeOrder(reorderedJudges);
+  }
+
+  async function saveJudgeOrder(reorderedJudges: Judge[]) {
     const displayOrderById = new Map(reorderedJudges.map((judge, orderIndex) => [judge.id, orderIndex + 1]));
     const nextJudges = judges.map((judge) => {
       const displayOrder = displayOrderById.get(judge.id);
@@ -303,9 +351,38 @@ export function JudgesClient({ initialJudges }: Props) {
             ) : (
               sortedJudges.map((judge, index) => {
                 const isEditing = editingId === judge.id;
+                const rowClassName = [
+                  draggedJudgeId === judge.id ? "is-dragging" : "",
+                  dragOverJudgeId === judge.id ? "is-drag-over" : "",
+                  dragOverJudgeId === judge.id ? `is-drag-over-${dragOverPlacement}` : ""
+                ]
+                  .filter(Boolean)
+                  .join(" ");
                 return (
-                  <tr key={judge.id}>
-                    <td data-label="序号">{index + 1}</td>
+                  <tr
+                    className={rowClassName || undefined}
+                    key={judge.id}
+                    onDragOver={(event) => dragOverJudge(event, judge.id)}
+                    onDragLeave={() => leaveJudgeDrag(judge.id)}
+                    onDrop={(event) => dropJudge(event, judge.id)}
+                    onDragEnd={endJudgeDrag}
+                  >
+                    <td data-label="序号">
+                      <span className="judge-order-cell">
+                        <span
+                          aria-label={`拖动${judge.name}调整顺序`}
+                          className="judge-drag-handle"
+                          draggable={!isEditing && !isSaving}
+                          role="button"
+                          tabIndex={0}
+                          title="拖动排序"
+                          onDragStart={(event) => startJudgeDrag(event, judge.id)}
+                        >
+                          <GripVertical size={15} />
+                        </span>
+                        <span>{index + 1}</span>
+                      </span>
+                    </td>
                     {isEditing && editDraft ? (
                       <>
                         <td data-label="编号">
@@ -429,6 +506,18 @@ function levelWeight(judge: Judge) {
 
 function displayOrderWeight(judge: Judge) {
   return typeof judge.displayOrder === "number" ? judge.displayOrder : Number.MAX_SAFE_INTEGER;
+}
+
+function reorderJudges(judges: Judge[], sourceJudgeId: string, targetJudgeId: string, placement: "before" | "after") {
+  const sourceIndex = judges.findIndex((judge) => judge.id === sourceJudgeId);
+  const targetIndex = judges.findIndex((judge) => judge.id === targetJudgeId);
+  if (sourceIndex < 0 || targetIndex < 0 || sourceIndex === targetIndex) return null;
+  const nextJudges = [...judges];
+  const [sourceJudge] = nextJudges.splice(sourceIndex, 1);
+  const targetIndexAfterRemoval = nextJudges.findIndex((judge) => judge.id === targetJudgeId);
+  const insertIndex = placement === "after" ? targetIndexAfterRemoval + 1 : targetIndexAfterRemoval;
+  nextJudges.splice(insertIndex, 0, sourceJudge);
+  return nextJudges;
 }
 
 function levelBadge(level: JudgeLevelType) {

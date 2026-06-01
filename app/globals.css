@@ -3067,6 +3067,57 @@ textarea {
   min-width: 1020px;
 }
 
+.judges-table tbody tr {
+  transition: background 0.15s ease, opacity 0.15s ease, box-shadow 0.15s ease;
+}
+
+.judges-table tbody tr.is-dragging {
+  opacity: 0.48;
+}
+
+.judges-table tbody tr.is-drag-over {
+  background: #f5f8ff;
+}
+
+.judges-table tbody tr.is-drag-over-before {
+  box-shadow: inset 0 3px 0 #2563eb;
+}
+
+.judges-table tbody tr.is-drag-over-after {
+  box-shadow: inset 0 -3px 0 #2563eb;
+}
+
+.judge-order-cell {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.judge-drag-handle {
+  display: inline-flex;
+  width: 28px;
+  height: 28px;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--muted);
+  cursor: grab;
+  touch-action: none;
+}
+
+.judge-drag-handle:hover,
+.judge-drag-handle:focus-visible {
+  border-color: #9bb7f4;
+  color: #2563eb;
+  outline: none;
+}
+
+.judge-drag-handle:active {
+  cursor: grabbing;
+}
+
 .judges-region-editor {
   display: inline-flex;
   align-items: center;
