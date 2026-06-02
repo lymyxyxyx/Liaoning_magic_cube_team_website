@@ -178,9 +178,10 @@ export async function getWeeklyMeetBySlug(slug: string): Promise<WeeklyMeet | nu
 }
 
 function buildResult(row: ResultRow, attemptsByResult: Map<number, AttemptRow[]>): WeeklyResult {
-  const attempts: WeeklyAttempt[] = (attemptsByResult.get(row.id) || []).map((a) =>
-    a.value === null ? "DNF" : Number(a.value)
-  );
+  const attempts: WeeklyAttempt[] = (attemptsByResult.get(row.id) || []).map((a) => {
+    const value = a.value === null ? -1 : Number(a.value);
+    return value < 0 ? "DNF" : value;
+  });
   return {
     rank: row.rank,
     playerName: row.player_name,

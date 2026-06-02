@@ -13,7 +13,11 @@ function formatAttempt(value: number | "DNF" | null) {
     return "-";
   }
 
-  return typeof value === "number" ? value.toFixed(2) : value;
+  if (typeof value === "number") {
+    return value < 0 ? "DNF" : value.toFixed(2);
+  }
+
+  return value;
 }
 
 export default async function WeeklyDetailPage({ params }: { params: { slug: string } }) {

@@ -109,6 +109,40 @@ async function main() {
     `);
 
     await client.query(`
+      CREATE TABLE IF NOT EXISTS weekly_players (
+        id TEXT PRIMARY KEY,
+        name TEXT NOT NULL,
+        slug TEXT NOT NULL DEFAULT '',
+        wca_id TEXT NOT NULL DEFAULT '',
+        gender TEXT NOT NULL DEFAULT '男',
+        province TEXT NOT NULL DEFAULT '辽宁',
+        city TEXT NOT NULL DEFAULT '',
+        birth_date TEXT NOT NULL DEFAULT '',
+        created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+        updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+      )
+    `);
+
+    await client.query("ALTER TABLE weekly_players ADD COLUMN IF NOT EXISTS birth_date TEXT NOT NULL DEFAULT ''");
+    await client.query("CREATE INDEX IF NOT EXISTS weekly_players_name_idx ON weekly_players (name)");
+
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS weekly_player_library (
+        id TEXT PRIMARY KEY,
+        name TEXT NOT NULL,
+        gender TEXT NOT NULL DEFAULT '',
+        birth_date TEXT NOT NULL DEFAULT '',
+        province TEXT NOT NULL DEFAULT '',
+        city TEXT NOT NULL DEFAULT '',
+        source TEXT NOT NULL DEFAULT '',
+        created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+        updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+      )
+    `);
+
+    await client.query("CREATE INDEX IF NOT EXISTS weekly_player_library_name_idx ON weekly_player_library (name)");
+
+    await client.query(`
       CREATE TABLE IF NOT EXISTS feedback_messages (
         id TEXT PRIMARY KEY,
         type TEXT NOT NULL DEFAULT '名单反馈',

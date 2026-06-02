@@ -79,7 +79,7 @@ function result(
 }
 
 export function getSingleBest(attempts: WeeklyAttempt[]) {
-  const valid = attempts.filter((attempt): attempt is number => typeof attempt === "number");
+  const valid = attempts.filter((attempt): attempt is number => typeof attempt === "number" && attempt >= 0);
   return valid.length > 0 ? Math.min(...valid) : null;
 }
 

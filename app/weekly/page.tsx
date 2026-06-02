@@ -25,9 +25,14 @@ export default async function WeeklyPage() {
     <>
       <PageHero
         actions={
-          <Link className="button" href="/weekly/admin">
-            周赛录入后台
-          </Link>
+          <>
+            <Link className="button primary" href="/weekly/results">
+              成绩录入
+            </Link>
+            <Link className="button" href="/weekly/admin">
+              周赛录入后台
+            </Link>
+          </>
         }
         label="队内周赛"
         title="辽宁魔方少儿战队周赛"
