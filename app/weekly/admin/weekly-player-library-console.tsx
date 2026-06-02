@@ -6,13 +6,16 @@ import type { WeeklyLibraryGender, WeeklyPlayerLibraryEntry } from "@/lib/weekly
 
 type DraftPlayer = WeeklyPlayerLibraryEntry;
 
+const defaultProvince = "辽宁";
+const defaultCity = "沈阳";
+
 const emptyDraft = {
   id: "",
   name: "",
   gender: "" as WeeklyLibraryGender,
   birthDate: "",
-  province: "",
-  city: "",
+  province: defaultProvince,
+  city: defaultCity,
   source: "后台新增"
 };
 
@@ -34,7 +37,7 @@ export function WeeklyPlayerLibraryConsole({
     const q = query.trim();
     if (!q) return players;
     return players.filter((player) => {
-      return [player.name, player.gender, player.birthDate, player.province, player.city, player.source].some((value) => value.includes(q));
+      return [player.name, player.gender, player.birthDate, player.province, player.city].some((value) => value.includes(q));
     });
   }, [players, query]);
 
@@ -140,7 +143,7 @@ export function WeeklyPlayerLibraryConsole({
           <div className="admin-card-heading">
             <div>
               <h2>新增选手</h2>
-              <p>{variant === "side" ? "维护可录入成绩的选手名单。" : "生日、省市可以先空着，后续逐行补齐。"}</p>
+              <p>{variant === "side" ? "维护可录入成绩的选手名单。" : "默认省市为辽宁沈阳，生日可后续补齐。"}</p>
             </div>
           </div>
           <div className="weekly-library-form">
@@ -196,24 +199,27 @@ export function WeeklyPlayerLibraryConsole({
               <h2>资料编辑</h2>
               <p>直接在表格内修改，最后统一保存。</p>
             </div>
-            <input className="weekly-library-search" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="搜索姓名 / 省市 / 来源" />
+            <input className="weekly-library-search" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="搜索姓名 / 省市" />
           </div>
           <div className="table-scroll">
             <table className="result-table weekly-library-table">
               <thead>
                 <tr>
+                  <th>序号</th>
                   <th>姓名</th>
                   <th>性别</th>
                   <th>出生年月日</th>
                   <th>省份</th>
                   <th>城市</th>
-                  <th>来源</th>
                   <th>操作</th>
                 </tr>
               </thead>
               <tbody>
-                {visiblePlayers.map((player) => (
+                {visiblePlayers.map((player, index) => (
                   <tr key={player.id}>
+                    <td data-label="序号" className="weekly-library-index">
+                      {index + 1}
+                    </td>
                     <td data-label="姓名">
                       <input value={player.name} onChange={(event) => updatePlayer(player.id, { name: event.target.value })} />
                     </td>
@@ -232,9 +238,6 @@ export function WeeklyPlayerLibraryConsole({
                     </td>
                     <td data-label="城市">
                       <input value={player.city} onChange={(event) => updatePlayer(player.id, { city: event.target.value })} />
-                    </td>
-                    <td data-label="来源">
-                      <input value={player.source} onChange={(event) => updatePlayer(player.id, { source: event.target.value })} />
                     </td>
                     <td data-label="操作">
                       <button className="icon-button danger" type="button" onClick={() => removePlayer(player.id)} aria-label={`删除${player.name}`}>
@@ -264,8 +267,8 @@ function parseBatchLine(line: string): DraftPlayer | null {
     name,
     gender: normalizeGender(cells[1] || ""),
     birthDate: "",
-    province: "",
-    city: "",
+    province: defaultProvince,
+    city: defaultCity,
     source: "批量导入"
   };
 }

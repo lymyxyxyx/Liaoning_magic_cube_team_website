@@ -2363,7 +2363,7 @@ textarea {
 
 .weekly-library-workbench {
   display: grid;
-  grid-template-columns: 360px minmax(0, 1fr);
+  grid-template-columns: 320px minmax(0, 1fr);
   gap: 12px;
   align-items: start;
 }
@@ -2488,11 +2488,11 @@ textarea {
 .weekly-library-batch textarea,
 .weekly-library-table input,
 .weekly-library-table select {
-  min-height: 38px;
+  min-height: 34px;
   width: 100%;
   border: 1px solid var(--line);
-  border-radius: 8px;
-  padding: 8px 9px;
+  border-radius: 6px;
+  padding: 6px 8px;
   background: #fff;
   color: var(--text);
   font: inherit;
@@ -2511,37 +2511,51 @@ textarea {
   max-width: 240px;
 }
 
-.weekly-library-table {
-  min-width: 980px;
+.result-table.weekly-library-table {
+  min-width: 0;
+  table-layout: fixed;
 }
 
 .weekly-library-table th,
 .weekly-library-table td {
-  padding: 7px;
-  font-size: 13px;
+  padding: 6px 5px;
+  font-size: 12px;
+}
+
+.weekly-library-table th {
+  letter-spacing: 0;
 }
 
 .weekly-library-table th:nth-child(1) {
-  width: 120px;
+  width: 48px;
 }
 
 .weekly-library-table th:nth-child(2) {
-  width: 92px;
+  width: 112px;
 }
 
 .weekly-library-table th:nth-child(3) {
-  width: 150px;
+  width: 68px;
 }
 
-.weekly-library-table th:nth-child(4),
-.weekly-library-table th:nth-child(5) {
-  width: 110px;
+.weekly-library-table th:nth-child(4) {
+  width: 128px;
+}
+
+.weekly-library-table th:nth-child(5),
+.weekly-library-table th:nth-child(6) {
+  width: 84px;
 }
 
 .weekly-library-table th:nth-child(7),
 .weekly-library-table td:nth-child(7) {
-  width: 58px;
+  width: 46px;
   text-align: center;
+}
+
+.weekly-library-index {
+  color: var(--muted);
+  font-weight: 850;
 }
 
 .icon-button.danger {
