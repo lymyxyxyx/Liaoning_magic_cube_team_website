@@ -1,6 +1,6 @@
 "use client";
 
-import { GripVertical, Plus, Save, Trash2, X } from "lucide-react";
+import { Edit3, GripVertical, Plus, Save, Trash2, X } from "lucide-react";
 import { type DragEvent, useMemo, useState } from "react";
 import {
   judgeGenders,
@@ -44,6 +44,7 @@ export function JudgesClient({ initialJudges }: Props) {
   const [isCreating, setIsCreating] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [notice, setNotice] = useState("");
+  const [editPassword, setEditPassword] = useState<string | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editDraft, setEditDraft] = useState<Judge | null>(null);
   const [draggedJudgeId, setDraggedJudgeId] = useState<string | null>(null);
@@ -68,8 +69,40 @@ export function JudgesClient({ initialJudges }: Props) {
   );
 
   const nextSerialNumber = useMemo(() => getNextSerialNumber(judges), [judges]);
+  const canEdit = editPassword !== null;
+
+  async function enterEditMode() {
+    const password = window.prompt("请输入裁判信息编辑口令");
+    if (password === null) return;
+
+    try {
+      const response = await fetch("/api/judges/auth", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ password })
+      });
+      if (!response.ok) throw new Error("auth");
+      setEditPassword(password);
+      setNotice("已进入编辑模式。");
+    } catch {
+      setEditPassword(null);
+      setNotice("无法编辑。");
+    }
+  }
+
+  function exitEditMode() {
+    setEditPassword(null);
+    setIsCreating(false);
+    cancelEdit();
+    setNotice("已退出编辑模式。");
+  }
 
   async function addJudge() {
+    if (!canEdit) {
+      setNotice("无法编辑。");
+      return;
+    }
+
     const name = draft.name.trim();
     if (!name) {
       setNotice("请填写裁判员姓名。");
@@ -106,11 +139,21 @@ export function JudgesClient({ initialJudges }: Props) {
   }
 
   async function updateJudgeCity(judgeId: string, city: string) {
+    if (!canEdit) {
+      setNotice("无法编辑。");
+      return;
+    }
+
     const nextJudges = judges.map((judge) => (judge.id === judgeId ? { ...judge, province: "辽宁", city } : judge));
     await saveJudges(nextJudges, "城市已更新。");
   }
 
   function startEdit(judge: Judge) {
+    if (!canEdit) {
+      setNotice("无法编辑。");
+      return;
+    }
+
     setEditingId(judge.id);
     setEditDraft({ ...judge });
   }
@@ -126,6 +169,11 @@ export function JudgesClient({ initialJudges }: Props) {
   }
 
   async function saveEdit() {
+    if (!canEdit) {
+      setNotice("无法编辑。");
+      return;
+    }
+
     if (!editDraft) return;
     const nextJudges = judges.map((judge) => (judge.id === editDraft.id ? editDraft : judge));
     const saved = await saveJudges(nextJudges, "已更新。");
@@ -136,7 +184,7 @@ export function JudgesClient({ initialJudges }: Props) {
   }
 
   function startJudgeDrag(event: DragEvent<HTMLElement>, judgeId: string) {
-    if (isSaving || editingId) {
+    if (!canEdit || isSaving || editingId) {
       event.preventDefault();
       return;
     }
@@ -173,7 +221,7 @@ export function JudgesClient({ initialJudges }: Props) {
     event.preventDefault();
     const sourceJudgeId = draggedJudgeId || event.dataTransfer.getData("text/plain");
     endJudgeDrag();
-    if (!sourceJudgeId || sourceJudgeId === targetJudgeId || isSaving) return;
+    if (!canEdit || !sourceJudgeId || sourceJudgeId === targetJudgeId || isSaving) return;
     const sourceJudge = sortedJudges.find((judge) => judge.id === sourceJudgeId);
     const targetJudge = sortedJudges.find((judge) => judge.id === targetJudgeId);
     if (!sourceJudge || !targetJudge || !canReorderTogether(sourceJudge, targetJudge)) {
@@ -186,6 +234,11 @@ export function JudgesClient({ initialJudges }: Props) {
   }
 
   async function saveJudgeOrder(reorderedJudges: Judge[]) {
+    if (!canEdit) {
+      setNotice("无法编辑。");
+      return;
+    }
+
     const displayOrderById = new Map(reorderedJudges.map((judge, orderIndex) => [judge.id, orderIndex + 1]));
     const nextJudges = judges.map((judge) => {
       const displayOrder = displayOrderById.get(judge.id);
@@ -195,6 +248,11 @@ export function JudgesClient({ initialJudges }: Props) {
   }
 
   async function deleteJudge(judgeId: string) {
+    if (!canEdit) {
+      setNotice("无法编辑。");
+      return;
+    }
+
     const target = judges.find((judge) => judge.id === judgeId);
     if (!target) return;
     const ok = window.confirm(`确认删除裁判员「${target.name}」？此操作不可撤销。`);
@@ -211,7 +269,7 @@ export function JudgesClient({ initialJudges }: Props) {
       const response = await fetch("/api/judges", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ judges: nextJudges })
+        body: JSON.stringify({ judges: nextJudges, editPassword })
       });
       if (!response.ok) throw new Error("save");
       const payload = (await response.json()) as { judges: Judge[] };
@@ -234,10 +292,25 @@ export function JudgesClient({ initialJudges }: Props) {
           <span className="eyebrow">在线表格</span>
           <h2>裁判员信息</h2>
         </div>
-        <button className="button primary" type="button" onClick={() => setIsCreating(true)}>
-          <Plus size={16} />
-          新建
-        </button>
+        <div className="judges-toolbar-actions">
+          {canEdit ? (
+            <>
+              <button className="button primary" type="button" onClick={() => setIsCreating(true)}>
+                <Plus size={16} />
+                新建
+              </button>
+              <button className="button button--ghost" type="button" onClick={exitEditMode}>
+                <X size={16} />
+                退出编辑
+              </button>
+            </>
+          ) : (
+            <button className="button primary" type="button" onClick={enterEditMode}>
+              <Edit3 size={16} />
+              编辑
+            </button>
+          )}
+        </div>
       </div>
 
       {notice ? <p className="judges-notice">{notice}</p> : null}
@@ -254,7 +327,7 @@ export function JudgesClient({ initialJudges }: Props) {
         })}
       </div>
 
-      {isCreating ? (
+      {canEdit && isCreating ? (
         <div className="judges-create-card">
           <div className="judges-form-grid">
             <label>
@@ -341,13 +414,13 @@ export function JudgesClient({ initialJudges }: Props) {
               <th>级别</th>
               <th>考取地点</th>
               <th>培训日期</th>
-              <th>操作</th>
+              {canEdit ? <th>操作</th> : null}
             </tr>
           </thead>
           <tbody>
             {sortedJudges.length === 0 ? (
               <tr>
-                <td colSpan={9}>暂无裁判员信息，请点击右上角新建。</td>
+                <td colSpan={canEdit ? 9 : 8}>暂无裁判员信息{canEdit ? "，请点击右上角新建。" : "。"}</td>
               </tr>
             ) : (
               sortedJudges.map((judge, index) => {
@@ -370,17 +443,19 @@ export function JudgesClient({ initialJudges }: Props) {
                   >
                     <td data-label="序号">
                       <span className="judge-order-cell">
-                        <span
-                          aria-label={`拖动${judge.name}调整顺序`}
-                          className="judge-drag-handle"
-                          draggable={!isEditing && !isSaving}
-                          role="button"
-                          tabIndex={0}
-                          title="拖动排序"
-                          onDragStart={(event) => startJudgeDrag(event, judge.id)}
-                        >
-                          <GripVertical size={15} />
-                        </span>
+                        {canEdit ? (
+                          <span
+                            aria-label={`拖动${judge.name}调整顺序`}
+                            className="judge-drag-handle"
+                            draggable={!isEditing && !isSaving}
+                            role="button"
+                            tabIndex={0}
+                            title="拖动排序"
+                            onDragStart={(event) => startJudgeDrag(event, judge.id)}
+                          >
+                            <GripVertical size={15} />
+                          </span>
+                        ) : null}
                         <span>{index + 1}</span>
                       </span>
                     </td>
@@ -422,7 +497,8 @@ export function JudgesClient({ initialJudges }: Props) {
                         <td data-label="培训日期">
                           <input value={editDraft.trainingDate} onChange={(e) => updateEditDraft({ trainingDate: e.target.value })} />
                         </td>
-                        <td data-label="操作">
+                        {canEdit ? (
+                          <td data-label="操作">
                           <div className="judges-form-actions">
                             <button className="button primary" type="button" disabled={isSaving} onClick={saveEdit}>
                               保存
@@ -431,7 +507,8 @@ export function JudgesClient({ initialJudges }: Props) {
                               取消
                             </button>
                           </div>
-                        </td>
+                          </td>
+                        ) : null}
                       </>
                     ) : (
                       <>
@@ -451,7 +528,8 @@ export function JudgesClient({ initialJudges }: Props) {
                         </td>
                         <td data-label="考取地点">{judge.trainingLocation}</td>
                         <td data-label="培训日期">{judge.trainingDate}</td>
-                        <td data-label="操作">
+                        {canEdit ? (
+                          <td data-label="操作">
                           <button className="button" type="button" onClick={() => startEdit(judge)}>
                             编辑
                           </button>
@@ -459,7 +537,8 @@ export function JudgesClient({ initialJudges }: Props) {
                             <Trash2 size={14} />
                             删除
                           </button>
-                        </td>
+                          </td>
+                        ) : null}
                       </>
                     )}
                   </tr>

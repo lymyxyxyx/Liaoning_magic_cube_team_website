@@ -2990,6 +2990,13 @@ textarea {
   font-size: 24px;
 }
 
+.judges-toolbar-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
 .judges-notice {
   margin: 0;
   border: 1px solid #d7e4ff;

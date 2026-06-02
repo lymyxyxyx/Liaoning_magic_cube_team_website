@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { canEditJudges } from "@/lib/judge-auth";
 import { readJudges, writeJudges, type Judge } from "@/lib/judge-store";
 
 export const dynamic = "force-dynamic";
@@ -9,7 +10,11 @@ export async function GET() {
 }
 
 export async function POST(request: NextRequest) {
-  const payload = (await request.json()) as { judges?: Judge[] };
+  const payload = (await request.json()) as { judges?: Judge[]; editPassword?: string };
+  if (!canEditJudges(payload.editPassword)) {
+    return NextResponse.json({ message: "无法编辑。" }, { status: 401 });
+  }
+
   if (!Array.isArray(payload.judges)) {
     return NextResponse.json({ message: "judges must be an array" }, { status: 400 });
   }
