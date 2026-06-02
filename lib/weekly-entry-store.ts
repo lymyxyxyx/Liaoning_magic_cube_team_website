@@ -12,7 +12,7 @@ import {
   type WeeklyResultFormat
 } from "@/lib/weekly-result-utils";
 import { weeklyMeets } from "@/lib/weekly";
-import { listWeeklyPlayerLibrary } from "@/lib/weekly-player-library";
+import { getMofang602SeedWeeklyPlayers, listWeeklyPlayerLibrary } from "@/lib/weekly-player-library";
 
 export type WeeklyMeetOption = {
   id: string;
@@ -137,7 +137,19 @@ export async function searchWeeklyPlayers(query: string): Promise<WeeklyPlayer[]
       }))
       .slice(0, 20);
   } catch {
-    return [];
+    return getMofang602SeedWeeklyPlayers()
+      .filter((player) => !q || player.name.includes(q))
+      .map((player) => ({
+        id: player.id,
+        name: player.name,
+        slug: "",
+        wcaId: "",
+        gender: player.gender === "女" ? ("女" as const) : ("男" as const),
+        province: player.province,
+        city: player.city,
+        birthDate: player.birthDate
+      }))
+      .slice(0, 20);
   }
 }
 

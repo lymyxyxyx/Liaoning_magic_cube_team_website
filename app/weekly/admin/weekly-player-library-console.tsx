@@ -16,7 +16,13 @@ const emptyDraft = {
   source: "后台新增"
 };
 
-export function WeeklyPlayerLibraryConsole({ initialPlayers }: { initialPlayers: WeeklyPlayerLibraryEntry[] }) {
+export function WeeklyPlayerLibraryConsole({
+  initialPlayers,
+  variant = "full"
+}: {
+  initialPlayers: WeeklyPlayerLibraryEntry[];
+  variant?: "full" | "side";
+}) {
   const [players, setPlayers] = useState<DraftPlayer[]>(initialPlayers);
   const [draft, setDraft] = useState(emptyDraft);
   const [query, setQuery] = useState("");
@@ -101,7 +107,7 @@ export function WeeklyPlayerLibraryConsole({ initialPlayers }: { initialPlayers:
   }
 
   return (
-    <section className="container section weekly-library-shell" id="weekly-player-library">
+    <section className={`${variant === "side" ? "" : "container section"} weekly-library-shell weekly-library-shell--${variant}`.trim()} id="weekly-player-library">
       <div className="admin-workspace-heading">
         <div>
           <h1>周赛选手库</h1>
@@ -134,7 +140,7 @@ export function WeeklyPlayerLibraryConsole({ initialPlayers }: { initialPlayers:
           <div className="admin-card-heading">
             <div>
               <h2>新增选手</h2>
-              <p>生日、省市可以先空着，后续逐行补齐。</p>
+              <p>{variant === "side" ? "维护可录入成绩的选手名单。" : "生日、省市可以先空着，后续逐行补齐。"}</p>
             </div>
           </div>
           <div className="weekly-library-form">

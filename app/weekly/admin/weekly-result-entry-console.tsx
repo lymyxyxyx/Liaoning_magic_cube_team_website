@@ -45,12 +45,13 @@ type EnteredResult = {
 type Props = {
   initialMeets: MeetOption[];
   events: typeof WCA_EVENTS;
+  variant?: "full" | "workspace";
 };
 
 const emptyAttempts = ["", "", "", "", ""];
 const minSearchLength = 1;
 
-export function WeeklyResultEntryConsole({ initialMeets, events }: Props) {
+export function WeeklyResultEntryConsole({ initialMeets, events, variant = "full" }: Props) {
   const [meets, setMeets] = useState(initialMeets);
   const [selectedMeetId, setSelectedMeetId] = useState(initialMeets[0]?.id || "");
   const [selectedEventId, setSelectedEventId] = useState("333");
@@ -218,7 +219,7 @@ export function WeeklyResultEntryConsole({ initialMeets, events }: Props) {
   const shouldShowPlayerResults = playerQuery.trim().length >= minSearchLength;
 
   return (
-    <section className="container section weekly-entry-shell">
+    <section className={`${variant === "workspace" ? "" : "container section"} weekly-entry-shell weekly-entry-shell--${variant}`.trim()}>
       <div className="admin-card weekly-admin-card">
         <div className="admin-card-heading">
           <div>

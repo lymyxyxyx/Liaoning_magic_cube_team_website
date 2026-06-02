@@ -121,6 +121,18 @@ export async function listWeeklyPlayerLibrary(): Promise<WeeklyPlayerLibraryEntr
   return rows.map(mapLibraryRow);
 }
 
+export function getMofang602SeedWeeklyPlayers(): WeeklyPlayerLibraryEntry[] {
+  return mofang602Names.map((name) => ({
+    id: createSeedId(name),
+    name,
+    gender: mofang602FemaleNames.has(name) ? "女" : "男",
+    birthDate: "",
+    province: "辽宁",
+    city: "",
+    source: "mofang123 第334周三阶表"
+  }));
+}
+
 export async function findWeeklyPlayerLibraryEntry(input: { id?: string; name?: string }) {
   await ensureWeeklyPlayerLibraryTable();
   const id = input.id?.trim() || "";

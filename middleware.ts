@@ -47,7 +47,10 @@ export async function middleware(request: NextRequest) {
     return response;
   }
 
-  if (pathname.startsWith("/weekly/admin") && !pathname.startsWith("/weekly/admin/login") && !(await hasWeeklySession(request))) {
+  if (
+    ((pathname.startsWith("/weekly/admin") && !pathname.startsWith("/weekly/admin/login")) || pathname === "/weekly/results") &&
+    !(await hasWeeklySession(request))
+  ) {
     const loginUrl = request.nextUrl.clone();
     loginUrl.pathname = "/weekly/admin/login";
     loginUrl.search = "";
@@ -78,6 +81,10 @@ export async function middleware(request: NextRequest) {
     return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
   }
 
+  if (pathname.startsWith("/api/weekly-competitions") && request.method !== "GET" && !(await hasWeeklySession(request))) {
+    return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
+  }
+
   return NextResponse.next();
 }
 
@@ -87,9 +94,11 @@ export const config = {
     "/admin/:path*",
     "/weekly/admin",
     "/weekly/admin/:path*",
+    "/weekly/results",
     "/api/local-profiles",
     "/api/account-books",
     "/api/admin/:path*",
-    "/api/weekly-admin/:path*"
+    "/api/weekly-admin/:path*",
+    "/api/weekly-competitions/:path*"
   ]
 };

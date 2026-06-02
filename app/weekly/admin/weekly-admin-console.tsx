@@ -176,13 +176,13 @@ export function WeeklyAdminConsole() {
 
   return (
     <section className="container section weekly-admin-shell">
-      <div className="admin-card weekly-admin-card">
-        <div className="admin-card-heading">
+      <details className="admin-card weekly-admin-card weekly-admin-fold">
+        <summary className="admin-card-heading weekly-admin-fold-summary">
           <div>
             <h2>周赛信息</h2>
-            <p>保存后会覆盖同周次的周赛数据。</p>
+            <p>旧版整周成绩生成信息，暂时折叠保留。</p>
           </div>
-        </div>
+        </summary>
         <div className="weekly-admin-grid">
           <Field label="总周次" value={meta.weekNumber} onChange={(value) => setMeta({ ...meta, weekNumber: value })} />
           <Field label="年份" value={meta.year} onChange={(value) => setMeta({ ...meta, year: value })} />
@@ -194,16 +194,16 @@ export function WeeklyAdminConsole() {
           <Field label="正文说明" value={meta.intro} onChange={(value) => setMeta({ ...meta, intro: value })} textarea full />
           <Field label="PB 说明" value={meta.pbNote} onChange={(value) => setMeta({ ...meta, pbNote: value })} full />
         </div>
-      </div>
+      </details>
 
-      <div className="admin-card weekly-admin-card">
-        <div className="admin-card-heading">
+      <details className="admin-card weekly-admin-card weekly-admin-fold">
+        <summary className="admin-card-heading weekly-admin-fold-summary">
           <div>
             <h2>粘贴成绩表</h2>
-            <p>从 Excel 复制表头和数据后直接粘贴，支持姓名、性别、年龄组、段位、等级、平均、个人PB、T1-T5、刷新PB。</p>
+            <p>旧版批量粘贴生成整周周赛，暂时折叠保留。</p>
           </div>
           <span className="admin-local-count">{sortedRows.length} 条</span>
-        </div>
+        </summary>
         <textarea className="weekly-paste-box" value={rawText} onChange={(event) => setRawText(event.target.value)} />
         {parsed.errors.length > 0 ? (
           <div className="weekly-parse-errors">
@@ -227,7 +227,7 @@ export function WeeklyAdminConsole() {
           </Link>
         </div>
         {notice ? <p className="admin-inline-notice">{notice}</p> : null}
-      </div>
+      </details>
 
       <div className="admin-card weekly-admin-card">
         <div className="admin-card-heading">
@@ -429,5 +429,4 @@ function csvCell(value: string | number) {
   const text = String(value);
   return /[",\n]/.test(text) ? `"${text.replaceAll('"', '""')}"` : text;
 }
-
 
