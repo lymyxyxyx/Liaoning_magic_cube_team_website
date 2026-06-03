@@ -38,7 +38,6 @@ const navItems: NavItem[] = [
 ];
 
 export function SiteHeader() {
-  const adminHref = process.env.NODE_ENV === "production" ? "https://lncubing.com/admin" : "/admin";
   const headerRef = useRef<HTMLElement>(null);
 
   function closeMenus() {
@@ -156,10 +155,24 @@ export function SiteHeader() {
           })}
         </div>
       </details>
-      <a className="admin-link" href={adminHref} title="后台管理" onClick={closeMenus}>
-        <Settings size={18} />
-        <span>后台</span>
-      </a>
+      <details className="admin-pass-popover" onToggle={handleDetailsToggle}>
+        <summary className="admin-link" title="后台管理">
+          <Settings size={18} />
+          <span>后台</span>
+        </summary>
+        <form className="admin-pass-dialog" action="/api/admin-auth?next=/admin" method="post" aria-label="后台口令">
+          <div className="admin-pass-dialog-heading">
+            <div>
+              <strong>后台口令</strong>
+              <span>输入后直接进入管理后台</span>
+            </div>
+          </div>
+          <input autoFocus inputMode="numeric" type="password" name="password" placeholder="请输入口令" />
+          <button className="button primary" type="submit">
+            进入后台
+          </button>
+        </form>
+      </details>
     </header>
   );
 }

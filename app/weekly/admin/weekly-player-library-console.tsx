@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { Pencil, Plus, Save, Trash2, X } from "lucide-react";
+import { getWeeklyAgeGroup, weeklyAgeGroups } from "@/lib/weekly-age-groups";
 import type { WeeklyLibraryGender, WeeklyPlayerLibraryEntry } from "@/lib/weekly-player-library";
 
 type DraftPlayer = WeeklyPlayerLibraryEntry;
@@ -51,6 +52,8 @@ const emptyDraft = {
   name: "",
   gender: "" as WeeklyLibraryGender,
   birthDate: "",
+  ageGroup: "",
+  ageGroupIsFuzzy: false,
   province: defaultProvince,
   city: defaultCity,
   source: "后台新增"
@@ -77,7 +80,7 @@ export function WeeklyPlayerLibraryConsole({
     const q = query.trim();
     if (!q) return players;
     return players.filter((player) => {
-      return [player.name, player.wcaId, player.gender, getAgeGroup(player.birthDate), player.province, player.city].some((value) =>
+      return [player.name, player.wcaId, player.gender, getDisplayAgeGroup(player), player.birthDate, player.province, player.city].some((value) =>
         (value || "").includes(q)
       );
     });
@@ -199,6 +202,10 @@ export function WeeklyPlayerLibraryConsole({
           <span>匹配资料</span>
         </div>
         <div className="stat">
+          <strong>{players.filter((player) => getDisplayAgeGroup(player)).length}</strong>
+          <span>已填组别</span>
+        </div>
+        <div className="stat">
           <strong>{visiblePlayers.length}</strong>
           <span>当前显示</span>
         </div>
@@ -227,7 +234,18 @@ export function WeeklyPlayerLibraryConsole({
             </label>
             <label>
               出生年月日
-              <input type="date" value={draft.birthDate} onChange={(event) => setDraft({ ...draft, birthDate: event.target.value })} />
+              <input type="date" value={draft.birthDate} onChange={(event) => setDraft(updateBirthDate(draft, event.target.value))} />
+            </label>
+            <label>
+              组别
+              <select value={getEditableAgeGroup(draft)} disabled={Boolean(draft.birthDate)} onChange={(event) => setDraft(updateManualAgeGroup(draft, event.target.value))}>
+                <option value="">未填</option>
+                {weeklyAgeGroups.map((group) => (
+                  <option value={group} key={group}>
+                    {group}
+                  </option>
+                ))}
+              </select>
             </label>
             <label>
               省份
@@ -287,6 +305,7 @@ export function WeeklyPlayerLibraryConsole({
                   <th>姓名</th>
                   <th>WCA ID</th>
                   <th>性别</th>
+                  <th>出生日期</th>
                   <th>组别</th>
                   <th>省份</th>
                   <th>城市</th>
@@ -304,7 +323,11 @@ export function WeeklyPlayerLibraryConsole({
                     </td>
                     <td data-label="WCA ID">{player.wcaId || ""}</td>
                     <td data-label="性别">{player.gender || ""}</td>
-                    <td data-label="组别">{getAgeGroup(player.birthDate)}</td>
+                    <td data-label="出生日期">{player.birthDate || ""}</td>
+                    <td data-label="组别">
+                      {getDisplayAgeGroup(player)}
+                      {isFuzzyAgeGroup(player) ? <span className="weekly-library-fuzzy">模糊</span> : null}
+                    </td>
                     <td data-label="省份">{player.province || ""}</td>
                     <td data-label="城市">{player.city || ""}</td>
                     <td data-label="操作">
@@ -351,7 +374,22 @@ export function WeeklyPlayerLibraryConsole({
               </label>
               <label>
                 出生年月日
-                <input type="date" value={editingPlayer.birthDate} onChange={(event) => updateEditingPlayer({ birthDate: event.target.value })} />
+                <input type="date" value={editingPlayer.birthDate} onChange={(event) => updateEditingPlayer(updateBirthDate(editingPlayer, event.target.value))} />
+              </label>
+              <label>
+                组别
+                <select
+                  value={getEditableAgeGroup(editingPlayer)}
+                  disabled={Boolean(editingPlayer.birthDate)}
+                  onChange={(event) => updateEditingPlayer(updateManualAgeGroup(editingPlayer, event.target.value))}
+                >
+                  <option value="">未填</option>
+                  {weeklyAgeGroups.map((group) => (
+                    <option value={group} key={group}>
+                      {group}
+                    </option>
+                  ))}
+                </select>
               </label>
               <label>
                 省份
@@ -402,6 +440,8 @@ function parseBatchLine(line: string): DraftPlayer | null {
     name,
     gender: normalizeGender(cells[1] || ""),
     birthDate: "",
+    ageGroup: normalizeAgeGroup(cells[2] || ""),
+    ageGroupIsFuzzy: Boolean(normalizeAgeGroup(cells[2] || "")),
     province: defaultProvince,
     city: defaultCity,
     source: "批量导入"
@@ -423,26 +463,37 @@ function normalizeGender(gender: string): WeeklyLibraryGender {
   return "";
 }
 
-function getAgeGroup(birthDate: string) {
-  const age = getAge(birthDate);
-  if (age === null) return "";
-  if (age <= 6) return "U6";
-  if (age <= 8) return "U8";
-  if (age <= 10) return "U10";
-  if (age <= 12) return "U12";
-  if (age < 18) return "U18";
-  if (age < 30) return "O18";
-  if (age < 40) return "O30";
-  return "O40";
+function getDisplayAgeGroup(player: Pick<DraftPlayer, "birthDate" | "ageGroup">) {
+  return getWeeklyAgeGroup(player.birthDate) || player.ageGroup || "";
 }
 
-function getAge(birthDate: string) {
-  if (!birthDate) return null;
-  const birthday = new Date(birthDate);
-  if (Number.isNaN(birthday.getTime())) return null;
-  const today = new Date();
-  let age = today.getFullYear() - birthday.getFullYear();
-  const monthDiff = today.getMonth() - birthday.getMonth();
-  if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthday.getDate())) age -= 1;
-  return age >= 0 ? age : null;
+function getEditableAgeGroup(player: Pick<DraftPlayer, "birthDate" | "ageGroup">) {
+  return player.birthDate ? getWeeklyAgeGroup(player.birthDate) : player.ageGroup || "";
+}
+
+function isFuzzyAgeGroup(player: Pick<DraftPlayer, "birthDate" | "ageGroup" | "ageGroupIsFuzzy">) {
+  return !player.birthDate && Boolean(player.ageGroup) && Boolean(player.ageGroupIsFuzzy);
+}
+
+function updateBirthDate<T extends Pick<DraftPlayer, "birthDate" | "ageGroup" | "ageGroupIsFuzzy">>(player: T, birthDate: string) {
+  return {
+    ...player,
+    birthDate,
+    ageGroup: birthDate ? "" : player.ageGroup,
+    ageGroupIsFuzzy: birthDate ? false : player.ageGroupIsFuzzy
+  };
+}
+
+function updateManualAgeGroup<T extends Pick<DraftPlayer, "birthDate" | "ageGroup" | "ageGroupIsFuzzy">>(player: T, value: string) {
+  const ageGroup = normalizeAgeGroup(value);
+  return {
+    ...player,
+    ageGroup: player.birthDate ? "" : ageGroup,
+    ageGroupIsFuzzy: !player.birthDate && Boolean(ageGroup)
+  };
+}
+
+function normalizeAgeGroup(value: string) {
+  const group = value.trim().toUpperCase();
+  return weeklyAgeGroups.includes(group as (typeof weeklyAgeGroups)[number]) ? group : "";
 }

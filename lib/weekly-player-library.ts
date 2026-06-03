@@ -1,6 +1,7 @@
 import { getPostgresPool } from "@/lib/postgres";
 import { enrichLocalProfiles, readLocalProfiles } from "@/lib/local-profile-store";
 import { commercialTeamMembers } from "@/lib/commercial-teams";
+import { getWeeklyAgeGroup, weeklyAgeGroups } from "@/lib/weekly-age-groups";
 
 export type WeeklyLibraryGender = "" | "男" | "女";
 
@@ -10,6 +11,8 @@ export type WeeklyPlayerLibraryEntry = {
   wcaId?: string;
   gender: WeeklyLibraryGender;
   birthDate: string;
+  ageGroup?: string;
+  ageGroupIsFuzzy?: boolean;
   province: string;
   city: string;
   source: string;
@@ -22,6 +25,8 @@ type WeeklyPlayerLibraryRow = {
   wca_id: string;
   gender: string;
   birth_date: string;
+  age_group_override: string;
+  age_group_is_fuzzy: boolean;
   province: string;
   city: string;
   source: string;
@@ -102,6 +107,8 @@ export async function ensureWeeklyPlayerLibraryTable() {
       gender TEXT NOT NULL DEFAULT '',
       wca_id TEXT NOT NULL DEFAULT '',
       birth_date TEXT NOT NULL DEFAULT '',
+      age_group_override TEXT NOT NULL DEFAULT '',
+      age_group_is_fuzzy BOOLEAN NOT NULL DEFAULT FALSE,
       province TEXT NOT NULL DEFAULT '',
       city TEXT NOT NULL DEFAULT '',
       source TEXT NOT NULL DEFAULT '',
@@ -110,6 +117,8 @@ export async function ensureWeeklyPlayerLibraryTable() {
     )
   `);
   await pool.query("ALTER TABLE weekly_player_library ADD COLUMN IF NOT EXISTS wca_id TEXT NOT NULL DEFAULT ''");
+  await pool.query("ALTER TABLE weekly_player_library ADD COLUMN IF NOT EXISTS age_group_override TEXT NOT NULL DEFAULT ''");
+  await pool.query("ALTER TABLE weekly_player_library ADD COLUMN IF NOT EXISTS age_group_is_fuzzy BOOLEAN NOT NULL DEFAULT FALSE");
   await pool.query("CREATE INDEX IF NOT EXISTS weekly_player_library_name_idx ON weekly_player_library (name)");
   await pool.query("CREATE INDEX IF NOT EXISTS weekly_player_library_wca_id_idx ON weekly_player_library (wca_id)");
 }
@@ -121,7 +130,7 @@ export async function listWeeklyPlayerLibrary(): Promise<WeeklyPlayerLibraryEntr
 
   const pool = getPostgresPool();
   const { rows } = await pool.query<WeeklyPlayerLibraryRow>(
-    `SELECT id, name, wca_id, gender, birth_date, province, city, source, updated_at
+    `SELECT id, name, wca_id, gender, birth_date, age_group_override, age_group_is_fuzzy, province, city, source, updated_at
      FROM weekly_player_library
      ORDER BY name`
   );
@@ -136,6 +145,8 @@ export function getMofang602SeedWeeklyPlayers(): WeeklyPlayerLibraryEntry[] {
     name,
     gender: mofang602FemaleNames.has(name) ? "女" : "男",
     birthDate: "",
+    ageGroup: "",
+    ageGroupIsFuzzy: false,
     province: "辽宁",
     city: "",
     source: "mofang123 第334周三阶表"
@@ -150,7 +161,7 @@ export async function findWeeklyPlayerLibraryEntry(input: { id?: string; name?: 
 
   const pool = getPostgresPool();
   const { rows } = await pool.query<WeeklyPlayerLibraryRow>(
-    `SELECT id, name, wca_id, gender, birth_date, province, city, source, updated_at
+    `SELECT id, name, wca_id, gender, birth_date, age_group_override, age_group_is_fuzzy, province, city, source, updated_at
      FROM weekly_player_library
      WHERE id = $1 OR name = $2
      LIMIT 1`,
@@ -175,18 +186,31 @@ export async function saveWeeklyPlayerLibrary(players: WeeklyPlayerLibraryEntry[
     for (const player of normalizedPlayers) {
       await client.query(
         `INSERT INTO weekly_player_library
-          (id, name, wca_id, gender, birth_date, province, city, source, updated_at)
-         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,now())
+          (id, name, wca_id, gender, birth_date, age_group_override, age_group_is_fuzzy, province, city, source, updated_at)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,now())
          ON CONFLICT (id) DO UPDATE
            SET name = EXCLUDED.name,
                wca_id = EXCLUDED.wca_id,
                gender = EXCLUDED.gender,
                birth_date = EXCLUDED.birth_date,
+               age_group_override = EXCLUDED.age_group_override,
+               age_group_is_fuzzy = EXCLUDED.age_group_is_fuzzy,
                province = EXCLUDED.province,
                city = EXCLUDED.city,
                source = EXCLUDED.source,
                updated_at = now()`,
-        [player.id, player.name, player.wcaId || "", player.gender, player.birthDate, player.province, player.city, player.source]
+        [
+          player.id,
+          player.name,
+          player.wcaId || "",
+          player.gender,
+          player.birthDate,
+          player.ageGroup || "",
+          Boolean(player.ageGroupIsFuzzy),
+          player.province,
+          player.city,
+          player.source
+        ]
       );
     }
 
@@ -213,6 +237,8 @@ function normalizePlayers(players: WeeklyPlayerLibraryEntry[]) {
         wcaId: player.wcaId?.trim().toUpperCase() || "",
         gender: normalizeGender(player.gender),
         birthDate: player.birthDate.trim(),
+        ageGroup: normalizeAgeGroup(player.ageGroup || "", player.birthDate),
+        ageGroupIsFuzzy: !player.birthDate.trim() && (Boolean(player.ageGroupIsFuzzy) || Boolean(player.ageGroup)),
         province: player.province.trim(),
         city: player.city.trim(),
         source: player.source.trim()
@@ -233,9 +259,12 @@ async function enrichWeeklyPlayerMatches(players: WeeklyPlayerLibraryEntry[]) {
 
   return players.map((player) => {
     const localMatch = localMatchesByName.get(player.name);
+    const ageGroup = getWeeklyAgeGroup(player.birthDate) || normalizeAgeGroup(player.ageGroup || "", "");
     return {
       ...player,
       wcaId: localMatch?.wcaId || player.wcaId || "",
+      ageGroup,
+      ageGroupIsFuzzy: !player.birthDate && Boolean(ageGroup),
       province: localMatch?.province || player.province || "",
       city: localMatch?.city || player.city || ""
     };
@@ -335,6 +364,8 @@ function mapLibraryRow(row: WeeklyPlayerLibraryRow): WeeklyPlayerLibraryEntry {
     wcaId: row.wca_id || "",
     gender: normalizeGender(row.gender),
     birthDate: row.birth_date || "",
+    ageGroup: getWeeklyAgeGroup(row.birth_date || "") || row.age_group_override || "",
+    ageGroupIsFuzzy: Boolean(row.age_group_is_fuzzy) || (!row.birth_date && Boolean(row.age_group_override)),
     province: row.province || "",
     city: row.city || "",
     source: row.source || "",
@@ -345,6 +376,13 @@ function mapLibraryRow(row: WeeklyPlayerLibraryRow): WeeklyPlayerLibraryEntry {
 function normalizeGender(gender: string): WeeklyLibraryGender {
   if (gender === "男" || gender === "女") return gender;
   return "";
+}
+
+function normalizeAgeGroup(ageGroup: string, birthDate: string) {
+  const calculated = getWeeklyAgeGroup(birthDate);
+  if (calculated) return "";
+  const value = ageGroup.trim().toUpperCase();
+  return weeklyAgeGroups.includes(value as (typeof weeklyAgeGroups)[number]) ? value : "";
 }
 
 function createSeedId(name: string) {

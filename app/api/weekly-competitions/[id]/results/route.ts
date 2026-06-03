@@ -30,6 +30,8 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
       province: string;
       city: string;
       birthDate: string;
+      ageGroup?: string;
+      ageGroupIsFuzzy?: boolean;
     };
     attempts?: string[];
     format?: "avg5" | "best3" | "avg3" | "best1";
@@ -54,7 +56,9 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
         gender: libraryPlayer.gender === "女" ? "女" : "男",
         province: libraryPlayer.province,
         city: libraryPlayer.city,
-        birthDate: libraryPlayer.birthDate
+        birthDate: libraryPlayer.birthDate,
+        ageGroup: libraryPlayer.ageGroup || "",
+        ageGroupIsFuzzy: Boolean(libraryPlayer.ageGroupIsFuzzy)
       },
       attempts: payload.attempts
     });

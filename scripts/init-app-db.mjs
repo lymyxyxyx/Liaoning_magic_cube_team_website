@@ -133,6 +133,8 @@ async function main() {
         gender TEXT NOT NULL DEFAULT '',
         wca_id TEXT NOT NULL DEFAULT '',
         birth_date TEXT NOT NULL DEFAULT '',
+        age_group_override TEXT NOT NULL DEFAULT '',
+        age_group_is_fuzzy BOOLEAN NOT NULL DEFAULT FALSE,
         province TEXT NOT NULL DEFAULT '',
         city TEXT NOT NULL DEFAULT '',
         source TEXT NOT NULL DEFAULT '',
@@ -142,6 +144,8 @@ async function main() {
     `);
 
     await client.query("ALTER TABLE weekly_player_library ADD COLUMN IF NOT EXISTS wca_id TEXT NOT NULL DEFAULT ''");
+    await client.query("ALTER TABLE weekly_player_library ADD COLUMN IF NOT EXISTS age_group_override TEXT NOT NULL DEFAULT ''");
+    await client.query("ALTER TABLE weekly_player_library ADD COLUMN IF NOT EXISTS age_group_is_fuzzy BOOLEAN NOT NULL DEFAULT FALSE");
     await client.query("CREATE INDEX IF NOT EXISTS weekly_player_library_name_idx ON weekly_player_library (name)");
     await client.query("CREATE INDEX IF NOT EXISTS weekly_player_library_wca_id_idx ON weekly_player_library (wca_id)");
 

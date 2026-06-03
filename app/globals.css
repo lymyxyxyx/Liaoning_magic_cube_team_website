@@ -275,9 +275,71 @@ main {
 
 .admin-link {
   border: 1px solid var(--line);
+  appearance: none;
+  cursor: pointer;
   background: var(--surface);
   box-shadow: 0 6px 18px rgba(23, 32, 51, 0.05);
   transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+}
+
+.admin-pass-popover {
+  position: relative;
+  z-index: 80;
+}
+
+.admin-pass-popover summary {
+  list-style: none;
+}
+
+.admin-pass-popover summary::-webkit-details-marker {
+  display: none;
+}
+
+.admin-pass-dialog {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  display: grid;
+  gap: 10px;
+  width: min(320px, calc(100vw - 32px));
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 14px;
+  background: var(--surface);
+  box-shadow: 0 22px 55px rgb(15 23 42 / 20%);
+}
+
+.admin-pass-dialog-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.admin-pass-dialog-heading div {
+  display: grid;
+  gap: 3px;
+}
+
+.admin-pass-dialog-heading strong {
+  color: var(--text);
+  font-size: 15px;
+}
+
+.admin-pass-dialog-heading span,
+.admin-pass-dialog p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.admin-pass-dialog input {
+  min-height: 38px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 7px 9px;
+  color: var(--text);
+  font: inherit;
 }
 
 .container,
@@ -2478,7 +2540,8 @@ textarea {
 }
 
 .weekly-library-shell--side .weekly-library-table td:nth-child(4),
-.weekly-library-shell--side .weekly-library-table td:nth-child(5) {
+.weekly-library-shell--side .weekly-library-table td:nth-child(5),
+.weekly-library-shell--side .weekly-library-table td:nth-child(6) {
   display: none;
 }
 
@@ -2584,16 +2647,20 @@ textarea {
 }
 
 .weekly-library-table th:nth-child(5) {
-  width: 94px;
+  width: 92px;
 }
 
-.weekly-library-table th:nth-child(6),
-.weekly-library-table th:nth-child(7) {
+.weekly-library-table th:nth-child(6) {
+  width: 76px;
+}
+
+.weekly-library-table th:nth-child(7),
+.weekly-library-table th:nth-child(8) {
   width: 60px;
 }
 
-.weekly-library-table th:nth-child(8),
-.weekly-library-table td:nth-child(8) {
+.weekly-library-table th:nth-child(9),
+.weekly-library-table td:nth-child(9) {
   width: 72px;
   text-align: right;
 }
@@ -2605,6 +2672,18 @@ textarea {
 
 .icon-button.danger {
   color: var(--red);
+}
+
+.weekly-library-fuzzy {
+  display: inline-flex;
+  margin-left: 5px;
+  border: 1px solid #f0d18c;
+  border-radius: 999px;
+  padding: 1px 5px;
+  color: #8a5c00;
+  background: #fff7df;
+  font-size: 11px;
+  font-weight: 850;
 }
 
 .weekly-library-row-actions {
@@ -5165,7 +5244,7 @@ a.commercial-member-link:hover {
     color: var(--muted);
   }
 
-  .admin-link {
+  .admin-pass-popover {
     grid-column: 2;
     grid-row: 1;
     justify-self: end;

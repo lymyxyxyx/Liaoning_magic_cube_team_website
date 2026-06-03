@@ -1,6 +1,7 @@
 import { getPostgresPool } from "@/lib/postgres";
 import type { PoolClient } from "pg";
 import { getWcaEventName, isWcaEventId } from "@/lib/wca-events";
+import { getWeeklyAgeGroup } from "@/lib/weekly-age-groups";
 import {
   calculateResultByFormat,
   formatResult,
@@ -30,6 +31,8 @@ export type WeeklyPlayer = {
   province: string;
   city: string;
   birthDate: string;
+  ageGroup: string;
+  ageGroupIsFuzzy?: boolean;
 };
 
 export type WeeklyEnteredResult = {
@@ -59,6 +62,7 @@ type WeeklyResultRow = {
   player_name: string;
   player_slug: string;
   gender: string;
+  age_group: string | null;
   average: string;
   personal_best: string;
 };
@@ -133,7 +137,9 @@ export async function searchWeeklyPlayers(query: string): Promise<WeeklyPlayer[]
         gender: player.gender === "女" ? ("女" as const) : ("男" as const),
         province: player.province,
         city: player.city,
-        birthDate: player.birthDate
+        birthDate: player.birthDate,
+        ageGroup: getWeeklyAgeGroup(player.birthDate) || player.ageGroup || "",
+        ageGroupIsFuzzy: Boolean(player.ageGroupIsFuzzy)
       }))
       .slice(0, 20);
   } catch {
@@ -147,7 +153,9 @@ export async function searchWeeklyPlayers(query: string): Promise<WeeklyPlayer[]
         gender: player.gender === "女" ? ("女" as const) : ("男" as const),
         province: player.province,
         city: player.city,
-        birthDate: player.birthDate
+        birthDate: player.birthDate,
+        ageGroup: getWeeklyAgeGroup(player.birthDate) || player.ageGroup || "",
+        ageGroupIsFuzzy: Boolean(player.ageGroupIsFuzzy)
       }))
       .slice(0, 20);
   }
@@ -160,6 +168,8 @@ export async function createWeeklyPlayer(input: {
   province?: string;
   city?: string;
   birthDate?: string;
+  ageGroup?: string;
+  ageGroupIsFuzzy?: boolean;
 }) {
   await ensureWeeklyEntryTables();
   const name = input.name.trim();
@@ -226,7 +236,9 @@ export async function listWeeklyResults(meetIdOrSlug: string, eventId: string, f
         gender: row.gender === "女" ? "女" : "男",
         province: "辽宁",
         city: "",
-        birthDate: ""
+        birthDate: "",
+        ageGroup: row.age_group || "",
+        ageGroupIsFuzzy: false
       },
       best: secondsToResultValue(row.personal_best),
       average: secondsToResultValue(row.average),
@@ -261,6 +273,7 @@ export async function saveWeeklyResult(input: {
   const eventName = getWcaEventName(input.eventId);
   const playerName = input.player.name.trim();
   const playerSlug = input.player.slug || (input.player.id.startsWith("code:") ? input.player.id.slice(5) : "");
+  const playerAgeGroup = getWeeklyAgeGroup(input.player.birthDate) || input.player.ageGroup || "";
 
   try {
     await client.query("BEGIN");
@@ -280,11 +293,12 @@ export async function saveWeeklyResult(input: {
     if (resultId) {
       await client.query(
         `UPDATE weekly_results
-         SET player_slug = $1, gender = $2, average = $3, personal_best = $4
-         WHERE id = $5`,
+         SET player_slug = $1, gender = $2, age_group = $3, average = $4, personal_best = $5
+         WHERE id = $6`,
         [
           playerSlug,
           input.player.gender === "女" ? "女" : "男",
+          playerAgeGroup || null,
           resultValueToSeconds(calculated.average),
           resultValueToSeconds(calculated.best),
           resultId
@@ -295,7 +309,7 @@ export async function saveWeeklyResult(input: {
       const inserted = await client.query<{ id: number }>(
         `INSERT INTO weekly_results
           (event_id, meet_id, rank, player_name, player_slug, gender, age_group, level, grade, average, personal_best, pb_refreshed)
-         VALUES ($1,$2,0,$3,$4,$5,NULL,'','',$6,$7,FALSE)
+         VALUES ($1,$2,0,$3,$4,$5,$6,'','',$7,$8,FALSE)
          RETURNING id`,
         [
           eventKey,
@@ -303,6 +317,7 @@ export async function saveWeeklyResult(input: {
           playerName,
           playerSlug,
           input.player.gender === "女" ? "女" : "男",
+          playerAgeGroup || null,
           resultValueToSeconds(calculated.average),
           resultValueToSeconds(calculated.best)
         ]
@@ -400,7 +415,9 @@ function mapPlayerRow(row: WeeklyPlayerRow): WeeklyPlayer {
     gender: row.gender === "女" ? "女" : "男",
     province: row.province || "辽宁",
     city: row.city || "",
-    birthDate: row.birth_date || ""
+    birthDate: row.birth_date || "",
+    ageGroup: getWeeklyAgeGroup(row.birth_date || ""),
+    ageGroupIsFuzzy: false
   };
 }
 
