@@ -71,9 +71,9 @@ export function WeeklyPlayerLibraryConsole({
   const [players, setPlayers] = useState<DraftPlayer[]>(initialPlayers);
   const [draft, setDraft] = useState(emptyDraft);
   const [query, setQuery] = useState("");
-  const [batchText, setBatchText] = useState("");
   const [status, setStatus] = useState(initialPlayers.length > 0 ? "已读取" : "等待保存");
   const [notice, setNotice] = useState("");
+  const [isCreatingPlayer, setIsCreatingPlayer] = useState(false);
   const [editingPlayer, setEditingPlayer] = useState<DraftPlayer | null>(null);
 
   const visiblePlayers = useMemo(() => {
@@ -100,26 +100,15 @@ export function WeeklyPlayerLibraryConsole({
     }
     setPlayers((current) => [{ ...draft, id: createLibraryPlayerId(name), name }, ...current]);
     setDraft(emptyDraft);
+    setIsCreatingPlayer(false);
     setStatus("有未保存修改");
     setNotice("已加入列表，保存后写入选手库。");
   }
 
-  function importBatch() {
-    const parsedPlayers = batchText
-      .split(/\r?\n/)
-      .map(parseBatchLine)
-      .filter((player): player is DraftPlayer => Boolean(player?.name))
-      .filter((player) => !players.some((current) => current.name === player.name));
-
-    if (parsedPlayers.length === 0) {
-      setNotice("没有可导入的新姓名。每行可写：姓名，性别。");
-      return;
-    }
-
-    setPlayers((current) => [...parsedPlayers, ...current]);
-    setBatchText("");
-    setStatus("有未保存修改");
-    setNotice(`已导入 ${parsedPlayers.length} 名选手，保存后写入选手库。`);
+  function openCreator() {
+    setDraft(emptyDraft);
+    setNotice("");
+    setIsCreatingPlayer(true);
   }
 
   function updatePlayer(id: string, next: Partial<DraftPlayer>) {
@@ -212,91 +201,25 @@ export function WeeklyPlayerLibraryConsole({
       </div>
 
       <div className="weekly-library-workbench">
-        <div className="admin-card weekly-library-tools">
-          <div className="admin-card-heading">
-            <div>
-              <h2>新增选手</h2>
-              <p>{variant === "side" ? "维护可录入成绩的选手名单。" : "默认省市为辽宁沈阳，生日可后续补齐。"}</p>
-            </div>
-          </div>
-          <div className="weekly-library-form">
-            <label>
-              姓名
-              <input value={draft.name} onChange={(event) => setDraft({ ...draft, name: event.target.value })} placeholder="例如：韩沐遥" />
-            </label>
-            <label>
-              性别
-              <select value={draft.gender} onChange={(event) => setDraft({ ...draft, gender: normalizeGender(event.target.value) })}>
-                <option value="">未填</option>
-                <option value="男">男</option>
-                <option value="女">女</option>
-              </select>
-            </label>
-            <label>
-              出生年月日
-              <input type="date" value={draft.birthDate} onChange={(event) => setDraft(updateBirthDate(draft, event.target.value))} />
-            </label>
-            <label>
-              组别
-              <select value={getEditableAgeGroup(draft)} disabled={Boolean(draft.birthDate)} onChange={(event) => setDraft(updateManualAgeGroup(draft, event.target.value))}>
-                <option value="">未填</option>
-                {weeklyAgeGroups.map((group) => (
-                  <option value={group} key={group}>
-                    {group}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <label>
-              省份
-              <select value={draft.province} onChange={(event) => setDraft({ ...draft, province: event.target.value, city: event.target.value === "辽宁" ? draft.city || defaultCity : draft.city })}>
-                {chinaProvinces.map((province) => (
-                  <option value={province} key={province}>
-                    {province}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <label>
-              城市
-              <select value={draft.city} onChange={(event) => setDraft({ ...draft, city: event.target.value })}>
-                {liaoningCities.map((city) => (
-                  <option value={city} key={city}>
-                    {city}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <button className="button primary" type="button" onClick={addPlayer}>
-              <Plus size={16} />
-              新增
-            </button>
-          </div>
-
-          <label className="weekly-library-batch">
-            批量导入
-            <textarea value={batchText} onChange={(event) => setBatchText(event.target.value)} placeholder={"每行一个：姓名，性别\n例：王一帆，男"} />
-          </label>
-          <div className="weekly-admin-actions">
-            <button className="button" type="button" onClick={importBatch}>
-              批量加入
-            </button>
-            <button className="button primary" type="button" onClick={savePlayers}>
-              <Save size={16} />
-              保存选手库
-            </button>
-          </div>
-          {notice ? <p className="admin-inline-notice">{notice}</p> : null}
-        </div>
-
         <div className="admin-card weekly-library-table-card">
           <div className="admin-card-heading">
             <div>
               <h2>资料编辑</h2>
               <p>WCA ID 和城市只匹配后台已录入的辽宁选手，匹配不到留空。</p>
             </div>
-            <input className="weekly-library-search" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="搜索姓名 / 省市" />
+            <div className="weekly-library-toolbar">
+              <input className="weekly-library-search" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="搜索姓名 / 省市" />
+              <button className="button" type="button" onClick={openCreator}>
+                <Plus size={15} />
+                新建
+              </button>
+              <button className="button primary" type="button" onClick={savePlayers}>
+                <Save size={15} />
+                保存
+              </button>
+            </div>
           </div>
+          {notice ? <p className="admin-inline-notice weekly-library-notice">{notice}</p> : null}
           <div className="table-scroll">
             <table className="result-table weekly-library-table">
               <thead>
@@ -347,6 +270,34 @@ export function WeeklyPlayerLibraryConsole({
           </div>
         </div>
       </div>
+      {isCreatingPlayer ? (
+        <div className="weekly-library-dialog-backdrop" role="presentation">
+          <div className="weekly-library-dialog" role="dialog" aria-modal="true" aria-label="新建选手">
+            <div className="admin-card-heading">
+              <div>
+                <h2>新建选手</h2>
+                <p>默认辽宁沈阳，生日可后续补齐。</p>
+              </div>
+              <button className="icon-button" type="button" onClick={() => setIsCreatingPlayer(false)} aria-label="关闭新建">
+                <X size={17} />
+              </button>
+            </div>
+            <PlayerFields
+              player={draft}
+              onChange={(next) => setDraft((current) => ({ ...current, ...next }))}
+            />
+            <div className="weekly-admin-actions">
+              <button className="button" type="button" onClick={() => setIsCreatingPlayer(false)}>
+                取消
+              </button>
+              <button className="button primary" type="button" onClick={addPlayer}>
+                <Plus size={16} />
+                加入列表
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
       {editingPlayer ? (
         <div className="weekly-library-dialog-backdrop" role="presentation">
           <div className="weekly-library-dialog" role="dialog" aria-modal="true" aria-label="编辑选手">
@@ -359,59 +310,7 @@ export function WeeklyPlayerLibraryConsole({
                 <X size={17} />
               </button>
             </div>
-            <div className="weekly-library-form weekly-library-edit-form">
-              <label>
-                姓名
-                <input value={editingPlayer.name} onChange={(event) => updateEditingPlayer({ name: event.target.value })} />
-              </label>
-              <label>
-                性别
-                <select value={editingPlayer.gender} onChange={(event) => updateEditingPlayer({ gender: normalizeGender(event.target.value) })}>
-                  <option value="">未填</option>
-                  <option value="男">男</option>
-                  <option value="女">女</option>
-                </select>
-              </label>
-              <label>
-                出生年月日
-                <input type="date" value={editingPlayer.birthDate} onChange={(event) => updateEditingPlayer(updateBirthDate(editingPlayer, event.target.value))} />
-              </label>
-              <label>
-                组别
-                <select
-                  value={getEditableAgeGroup(editingPlayer)}
-                  disabled={Boolean(editingPlayer.birthDate)}
-                  onChange={(event) => updateEditingPlayer(updateManualAgeGroup(editingPlayer, event.target.value))}
-                >
-                  <option value="">未填</option>
-                  {weeklyAgeGroups.map((group) => (
-                    <option value={group} key={group}>
-                      {group}
-                    </option>
-                  ))}
-                </select>
-              </label>
-              <label>
-                省份
-                <select value={editingPlayer.province || defaultProvince} onChange={(event) => updateEditingPlayer({ province: event.target.value, city: event.target.value === "辽宁" ? editingPlayer.city || defaultCity : editingPlayer.city })}>
-                  {chinaProvinces.map((province) => (
-                    <option value={province} key={province}>
-                      {province}
-                    </option>
-                  ))}
-                </select>
-              </label>
-              <label>
-                城市
-                <select value={editingPlayer.city || defaultCity} onChange={(event) => updateEditingPlayer({ city: event.target.value })}>
-                  {liaoningCities.map((city) => (
-                    <option value={city} key={city}>
-                      {city}
-                    </option>
-                  ))}
-                </select>
-              </label>
-            </div>
+            <PlayerFields player={editingPlayer} onChange={updateEditingPlayer} />
             <div className="weekly-admin-actions">
               <button className="button" type="button" onClick={() => setEditingPlayer(null)}>
                 取消
@@ -428,24 +327,67 @@ export function WeeklyPlayerLibraryConsole({
   );
 }
 
-function parseBatchLine(line: string): DraftPlayer | null {
-  const cells = line
-    .split(/[,，\t]/)
-    .map((cell) => cell.trim())
-    .filter(Boolean);
-  const name = cells[0] || "";
-  if (!name) return null;
-  return {
-    id: createLibraryPlayerId(name),
-    name,
-    gender: normalizeGender(cells[1] || ""),
-    birthDate: "",
-    ageGroup: normalizeAgeGroup(cells[2] || ""),
-    ageGroupIsFuzzy: Boolean(normalizeAgeGroup(cells[2] || "")),
-    province: defaultProvince,
-    city: defaultCity,
-    source: "批量导入"
-  };
+function PlayerFields({
+  player,
+  onChange
+}: {
+  player: DraftPlayer;
+  onChange: (next: Partial<DraftPlayer>) => void;
+}) {
+  return (
+    <div className="weekly-library-form weekly-library-edit-form">
+      <label>
+        姓名
+        <input value={player.name} onChange={(event) => onChange({ name: event.target.value })} placeholder="例如：韩沐遥" />
+      </label>
+      <label>
+        性别
+        <select value={player.gender} onChange={(event) => onChange({ gender: normalizeGender(event.target.value) })}>
+          <option value="">未填</option>
+          <option value="男">男</option>
+          <option value="女">女</option>
+        </select>
+      </label>
+      <label>
+        出生年月日
+        <input type="date" value={player.birthDate} onChange={(event) => onChange(updateBirthDate(player, event.target.value))} />
+      </label>
+      <label>
+        组别
+        <select value={getEditableAgeGroup(player)} disabled={Boolean(player.birthDate)} onChange={(event) => onChange(updateManualAgeGroup(player, event.target.value))}>
+          <option value="">未填</option>
+          {weeklyAgeGroups.map((group) => (
+            <option value={group} key={group}>
+              {group}
+            </option>
+          ))}
+        </select>
+      </label>
+      <label>
+        省份
+        <select
+          value={player.province || defaultProvince}
+          onChange={(event) => onChange({ province: event.target.value, city: event.target.value === "辽宁" ? player.city || defaultCity : player.city })}
+        >
+          {chinaProvinces.map((province) => (
+            <option value={province} key={province}>
+              {province}
+            </option>
+          ))}
+        </select>
+      </label>
+      <label>
+        城市
+        <select value={player.city || defaultCity} onChange={(event) => onChange({ city: event.target.value })}>
+          {liaoningCities.map((city) => (
+            <option value={city} key={city}>
+              {city}
+            </option>
+          ))}
+        </select>
+      </label>
+    </div>
+  );
 }
 
 function createLibraryPlayerId(name: string) {
