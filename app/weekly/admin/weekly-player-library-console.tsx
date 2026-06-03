@@ -1,13 +1,50 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Plus, Save, Trash2 } from "lucide-react";
+import { Pencil, Plus, Save, Trash2, X } from "lucide-react";
 import type { WeeklyLibraryGender, WeeklyPlayerLibraryEntry } from "@/lib/weekly-player-library";
 
 type DraftPlayer = WeeklyPlayerLibraryEntry;
 
 const defaultProvince = "辽宁";
 const defaultCity = "沈阳";
+const chinaProvinces = [
+  "北京",
+  "天津",
+  "河北",
+  "山西",
+  "内蒙古",
+  "辽宁",
+  "吉林",
+  "黑龙江",
+  "上海",
+  "江苏",
+  "浙江",
+  "安徽",
+  "福建",
+  "江西",
+  "山东",
+  "河南",
+  "湖北",
+  "湖南",
+  "广东",
+  "广西",
+  "海南",
+  "重庆",
+  "四川",
+  "贵州",
+  "云南",
+  "西藏",
+  "陕西",
+  "甘肃",
+  "青海",
+  "宁夏",
+  "新疆",
+  "香港",
+  "澳门",
+  "台湾"
+];
+const liaoningCities = ["沈阳", "大连", "鞍山", "抚顺", "本溪", "丹东", "锦州", "营口", "阜新", "辽阳", "盘锦", "铁岭", "朝阳", "葫芦岛"];
 
 const emptyDraft = {
   id: "",
@@ -21,10 +58,12 @@ const emptyDraft = {
 
 export function WeeklyPlayerLibraryConsole({
   initialPlayers,
-  variant = "full"
+  variant = "full",
+  apiPath = "/api/admin/weekly-player-library"
 }: {
   initialPlayers: WeeklyPlayerLibraryEntry[];
   variant?: "full" | "side";
+  apiPath?: string;
 }) {
   const [players, setPlayers] = useState<DraftPlayer[]>(initialPlayers);
   const [draft, setDraft] = useState(emptyDraft);
@@ -32,16 +71,19 @@ export function WeeklyPlayerLibraryConsole({
   const [batchText, setBatchText] = useState("");
   const [status, setStatus] = useState(initialPlayers.length > 0 ? "已读取" : "等待保存");
   const [notice, setNotice] = useState("");
+  const [editingPlayer, setEditingPlayer] = useState<DraftPlayer | null>(null);
 
   const visiblePlayers = useMemo(() => {
     const q = query.trim();
     if (!q) return players;
     return players.filter((player) => {
-      return [player.name, player.gender, player.birthDate, player.province, player.city].some((value) => value.includes(q));
+      return [player.name, player.wcaId, player.gender, getAgeGroup(player.birthDate), player.province, player.city].some((value) =>
+        (value || "").includes(q)
+      );
     });
   }, [players, query]);
 
-  const completedCount = players.filter((player) => player.gender && player.birthDate && player.province && player.city).length;
+  const matchedCount = players.filter((player) => player.wcaId || player.city).length;
 
   function addPlayer() {
     const name = draft.name.trim();
@@ -82,6 +124,30 @@ export function WeeklyPlayerLibraryConsole({
     setStatus("有未保存修改");
   }
 
+  function openEditor(player: DraftPlayer) {
+    setEditingPlayer({
+      ...player,
+      province: player.province || defaultProvince,
+      city: player.city || defaultCity
+    });
+  }
+
+  function updateEditingPlayer(next: Partial<DraftPlayer>) {
+    setEditingPlayer((current) => (current ? { ...current, ...next } : current));
+  }
+
+  function saveEditingPlayer() {
+    if (!editingPlayer) return;
+    const name = editingPlayer.name.trim();
+    if (!name) {
+      setNotice("姓名不能为空。");
+      return;
+    }
+    updatePlayer(editingPlayer.id, { ...editingPlayer, name });
+    setEditingPlayer(null);
+    setNotice("已更新选手信息，保存后写入选手库。");
+  }
+
   function removePlayer(id: string) {
     if (!window.confirm("确认从周赛选手库删除这名选手？")) return;
     setPlayers((current) => current.filter((player) => player.id !== id));
@@ -91,7 +157,7 @@ export function WeeklyPlayerLibraryConsole({
   function savePlayers() {
     setStatus("保存中");
     setNotice("");
-    fetch("/api/weekly-admin/player-library", {
+    fetch(apiPath, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ players })
@@ -129,8 +195,8 @@ export function WeeklyPlayerLibraryConsole({
           <span>已填性别</span>
         </div>
         <div className="stat">
-          <strong>{completedCount}</strong>
-          <span>完整资料</span>
+          <strong>{matchedCount}</strong>
+          <span>匹配资料</span>
         </div>
         <div className="stat">
           <strong>{visiblePlayers.length}</strong>
@@ -165,11 +231,23 @@ export function WeeklyPlayerLibraryConsole({
             </label>
             <label>
               省份
-              <input value={draft.province} onChange={(event) => setDraft({ ...draft, province: event.target.value })} placeholder="辽宁" />
+              <select value={draft.province} onChange={(event) => setDraft({ ...draft, province: event.target.value, city: event.target.value === "辽宁" ? draft.city || defaultCity : draft.city })}>
+                {chinaProvinces.map((province) => (
+                  <option value={province} key={province}>
+                    {province}
+                  </option>
+                ))}
+              </select>
             </label>
             <label>
               城市
-              <input value={draft.city} onChange={(event) => setDraft({ ...draft, city: event.target.value })} placeholder="沈阳" />
+              <select value={draft.city} onChange={(event) => setDraft({ ...draft, city: event.target.value })}>
+                {liaoningCities.map((city) => (
+                  <option value={city} key={city}>
+                    {city}
+                  </option>
+                ))}
+              </select>
             </label>
             <button className="button primary" type="button" onClick={addPlayer}>
               <Plus size={16} />
@@ -197,7 +275,7 @@ export function WeeklyPlayerLibraryConsole({
           <div className="admin-card-heading">
             <div>
               <h2>资料编辑</h2>
-              <p>直接在表格内修改，最后统一保存。</p>
+              <p>WCA ID 和城市只匹配后台已录入的辽宁选手，匹配不到留空。</p>
             </div>
             <input className="weekly-library-search" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="搜索姓名 / 省市" />
           </div>
@@ -207,8 +285,9 @@ export function WeeklyPlayerLibraryConsole({
                 <tr>
                   <th>序号</th>
                   <th>姓名</th>
+                  <th>WCA ID</th>
                   <th>性别</th>
-                  <th>出生年月日</th>
+                  <th>组别</th>
                   <th>省份</th>
                   <th>城市</th>
                   <th>操作</th>
@@ -221,28 +300,22 @@ export function WeeklyPlayerLibraryConsole({
                       {index + 1}
                     </td>
                     <td data-label="姓名">
-                      <input value={player.name} onChange={(event) => updatePlayer(player.id, { name: event.target.value })} />
+                      <strong>{player.name}</strong>
                     </td>
-                    <td data-label="性别">
-                      <select value={player.gender} onChange={(event) => updatePlayer(player.id, { gender: normalizeGender(event.target.value) })}>
-                        <option value="">未填</option>
-                        <option value="男">男</option>
-                        <option value="女">女</option>
-                      </select>
-                    </td>
-                    <td data-label="出生年月日">
-                      <input type="date" value={player.birthDate} onChange={(event) => updatePlayer(player.id, { birthDate: event.target.value })} />
-                    </td>
-                    <td data-label="省份">
-                      <input value={player.province} onChange={(event) => updatePlayer(player.id, { province: event.target.value })} />
-                    </td>
-                    <td data-label="城市">
-                      <input value={player.city} onChange={(event) => updatePlayer(player.id, { city: event.target.value })} />
-                    </td>
+                    <td data-label="WCA ID">{player.wcaId || ""}</td>
+                    <td data-label="性别">{player.gender || ""}</td>
+                    <td data-label="组别">{getAgeGroup(player.birthDate)}</td>
+                    <td data-label="省份">{player.province || ""}</td>
+                    <td data-label="城市">{player.city || ""}</td>
                     <td data-label="操作">
-                      <button className="icon-button danger" type="button" onClick={() => removePlayer(player.id)} aria-label={`删除${player.name}`}>
-                        <Trash2 size={16} />
-                      </button>
+                      <span className="weekly-library-row-actions">
+                        <button className="icon-button" type="button" onClick={() => openEditor(player)} aria-label={`编辑${player.name}`}>
+                          <Pencil size={15} />
+                        </button>
+                        <button className="icon-button danger" type="button" onClick={() => removePlayer(player.id)} aria-label={`删除${player.name}`}>
+                          <Trash2 size={15} />
+                        </button>
+                      </span>
                     </td>
                   </tr>
                 ))}
@@ -251,6 +324,68 @@ export function WeeklyPlayerLibraryConsole({
           </div>
         </div>
       </div>
+      {editingPlayer ? (
+        <div className="weekly-library-dialog-backdrop" role="presentation">
+          <div className="weekly-library-dialog" role="dialog" aria-modal="true" aria-label="编辑选手">
+            <div className="admin-card-heading">
+              <div>
+                <h2>编辑选手</h2>
+                <p>{editingPlayer.wcaId ? `匹配 WCA：${editingPlayer.wcaId}` : "未匹配 WCA ID"}</p>
+              </div>
+              <button className="icon-button" type="button" onClick={() => setEditingPlayer(null)} aria-label="关闭编辑">
+                <X size={17} />
+              </button>
+            </div>
+            <div className="weekly-library-form weekly-library-edit-form">
+              <label>
+                姓名
+                <input value={editingPlayer.name} onChange={(event) => updateEditingPlayer({ name: event.target.value })} />
+              </label>
+              <label>
+                性别
+                <select value={editingPlayer.gender} onChange={(event) => updateEditingPlayer({ gender: normalizeGender(event.target.value) })}>
+                  <option value="">未填</option>
+                  <option value="男">男</option>
+                  <option value="女">女</option>
+                </select>
+              </label>
+              <label>
+                出生年月日
+                <input type="date" value={editingPlayer.birthDate} onChange={(event) => updateEditingPlayer({ birthDate: event.target.value })} />
+              </label>
+              <label>
+                省份
+                <select value={editingPlayer.province || defaultProvince} onChange={(event) => updateEditingPlayer({ province: event.target.value, city: event.target.value === "辽宁" ? editingPlayer.city || defaultCity : editingPlayer.city })}>
+                  {chinaProvinces.map((province) => (
+                    <option value={province} key={province}>
+                      {province}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label>
+                城市
+                <select value={editingPlayer.city || defaultCity} onChange={(event) => updateEditingPlayer({ city: event.target.value })}>
+                  {liaoningCities.map((city) => (
+                    <option value={city} key={city}>
+                      {city}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            </div>
+            <div className="weekly-admin-actions">
+              <button className="button" type="button" onClick={() => setEditingPlayer(null)}>
+                取消
+              </button>
+              <button className="button primary" type="button" onClick={saveEditingPlayer}>
+                <Save size={16} />
+                保存修改
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </section>
   );
 }
@@ -286,4 +421,28 @@ function createLibraryPlayerId(name: string) {
 function normalizeGender(gender: string): WeeklyLibraryGender {
   if (gender === "男" || gender === "女") return gender;
   return "";
+}
+
+function getAgeGroup(birthDate: string) {
+  const age = getAge(birthDate);
+  if (age === null) return "";
+  if (age <= 6) return "U6";
+  if (age <= 8) return "U8";
+  if (age <= 10) return "U10";
+  if (age <= 12) return "U12";
+  if (age < 18) return "U18";
+  if (age < 30) return "O18";
+  if (age < 40) return "O30";
+  return "O40";
+}
+
+function getAge(birthDate: string) {
+  if (!birthDate) return null;
+  const birthday = new Date(birthDate);
+  if (Number.isNaN(birthday.getTime())) return null;
+  const today = new Date();
+  let age = today.getFullYear() - birthday.getFullYear();
+  const monthDiff = today.getMonth() - birthday.getMonth();
+  if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthday.getDate())) age -= 1;
+  return age >= 0 ? age : null;
 }

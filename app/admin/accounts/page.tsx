@@ -10,7 +10,7 @@ export default function AdminAccountsPage() {
         title="赛事账本"
         actions={
           <Link className="button" href="/admin">
-            返回人员库
+            返回后台首页
           </Link>
         }
       >

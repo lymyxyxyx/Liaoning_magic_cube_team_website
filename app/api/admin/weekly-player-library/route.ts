@@ -8,7 +8,7 @@ export async function GET() {
     const players = await listWeeklyPlayerLibrary();
     return NextResponse.json({ players });
   } catch (error) {
-    console.error("weekly player library list failed", error);
+    console.error("admin weekly player library list failed", error);
     return NextResponse.json({ message: "读取周赛选手库失败" }, { status: 500 });
   }
 }
@@ -21,7 +21,7 @@ export async function POST(request: NextRequest) {
     const players = await saveWeeklyPlayerLibrary(payload.players);
     return NextResponse.json({ players });
   } catch (error) {
-    console.error("weekly player library save failed", error);
+    console.error("admin weekly player library save failed", error);
     return NextResponse.json({ message: "保存周赛选手库失败" }, { status: 500 });
   }
 }

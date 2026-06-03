@@ -15,7 +15,7 @@ export default async function WeeklyAdminPage() {
         选择周赛、项目和选手后录入成绩；选手资料请进入独立选手库维护。
       </PageHero>
       <section className="container weekly-admin-toolbar" aria-label="周赛后台工具">
-        <Link className="button" href="/weekly/admin/player-library">
+        <Link className="button primary" href="/admin/weekly-player-library">
           周赛选手库
         </Link>
         <Link className="button" href="/weekly">

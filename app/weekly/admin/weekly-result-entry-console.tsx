@@ -432,25 +432,38 @@ function formatPlayerMeta(player: WeeklyPlayer) {
     `性别：${player.gender || "-"}`,
     `省：${player.province || "-"}`,
     `市：${player.city || "-"}`,
-    `年龄：${getPlayerAge(player.birthDate) || "待补"}`
+    `组别：${getPlayerAgeGroup(player.birthDate) || "待补"}`
   ].join(" · ");
 }
 
 function formatPlayerCandidateMeta(player: WeeklyPlayer) {
-  return [player.gender || "-", player.province || "", player.city || ""].filter(Boolean).join(" · ");
+  return [player.gender || "-", player.province || "", player.city || "", getPlayerAgeGroup(player.birthDate)].filter(Boolean).join(" · ");
 }
 
 function formatRegion(player: WeeklyPlayer) {
   return [player.province, player.city].filter(Boolean).join(" · ") || "-";
 }
 
+function getPlayerAgeGroup(birthDate: string) {
+  const age = getPlayerAge(birthDate);
+  if (age === null) return "";
+  if (age <= 6) return "U6";
+  if (age <= 8) return "U8";
+  if (age <= 10) return "U10";
+  if (age <= 12) return "U12";
+  if (age < 18) return "U18";
+  if (age < 30) return "O18";
+  if (age < 40) return "O30";
+  return "O40";
+}
+
 function getPlayerAge(birthDate: string) {
-  if (!birthDate) return "";
+  if (!birthDate) return null;
   const birthday = new Date(birthDate);
-  if (Number.isNaN(birthday.getTime())) return "";
+  if (Number.isNaN(birthday.getTime())) return null;
   const today = new Date();
   let age = today.getFullYear() - birthday.getFullYear();
   const monthDiff = today.getMonth() - birthday.getMonth();
   if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthday.getDate())) age -= 1;
-  return age > 0 && age < 120 ? `${age}岁` : "";
+  return age >= 0 && age < 120 ? age : null;
 }

@@ -1,10 +1,13 @@
 import { getPostgresPool } from "@/lib/postgres";
+import { enrichLocalProfiles, readLocalProfiles } from "@/lib/local-profile-store";
+import { commercialTeamMembers } from "@/lib/commercial-teams";
 
 export type WeeklyLibraryGender = "" | "男" | "女";
 
 export type WeeklyPlayerLibraryEntry = {
   id: string;
   name: string;
+  wcaId?: string;
   gender: WeeklyLibraryGender;
   birthDate: string;
   province: string;
@@ -118,7 +121,7 @@ export async function listWeeklyPlayerLibrary(): Promise<WeeklyPlayerLibraryEntr
      FROM weekly_player_library
      ORDER BY name`
   );
-  return rows.map(mapLibraryRow);
+  return enrichWeeklyPlayerMatches(rows.map(mapLibraryRow));
 }
 
 export function getMofang602SeedWeeklyPlayers(): WeeklyPlayerLibraryEntry[] {
@@ -147,7 +150,9 @@ export async function findWeeklyPlayerLibraryEntry(input: { id?: string; name?: 
      LIMIT 1`,
     [id, name]
   );
-  return rows[0] ? mapLibraryRow(rows[0]) : null;
+  if (!rows[0]) return null;
+  const [player] = await enrichWeeklyPlayerMatches([mapLibraryRow(rows[0])]);
+  return player || null;
 }
 
 export async function saveWeeklyPlayerLibrary(players: WeeklyPlayerLibraryEntry[]) {
@@ -211,6 +216,67 @@ function normalizePlayers(players: WeeklyPlayerLibraryEntry[]) {
       seen.add(player.id);
       return true;
     });
+}
+
+async function enrichWeeklyPlayerMatches(players: WeeklyPlayerLibraryEntry[]) {
+  if (players.length === 0) return players;
+
+  const localMatchesByName = await getLocalMatchesByName();
+
+  return players.map((player) => {
+    const localMatch = localMatchesByName.get(player.name);
+    return {
+      ...player,
+      wcaId: localMatch?.wcaId || "",
+      province: localMatch?.province || player.province || "",
+      city: localMatch?.city || ""
+    };
+  });
+}
+
+async function getLocalMatchesByName() {
+  try {
+    const profiles = await enrichLocalProfiles(await readLocalProfiles());
+    const profilesByName = new Map<string, { wcaId: string; province: string; city: string }[]>();
+    const profilesByWcaId = new Map<string, { wcaId: string; province: string; city: string }>();
+    for (const profile of profiles) {
+      if (profile.province !== "辽宁") continue;
+      const match = {
+        wcaId: profile.wcaId || "",
+        province: profile.province || "",
+        city: profile.city || ""
+      };
+      if (match.wcaId) profilesByWcaId.set(match.wcaId, match);
+      const name = profile.name?.trim();
+      if (!name) continue;
+      const current = profilesByName.get(name) || [];
+      current.push(match);
+      profilesByName.set(name, current);
+    }
+
+    for (const member of commercialTeamMembers) {
+      const name = member.name.trim();
+      const wcaId = member.wcaId?.trim().toUpperCase() || "";
+      const localProfile = wcaId ? profilesByWcaId.get(wcaId) : undefined;
+      if (!name || !localProfile) continue;
+      const current = profilesByName.get(name) || [];
+      if (current.some((match) => match.wcaId === localProfile.wcaId)) continue;
+      current.push(localProfile);
+      profilesByName.set(name, current);
+    }
+
+    const matches = new Map<string, { wcaId: string; province: string; city: string }>();
+    for (const [name, sameNameProfiles] of profilesByName) {
+      const uniqueProfiles = Array.from(
+        new Map(sameNameProfiles.map((profile) => [`${profile.wcaId}:${profile.city}`, profile])).values()
+      );
+      if (uniqueProfiles.length !== 1) continue;
+      matches.set(name, uniqueProfiles[0]);
+    }
+    return matches;
+  } catch {
+    return new Map<string, { wcaId: string; province: string; city: string }>();
+  }
 }
 
 async function seedMofang602Players() {

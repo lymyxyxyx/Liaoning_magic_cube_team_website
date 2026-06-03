@@ -1,8 +1,6 @@
 import Link from "next/link";
-import { cookies } from "next/headers";
 import { BarChart3, CalendarDays, ListChecks, Medal, Trophy } from "lucide-react";
 import { PageHero } from "@/components/page-hero";
-import { verifySessionToken } from "@/lib/auth";
 import { bigStackIntro, getRankedBigStackRecords } from "@/lib/big-stack";
 import { people } from "@/lib/data";
 import { getWeeklyMeets } from "@/lib/weekly-db";
@@ -10,8 +8,6 @@ import { getWeeklyMeets } from "@/lib/weekly-db";
 export const dynamic = "force-dynamic";
 
 export default async function WeeklyPage() {
-  const weeklySession = cookies().get("liaoning_weekly_session")?.value;
-  const isWeeklyLoggedIn = weeklySession ? await verifySessionToken(weeklySession) : false;
   const weeklyMeets = await getWeeklyMeets();
   const bigStackRanking = getRankedBigStackRecords();
   const peopleByName = new Map(people.map((person) => [person.name, person]));
@@ -29,17 +25,11 @@ export default async function WeeklyPage() {
       <PageHero
         actions={
           <>
-            {isWeeklyLoggedIn ? (
-              <Link className="button primary" href="/weekly/results">
-                成绩录入
-              </Link>
-            ) : (
-              <span className="button primary disabled" title="请先登录" aria-disabled="true">
-                成绩录入
-              </span>
-            )}
+            <Link className="button primary" href="/weekly/results">
+              成绩录入
+            </Link>
             <Link className="button" href="/weekly/admin">
-              登录
+              周赛后台
             </Link>
           </>
         }
@@ -50,51 +40,27 @@ export default async function WeeklyPage() {
       </PageHero>
 
       <section className="container section">
-        {isWeeklyLoggedIn ? (
-          <Link className="weekly-feature weekly-feature--test" href="/weekly/results">
-            <div>
-              <span className="card-kicker">
-                <Trophy size={15} />
-                测试周赛
+        <Link className="weekly-feature weekly-feature--test" href="/weekly/results">
+          <div>
+            <span className="card-kicker">
+              <Trophy size={15} />
+              测试周赛
+            </span>
+            <h2>测试周赛（成绩录入调试用）</h2>
+            <p>新的周赛成绩录入入口。当前测试周赛固定放在最上方，历史周赛先保留在下方备用。</p>
+            <div className="weekly-feature-meta">
+              <span>
+                <CalendarDays size={15} />
+                调试用
               </span>
-              <h2>测试周赛（成绩录入调试用）</h2>
-              <p>新的周赛成绩录入入口。当前测试周赛固定放在最上方，历史周赛先保留在下方备用。</p>
-              <div className="weekly-feature-meta">
-                <span>
-                  <CalendarDays size={15} />
-                  调试用
-                </span>
-                <span>
-                  <ListChecks size={15} />
-                  使用周赛选手库录入
-                </span>
-              </div>
-            </div>
-            <strong>进入录入</strong>
-          </Link>
-        ) : (
-          <div className="weekly-feature weekly-feature--test weekly-feature--disabled" title="请先登录">
-            <div>
-              <span className="card-kicker">
-                <Trophy size={15} />
-                测试周赛
+              <span>
+                <ListChecks size={15} />
+                使用周赛选手库录入
               </span>
-              <h2>测试周赛（成绩录入调试用）</h2>
-              <p>新的周赛成绩录入入口。请先登录后再进入成绩录入。</p>
-              <div className="weekly-feature-meta">
-                <span>
-                  <CalendarDays size={15} />
-                  调试用
-                </span>
-                <span>
-                  <ListChecks size={15} />
-                  使用周赛选手库录入
-                </span>
-              </div>
             </div>
-            <strong>请先登录</strong>
           </div>
-        )}
+          <strong>进入录入</strong>
+        </Link>
 
         {weeklyMeets.length > 0 ? (
           <>
