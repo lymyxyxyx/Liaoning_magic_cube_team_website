@@ -131,6 +131,7 @@ async function main() {
         id TEXT PRIMARY KEY,
         name TEXT NOT NULL,
         gender TEXT NOT NULL DEFAULT '',
+        wca_id TEXT NOT NULL DEFAULT '',
         birth_date TEXT NOT NULL DEFAULT '',
         province TEXT NOT NULL DEFAULT '',
         city TEXT NOT NULL DEFAULT '',
@@ -140,7 +141,9 @@ async function main() {
       )
     `);
 
+    await client.query("ALTER TABLE weekly_player_library ADD COLUMN IF NOT EXISTS wca_id TEXT NOT NULL DEFAULT ''");
     await client.query("CREATE INDEX IF NOT EXISTS weekly_player_library_name_idx ON weekly_player_library (name)");
+    await client.query("CREATE INDEX IF NOT EXISTS weekly_player_library_wca_id_idx ON weekly_player_library (wca_id)");
 
     await client.query(`
       CREATE TABLE IF NOT EXISTS feedback_messages (

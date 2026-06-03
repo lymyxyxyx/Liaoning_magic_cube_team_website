@@ -50,7 +50,7 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
         id: libraryPlayer.id,
         name: libraryPlayer.name,
         slug: "",
-        wcaId: "",
+        wcaId: libraryPlayer.wcaId || "",
         gender: libraryPlayer.gender === "女" ? "女" : "男",
         province: libraryPlayer.province,
         city: libraryPlayer.city,

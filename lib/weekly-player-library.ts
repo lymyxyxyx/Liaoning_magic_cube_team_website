@@ -19,6 +19,7 @@ export type WeeklyPlayerLibraryEntry = {
 type WeeklyPlayerLibraryRow = {
   id: string;
   name: string;
+  wca_id: string;
   gender: string;
   birth_date: string;
   province: string;
@@ -99,6 +100,7 @@ export async function ensureWeeklyPlayerLibraryTable() {
       id TEXT PRIMARY KEY,
       name TEXT NOT NULL,
       gender TEXT NOT NULL DEFAULT '',
+      wca_id TEXT NOT NULL DEFAULT '',
       birth_date TEXT NOT NULL DEFAULT '',
       province TEXT NOT NULL DEFAULT '',
       city TEXT NOT NULL DEFAULT '',
@@ -107,7 +109,9 @@ export async function ensureWeeklyPlayerLibraryTable() {
       updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
     )
   `);
+  await pool.query("ALTER TABLE weekly_player_library ADD COLUMN IF NOT EXISTS wca_id TEXT NOT NULL DEFAULT ''");
   await pool.query("CREATE INDEX IF NOT EXISTS weekly_player_library_name_idx ON weekly_player_library (name)");
+  await pool.query("CREATE INDEX IF NOT EXISTS weekly_player_library_wca_id_idx ON weekly_player_library (wca_id)");
 }
 
 export async function listWeeklyPlayerLibrary(): Promise<WeeklyPlayerLibraryEntry[]> {
@@ -117,11 +121,13 @@ export async function listWeeklyPlayerLibrary(): Promise<WeeklyPlayerLibraryEntr
 
   const pool = getPostgresPool();
   const { rows } = await pool.query<WeeklyPlayerLibraryRow>(
-    `SELECT id, name, gender, birth_date, province, city, source, updated_at
+    `SELECT id, name, wca_id, gender, birth_date, province, city, source, updated_at
      FROM weekly_player_library
      ORDER BY name`
   );
-  return enrichWeeklyPlayerMatches(rows.map(mapLibraryRow));
+  const players = await enrichWeeklyPlayerMatches(rows.map(mapLibraryRow));
+  await persistWeeklyPlayerMatches(players);
+  return players;
 }
 
 export function getMofang602SeedWeeklyPlayers(): WeeklyPlayerLibraryEntry[] {
@@ -144,7 +150,7 @@ export async function findWeeklyPlayerLibraryEntry(input: { id?: string; name?: 
 
   const pool = getPostgresPool();
   const { rows } = await pool.query<WeeklyPlayerLibraryRow>(
-    `SELECT id, name, gender, birth_date, province, city, source, updated_at
+    `SELECT id, name, wca_id, gender, birth_date, province, city, source, updated_at
      FROM weekly_player_library
      WHERE id = $1 OR name = $2
      LIMIT 1`,
@@ -169,17 +175,18 @@ export async function saveWeeklyPlayerLibrary(players: WeeklyPlayerLibraryEntry[
     for (const player of normalizedPlayers) {
       await client.query(
         `INSERT INTO weekly_player_library
-          (id, name, gender, birth_date, province, city, source, updated_at)
-         VALUES ($1,$2,$3,$4,$5,$6,$7,now())
+          (id, name, wca_id, gender, birth_date, province, city, source, updated_at)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,now())
          ON CONFLICT (id) DO UPDATE
            SET name = EXCLUDED.name,
+               wca_id = EXCLUDED.wca_id,
                gender = EXCLUDED.gender,
                birth_date = EXCLUDED.birth_date,
                province = EXCLUDED.province,
                city = EXCLUDED.city,
                source = EXCLUDED.source,
                updated_at = now()`,
-        [player.id, player.name, player.gender, player.birthDate, player.province, player.city, player.source]
+        [player.id, player.name, player.wcaId || "", player.gender, player.birthDate, player.province, player.city, player.source]
       );
     }
 
@@ -203,6 +210,7 @@ function normalizePlayers(players: WeeklyPlayerLibraryEntry[]) {
       return {
         id,
         name,
+        wcaId: player.wcaId?.trim().toUpperCase() || "",
         gender: normalizeGender(player.gender),
         birthDate: player.birthDate.trim(),
         province: player.province.trim(),
@@ -227,11 +235,27 @@ async function enrichWeeklyPlayerMatches(players: WeeklyPlayerLibraryEntry[]) {
     const localMatch = localMatchesByName.get(player.name);
     return {
       ...player,
-      wcaId: localMatch?.wcaId || "",
+      wcaId: localMatch?.wcaId || player.wcaId || "",
       province: localMatch?.province || player.province || "",
-      city: localMatch?.city || ""
+      city: localMatch?.city || player.city || ""
     };
   });
+}
+
+async function persistWeeklyPlayerMatches(players: WeeklyPlayerLibraryEntry[]) {
+  const matchedPlayers = players.filter((player) => player.wcaId || player.province || player.city);
+  if (matchedPlayers.length === 0) return;
+  const pool = getPostgresPool();
+  for (const player of matchedPlayers) {
+    await pool.query(
+      `UPDATE weekly_player_library
+       SET wca_id = CASE WHEN $2 <> '' THEN $2 ELSE wca_id END,
+           province = CASE WHEN $3 <> '' THEN $3 ELSE province END,
+           city = CASE WHEN $4 <> '' THEN $4 ELSE city END
+       WHERE id = $1`,
+      [player.id, player.wcaId || "", player.province || "", player.city || ""]
+    );
+  }
 }
 
 async function getLocalMatchesByName() {
@@ -308,6 +332,7 @@ function mapLibraryRow(row: WeeklyPlayerLibraryRow): WeeklyPlayerLibraryEntry {
   return {
     id: row.id,
     name: row.name,
+    wcaId: row.wca_id || "",
     gender: normalizeGender(row.gender),
     birthDate: row.birth_date || "",
     province: row.province || "",
