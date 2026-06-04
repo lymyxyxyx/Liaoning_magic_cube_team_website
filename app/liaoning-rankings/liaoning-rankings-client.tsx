@@ -11,7 +11,6 @@ import { formatWcaExportDate, formatRankCell, formatWcaEventName } from "@/lib/f
 type RankingMode = "single" | "average";
 type Gender = "all" | "m" | "f";
 type Scope = "province" | "city";
-type FeedbackStatus = "idle" | "submitting" | "success" | "error";
 
 type MetadataOption = {
   id: string;
@@ -68,41 +67,167 @@ const scopeLabels: Record<Scope, string> = {
   city: "市排名"
 };
 
+const isDevelopmentPreview = process.env.NODE_ENV === "development";
+
+const developmentEvents: MetadataOption[] = [{ id: "333", name: "3x3x3 Cube" }];
+
+const mockLocalRankingRows: LocalRankingRow[] = [
+  {
+    rank: 1,
+    rankChange: null,
+    officialRank: 6,
+    officialRankChange: null,
+    worldRank: 6,
+    worldRankChange: null,
+    genderLocalRank: 1,
+    genderOfficialRank: 6,
+    genderWorldRank: 6,
+    wcaId: "2024LIZH03",
+    name: "Zhaokun Li（李昭昆）",
+    country: "China",
+    countryName: "China",
+    countryIso2: "CN",
+    gender: "m",
+    result: "4.59",
+    resultDetails: ["4.22", "4.57", "4.60", "4.61", "4.89"],
+    competitionId: "LiaoningOpen2026",
+    competitionName: "Liaoning Open 2026",
+    date: "2026-01-05",
+    province: "辽宁",
+    city: "沈阳"
+  },
+  {
+    rank: 2,
+    rankChange: null,
+    officialRank: 18,
+    officialRankChange: null,
+    worldRank: 34,
+    worldRankChange: null,
+    genderLocalRank: 2,
+    genderOfficialRank: 16,
+    genderWorldRank: 31,
+    wcaId: "2023LIAO01",
+    name: "Minghao Chen（陈明昊）",
+    country: "China",
+    countryName: "China",
+    countryIso2: "CN",
+    gender: "m",
+    result: "5.18",
+    resultDetails: ["4.93", "5.10", "5.20", "5.24", "5.41"],
+    competitionId: "ShenyangCubingLeague2026",
+    competitionName: "Shenyang Cubing League 2026",
+    date: "2026-04-12",
+    province: "辽宁",
+    city: "沈阳"
+  },
+  {
+    rank: 3,
+    rankChange: null,
+    officialRank: 29,
+    officialRankChange: null,
+    worldRank: 58,
+    worldRankChange: null,
+    genderLocalRank: 1,
+    genderOfficialRank: 4,
+    genderWorldRank: 11,
+    wcaId: "2022DALI01",
+    name: "Yue Zhao（赵悦）",
+    country: "China",
+    countryName: "China",
+    countryIso2: "CN",
+    gender: "f",
+    result: "5.63",
+    resultDetails: ["5.31", "5.55", "5.61", "5.73", "5.95"],
+    competitionId: "DalianSummer2026",
+    competitionName: "Dalian Summer 2026",
+    date: "2026-03-23",
+    province: "辽宁",
+    city: "大连"
+  },
+  {
+    rank: 4,
+    rankChange: null,
+    officialRank: 42,
+    officialRankChange: null,
+    worldRank: 89,
+    worldRankChange: null,
+    genderLocalRank: 3,
+    genderOfficialRank: 37,
+    genderWorldRank: 78,
+    wcaId: "2021ANSH01",
+    name: "Haoran Lin（林浩然）",
+    country: "China",
+    countryName: "China",
+    countryIso2: "CN",
+    gender: "m",
+    result: "6.02",
+    resultDetails: ["5.70", "5.96", "6.03", "6.08", "6.20"],
+    competitionId: "AnshanOpen2026",
+    competitionName: "Anshan Open 2026",
+    date: "2026-02-11",
+    province: "辽宁",
+    city: "鞍山"
+  },
+  {
+    rank: 5,
+    rankChange: null,
+    officialRank: 57,
+    officialRankChange: null,
+    worldRank: 122,
+    worldRankChange: null,
+    genderLocalRank: 4,
+    genderOfficialRank: 51,
+    genderWorldRank: 109,
+    wcaId: "2025FUSH01",
+    name: "Jinyi Sun（孙锦一）",
+    country: "China",
+    countryName: "China",
+    countryIso2: "CN",
+    gender: "m",
+    result: "6.48",
+    resultDetails: ["6.20", "6.39", "6.46", "6.58", "6.81"],
+    competitionId: "FushunSpring2026",
+    competitionName: "Fushun Spring 2026",
+    date: "2026-02-02",
+    province: "辽宁",
+    city: "抚顺"
+  }
+];
+
 export function LiaoningRankingsClient() {
   const [events, setEvents] = useState<MetadataOption[]>([]);
   const [lastExportDate, setLastExportDate] = useState("");
   const [event, setEvent] = useState("333");
   const [province, setProvince] = useState("辽宁");
   const [city, setCity] = useState("沈阳");
-  const [scope, setScope] = useState<Scope>("city");
+  const [scope, setScope] = useState<Scope>("province");
   const [mode, setMode] = useState<RankingMode>("average");
   const [gender, setGender] = useState<Gender>("all");
   const [page, setPage] = useState(1);
   const [rankings, setRankings] = useState<LocalRankingsResponse | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
-  const [feedback, setFeedback] = useState({
-    type: "名单反馈",
-    name: "",
-    wcaId: "",
-    contact: "",
-    message: "",
-    website: ""
-  });
-  const [feedbackStatus, setFeedbackStatus] = useState<FeedbackStatus>("idle");
-  const [feedbackNotice, setFeedbackNotice] = useState("");
 
   useEffect(() => {
     let cancelled = false;
     fetch("/api/wca-metadata", { cache: "no-cache" })
-      .then((response) => response.json())
+      .then((response) => {
+        if (!response.ok) throw new Error("metadata");
+        return response.json();
+      })
       .then((payload) => {
         if (cancelled) return;
         setEvents(payload.events || []);
         setLastExportDate(payload.lastExportDate || "");
       })
       .catch(() => {
-        if (!cancelled) setError("无法读取 WCA 项目列表。");
+        if (cancelled) return;
+        if (isDevelopmentPreview) {
+          setEvents(developmentEvents);
+          setLastExportDate("2026-06-03");
+          return;
+        }
+        setError("无法读取 WCA 项目列表。");
       });
     return () => {
       cancelled = true;
@@ -111,6 +236,7 @@ export function LiaoningRankingsClient() {
 
   useEffect(() => {
     const controller = new AbortController();
+    let didUseDevelopmentFallback = false;
     const params = new URLSearchParams({
       event,
       province,
@@ -123,40 +249,71 @@ export function LiaoningRankingsClient() {
 
     setIsLoading(true);
     setError("");
+    const useDevelopmentFallback = () => {
+      if (!isDevelopmentPreview || didUseDevelopmentFallback) return;
+      didUseDevelopmentFallback = true;
+      setRankings({
+        rows: [],
+        page,
+        pageSize: 100,
+        hasNextPage: false,
+        provinces: ["辽宁"],
+        cities: ["沈阳", "大连", "鞍山", "抚顺"]
+      });
+      setError("");
+      setIsLoading(false);
+    };
+    const developmentFallbackTimer = isDevelopmentPreview ? window.setTimeout(useDevelopmentFallback, 1200) : undefined;
+
     fetch(`/api/local-rankings?${params}`, { signal: controller.signal })
       .then((response) => {
         if (!response.ok) throw new Error("rankings");
         return response.json();
       })
       .then((payload: LocalRankingsResponse) => {
+        if (developmentFallbackTimer) window.clearTimeout(developmentFallbackTimer);
         setRankings(payload);
       })
       .catch((requestError) => {
+        if (developmentFallbackTimer) window.clearTimeout(developmentFallbackTimer);
         if (requestError.name !== "AbortError") {
+          if (isDevelopmentPreview) {
+            useDevelopmentFallback();
+            return;
+          }
           setError("无法读取辽宁排名数据，请确认 WCA 数据库已同步。");
         }
       })
       .finally(() => {
-        if (!controller.signal.aborted) setIsLoading(false);
+        if (!controller.signal.aborted && !didUseDevelopmentFallback) setIsLoading(false);
       });
 
-    return () => controller.abort();
+    return () => {
+      if (developmentFallbackTimer) window.clearTimeout(developmentFallbackTimer);
+      controller.abort();
+    };
   }, [event, province, city, scope, mode, gender, page]);
 
   const eventName = useMemo(() => {
     const found = events.find((item) => item.id === event);
     return found ? formatWcaEventName(found.id, found.name) : event;
   }, [events, event]);
-  const rows = rankings?.rows || [];
+  const isUsingMockRows = isDevelopmentPreview && !isLoading && (!rankings || rankings.rows.length === 0);
+  const rows = isUsingMockRows
+    ? mockLocalRankingRows
+        .filter((row) => scope === "province" || row.city === city)
+        .map((row, index) => ({ ...row, rank: index + 1, genderLocalRank: index + 1 }))
+    : rankings?.rows || [];
   const provinces = rankings?.provinces?.length ? rankings.provinces : ["辽宁"];
   const cities = rankings?.cities?.length ? rankings.cities : ["沈阳"];
   const areaLabel = scope === "province" ? `${province}省` : `${city}市`;
-  const updateDateLabel = formatWcaExportDate(lastExportDate);
+  const updateDateLabel = formatWcaExportDate(lastExportDate) || (isUsingMockRows ? "2026/06/03" : "");
   const showGenderRankColumns = gender !== "all";
   const showAverageDetailsColumn = mode === "average";
   const genderRankLabel = gender === "m" ? "男子" : "女子";
   const baseColumnCount = showGenderRankColumns ? 11 : 8;
   const totalColumnCount = baseColumnCount + (showAverageDetailsColumn ? 1 : 0);
+  const visibleError = isUsingMockRows ? "" : error;
 
   function updateFilter(next: Partial<{ event: string; province: string; city: string; scope: Scope; mode: RankingMode; gender: Gender }>) {
     if (next.event) setEvent(next.event);
@@ -168,107 +325,13 @@ export function LiaoningRankingsClient() {
     setPage(1);
   }
 
-  function submitFeedback() {
-    const message = feedback.message.trim();
-    if (message.length < 4) {
-      setFeedbackStatus("error");
-      setFeedbackNotice("请先填写反馈内容。");
-      return;
-    }
-
-    setFeedbackStatus("submitting");
-    setFeedbackNotice("");
-    fetch("/api/feedback", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ ...feedback, pageUrl: window.location.pathname })
-    })
-      .then((response) => {
-        if (!response.ok) throw new Error("feedback");
-        return response.json();
-      })
-      .then(() => {
-        setFeedback({
-          type: "名单反馈",
-          name: "",
-          wcaId: "",
-          contact: "",
-          message: "",
-          website: ""
-        });
-        setFeedbackStatus("success");
-        setFeedbackNotice("已收到反馈，我们会在核实后更新名单或数据。");
-      })
-      .catch(() => {
-        setFeedbackStatus("error");
-        setFeedbackNotice("提交失败，请稍后再试。");
-      });
-  }
-
   return (
     <>
       <PageHero className="ranking-page-hero local-ranking-page-hero" label="本地省市归属" title={`${areaLabel} ${eventName}排名`}>
-        本站省市归属名单关联 WCA 官方成绩。
+        {scopeLabels[scope]} · {modeLabels[mode]} · {genderLabels[gender]}性别
       </PageHero>
 
       <section className="container section local-rankings-section rankings-workspace">
-        <details className="local-eligibility-card compact-local-eligibility">
-          <summary>辽宁排名认定说明与名单反馈</summary>
-          <div className="compact-local-eligibility-body">
-            <ol>
-              <li>户口本或身份证显示为辽宁户籍。</li>
-              <li>户口本或身份证曾为辽宁户籍，后已取得外省或外国身份。</li>
-              <li>户口本或身份证曾不是辽宁户籍，但现已取得辽宁省户籍。</li>
-            </ol>
-            <div className="local-contact-box">
-              <label htmlFor="liaoning-ranking-message">名单反馈</label>
-              <select
-                aria-label="反馈类型"
-                value={feedback.type}
-                onChange={(event) => setFeedback({ ...feedback, type: event.target.value })}
-              >
-                {["名单反馈", "成绩问题", "页面问题", "合作咨询", "其他"].map((item) => (
-                  <option value={item} key={item}>
-                    {item}
-                  </option>
-                ))}
-              </select>
-              <input
-                placeholder="姓名，可选"
-                value={feedback.name}
-                onChange={(event) => setFeedback({ ...feedback, name: event.target.value })}
-              />
-              <input
-                placeholder="WCA ID，可选"
-                value={feedback.wcaId}
-                onChange={(event) => setFeedback({ ...feedback, wcaId: event.target.value.toUpperCase() })}
-              />
-              <input
-                placeholder="联系方式，可选"
-                value={feedback.contact}
-                onChange={(event) => setFeedback({ ...feedback, contact: event.target.value })}
-              />
-              <input
-                className="feedback-honeypot"
-                tabIndex={-1}
-                autoComplete="off"
-                value={feedback.website}
-                onChange={(event) => setFeedback({ ...feedback, website: event.target.value })}
-              />
-              <textarea
-                id="liaoning-ranking-message"
-                placeholder="填写姓名、WCA ID、情况说明和联系方式。"
-                value={feedback.message}
-                onChange={(event) => setFeedback({ ...feedback, message: event.target.value })}
-              />
-              <button className="button primary" type="button" disabled={feedbackStatus === "submitting"} onClick={submitFeedback}>
-                {feedbackStatus === "submitting" ? "提交中" : "提交反馈"}
-              </button>
-              {feedbackNotice ? <p className={`feedback-notice ${feedbackStatus === "error" ? "error" : ""}`}>{feedbackNotice}</p> : null}
-            </div>
-          </div>
-        </details>
-
         <section className="weekly-event-section ranking-filter-section">
           <div className="ranking-filter-card local-ranking-filter-card" aria-label="辽宁排名筛选">
             <div className="ranking-field">
@@ -298,16 +361,18 @@ export function LiaoningRankingsClient() {
               </select>
             </label>
 
-            <label className="ranking-field">
-              <span>城市</span>
-              <select value={city} onChange={(changeEvent) => updateFilter({ city: changeEvent.target.value })}>
-                {cities.map((item) => (
-                  <option value={item} key={item}>
-                    {item}
-                  </option>
-                ))}
-              </select>
-            </label>
+            {scope === "city" ? (
+              <label className="ranking-field">
+                <span>城市</span>
+                <select value={city} onChange={(changeEvent) => updateFilter({ city: changeEvent.target.value })}>
+                  {cities.map((item) => (
+                    <option value={item} key={item}>
+                      {item}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            ) : null}
 
             <label className="ranking-field">
               <span>项目</span>
@@ -357,29 +422,30 @@ export function LiaoningRankingsClient() {
         <section className="weekly-event-section ranking-results-section">
           <div className="section-header">
             <div>
-              <h2>{eventName}榜单 <small>本页 {rows.length} 人</small></h2>
+              <h2>{eventName}{scopeLabels[scope]} <small>本页 {rows.length} 人</small></h2>
             </div>
             <div className="ranking-source-line">
               {updateDateLabel ? (
                 <>
                   <CalendarClock size={14} />
-                  <span>数据更新 {updateDateLabel}</span>
+                  <span className="ranking-source-label">数据更新</span>
+                  <span>{updateDateLabel}</span>
                 </>
               ) : null}
             </div>
           </div>
 
-          {error ? <div className="wca-state">{error}</div> : null}
+          {visibleError ? <div className="wca-state">{visibleError}</div> : null}
 
           <div className="result-table-wrap">
             <table className={`result-table ranking-table local-ranking-results-table ${showGenderRankColumns ? "has-gender-ranks" : ""}`}>
               <thead>
                 <tr>
+                  <th>{scopeLabels[scope]}</th>
                   <th>姓名</th>
                   <th>性别</th>
                   <th>成绩</th>
                   <th>省市</th>
-                  <th>{scopeLabels[scope]}</th>
                   <th>全国排名</th>
                   <th>世界排名</th>
                   {showGenderRankColumns ? (
@@ -407,21 +473,23 @@ export function LiaoningRankingsClient() {
                 {!isLoading
                   ? rows.map((row) => (
                       <tr key={`${scope}-${mode}-${event}-${row.wcaId}`}>
+                        <td data-label={scopeLabels[scope]}>{row.rank}</td>
                         <td data-label="姓名">
                           <Link
                             className="table-person-link"
-                            href={`https://www.worldcubeassociation.org/persons/${row.wcaId}`}
+                            href={`https://cubing.com/results/person/${row.wcaId}`}
+                            referrerPolicy="no-referrer"
+                            rel="noopener noreferrer"
+                            target="_blank"
                           >
                             {row.name}
                           </Link>
-                          <small className="ranking-wca-id">{row.wcaId}</small>
                         </td>
                         <td data-label="性别">{row.gender === "m" ? "男" : row.gender === "f" ? "女" : "-"}</td>
                         <td data-label="成绩" className="score-strong">
                           {row.result}
                         </td>
                         <td data-label="省市">{row.province} · {row.city}</td>
-                        <td data-label={scopeLabels[scope]}>{row.rank}</td>
                         <td data-label="全国排名">{row.officialRank}</td>
                         <td data-label="世界排名">{row.worldRank}</td>
                         {showGenderRankColumns ? (

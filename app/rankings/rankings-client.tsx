@@ -53,6 +53,131 @@ const genderLabels: Record<Gender, string> = {
   f: "女"
 };
 
+const scopeLabels: Record<RegionScope, string> = {
+  world: "世界",
+  continent: "大洲",
+  country: "国家"
+};
+
+const isDevelopmentPreview = process.env.NODE_ENV === "development";
+
+const developmentEvents: MetadataOption[] = [{ id: "333", name: "3x3x3 Cube" }];
+const developmentCountries: MetadataOption[] = [
+  { id: "China", name: "China", nameZh: "中国" },
+  { id: "Poland", name: "Poland", nameZh: "波兰" }
+];
+const developmentContinents: MetadataOption[] = [{ id: "_Asia", name: "Asia", nameZh: "亚洲" }];
+
+const mockRankingRows: RankingRow[] = [
+  {
+    rank: 1,
+    worldRank: 1,
+    wcaId: "2023GENG02",
+    name: "Xuanyi Geng（耿暄一）",
+    country: "China",
+    countryName: "China",
+    countryIso2: "CN",
+    gender: "m",
+    result: "3.71",
+    resultDetails: ["3.58", "3.66", "3.72", "3.76", "3.81"],
+    competitionId: "WuhanOpen2026",
+    competitionName: "WCA Wuhan Open 2026",
+    date: "2026-05-16"
+  },
+  {
+    rank: 2,
+    worldRank: 2,
+    wcaId: "2019WANY36",
+    name: "Yiheng Wang（王艺衡）",
+    country: "China",
+    countryName: "China",
+    countryIso2: "CN",
+    gender: "m",
+    result: "3.90",
+    resultDetails: ["3.64", "3.91", "3.94", "3.95", "4.10"],
+    competitionId: "ShenyangCubingLeague2026",
+    competitionName: "WCA Shenyang Cubing League 3x3x3 Very Long Competition Name",
+    date: "2026-04-12"
+  },
+  {
+    rank: 3,
+    worldRank: 3,
+    wcaId: "2023DUYU01",
+    name: "Yufang Du（杜昱方）",
+    country: "China",
+    countryName: "China",
+    countryIso2: "CN",
+    gender: "m",
+    result: "4.36",
+    resultDetails: ["4.12", "4.31", "4.39", "4.40", "4.65"],
+    competitionId: "GuangzhouSummer2026",
+    competitionName: "Guangzhou Summer 2026",
+    date: "2026-03-08"
+  },
+  {
+    rank: 4,
+    worldRank: 4,
+    wcaId: "2021ZHAN01",
+    name: "Bofan Zhang（张博藩）",
+    country: "China",
+    countryName: "China",
+    countryIso2: "CN",
+    gender: "m",
+    result: "4.38",
+    resultDetails: ["4.01", "4.32", "4.44", "4.47", "4.60"],
+    competitionId: "HangzhouSpring2026",
+    competitionName: "Hangzhou Spring 2026",
+    date: "2026-02-21"
+  },
+  {
+    rank: 5,
+    worldRank: 5,
+    wcaId: "2021ZAJD03",
+    name: "Teodor Zajder",
+    country: "Poland",
+    countryName: "Poland",
+    countryIso2: "PL",
+    gender: "m",
+    result: "4.41",
+    resultDetails: ["4.18", "4.39", "4.42", "4.43", "4.78"],
+    competitionId: "WarsawCubeDays2026",
+    competitionName: "Warsaw Cube Days 2026",
+    date: "2026-01-19"
+  },
+  {
+    rank: 6,
+    worldRank: 6,
+    wcaId: "2024LIZH03",
+    name: "Zhaokun Li（李昭昆）",
+    country: "China",
+    countryName: "China",
+    countryIso2: "CN",
+    gender: "m",
+    result: "4.59",
+    resultDetails: ["4.22", "4.57", "4.60", "4.61", "4.89"],
+    competitionId: "LiaoningOpen2026",
+    competitionName: "Liaoning Open 2026",
+    date: "2026-01-05"
+  },
+  {
+    rank: 7,
+    worldRank: 7,
+    wcaId: "2016KOLA02",
+    name: "Tymon Kolasinski",
+    country: "Poland",
+    countryName: "Poland",
+    countryIso2: "PL",
+    gender: "m",
+    result: "4.62",
+    resultDetails: ["4.40", "4.58", "4.63", "4.66", "4.93"],
+    competitionId: "PolishNationals2026",
+    competitionName: "Polish Nationals 2026",
+    date: "2026-01-02"
+  }
+];
+
+const mockLiaoningWcaIds = new Set(["2024LIZH03"]);
+
 export function RankingsClient() {
   const [events, setEvents] = useState<MetadataOption[]>([]);
   const [countries, setCountries] = useState<MetadataOption[]>([]);
@@ -73,7 +198,10 @@ export function RankingsClient() {
   useEffect(() => {
     let cancelled = false;
     fetch("/api/wca-metadata", { cache: "no-cache" })
-      .then((response) => response.json())
+      .then((response) => {
+        if (!response.ok) throw new Error("metadata");
+        return response.json();
+      })
       .then((payload) => {
         if (cancelled) return;
         setEvents(payload.events || []);
@@ -82,7 +210,15 @@ export function RankingsClient() {
         setLastExportDate(payload.lastExportDate || "");
       })
       .catch(() => {
-        if (!cancelled) setError("无法读取 WCA 项目和国家列表。");
+        if (cancelled) return;
+        if (isDevelopmentPreview) {
+          setEvents(developmentEvents);
+          setCountries(developmentCountries);
+          setContinents(developmentContinents);
+          setLastExportDate("2026-06-03");
+          return;
+        }
+        setError("无法读取 WCA 项目和国家列表。");
       });
     return () => {
       cancelled = true;
@@ -114,6 +250,7 @@ export function RankingsClient() {
 
   useEffect(() => {
     const controller = new AbortController();
+    let didUseDevelopmentFallback = false;
     const regionId = scope === "world" ? "WORLD" : scope === "continent" ? `CONTINENT:${continent}` : country;
     const params = new URLSearchParams({
       event,
@@ -125,24 +262,42 @@ export function RankingsClient() {
 
     setIsLoading(true);
     setError("");
+    const useDevelopmentFallback = () => {
+      if (!isDevelopmentPreview || didUseDevelopmentFallback) return;
+      didUseDevelopmentFallback = true;
+      setRankings({ rows: [], page, pageSize: 100, hasNextPage: false });
+      setError("");
+      setIsLoading(false);
+    };
+    const developmentFallbackTimer = isDevelopmentPreview ? window.setTimeout(useDevelopmentFallback, 1200) : undefined;
+
     fetch(`/api/wca-rankings?${params}`, { signal: controller.signal })
       .then((response) => {
         if (!response.ok) throw new Error("rankings");
         return response.json();
       })
       .then((payload: RankingsResponse) => {
+        if (developmentFallbackTimer) window.clearTimeout(developmentFallbackTimer);
         setRankings(payload);
       })
       .catch((requestError) => {
+        if (developmentFallbackTimer) window.clearTimeout(developmentFallbackTimer);
         if (requestError.name !== "AbortError") {
+          if (isDevelopmentPreview) {
+            useDevelopmentFallback();
+            return;
+          }
           setError("无法读取排名数据，请确认 WCA 数据库已同步。");
         }
       })
       .finally(() => {
-        if (!controller.signal.aborted) setIsLoading(false);
+        if (!controller.signal.aborted && !didUseDevelopmentFallback) setIsLoading(false);
       });
 
-    return () => controller.abort();
+    return () => {
+      if (developmentFallbackTimer) window.clearTimeout(developmentFallbackTimer);
+      controller.abort();
+    };
   }, [event, country, continent, scope, mode, gender, page]);
 
   const eventName = useMemo(() => events.find((item) => item.id === event)?.name || event, [events, event]);
@@ -159,10 +314,14 @@ export function RankingsClient() {
     },
     [continents, countries, country, continent, scope]
   );
-  const rows = rankings?.rows || [];
+  const isUsingMockRows = isDevelopmentPreview && !isLoading && (!rankings || rankings.rows.length === 0);
+  const rows = isUsingMockRows ? mockRankingRows : rankings?.rows || [];
   const firstRank = rows[0]?.rank || (page - 1) * 100 + 1;
   const lastRank = rows.length ? rows[rows.length - 1].rank : page * 100;
-  const updateDateLabel = formatWcaExportDate(lastExportDate);
+  const updateDateLabel = formatWcaExportDate(lastExportDate) || (isUsingMockRows ? "2026/06/03" : "");
+  const titleEventName = formatWcaEventName(event, eventName);
+  const activeScopeLabel = scope === "world" ? "世界" : countryName || scopeLabels[scope];
+  const visibleError = isUsingMockRows ? "" : error;
 
   function updateFilter(
     next: Partial<{
@@ -185,8 +344,8 @@ export function RankingsClient() {
 
   return (
     <>
-      <PageHero className="ranking-page-hero" label="WCA 官方数据本地库" title={`${countryName} ${formatWcaEventName(event, eventName)}排名`}>
-        WCA 官方口径，本地 PostgreSQL 查询。
+      <PageHero className="ranking-page-hero" label="WCA 官方数据本地库" title={`${titleEventName}排名`}>
+        {activeScopeLabel} · {modeLabels[mode]} · {genderLabels[gender]}性别
       </PageHero>
 
       <section className="container section rankings-workspace">
@@ -275,19 +434,20 @@ export function RankingsClient() {
         <section className="weekly-event-section ranking-results-section">
           <div className="section-header">
             <div>
-              <h2>{formatWcaEventName(event, eventName)}排名 <small>{firstRank}–{lastRank}</small></h2>
+              <h2>{titleEventName}排名 <small>{firstRank}–{lastRank}</small></h2>
             </div>
             <div className="ranking-source-line">
               {updateDateLabel ? (
                 <>
                   <CalendarClock size={14} />
-                  <span>数据更新 {updateDateLabel}</span>
+                  <span className="ranking-source-label">数据更新</span>
+                  <span>{updateDateLabel}</span>
                 </>
               ) : null}
             </div>
           </div>
 
-          {error ? <div className="wca-state">{error}</div> : null}
+          {visibleError ? <div className="wca-state">{visibleError}</div> : null}
 
           <div className="result-table-wrap">
             <table className="result-table ranking-table wca-ranking-results-table">
@@ -315,55 +475,61 @@ export function RankingsClient() {
                   </tr>
                 ) : null}
                 {!isLoading
-                  ? rows.map((row) => (
-                      <tr key={`${mode}-${event}-${row.wcaId}`}>
-                        <td data-label="排名">{row.rank}</td>
-                        <td data-label="姓名">
-                          <Link
-                            className="table-person-link"
-                            href={`https://www.worldcubeassociation.org/persons/${row.wcaId}`}
-                          >
-                            {liaoningWcaIds.has(row.wcaId) ? <span className="liaoning-record-badge">辽宁</span> : null}
-                            {row.name}
-                          </Link>
-                          <small className="ranking-wca-id">{row.wcaId}</small>
-                        </td>
-                        <td data-label="性别">{row.gender === "m" ? "男" : row.gender === "f" ? "女" : "-"}</td>
-                        <td data-label="成绩" className="score-strong">
-                          {row.result}
-                        </td>
-                        <td data-label="地区">
-                          <span className="flag-label">
-                            <WcaFlag country={row.country} iso2={row.countryIso2} />
-                            {formatCountryLabel(row.countryName, row.countryIso2)}
-                          </span>
-                        </td>
-                        <td data-label="WR">{row.worldRank}</td>
-                        <td data-label="比赛">
-                          {row.competitionId ? (
+                  ? rows.map((row) => {
+                      const isLiaoningRow = liaoningWcaIds.has(row.wcaId) || (isUsingMockRows && mockLiaoningWcaIds.has(row.wcaId));
+                      return (
+                        <tr key={`${mode}-${event}-${row.wcaId}`}>
+                          <td data-label="排名">{row.rank}</td>
+                          <td data-label="姓名">
                             <Link
-                              className="table-person-link ranking-competition-link"
-                              href={`https://www.worldcubeassociation.org/competitions/${row.competitionId}`}
+                              className="table-person-link"
+                              href={`https://cubing.com/results/person/${row.wcaId}`}
+                              referrerPolicy="no-referrer"
+                              rel="noopener noreferrer"
+                              target="_blank"
                             >
-                              <span>
-                                {getCubingCompetitionNameZhByWcaId(row.competitionId, row.competitionName) ||
-                                  row.competitionName}
-                              </span>
-                              <ExternalLink size={14} />
+                              {isLiaoningRow ? <span className="liaoning-record-badge">辽宁</span> : null}
+                              <span className="ranking-person-name">{row.name}</span>
                             </Link>
-                          ) : (
-                            <span className="muted-cell">未匹配比赛</span>
-                          )}
-                        </td>
-                        <td data-label="成绩明细">
-                          {row.resultDetails?.length ? (
-                            <small className="ranking-result-details">{row.resultDetails.join(" / ")}</small>
-                          ) : (
-                            <span className="muted-cell">-</span>
-                          )}
-                        </td>
-                      </tr>
-                    ))
+                          </td>
+                          <td data-label="性别">{row.gender === "m" ? "男" : row.gender === "f" ? "女" : "-"}</td>
+                          <td data-label="成绩" className="score-strong">
+                            {row.result}
+                          </td>
+                          <td data-label="地区">
+                            <span className="flag-label">
+                              <WcaFlag country={row.country} iso2={row.countryIso2} />
+                              <span className="ranking-region-full">{formatCountryLabel(row.countryName, row.countryIso2)}</span>
+                              <span className="ranking-region-short">{row.countryName || row.country}</span>
+                            </span>
+                          </td>
+                          <td data-label="WR">{row.worldRank}</td>
+                          <td data-label="比赛">
+                            {row.competitionId ? (
+                              <Link
+                                className="table-person-link ranking-competition-link"
+                                href={`https://www.worldcubeassociation.org/competitions/${row.competitionId}`}
+                              >
+                                <span>
+                                  {getCubingCompetitionNameZhByWcaId(row.competitionId, row.competitionName) ||
+                                    row.competitionName}
+                                </span>
+                                <ExternalLink size={14} />
+                              </Link>
+                            ) : (
+                              <span className="muted-cell">未匹配比赛</span>
+                            )}
+                          </td>
+                          <td data-label="成绩明细">
+                            {row.resultDetails?.length ? (
+                              <small className="ranking-result-details">{row.resultDetails.join(" / ")}</small>
+                            ) : (
+                              <span className="muted-cell">-</span>
+                            )}
+                          </td>
+                        </tr>
+                      );
+                    })
                   : null}
               </tbody>
             </table>

@@ -8,6 +8,11 @@ const adminCards = [
     description: "维护本地选手 WCA ID、省份、城市和人工核对记录。"
   },
   {
+    title: "辽宁排名说明与反馈",
+    href: "/admin/ranking-feedback",
+    description: "维护辽宁排名认定口径，处理名单、成绩和页面反馈。"
+  },
+  {
     title: "周赛选手库",
     href: "/admin/weekly-player-library",
     description: "维护周赛录入使用的选手资料、生日和自动组别。"
@@ -23,7 +28,7 @@ export default function AdminPage() {
   return (
     <>
       <PageHero label="后台管理" title="网站管理后台">
-        进入对应模块维护人员资料、周赛选手和比赛账单。
+        进入对应模块维护人员资料、排名反馈、周赛选手和比赛账单。
       </PageHero>
       <section className="container section admin-module-grid" aria-label="后台功能入口">
         {adminCards.map((card) => (

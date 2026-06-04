@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Database, ExternalLink, Trophy } from "lucide-react";
+import { Database, Trophy } from "lucide-react";
 import { PageHero } from "@/components/page-hero";
 import { getLiaoningRecords, type LocalRecordEvent, type LocalRecordGender, type LocalRecordResult } from "@/lib/local-records";
 
@@ -16,6 +16,80 @@ function recordLabel(record: LocalRecordResult | undefined) {
   return record.mode === "single" ? "单次纪录" : "平均纪录";
 }
 
+function createMockRecord(overrides: Partial<LocalRecordResult>): LocalRecordResult {
+  return {
+    mode: "single",
+    value: "",
+    personName: "",
+    wcaId: "",
+    gender: "m",
+    province: "辽宁",
+    city: "沈阳",
+    worldRank: 0,
+    countryRank: 0,
+    competitionId: "",
+    competitionName: "",
+    competitionNameZh: "",
+    date: "2026-06-03",
+    attempts: [],
+    ...overrides
+  };
+}
+
+const mockRecords: LocalRecordEvent[] = [
+  {
+    eventId: "333",
+    eventName: "3x3x3 Cube",
+    eventNameZh: "3x3x3 Cube（三阶魔方）",
+    eventRank: 10,
+    single: createMockRecord({ mode: "single", value: "4.59", personName: "Zhaokun Li（李昭昆）", wcaId: "2024LIZH03", city: "沈阳", worldRank: 6, countryRank: 3 }),
+    average: createMockRecord({ mode: "average", value: "5.88", personName: "Minghao Chen（陈明昊）", wcaId: "2023LIAO01", city: "沈阳", worldRank: 18, countryRank: 6 })
+  },
+  {
+    eventId: "222",
+    eventName: "2x2x2 Cube",
+    eventNameZh: "2x2x2 Cube（二阶魔方）",
+    eventRank: 20,
+    single: createMockRecord({ mode: "single", value: "1.28", personName: "Yue Zhao（赵悦）", wcaId: "2022DALI01", gender: "f", city: "大连", worldRank: 42, countryRank: 11 }),
+    average: createMockRecord({ mode: "average", value: "2.06", personName: "Jinyi Sun（孙锦一）", wcaId: "2025FUSH01", city: "抚顺", worldRank: 61, countryRank: 15 })
+  },
+  {
+    eventId: "444",
+    eventName: "4x4x4 Cube",
+    eventNameZh: "4x4x4 Cube（四阶魔方）",
+    eventRank: 30,
+    single: createMockRecord({ mode: "single", value: "20.76", personName: "Haoran Lin（林浩然）", wcaId: "2021ANSH01", city: "鞍山", worldRank: 76, countryRank: 19 }),
+    average: createMockRecord({ mode: "average", value: "24.63", personName: "Zhaokun Li（李昭昆）", wcaId: "2024LIZH03", city: "沈阳", worldRank: 88, countryRank: 24 })
+  },
+  {
+    eventId: "333oh",
+    eventName: "3x3x3 One-Handed",
+    eventNameZh: "3x3x3 One-Handed（单手）",
+    eventRank: 70,
+    single: createMockRecord({ mode: "single", value: "7.21", personName: "Minghao Chen（陈明昊）", wcaId: "2023LIAO01", city: "沈阳", worldRank: 38, countryRank: 9 }),
+    average: createMockRecord({ mode: "average", value: "9.42", personName: "Yue Zhao（赵悦）", wcaId: "2022DALI01", gender: "f", city: "大连", worldRank: 94, countryRank: 21 })
+  },
+  {
+    eventId: "pyram",
+    eventName: "Pyraminx",
+    eventNameZh: "Pyraminx（金字塔）",
+    eventRank: 110,
+    single: createMockRecord({ mode: "single", value: "2.18", personName: "Jinyi Sun（孙锦一）", wcaId: "2025FUSH01", city: "抚顺", worldRank: 103, countryRank: 28 }),
+    average: createMockRecord({ mode: "average", value: "3.11", personName: "Haoran Lin（林浩然）", wcaId: "2021ANSH01", city: "鞍山", worldRank: 136, countryRank: 33 })
+  }
+];
+
+function getMockRecords(gender: LocalRecordGender) {
+  if (gender === "all") return mockRecords;
+  return mockRecords
+    .map((eventRecord) => ({
+      ...eventRecord,
+      single: eventRecord.single?.gender === gender ? eventRecord.single : undefined,
+      average: eventRecord.average?.gender === gender ? eventRecord.average : undefined
+    }))
+    .filter((eventRecord) => eventRecord.single || eventRecord.average);
+}
+
 function RecordCell({ record }: { record?: LocalRecordResult }) {
   if (!record) {
     return (
@@ -28,26 +102,15 @@ function RecordCell({ record }: { record?: LocalRecordResult }) {
   return (
     <div className="liaoning-record-cell">
       <div>
-        <span className="liaoning-record-badge">LR</span>
         <strong>{record.value}</strong>
+        <span className="liaoning-record-badge">{record.mode === "single" ? "单次" : "平均"}</span>
       </div>
-      <Link className="liaoning-record-person" href={`https://www.worldcubeassociation.org/persons/${record.wcaId}`}>
+      <Link className="liaoning-record-person" href={`https://cubing.com/results/person/${record.wcaId}`} referrerPolicy="no-referrer" rel="noopener noreferrer" target="_blank">
         {record.personName}
-        <ExternalLink size={13} />
       </Link>
       <span className="liaoning-record-meta">
-        {record.city} · 中国第 {record.countryRank} · 世界第 {record.worldRank}
+        {record.city || "辽宁"} {record.date ? `· ${record.date}` : ""}
       </span>
-      {record.competitionId ? (
-        <Link className="liaoning-record-competition" href={`https://www.worldcubeassociation.org/competitions/${record.competitionId}`}>
-          {record.competitionNameZh}
-          <ExternalLink size={13} />
-        </Link>
-      ) : (
-        <span className="liaoning-record-competition">比赛信息待同步</span>
-      )}
-      {record.date ? <span className="liaoning-record-date">{record.date}</span> : null}
-      {record.attempts.length > 0 ? <span className="liaoning-record-attempts">{record.attempts.join("  ")}</span> : null}
     </div>
   );
 }
@@ -75,8 +138,8 @@ export default async function LiaoningRecordsPage({
   } catch {
     dataError = "无法读取辽宁纪录数据，请确认 WCA 数据库已同步。";
   }
-  const singleCount = records.filter((record) => record.single).length;
-  const averageCount = records.filter((record) => record.average).length;
+  const shouldUseMockRecords = process.env.NODE_ENV === "development" && records.length === 0;
+  const displayRecords = shouldUseMockRecords ? getMockRecords(selectedGender) : records;
 
   return (
     <>
@@ -91,7 +154,7 @@ export default async function LiaoningRecordsPage({
           </Link>
         }
       >
-        按本站辽宁本地名单关联 WCA 官方成绩，展示各 WCA 项目的辽宁单次、平均、男子与女子纪录。
+        展示辽宁选手各项目当前最好单次与平均。
       </PageHero>
 
       <section className="container section local-rankings-section liaoning-records-section">
@@ -116,7 +179,6 @@ export default async function LiaoningRecordsPage({
             </div>
             <div className="ranking-source-line">
               <Database size={16} />
-              <span>WCA PostgreSQL</span>
               <span>本站辽宁名单</span>
               <span>{selectedGenderOption.label}</span>
             </div>
@@ -132,7 +194,7 @@ export default async function LiaoningRecordsPage({
                 </tr>
               </thead>
               <tbody>
-                {records.map((eventRecord) => (
+                {displayRecords.map((eventRecord) => (
                   <tr key={eventRecord.eventId}>
                     <td data-label="项目">
                       <strong>{eventRecord.eventNameZh}</strong>
@@ -146,9 +208,9 @@ export default async function LiaoningRecordsPage({
                     </td>
                   </tr>
                 ))}
-                {records.length === 0 ? (
+                {displayRecords.length === 0 ? (
                   <tr>
-                    <td colSpan={3}>{dataError || "暂无可展示的辽宁纪录数据，请确认本地名单和 WCA 数据库已同步。"}</td>
+                    <td colSpan={3}>{dataError || "暂无可展示的辽宁纪录数据。"}</td>
                   </tr>
                 ) : null}
               </tbody>

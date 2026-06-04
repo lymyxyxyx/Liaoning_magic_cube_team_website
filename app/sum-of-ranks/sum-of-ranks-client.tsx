@@ -4,7 +4,6 @@ import Link from "next/link";
 import { ChevronLeft, ChevronRight, Database } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { WcaFlag } from "@/components/wca-flag";
-import { formatCountryLabel } from "@/lib/country-label";
 import { formatWcaEventName } from "@/lib/format";
 
 type RankingMode = "single" | "average";
@@ -48,6 +47,80 @@ const regionLabels: Record<Region, string> = {
   liaoning: "辽宁"
 };
 
+const mockEvents: SumEvent[] = [
+  { id: "333", name: "3x3x3 Cube" },
+  { id: "222", name: "2x2x2 Cube" },
+  { id: "444", name: "4x4x4 Cube" },
+  { id: "555", name: "5x5x5 Cube" },
+  { id: "666", name: "6x6x6 Cube" },
+  { id: "777", name: "7x7x7 Cube" },
+  { id: "333oh", name: "3x3x3 One-Handed" },
+  { id: "333bf", name: "3x3x3 Blindfolded" },
+  { id: "clock", name: "Clock" },
+  { id: "minx", name: "Megaminx" },
+  { id: "pyram", name: "Pyraminx" },
+  { id: "skewb", name: "Skewb" },
+  { id: "sq1", name: "Square-1" }
+];
+
+const mockRows: SumRow[] = [
+  {
+    rank: 1,
+    wcaId: "2024LIZH03",
+    name: "Zhaokun Li（李昭昆）",
+    country: "China",
+    countryName: "China",
+    countryIso2: "CN",
+    sum: 86,
+    ranksByEvent: { "333": 1, "222": 4, "444": 2, "555": 3, "666": 5, "777": 6, "333oh": 2, "333bf": 9, clock: 18, minx: 7, pyram: 11, skewb: 12, sq1: 8 },
+    missingByEvent: {}
+  },
+  {
+    rank: 2,
+    wcaId: "2023LIAO01",
+    name: "Minghao Chen（陈明昊）",
+    country: "China",
+    countryName: "China",
+    countryIso2: "CN",
+    sum: 112,
+    ranksByEvent: { "333": 2, "222": 6, "444": 5, "555": 9, "666": 14, "777": 16, "333oh": 4, "333bf": 21, clock: 10, minx: 12, pyram: 7, skewb: 5, sq1: 8 },
+    missingByEvent: {}
+  },
+  {
+    rank: 3,
+    wcaId: "2022DALI01",
+    name: "Yue Zhao（赵悦）",
+    country: "China",
+    countryName: "China",
+    countryIso2: "CN",
+    sum: 145,
+    ranksByEvent: { "333": 4, "222": 3, "444": 8, "555": 18, "666": 22, "777": 24, "333oh": 6, "333bf": 26, clock: 14, minx: 9, pyram: 18, skewb: 11, sq1: 19 },
+    missingByEvent: {}
+  },
+  {
+    rank: 4,
+    wcaId: "2021ANSH01",
+    name: "Haoran Lin（林浩然）",
+    country: "China",
+    countryName: "China",
+    countryIso2: "CN",
+    sum: 172,
+    ranksByEvent: { "333": 6, "222": 9, "444": 6, "555": 11, "666": 19, "777": 31, "333oh": 8, "333bf": 33, clock: 17, minx: 16, pyram: 15, skewb: 14, sq1: 20 },
+    missingByEvent: { "333bf": true }
+  },
+  {
+    rank: 5,
+    wcaId: "2025FUSH01",
+    name: "Jinyi Sun（孙锦一）",
+    country: "China",
+    countryName: "China",
+    countryIso2: "CN",
+    sum: 201,
+    ranksByEvent: { "333": 8, "222": 12, "444": 13, "555": 17, "666": 28, "777": 35, "333oh": 9, "333bf": 33, clock: 21, minx: 20, pyram: 16, skewb: 18, sq1: 24 },
+    missingByEvent: { "333bf": true }
+  }
+];
+
 export function SumOfRanksClient() {
   const [mode, setMode] = useState<RankingMode>("average");
   const [region, setRegion] = useState<Region>("china");
@@ -76,7 +149,18 @@ export function SumOfRanksClient() {
       })
       .catch((requestError) => {
         if (requestError.name !== "AbortError") {
-          setError("无法读取排名总和数据，请确认 WCA 数据库已同步。");
+          if (process.env.NODE_ENV === "development") {
+            setData({
+              rows: [],
+              page,
+              pageSize: 100,
+              hasNextPage: false,
+              events: mockEvents,
+              regionLabel: regionLabels[region]
+            });
+          } else {
+            setError("无法读取排名总和数据，请确认 WCA 数据库已同步。");
+          }
         }
       })
       .finally(() => {
@@ -86,9 +170,10 @@ export function SumOfRanksClient() {
     return () => controller.abort();
   }, [mode, region, page]);
 
-  const rows = data?.rows || [];
-  const events = data?.events || [];
-  const tableTitle = useMemo(() => `${regionLabels[region]} · ${modeLabels[mode]} · 第 ${page} 页`, [mode, page, region]);
+  const shouldUseMockRows = process.env.NODE_ENV === "development" && !isLoading && (!data?.rows || data.rows.length === 0);
+  const rows = shouldUseMockRows ? mockRows : data?.rows || [];
+  const events = shouldUseMockRows ? mockEvents : data?.events || [];
+  const tableTitle = useMemo(() => `${regionLabels[region]}综合排名`, [region]);
 
   function updateFilter(next: Partial<{ mode: RankingMode; region: Region }>) {
     if (next.mode) setMode(next.mode);
@@ -99,17 +184,10 @@ export function SumOfRanksClient() {
   return (
     <section className="container section rankings-workspace sum-ranks-workspace">
       <section className="weekly-event-section ranking-filter-section">
-        <div className="section-header">
-          <div>
-            <span className="eyebrow">筛选条件</span>
-            <h2>排名总和查询</h2>
-          </div>
-        </div>
-
         <div className="ranking-filter-card sum-ranks-filter-card" aria-label="排名总和筛选">
           <div className="ranking-field">
             <span>范围</span>
-            <div className="ranking-toggle">
+            <div className="ranking-toggle sum-ranks-region-toggle">
               {(["world", "asia", "china", "liaoning"] as Region[]).map((item) => (
                 <button className={region === item ? "active" : ""} type="button" onClick={() => updateFilter({ region: item })} key={item}>
                   {regionLabels[item]}
@@ -137,7 +215,7 @@ export function SumOfRanksClient() {
             <span className="eyebrow">Sum of Ranks</span>
             <h2>
               {tableTitle}
-              <small>缺项按该范围内项目最差排名后一位计入</small>
+              <small>{modeLabels[mode]} · 第 {page} 页</small>
             </h2>
           </div>
           <div className="ranking-update">
@@ -146,7 +224,7 @@ export function SumOfRanksClient() {
           </div>
         </div>
 
-        {error ? <div className="alert error">{error}</div> : null}
+        {error && !shouldUseMockRows ? <div className="alert error">{error}</div> : null}
 
         <div className="competition-table-wrap sum-ranks-table-wrap">
           <table className="competition-list-table sum-ranks-table">
@@ -179,15 +257,20 @@ export function SumOfRanksClient() {
                     <tr key={`${mode}-${region}-${row.wcaId}`}>
                       <td data-label="排名">{row.rank}</td>
                       <td data-label="姓名">
-                        <Link className="table-person-link" href={`https://www.worldcubeassociation.org/persons/${row.wcaId}`} target="_blank">
+                        <Link
+                          className="table-person-link"
+                          href={`https://cubing.com/results/person/${row.wcaId}`}
+                          referrerPolicy="no-referrer"
+                          rel="noopener noreferrer"
+                          target="_blank"
+                        >
                           {row.name}
                         </Link>
-                        <small className="ranking-wca-id">{row.wcaId}</small>
                       </td>
                       <td data-label="地区">
                         <span className="flag-label">
                           <WcaFlag country={row.country} iso2={row.countryIso2} />
-                          {formatCountryLabel(row.countryName, row.countryIso2)}
+                          <span className="sum-ranks-country-name">{row.countryName || row.country}</span>
                         </span>
                       </td>
                       <td data-label="总和" className="score-strong">
