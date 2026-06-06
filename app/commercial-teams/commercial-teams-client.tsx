@@ -75,7 +75,7 @@ export function CommercialTeamsClient({ initialTeams, wcaNameEntries }: Props) {
   return (
     <>
       <div className="commercial-edit-toolbar">
-        <span>{notice || "可直接编辑成员信息，当前暂不需要登录或密码。"}</span>
+        <span>{notice || "成员资料可在本页快速维护。"}</span>
         {editing && (
           <button className="button button--ghost" type="button" onClick={() => setEditing(null)}>
             <X size={14} />
@@ -120,6 +120,7 @@ function TeamSection({
   onSave: () => void;
 }) {
   const wcaCount = team.members.filter((m) => m.wcaId).length;
+  const cityCount = new Set(team.members.map((member) => member.city).filter(Boolean)).size;
 
   return (
     <div className="commercial-team-block">
@@ -127,10 +128,11 @@ function TeamSection({
         <div>
           {team.sponsor && <span className="eyebrow">{team.sponsor}</span>}
           <h2>{team.name}</h2>
-          <p className="commercial-team-stats">
-            {team.members.length} 名辽宁成员
-            {wcaCount > 0 && <span className="wca-count"> · {wcaCount} 人已关联 WCA</span>}
-          </p>
+          <div className="commercial-team-stats">
+            <span>{team.members.length} 名成员</span>
+            <span>{cityCount || 1} 个城市</span>
+            {wcaCount > 0 ? <span className="wca-count">{wcaCount} 人已关联 WCA</span> : null}
+          </div>
         </div>
         {team.brandUrl && (
           <a className="button button--ghost" href={team.brandUrl} target="_blank" rel="noopener noreferrer">
@@ -168,6 +170,8 @@ function TeamSection({
 }
 
 function MemberCard({ member, wcaName, onEdit }: { member: Person; wcaName?: string; onEdit: () => void }) {
+  const cubingUrl = member.wcaId ? `https://cubing.com/results/person/${member.wcaId}` : member.wcaUrl;
+
   return (
     <div className="commercial-member-link">
       <div className="commercial-member-card">
@@ -175,12 +179,13 @@ function MemberCard({ member, wcaName, onEdit }: { member: Person; wcaName?: str
           <div className="commercial-member-main">
             <strong>{member.name}</strong>
             <span className="commercial-member-meta">
-              {member.gender || "未填性别"} · {member.city}
-              {member.mainEvent ? ` · ${member.mainEvent}` : ""}
+              <span>{member.gender || "未填性别"}</span>
+              <span>{member.city}</span>
+              {member.mainEvent ? <span>{member.mainEvent}</span> : null}
             </span>
           </div>
-          {member.wcaUrl ? (
-            <a className="wca-id-badge" href={member.wcaUrl} target="_blank" rel="noopener noreferrer" title={wcaName}>
+          {cubingUrl ? (
+            <a className="wca-id-badge" href={cubingUrl} referrerPolicy="no-referrer" target="_blank" rel="noopener noreferrer" title={wcaName}>
               <ExternalLink size={11} />
               {member.wcaId || "WCA"}
             </a>
@@ -268,7 +273,7 @@ function normalizeDraft(draft: Person): Person {
     city: draft.city.trim() || "沈阳",
     mainEvent: draft.mainEvent?.trim() || undefined,
     wcaId: wcaId || undefined,
-    wcaUrl: draft.wcaUrl?.trim() || (wcaId ? `https://www.worldcubeassociation.org/persons/${wcaId}` : undefined),
+    wcaUrl: draft.wcaUrl?.trim() || (wcaId ? `https://cubing.com/results/person/${wcaId}` : undefined),
     bio: draft.bio || ""
   };
 }

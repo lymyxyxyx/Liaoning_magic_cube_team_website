@@ -163,7 +163,7 @@ export const weeklyPlayerPeople: Person[] = weeklyPlayers.map(([name, slug]) => 
   roles: ["运动员"],
   city: "辽宁",
   mainEvent: "三阶速拧",
-  bio: `${name} 是辽宁魔方少儿战队周赛选手，个人档案可继续关联登录账号、WCA 信息和历史周赛成绩。`,
+  bio: `${name} 是辽宁魔方线上周赛选手，个人档案可继续关联登录账号、WCA 信息和历史周赛成绩。`,
   specialties: ["三阶", "周赛"],
   rankingNote: "周赛成绩已开始整理",
   visible: true

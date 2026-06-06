@@ -47,27 +47,32 @@ type EnteredResult = {
 
 type Props = {
   initialMeets: MeetOption[];
+  initialPlayers?: WeeklyPlayer[];
   events: typeof WCA_EVENTS;
   variant?: "full" | "workspace";
+  mode?: "admin" | "public";
 };
 
 const emptyAttempts = ["", "", "", "", ""];
-const minSearchLength = 1;
+const testMeetId = "weekly-test-entry";
 
-export function WeeklyResultEntryConsole({ initialMeets, events, variant = "full" }: Props) {
+export function WeeklyResultEntryConsole({ initialMeets, initialPlayers = [], events, variant = "full", mode = "admin" }: Props) {
+  const defaultMeetId = mode === "public" ? initialMeets.find((meet) => meet.id !== testMeetId)?.id || initialMeets[0]?.id || "" : initialMeets[0]?.id || "";
   const [meets, setMeets] = useState(initialMeets);
-  const [selectedMeetId, setSelectedMeetId] = useState(initialMeets[0]?.id || "");
+  const [selectedMeetId, setSelectedMeetId] = useState(defaultMeetId);
   const [selectedEventId, setSelectedEventId] = useState("333");
   const [selectedFormat, setSelectedFormat] = useState<WeeklyResultFormat>("avg5");
   const [results, setResults] = useState<EnteredResult[]>([]);
   const [playerQuery, setPlayerQuery] = useState("");
   const [players, setPlayers] = useState<WeeklyPlayer[]>([]);
+  const [knownPlayers, setKnownPlayers] = useState(initialPlayers);
   const [selectedPlayer, setSelectedPlayer] = useState<WeeklyPlayer | null>(null);
   const [attempts, setAttempts] = useState(emptyAttempts);
   const [notice, setNotice] = useState("");
   const [isSaving, setIsSaving] = useState(false);
   const [isLoadingResults, setIsLoadingResults] = useState(false);
   const attemptRefs = useRef<Array<HTMLInputElement | null>>([]);
+  const playerInputRef = useRef<HTMLInputElement | null>(null);
   const selectedFormatConfig = getWeeklyResultFormat(selectedFormat);
 
   const calculated = useMemo(() => {
@@ -88,21 +93,32 @@ export function WeeklyResultEntryConsole({ initialMeets, events, variant = "full
   }, [selectedFormatConfig.attemptCount]);
 
   useEffect(() => {
+    const input = playerInputRef.current;
+    if (!input) return;
+
+    const syncPlayerQuery = () => {
+      updatePlayerQuery(input.value);
+    };
+
+    input.addEventListener("input", syncPlayerQuery);
+    input.addEventListener("keyup", syncPlayerQuery);
+    input.addEventListener("compositionend", syncPlayerQuery);
+
+    return () => {
+      input.removeEventListener("input", syncPlayerQuery);
+      input.removeEventListener("keyup", syncPlayerQuery);
+      input.removeEventListener("compositionend", syncPlayerQuery);
+    };
+  }, [knownPlayers, players, selectedPlayer]);
+
+  useEffect(() => {
     const controller = new AbortController();
     const timer = window.setTimeout(() => {
       if (!playerQuery.trim()) {
         setPlayers([]);
         return;
       }
-      fetch(`/api/players/search?q=${encodeURIComponent(playerQuery)}`, { signal: controller.signal })
-        .then((response) => {
-          if (!response.ok) throw new Error("search");
-          return response.json();
-        })
-        .then((payload: { players: WeeklyPlayer[] }) => setPlayers(payload.players || []))
-        .catch((error) => {
-          if (error.name !== "AbortError") setPlayers([]);
-        });
+      void searchPlayers(playerQuery, controller.signal);
     }, 180);
 
     return () => {
@@ -119,7 +135,10 @@ export function WeeklyResultEntryConsole({ initialMeets, events, variant = "full
       })
       .then((payload: { meets: MeetOption[] }) => {
         setMeets(payload.meets || []);
-        if (!selectedMeetId && payload.meets?.[0]) setSelectedMeetId(payload.meets[0].id);
+        if (!selectedMeetId && payload.meets?.[0]) {
+          const nextMeetId = mode === "public" ? payload.meets.find((meet) => meet.id !== testMeetId)?.id || payload.meets[0].id : payload.meets[0].id;
+          setSelectedMeetId(nextMeetId);
+        }
       })
       .catch(() => setNotice("读取周赛列表失败。"));
   }
@@ -147,6 +166,39 @@ export function WeeklyResultEntryConsole({ initialMeets, events, variant = "full
     setAttempts((prev) => prev.map((attempt, attemptIndex) => (attemptIndex === index ? value : attempt)));
   }
 
+  function updatePlayerQuery(value: string) {
+    setPlayerQuery(value);
+    const exactPlayer = findPlayerByName(value, players) || findPlayerByName(value, knownPlayers);
+    if (exactPlayer) {
+      setSelectedPlayer(exactPlayer);
+    } else if (selectedPlayer && value !== selectedPlayer.name) {
+      setSelectedPlayer(null);
+    }
+    void searchPlayers(value);
+  }
+
+  function searchPlayers(query: string, signal?: AbortSignal) {
+    const q = query.trim();
+    if (!q) {
+      setPlayers([]);
+      return Promise.resolve();
+    }
+    const searchParams = new URLSearchParams({ q });
+    return fetch(`/api/players/search?${searchParams.toString()}`, { signal })
+      .then((response) => {
+        if (!response.ok) throw new Error("search");
+        return response.json();
+      })
+      .then((payload: { players: WeeklyPlayer[] }) => {
+        const nextPlayers = payload.players || [];
+        setPlayers(nextPlayers);
+        setKnownPlayers((prev) => mergePlayers(prev, nextPlayers));
+      })
+      .catch((error) => {
+        if (error.name !== "AbortError") setPlayers([]);
+      });
+  }
+
   function handleAttemptKeyDown(event: KeyboardEvent<HTMLInputElement>, index: number) {
     if (event.key !== "Enter") return;
     event.preventDefault();
@@ -163,7 +215,9 @@ export function WeeklyResultEntryConsole({ initialMeets, events, variant = "full
       setNotice("请先选择周赛。");
       return;
     }
-    if (!selectedPlayer) {
+    const currentPlayerQuery = playerInputRef.current?.value || playerQuery;
+    const playerForSave = selectedPlayer || findPlayerByName(currentPlayerQuery, players) || findPlayerByName(currentPlayerQuery, knownPlayers);
+    if (!playerForSave) {
       setNotice("请先选择选手。");
       return;
     }
@@ -181,7 +235,7 @@ export function WeeklyResultEntryConsole({ initialMeets, events, variant = "full
     fetch(`/api/weekly-competitions/${encodeURIComponent(selectedMeetId)}/results`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ eventId: selectedEventId, format: selectedFormat, player: selectedPlayer, attempts })
+      body: JSON.stringify({ eventId: selectedEventId, format: selectedFormat, player: playerForSave, attempts })
     })
       .then((response) => {
         if (!response.ok) {
@@ -202,7 +256,7 @@ export function WeeklyResultEntryConsole({ initialMeets, events, variant = "full
           setNotice(error.message);
           return;
         }
-        setResults((prev) => buildOptimisticResults(prev, selectedPlayer, parsedAttempts, selectedFormat));
+        setResults((prev) => buildOptimisticResults(prev, playerForSave, parsedAttempts, selectedFormat));
         setAttempts(Array.from({ length: selectedFormatConfig.attemptCount }, () => ""));
         setNotice(error instanceof Error ? `本地已显示，数据库保存失败：${error.message}` : "本地已显示，数据库保存失败。");
         attemptRefs.current[0]?.focus();
@@ -213,39 +267,61 @@ export function WeeklyResultEntryConsole({ initialMeets, events, variant = "full
   function selectPlayer(player: WeeklyPlayer) {
     setSelectedPlayer(player);
     setPlayerQuery(player.name);
+    if (playerInputRef.current) playerInputRef.current.value = player.name;
     setPlayers([player]);
   }
 
   const selectedMeet = meets.find((meet) => meet.id === selectedMeetId);
   const selectedEvent = events.find((event) => event.id === selectedEventId);
   const recordedCount = results.length;
-  const shouldShowPlayerResults = playerQuery.trim().length >= minSearchLength;
+  const playerCandidates = useMemo(() => {
+    const query = playerQuery.trim();
+    const upperQuery = query.toUpperCase();
+    const mergedPlayers = mergePlayers(knownPlayers, players);
+    const filteredPlayers = query
+      ? mergedPlayers.filter((player) => player.name.includes(query) || player.wcaId.toUpperCase().includes(upperQuery))
+      : prioritizePlayersForPicker(mergedPlayers);
+    return filteredPlayers.slice(0, 8);
+  }, [knownPlayers, playerQuery, players]);
+  const isPublicMode = mode === "public";
 
   return (
-    <section className={`${variant === "workspace" ? "" : "container section"} weekly-entry-shell weekly-entry-shell--${variant}`.trim()}>
+    <section
+      className={`${variant === "workspace" ? "" : "container section"} weekly-entry-shell weekly-entry-shell--${variant} weekly-entry-shell--${mode}`.trim()}
+    >
       <div className="admin-card weekly-admin-card">
         <div className="admin-card-heading">
           <div>
-            <h2>单人成绩录入</h2>
-            <p>选择周赛和项目，检索选手后录入五次成绩，保存后右侧榜单立即刷新。</p>
+            <h2>{isPublicMode ? "当前周赛成绩" : "单人成绩录入"}</h2>
+            <p>
+              {isPublicMode
+                ? selectedMeet
+                  ? `${selectedMeet.dateLabel || selectedMeet.title} · 选择项目和赛制`
+                  : "默认录入当前周赛，请选择项目和赛制。"
+                : "选择周赛和项目，检索选手后录入五次成绩，保存后右侧榜单立即刷新。"}
+            </p>
           </div>
-          <button className="button" type="button" onClick={refreshMeets}>
-            <RefreshCw size={16} />
-            刷新周赛
-          </button>
+          {!isPublicMode ? (
+            <button className="button" type="button" onClick={refreshMeets}>
+              <RefreshCw size={16} />
+              刷新周赛
+            </button>
+          ) : null}
         </div>
 
-        <div className="weekly-entry-controls weekly-entry-controls--compact">
-          <label>
-            周赛
-            <select value={selectedMeetId} onChange={(event) => setSelectedMeetId(event.target.value)}>
-              {meets.map((meet) => (
-                <option value={meet.id} key={meet.id}>
-                  {meet.title}
-                </option>
-              ))}
-            </select>
-          </label>
+        <div className={`weekly-entry-controls weekly-entry-controls--compact ${isPublicMode ? "weekly-entry-controls--public" : ""}`.trim()}>
+          {!isPublicMode ? (
+            <label>
+              周赛
+              <select value={selectedMeetId} onChange={(event) => setSelectedMeetId(event.target.value)}>
+                {meets.map((meet) => (
+                  <option value={meet.id} key={meet.id}>
+                    {meet.title}
+                  </option>
+                ))}
+              </select>
+            </label>
+          ) : null}
           <label>
             项目
             <select value={selectedEventId} onChange={(event) => setSelectedEventId(event.target.value)}>
@@ -338,31 +414,32 @@ export function WeeklyResultEntryConsole({ initialMeets, events, variant = "full
             </div>
           ) : null}
 
-          <label className="weekly-player-search">
-            选手
-            <span>
-              <em>No.</em>
-              <Search size={16} />
-              <input value={playerQuery} onChange={(event) => setPlayerQuery(event.target.value)} placeholder="输入中文名" />
-            </span>
-          </label>
+          <div className="weekly-player-picker">
+            <label className="weekly-player-search">
+              选手
+              <span>
+                <Search size={16} />
+                <input
+                  ref={playerInputRef}
+                  onChange={(event) => updatePlayerQuery(event.currentTarget.value)}
+                  onInput={(event) => updatePlayerQuery(event.currentTarget.value)}
+                  onKeyUp={(event) => updatePlayerQuery(event.currentTarget.value)}
+                  onCompositionEnd={(event) => updatePlayerQuery(event.currentTarget.value)}
+                  placeholder="输入姓名检索"
+                />
+              </span>
+            </label>
 
-          {shouldShowPlayerResults ? (
             <div className="weekly-player-results">
-              {players.map((player) => (
-                <button
-                  className={selectedPlayer?.id === player.id ? "is-selected" : ""}
-                  type="button"
-                  key={`${player.id}-${player.name}`}
-                  onClick={() => selectPlayer(player)}
-                >
+              {playerCandidates.map((player) => (
+                <button type="button" key={player.id} onMouseDown={(event) => event.preventDefault()} onClick={() => selectPlayer(player)}>
                   <strong>{player.name}</strong>
                   <small>{formatPlayerCandidateMeta(player)}</small>
                 </button>
               ))}
-              {players.length === 0 ? <p>没有找到选手，请联系管理员先加入周赛选手库。</p> : null}
+              {playerCandidates.length === 0 ? <p>没有找到选手，请联系管理员先加入周赛选手库。</p> : null}
             </div>
-          ) : null}
+          </div>
 
           <div className="weekly-attempt-grid">
             {attempts.map((attempt, index) => (
@@ -418,6 +495,28 @@ function buildOptimisticResults(prev: EnteredResult[], player: WeeklyPlayer, att
   const withoutSamePlayer = prev.filter((result) => result.player.name !== player.name);
   const sorted = [nextResult, ...withoutSamePlayer].sort(compareEnteredResults);
   return sorted.map((result, index) => ({ ...result, rank: index + 1 }));
+}
+
+function findPlayerByName(name: string, players: WeeklyPlayer[]) {
+  const trimmedName = name.trim();
+  if (!trimmedName) return null;
+  return players.find((player) => player.name === trimmedName) || null;
+}
+
+function mergePlayers(currentPlayers: WeeklyPlayer[], nextPlayers: WeeklyPlayer[]) {
+  const merged = new Map<string, WeeklyPlayer>();
+  for (const player of currentPlayers) merged.set(player.id, player);
+  for (const player of nextPlayers) merged.set(player.id, player);
+  return Array.from(merged.values());
+}
+
+function prioritizePlayersForPicker(players: WeeklyPlayer[]) {
+  return [...players].sort((a, b) => {
+    const aIsLiu = a.name.startsWith("刘") ? 0 : 1;
+    const bIsLiu = b.name.startsWith("刘") ? 0 : 1;
+    if (aIsLiu !== bIsLiu) return aIsLiu - bIsLiu;
+    return a.name.localeCompare(b.name, "zh-Hans-CN");
+  });
 }
 
 function compareEnteredResults(a: EnteredResult, b: EnteredResult) {

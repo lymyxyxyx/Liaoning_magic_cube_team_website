@@ -50,7 +50,7 @@ export async function POST(request: NextRequest) {
   const meet = payload as WeeklyMeetInput;
   const id = `weekly-${meet.weekNumber}`;
   const slug = id;
-  const title = `辽宁魔方少儿战队第${meet.weekNumber}周周赛总结（${meet.year}年第${meet.yearWeek}周）`;
+  const title = `辽宁魔方线上周赛第${meet.weekNumber}周总结（${meet.year}年第${meet.yearWeek}周）`;
   const pool = getPostgresPool();
   const client = await pool.connect();
 

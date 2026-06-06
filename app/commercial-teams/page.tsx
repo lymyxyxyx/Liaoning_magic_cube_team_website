@@ -30,7 +30,7 @@ export default async function CommercialTeamsPage() {
   return (
     <>
       <PageHero label="商业战队成员" title="辽宁魔方少儿战队商业合作">
-        展示与战队合作的各大商业战队和社团，包括成员档案、WCA 关联和发展动态。
+        辽宁选手商业战队与青少年梯队信息。
       </PageHero>
 
       <section className="container section">

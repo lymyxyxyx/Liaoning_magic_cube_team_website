@@ -27,7 +27,7 @@ export async function POST(request: NextRequest) {
 
   if (!timingSafeStringEqual(password, weeklyPassword)) {
     const loginUrl = request.nextUrl.clone();
-    loginUrl.pathname = "/weekly/admin/login/error";
+    loginUrl.pathname = "/admin/login/error";
     loginUrl.search = "";
     return NextResponse.redirect(loginUrl, { status: 303 });
   }
@@ -48,8 +48,9 @@ export async function POST(request: NextRequest) {
 }
 
 function getSafeNextPath(value: string | null) {
-  if (!value || !value.startsWith("/") || value.startsWith("//")) return "/weekly/admin";
-  if (value.startsWith("/weekly/admin/login")) return "/weekly/admin";
+  if (!value || !value.startsWith("/") || value.startsWith("//")) return "/admin/weekly";
+  if (value.startsWith("/weekly/admin/login")) return "/admin/weekly";
+  if (value === "/weekly/admin" || value.startsWith("/weekly/admin/")) return value.replace("/weekly/admin", "/admin/weekly");
   return value;
 }
 

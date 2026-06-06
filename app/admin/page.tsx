@@ -18,6 +18,11 @@ const adminCards = [
     description: "维护周赛录入使用的选手资料、生日和自动组别。"
   },
   {
+    title: "周赛管理",
+    href: "/admin/weekly",
+    description: "管理周赛设置和历史数据；日常录成绩统一使用前台立即参加入口。"
+  },
+  {
     title: "比赛账单",
     href: "/admin/accounts",
     description: "管理单场比赛收入、支出、分类小计和结余。"

@@ -172,7 +172,7 @@ export function WeeklyPlayerLibraryConsole({
       <div className="admin-workspace-heading">
         <div>
           <h1>周赛选手库</h1>
-          <p>独立于历史周赛姓名和 WCA 选手库，只在周赛后台维护。当前基底来自 mofang123 第334周三阶表姓名识别。</p>
+          <p>独立于历史周赛姓名和 WCA 选手库，只在网站后台维护。当前基底来自 mofang123 第334周三阶表姓名识别。</p>
         </div>
         <span className="status">{status}</span>
       </div>

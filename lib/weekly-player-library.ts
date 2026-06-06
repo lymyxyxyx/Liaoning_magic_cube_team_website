@@ -98,6 +98,21 @@ const mofang602FemaleNames = new Set([
   "柳一依"
 ]);
 
+const weeklyTestPlayers: WeeklyPlayerLibraryEntry[] = [
+  {
+    id: "weekly-test-liu-yiming",
+    name: "刘一鸣",
+    wcaId: "2009LIUY03",
+    gender: "男",
+    birthDate: "",
+    ageGroup: "",
+    ageGroupIsFuzzy: false,
+    province: "辽宁",
+    city: "沈阳",
+    source: "本地测试数据"
+  }
+];
+
 export async function ensureWeeklyPlayerLibraryTable() {
   const pool = getPostgresPool();
   await pool.query(`
@@ -140,17 +155,20 @@ export async function listWeeklyPlayerLibrary(): Promise<WeeklyPlayerLibraryEntr
 }
 
 export function getMofang602SeedWeeklyPlayers(): WeeklyPlayerLibraryEntry[] {
-  return mofang602Names.map((name) => ({
-    id: createSeedId(name),
-    name,
-    gender: mofang602FemaleNames.has(name) ? "女" : "男",
-    birthDate: "",
-    ageGroup: "",
-    ageGroupIsFuzzy: false,
-    province: "辽宁",
-    city: "",
-    source: "mofang123 第334周三阶表"
-  }));
+  return [
+    ...mofang602Names.map((name) => ({
+      id: createSeedId(name),
+      name,
+      gender: mofang602FemaleNames.has(name) ? ("女" as const) : ("男" as const),
+      birthDate: "",
+      ageGroup: "",
+      ageGroupIsFuzzy: false,
+      province: "辽宁",
+      city: "",
+      source: "mofang123 第334周三阶表"
+    })),
+    ...weeklyTestPlayers
+  ];
 }
 
 export async function findWeeklyPlayerLibraryEntry(input: { id?: string; name?: string }) {
@@ -335,14 +353,40 @@ async function getLocalMatchesByName() {
 async function seedMofang602Players() {
   const pool = getPostgresPool();
   const existing = await pool.query<{ count: string }>("SELECT COUNT(*)::text AS count FROM weekly_player_library");
-  if (Number(existing.rows[0]?.count || 0) > 0) return;
 
-  for (const name of mofang602Names) {
+  if (Number(existing.rows[0]?.count || 0) === 0) {
+    for (const name of mofang602Names) {
+      await pool.query(
+        `INSERT INTO weekly_player_library (id, name, source)
+         VALUES ($1,$2,$3)
+         ON CONFLICT (id) DO NOTHING`,
+        [createSeedId(name), name, "mofang123 第334周三阶表"]
+      );
+    }
+  }
+
+  for (const player of weeklyTestPlayers) {
     await pool.query(
-      `INSERT INTO weekly_player_library (id, name, source)
-       VALUES ($1,$2,$3)
-       ON CONFLICT (id) DO NOTHING`,
-      [createSeedId(name), name, "mofang123 第334周三阶表"]
+      `INSERT INTO weekly_player_library (id, name, wca_id, gender, birth_date, age_group_override, age_group_is_fuzzy, province, city, source)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)
+       ON CONFLICT (id) DO UPDATE
+         SET wca_id = CASE WHEN weekly_player_library.wca_id = '' THEN EXCLUDED.wca_id ELSE weekly_player_library.wca_id END,
+             gender = CASE WHEN weekly_player_library.gender = '' THEN EXCLUDED.gender ELSE weekly_player_library.gender END,
+             province = CASE WHEN weekly_player_library.province = '' THEN EXCLUDED.province ELSE weekly_player_library.province END,
+             city = CASE WHEN weekly_player_library.city = '' THEN EXCLUDED.city ELSE weekly_player_library.city END,
+             source = CASE WHEN weekly_player_library.source = '' THEN EXCLUDED.source ELSE weekly_player_library.source END`,
+      [
+        player.id,
+        player.name,
+        player.wcaId || "",
+        player.gender,
+        player.birthDate,
+        player.ageGroup || "",
+        Boolean(player.ageGroupIsFuzzy),
+        player.province,
+        player.city,
+        player.source
+      ]
     );
   }
 }

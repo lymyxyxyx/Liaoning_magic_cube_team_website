@@ -23,7 +23,7 @@ export const commercialTeamMembers: Person[] = [
     visible: true,
     mainEvent: "三阶速拧",
     wcaId: "2017HANY01",
-    wcaUrl: "https://www.worldcubeassociation.org/persons/2017HANY01"
+    wcaUrl: "https://cubing.com/results/person/2017HANY01"
   },
   {
     id: "ct-li-zhao-kun",
@@ -37,7 +37,7 @@ export const commercialTeamMembers: Person[] = [
     visible: true,
     mainEvent: "三阶速拧",
     wcaId: "2024LIZH03",
-    wcaUrl: "https://www.worldcubeassociation.org/persons/2024LIZH03"
+    wcaUrl: "https://cubing.com/results/person/2024LIZH03"
   },
   {
     id: "ct-fu-he-yu",
@@ -51,7 +51,7 @@ export const commercialTeamMembers: Person[] = [
     visible: true,
     mainEvent: "三阶 / 四阶",
     wcaId: "2019FUHE01",
-    wcaUrl: "https://www.worldcubeassociation.org/persons/2019FUHE01"
+    wcaUrl: "https://cubing.com/results/person/2019FUHE01"
   },
   {
     id: "ct-dong-yi-ze",
@@ -65,7 +65,7 @@ export const commercialTeamMembers: Person[] = [
     visible: true,
     mainEvent: "三阶速拧",
     wcaId: "2023DONG20",
-    wcaUrl: "https://www.worldcubeassociation.org/persons/2023DONG20"
+    wcaUrl: "https://cubing.com/results/person/2023DONG20"
   },
   {
     id: "ct-guo-kai-xi",
@@ -79,7 +79,7 @@ export const commercialTeamMembers: Person[] = [
     visible: true,
     mainEvent: "斜转",
     wcaId: "2023GUOK01",
-    wcaUrl: "https://www.worldcubeassociation.org/persons/2023GUOK01"
+    wcaUrl: "https://cubing.com/results/person/2023GUOK01"
   },
   {
     id: "ct-huang-hui-ning",
@@ -93,7 +93,7 @@ export const commercialTeamMembers: Person[] = [
     visible: true,
     mainEvent: "二阶 / 金字塔",
     wcaId: "2019HUAH03",
-    wcaUrl: "https://www.worldcubeassociation.org/persons/2019HUAH03"
+    wcaUrl: "https://cubing.com/results/person/2019HUAH03"
   },
 
   // GURUS（爆速社）
@@ -109,7 +109,7 @@ export const commercialTeamMembers: Person[] = [
     visible: true,
     mainEvent: "三阶速拧",
     wcaId: "2019GAOY03",
-    wcaUrl: "https://www.worldcubeassociation.org/persons/2019GAOY03"
+    wcaUrl: "https://cubing.com/results/person/2019GAOY03"
   },
   {
     id: "ct-zheng-ming-zhu",
@@ -123,7 +123,7 @@ export const commercialTeamMembers: Person[] = [
     visible: true,
     mainEvent: "三阶速拧",
     wcaId: "2024ZHEN13",
-    wcaUrl: "https://www.worldcubeassociation.org/persons/2024ZHEN13"
+    wcaUrl: "https://cubing.com/results/person/2024ZHEN13"
   },
   {
     id: "ct-zhang-han-di",
@@ -137,7 +137,7 @@ export const commercialTeamMembers: Person[] = [
     visible: true,
     mainEvent: "三阶速拧",
     wcaId: "2023ZHAN76",
-    wcaUrl: "https://www.worldcubeassociation.org/persons/2023ZHAN76"
+    wcaUrl: "https://cubing.com/results/person/2023ZHAN76"
   },
   {
     id: "ct-xu-ya-qian",
@@ -151,7 +151,7 @@ export const commercialTeamMembers: Person[] = [
     visible: true,
     mainEvent: "三阶速拧",
     wcaId: "2025XUYA01",
-    wcaUrl: "https://www.worldcubeassociation.org/persons/2025XUYA01"
+    wcaUrl: "https://cubing.com/results/person/2025XUYA01"
   },
   {
     id: "ct-xia-zi-chen",
@@ -165,7 +165,7 @@ export const commercialTeamMembers: Person[] = [
     visible: true,
     mainEvent: "三阶速拧",
     wcaId: "2023XIAZ01",
-    wcaUrl: "https://www.worldcubeassociation.org/persons/2023XIAZ01"
+    wcaUrl: "https://cubing.com/results/person/2023XIAZ01"
   },
   {
     id: "ct-li-you-xuan",
@@ -179,7 +179,7 @@ export const commercialTeamMembers: Person[] = [
     visible: true,
     mainEvent: "三阶速拧",
     wcaId: "2025LIYO01",
-    wcaUrl: "https://www.worldcubeassociation.org/persons/2025LIYO01"
+    wcaUrl: "https://cubing.com/results/person/2025LIYO01"
   },
   {
     id: "ct-han-mu-yao",
@@ -193,7 +193,7 @@ export const commercialTeamMembers: Person[] = [
     visible: true,
     mainEvent: "三阶速拧",
     wcaId: "2024HANM01",
-    wcaUrl: "https://www.worldcubeassociation.org/persons/2024HANM01"
+    wcaUrl: "https://cubing.com/results/person/2024HANM01"
   },
   {
     id: "ct-wang-yi-tong",
@@ -207,7 +207,7 @@ export const commercialTeamMembers: Person[] = [
     visible: true,
     mainEvent: "三阶速拧",
     wcaId: "2024WANG59",
-    wcaUrl: "https://www.worldcubeassociation.org/persons/2024WANG59"
+    wcaUrl: "https://cubing.com/results/person/2024WANG59"
   },
 
   // 宇宙爆速社·启航队
@@ -223,7 +223,7 @@ export const commercialTeamMembers: Person[] = [
     visible: true,
     mainEvent: "三阶速拧",
     wcaId: "2023MENG07",
-    wcaUrl: "https://www.worldcubeassociation.org/persons/2023MENG07"
+    wcaUrl: "https://cubing.com/results/person/2023MENG07"
   },
   {
     id: "ct-wang-guan-ze",
@@ -237,7 +237,7 @@ export const commercialTeamMembers: Person[] = [
     visible: true,
     mainEvent: "三阶速拧",
     wcaId: "2024WANG11",
-    wcaUrl: "https://www.worldcubeassociation.org/persons/2024WANG11"
+    wcaUrl: "https://cubing.com/results/person/2024WANG11"
   },
   {
     id: "ct-jin-yi-lin",
@@ -251,7 +251,7 @@ export const commercialTeamMembers: Person[] = [
     visible: true,
     mainEvent: "三阶速拧",
     wcaId: "2023JINY04",
-    wcaUrl: "https://www.worldcubeassociation.org/persons/2023JINY04"
+    wcaUrl: "https://cubing.com/results/person/2023JINY04"
   },
   {
     id: "ct-wang-zi-hao",
@@ -265,7 +265,7 @@ export const commercialTeamMembers: Person[] = [
     visible: true,
     mainEvent: "三阶速拧",
     wcaId: "2024WANG65",
-    wcaUrl: "https://www.worldcubeassociation.org/persons/2024WANG65"
+    wcaUrl: "https://cubing.com/results/person/2024WANG65"
   },
   {
     id: "ct-li-yu-tong",
@@ -279,7 +279,7 @@ export const commercialTeamMembers: Person[] = [
     visible: true,
     mainEvent: "三阶速拧",
     wcaId: "2024LIYU06",
-    wcaUrl: "https://www.worldcubeassociation.org/persons/2024LIYU06"
+    wcaUrl: "https://cubing.com/results/person/2024LIYU06"
   },
   {
     id: "ct-zhu-fei-ran",
@@ -293,7 +293,7 @@ export const commercialTeamMembers: Person[] = [
     visible: true,
     mainEvent: "三阶速拧",
     wcaId: "2023ZHUF02",
-    wcaUrl: "https://www.worldcubeassociation.org/persons/2023ZHUF02"
+    wcaUrl: "https://cubing.com/results/person/2023ZHUF02"
   },
   {
     id: "ct-wang-hao-ze",
@@ -319,7 +319,7 @@ export const commercialTeamMembers: Person[] = [
     visible: true,
     mainEvent: "三阶速拧",
     wcaId: "2024HUAX01",
-    wcaUrl: "https://www.worldcubeassociation.org/persons/2024HUAX01"
+    wcaUrl: "https://cubing.com/results/person/2024HUAX01"
   },
 
   // 魔域战队
@@ -335,7 +335,7 @@ export const commercialTeamMembers: Person[] = [
     visible: true,
     mainEvent: "斜转",
     wcaId: "2024LIZI01",
-    wcaUrl: "https://www.worldcubeassociation.org/persons/2024LIZI01"
+    wcaUrl: "https://cubing.com/results/person/2024LIZI01"
   },
 
   // 魔域梦之队
@@ -351,7 +351,7 @@ export const commercialTeamMembers: Person[] = [
     visible: true,
     mainEvent: "三阶速拧",
     wcaId: "2024LIYI07",
-    wcaUrl: "https://www.worldcubeassociation.org/persons/2024LIYI07"
+    wcaUrl: "https://cubing.com/results/person/2024LIYI07"
   },
   {
     id: "ct-jiang-ming-lang-hld",
@@ -365,7 +365,7 @@ export const commercialTeamMembers: Person[] = [
     visible: true,
     mainEvent: "三阶速拧",
     wcaId: "2024JIAN08",
-    wcaUrl: "https://www.worldcubeassociation.org/persons/2024JIAN08"
+    wcaUrl: "https://cubing.com/results/person/2024JIAN08"
   },
   {
     id: "ct-han-yu-xuan-hld",
@@ -403,7 +403,7 @@ export const commercialTeamMembers: Person[] = [
     visible: true,
     mainEvent: "三阶速拧",
     wcaId: "2025WANG68",
-    wcaUrl: "https://www.worldcubeassociation.org/persons/2025WANG68"
+    wcaUrl: "https://cubing.com/results/person/2025WANG68"
   },
 
   // 未来星之队
@@ -419,7 +419,7 @@ export const commercialTeamMembers: Person[] = [
     visible: true,
     mainEvent: "三阶速拧",
     wcaId: "2023SUNY03",
-    wcaUrl: "https://www.worldcubeassociation.org/persons/2023SUNY03"
+    wcaUrl: "https://cubing.com/results/person/2023SUNY03"
   },
   {
     id: "ct-wu-ming-xuan",
@@ -433,7 +433,7 @@ export const commercialTeamMembers: Person[] = [
     visible: true,
     mainEvent: "三阶速拧",
     wcaId: "2018WUMI02",
-    wcaUrl: "https://www.worldcubeassociation.org/persons/2018WUMI02"
+    wcaUrl: "https://cubing.com/results/person/2018WUMI02"
   }
 ];
 
