@@ -1,9 +1,22 @@
+import type { Metadata } from "next";
 import { PageHero } from "@/components/page-hero";
 import { CommercialTeamsClient } from "@/app/commercial-teams/commercial-teams-client";
 import { readCommercialTeams } from "@/lib/commercial-team-store";
 import { getPostgresPool } from "@/lib/postgres";
 
 export const dynamic = "force-dynamic";
+
+export const metadata: Metadata = {
+  title: "商业战队成员",
+  description: "GAN、魔域、魔方格等品牌赞助魔方战队的辽宁成员名录与所属战队信息。",
+  alternates: { canonical: "/commercial-teams" },
+  openGraph: {
+    type: "website",
+    url: "/commercial-teams",
+    title: "商业战队成员",
+    description: "品牌赞助魔方战队的辽宁成员名录。"
+  }
+};
 
 async function getWcaNames(wcaIds: string[]): Promise<Map<string, string>> {
   if (wcaIds.length === 0) return new Map();

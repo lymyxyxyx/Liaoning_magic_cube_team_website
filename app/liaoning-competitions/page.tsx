@@ -1,8 +1,21 @@
+import type { Metadata } from "next";
 import { PageHero } from "@/components/page-hero";
 import { getLiaoningCompetitions } from "@/lib/liaoning-competitions";
 import { LiaoningCompetitionsClient } from "./liaoning-competitions-client";
 
 export const dynamic = "force-dynamic";
+
+export const metadata: Metadata = {
+  title: "辽宁 WCA 赛事",
+  description: "辽宁选手参加过的 WCA 正式比赛列表，依据 WCA 同步数据自动生成，含日期、城市与参赛选手。",
+  alternates: { canonical: "/liaoning-competitions" },
+  openGraph: {
+    type: "website",
+    url: "/liaoning-competitions",
+    title: "辽宁 WCA 赛事",
+    description: "辽宁选手参加过的 WCA 正式比赛列表，随官方数据同步更新。"
+  }
+};
 
 export default async function LiaoningCompetitionsPage() {
   const competitions = await getLiaoningCompetitions();

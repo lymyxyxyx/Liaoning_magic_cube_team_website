@@ -1,9 +1,22 @@
 import Link from "next/link";
 import { Database, Trophy } from "lucide-react";
 import { PageHero } from "@/components/page-hero";
+import type { Metadata } from "next";
 import { getLiaoningRecords, type LocalRecordEvent, type LocalRecordGender, type LocalRecordResult } from "@/lib/local-records";
 
 export const dynamic = "force-dynamic";
+
+export const metadata: Metadata = {
+  title: "辽宁纪录",
+  description: "辽宁地区各 WCA 项目的单次与平均纪录，含保持者、成绩、比赛与日期，支持男女分组查询。",
+  alternates: { canonical: "/liaoning-records" },
+  openGraph: {
+    type: "website",
+    url: "/liaoning-records",
+    title: "辽宁纪录",
+    description: "辽宁地区各 WCA 项目的单次与平均纪录，含保持者、成绩与比赛信息。"
+  }
+};
 
 const genderOptions: { value: LocalRecordGender; label: string; title: string }[] = [
   { value: "all", label: "不限", title: "当前辽宁纪录" },

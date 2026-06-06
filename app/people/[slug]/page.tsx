@@ -10,9 +10,27 @@ import {
   people
 } from "@/lib/data";
 import { notFound } from "next/navigation";
+import type { Metadata } from "next";
 
 export function generateStaticParams() {
   return people.map((person) => ({ slug: person.slug }));
+}
+
+export function generateMetadata({ params }: { params: { slug: string } }): Metadata {
+  const person = getPersonBySlug(params.slug);
+  if (!person) return { title: "未找到该人员" };
+
+  const parts = [person.city, person.mainEvent, person.wcaId ? `WCA ID ${person.wcaId}` : ""].filter(Boolean);
+  const description = (person.bio?.trim() || `${person.name}的辽宁魔方档案：${parts.join(" · ")}。`).slice(0, 150);
+  const canonical = `/people/${person.slug}`;
+
+  return {
+    title: person.name,
+    description,
+    alternates: { canonical },
+    openGraph: { type: "profile", url: canonical, title: person.name, description },
+    twitter: { card: "summary_large_image", title: person.name, description }
+  };
 }
 
 export default function PersonDetailPage({ params }: { params: { slug: string } }) {

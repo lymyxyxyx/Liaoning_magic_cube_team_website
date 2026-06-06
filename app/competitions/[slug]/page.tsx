@@ -12,9 +12,31 @@ import {
   getCompetitionPeople
 } from "@/lib/data";
 import { notFound } from "next/navigation";
+import type { Metadata } from "next";
 
 export function generateStaticParams() {
   return competitions.map((competition) => ({ slug: competition.slug }));
+}
+
+export function generateMetadata({ params }: { params: { slug: string } }): Metadata {
+  const competition = getCompetitionBySlug(params.slug);
+  if (!competition) return { title: "未找到该赛事" };
+
+  const name = getCompetitionDisplayName(competition);
+  const description = (
+    competition.description?.trim() ||
+    competition.summary?.trim() ||
+    `${name}：${competition.date} 在${competition.city}举办。`
+  ).slice(0, 150);
+  const canonical = `/competitions/${competition.slug}`;
+
+  return {
+    title: name,
+    description,
+    alternates: { canonical },
+    openGraph: { type: "article", url: canonical, title: name, description },
+    twitter: { card: "summary_large_image", title: name, description }
+  };
 }
 
 export default function CompetitionDetailPage({ params }: { params: { slug: string } }) {

@@ -1,4 +1,11 @@
+import type { Metadata } from "next";
 import { PageHero } from "@/components/page-hero";
+
+export const metadata: Metadata = {
+  title: "教练员列表",
+  description: "教练库暂未开放，待有明确认证标准后再上线。",
+  robots: { index: false, follow: true }
+};
 
 export default function CoachesPage() {
   return (

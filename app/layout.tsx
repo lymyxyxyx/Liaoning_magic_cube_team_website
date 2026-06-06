@@ -4,11 +4,35 @@ import { GeistSans } from "geist/font/sans";
 import { SiteHeader } from "@/components/site-header";
 import "./globals.css";
 
+const siteName = "辽宁地区魔方信息查询网";
+const siteDescription =
+  "辽宁地区魔方信息查询网汇集辽宁地区魔方选手、排名、赛事活动与荣誉经历等资料，供选手、家长和魔方爱好者查询参考。";
+
 export const metadata: Metadata = {
   metadataBase: new URL("https://lncubing.com"),
-  title: "辽宁地区魔方信息查询网",
-  description:
-    "辽宁地区魔方信息查询网汇集辽宁地区魔方选手、排名、赛事活动与荣誉经历等资料，供选手、家长和魔方爱好者查询参考。"
+  title: {
+    default: siteName,
+    template: `%s | ${siteName}`
+  },
+  description: siteDescription,
+  applicationName: siteName,
+  keywords: ["辽宁魔方", "沈阳魔方", "魔方", "WCA", "辽宁排名", "辽宁纪录", "魔方比赛", "魔方周赛", "速拧"],
+  alternates: {
+    canonical: "/"
+  },
+  openGraph: {
+    type: "website",
+    siteName,
+    locale: "zh_CN",
+    url: "/",
+    title: siteName,
+    description: siteDescription
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: siteName,
+    description: siteDescription
+  }
 };
 
 export const viewport = {

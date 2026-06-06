@@ -1,4 +1,11 @@
+import type { Metadata } from "next";
 import { PageHero } from "@/components/page-hero";
+
+export const metadata: Metadata = {
+  title: "运动员列表",
+  description: "运动员信息暂未开放。",
+  robots: { index: false, follow: true }
+};
 
 export default function AthletesPage() {
   return (

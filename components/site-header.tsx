@@ -12,31 +12,15 @@ type NavItem = {
 
 const navItems: NavItem[] = [
   { href: "/", label: "首页" },
-  {
-    label: "排名",
-    children: [
-      { href: "/liaoning-rankings", label: "辽宁排名" },
-      { href: "/liaoning-records", label: "辽宁纪录" },
-      { href: "/rankings", label: "WCA排名" }
-    ]
-  },
-  {
-    label: "赛事",
-    children: [
-      { href: "/competitions", label: "全部比赛" },
-      { href: "/liaoning-competitions", label: "辽宁WCA赛事" },
-      { href: "/competitions?category=shenyang-city-open", label: "市赛" },
-      { href: "/national-events", label: "国赛" }
-    ]
-  },
+  { href: "/liaoning-rankings", label: "辽宁排名" },
+  { href: "/liaoning-records", label: "辽宁纪录" },
+  { href: "/rankings", label: "WCA排名" },
+  { href: "/competitions", label: "全部比赛" },
+  { href: "/liaoning-competitions", label: "辽宁WCA赛事" },
+  { href: "/national-events", label: "国赛" },
   { href: "/weekly", label: "周赛" },
-  {
-    label: "人员",
-    children: [
-      { href: "/judges", label: "裁判信息" },
-      { href: "/commercial-teams", label: "商业战队成员" }
-    ]
-  }
+  { href: "/judges", label: "裁判信息" },
+  { href: "/commercial-teams", label: "商业战队成员" }
 ];
 
 export function SiteHeader() {

@@ -1,8 +1,21 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { PageHero } from "@/components/page-hero";
 import { getWeeklyMeets } from "@/lib/weekly-db";
 
 export const dynamic = "force-dynamic";
+
+export const metadata: Metadata = {
+  title: "周赛",
+  description: "辽宁魔方周赛成绩与排名，含每周三阶等项目成绩、个人最好与年龄组别。",
+  alternates: { canonical: "/weekly" },
+  openGraph: {
+    type: "website",
+    url: "/weekly",
+    title: "周赛",
+    description: "辽宁魔方周赛成绩、个人最好与排名。"
+  }
+};
 
 function getCurrentWeekStatus(now = new Date()) {
   const current = new Date(now);
