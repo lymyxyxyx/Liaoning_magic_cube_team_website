@@ -160,18 +160,25 @@ export async function getLiaoningRecords(gender: LocalRecordGender = "all"): Pro
 
   if (profiles.length === 0) return [];
 
-  const pool = getPostgresPool();
-  const profilePayload = JSON.stringify(profiles);
-  const [singleResult, averageResult] = await Promise.all([
-    pool.query<RawRecordRow>(
-      buildRecordSql("wca_ranks_single", "single", gender),
-      gender === "all" ? [profilePayload, "single"] : [profilePayload, "single", gender]
-    ),
-    pool.query<RawRecordRow>(
-      buildRecordSql("wca_ranks_average", "average", gender),
-      gender === "all" ? [profilePayload, "average"] : [profilePayload, "average", gender]
-    )
-  ]);
+  let singleResult: { rows: RawRecordRow[] };
+  let averageResult: { rows: RawRecordRow[] };
+  try {
+    const pool = getPostgresPool();
+    const profilePayload = JSON.stringify(profiles);
+    [singleResult, averageResult] = await Promise.all([
+      pool.query<RawRecordRow>(
+        buildRecordSql("wca_ranks_single", "single", gender),
+        gender === "all" ? [profilePayload, "single"] : [profilePayload, "single", gender]
+      ),
+      pool.query<RawRecordRow>(
+        buildRecordSql("wca_ranks_average", "average", gender),
+        gender === "all" ? [profilePayload, "average"] : [profilePayload, "average", gender]
+      )
+    ]);
+  } catch (error) {
+    console.error("Liaoning records query failed.", error);
+    return [];
+  }
 
   const events = new Map<string, LocalRecordEvent>();
 

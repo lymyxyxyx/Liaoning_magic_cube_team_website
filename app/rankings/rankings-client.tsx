@@ -262,14 +262,14 @@ export function RankingsClient() {
 
     setIsLoading(true);
     setError("");
-    const useDevelopmentFallback = () => {
+    const applyDevelopmentFallback = () => {
       if (!isDevelopmentPreview || didUseDevelopmentFallback) return;
       didUseDevelopmentFallback = true;
       setRankings({ rows: [], page, pageSize: 100, hasNextPage: false });
       setError("");
       setIsLoading(false);
     };
-    const developmentFallbackTimer = isDevelopmentPreview ? window.setTimeout(useDevelopmentFallback, 1200) : undefined;
+    const developmentFallbackTimer = isDevelopmentPreview ? window.setTimeout(applyDevelopmentFallback, 1200) : undefined;
 
     fetch(`/api/wca-rankings?${params}`, { signal: controller.signal })
       .then((response) => {
@@ -284,7 +284,7 @@ export function RankingsClient() {
         if (developmentFallbackTimer) window.clearTimeout(developmentFallbackTimer);
         if (requestError.name !== "AbortError") {
           if (isDevelopmentPreview) {
-            useDevelopmentFallback();
+            applyDevelopmentFallback();
             return;
           }
           setError("无法读取排名数据，请确认 WCA 数据库已同步。");

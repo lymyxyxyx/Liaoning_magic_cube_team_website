@@ -249,7 +249,7 @@ export function LiaoningRankingsClient() {
 
     setIsLoading(true);
     setError("");
-    const useDevelopmentFallback = () => {
+    const applyDevelopmentFallback = () => {
       if (!isDevelopmentPreview || didUseDevelopmentFallback) return;
       didUseDevelopmentFallback = true;
       setRankings({
@@ -263,7 +263,7 @@ export function LiaoningRankingsClient() {
       setError("");
       setIsLoading(false);
     };
-    const developmentFallbackTimer = isDevelopmentPreview ? window.setTimeout(useDevelopmentFallback, 1200) : undefined;
+    const developmentFallbackTimer = isDevelopmentPreview ? window.setTimeout(applyDevelopmentFallback, 1200) : undefined;
 
     fetch(`/api/local-rankings?${params}`, { signal: controller.signal })
       .then((response) => {
@@ -278,7 +278,7 @@ export function LiaoningRankingsClient() {
         if (developmentFallbackTimer) window.clearTimeout(developmentFallbackTimer);
         if (requestError.name !== "AbortError") {
           if (isDevelopmentPreview) {
-            useDevelopmentFallback();
+            applyDevelopmentFallback();
             return;
           }
           setError("无法读取辽宁排名数据，请确认 WCA 数据库已同步。");

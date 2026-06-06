@@ -8,6 +8,7 @@
     "start": "next start",
     "lint": "next lint",
     "typecheck": "tsc --noEmit",
+    "test:smoke": "node scripts/smoke-test.mjs",
     "wca:check": "node scripts/update_wca_data.mjs --check",
     "wca:update": "node scripts/update_wca_data.mjs",
     "wca:cleanup": "node scripts/cleanup-wca.mjs",
