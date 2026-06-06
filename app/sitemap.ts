@@ -12,6 +12,7 @@ const staticPaths = [
   "/rankings",
   "/sum-of-ranks",
   "/competitions",
+  "/liaoning-competitions",
   "/provincial-competition",
   "/national-events",
   "/weekly",

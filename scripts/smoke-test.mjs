@@ -19,7 +19,7 @@ const checks = [
   { path: "/about", ok: [200], type: "text/html" },
   { path: "/liaoning-rankings", ok: [200], type: "text/html" },
   { path: "/liaoning-records", ok: [200], type: "text/html" },
-  { path: "/liaoning-competitions", ok: [200, 307, 308] },
+  { path: "/liaoning-competitions", ok: [200], type: "text/html" },
   { path: "/rankings", ok: [200], type: "text/html" },
   { path: "/competitions", ok: [200], type: "text/html" },
   { path: "/weekly", ok: [200], type: "text/html" },

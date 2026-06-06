@@ -34,9 +34,9 @@ export default function HomePage() {
           <strong>辽宁纪录</strong>
           <span>各 WCA 项目辽宁单次与平均纪录</span>
         </Link>
-        <Link href="/competitions" className="home-entry">
-          <strong>赛事列表</strong>
-          <span>WCA、省赛、市赛与国赛信息一站式查询</span>
+        <Link href="/liaoning-competitions" className="home-entry">
+          <strong>辽宁 WCA 赛事</strong>
+          <span>辽宁选手参加的 WCA 正式比赛，随官方数据同步</span>
         </Link>
         <Link href="/weekly" className="home-entry">
           <strong>周赛</strong>

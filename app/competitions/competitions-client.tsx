@@ -2,152 +2,192 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
-import { eventCategoryLabels, eventCategoryOrder, type EventCategory, type EventListRow } from "@/lib/event-types";
+import { competitionCategories, competitions, getCompetitionCategory, getCompetitionDisplayName } from "@/lib/data";
 
 const pageSize = 20;
+const getSortableDate = (date: string) => {
+  const match = date.match(/^\d{4}-\d{2}-\d{2}/);
+  return match ? match[0] : "0000-00-00";
+};
+const getShenyangOpenEdition = (slug: string) => {
+  const match = slug.match(/^shenyang-open-(\d+)$/);
+  return match ? Number(match[1]) : 0;
+};
 
-type TabId = "all" | EventCategory;
+const categoryIds = new Set(["全部", ...competitionCategories.map((item) => item.id)]);
 
-const tabs: { id: TabId; label: string }[] = [
-  { id: "all", label: "全部" },
-  ...eventCategoryOrder.map((category) => ({ id: category, label: eventCategoryLabels[category] }))
+// 省赛只有一场且已结束，归入“市赛”一并展示，不再单独作为筛选类别。
+const mergedIntoCity = "liaoning-province-open";
+const categoryTabs = [
+  { id: "全部", shortName: "全部" },
+  ...competitionCategories.filter((item) => item.id !== mergedIntoCity)
 ];
 
-export function CompetitionsClient({ initialEvents }: { initialEvents: EventListRow[] }) {
-  const [tab, setTab] = useState<TabId>("all");
-  const [keyword, setKeyword] = useState("");
+function matchesCategory(competitionCategory: string, selected: string) {
+  if (selected === "全部") return true;
+  if (selected === "shenyang-city-open") {
+    return competitionCategory === "shenyang-city-open" || competitionCategory === mergedIntoCity;
+  }
+  return competitionCategory === selected;
+}
+
+export function CompetitionsClient() {
+  const [category, setCategory] = useState("全部");
   const [page, setPage] = useState(1);
 
   useEffect(() => {
-    const requested = new URLSearchParams(window.location.search).get("category");
-    const map: Record<string, TabId> = {
-      wca: "wca",
-      province: "province",
-      city: "city",
-      national: "national",
-      "shenyang-city-open": "city",
-      "liaoning-province-open": "province"
-    };
-    if (requested && map[requested]) setTab(map[requested]);
+    const requestedCategory = new URLSearchParams(window.location.search).get("category");
+    if (requestedCategory && categoryIds.has(requestedCategory)) {
+      setCategory(requestedCategory);
+    }
   }, []);
 
-  const counts = useMemo(() => {
-    const result: Record<string, number> = { all: initialEvents.length };
-    for (const category of eventCategoryOrder) {
-      result[category] = initialEvents.filter((event) => event.category === category).length;
-    }
-    return result;
-  }, [initialEvents]);
+  const liaoningSummary = useMemo(() => {
+    const liaoningCompetitions = competitions.filter((competition) => competition.province === "辽宁");
+    const city = liaoningCompetitions.filter((competition) => competition.category === "shenyang-city-open").length;
+    const province = liaoningCompetitions.filter((competition) => competition.category === mergedIntoCity).length;
+    return {
+      city: city + province,
+      wca: liaoningCompetitions.filter((competition) => competition.category === "wca-official").length,
+      total: liaoningCompetitions.length
+    };
+  }, []);
 
-  const filtered = useMemo(() => {
-    const term = keyword.trim().toLowerCase();
-    return initialEvents.filter((event) => {
-      if (tab !== "all" && event.category !== tab) return false;
-      if (!term) return true;
-      return event.name.toLowerCase().includes(term) || event.location.toLowerCase().includes(term);
-    });
-  }, [initialEvents, tab, keyword]);
+  const filteredCompetitions = useMemo(() => {
+    return competitions
+      .filter((competition) => matchesCategory(competition.category, category))
+      .sort((a, b) => {
+        if (a.category === "shenyang-city-open" && b.category === "shenyang-city-open") {
+          return getShenyangOpenEdition(b.slug) - getShenyangOpenEdition(a.slug);
+        }
+
+        return getSortableDate(b.date).localeCompare(getSortableDate(a.date));
+      });
+  }, [category]);
 
   useEffect(() => {
     setPage(1);
-  }, [tab, keyword]);
+  }, [category]);
 
-  const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
+  const totalPages = Math.max(1, Math.ceil(filteredCompetitions.length / pageSize));
   const currentPage = Math.min(page, totalPages);
-  const visible = filtered.slice((currentPage - 1) * pageSize, currentPage * pageSize);
-  const startIndex = filtered.length === 0 ? 0 : (currentPage - 1) * pageSize + 1;
-  const endIndex = Math.min(currentPage * pageSize, filtered.length);
+  const visibleCompetitions = filteredCompetitions.slice((currentPage - 1) * pageSize, currentPage * pageSize);
+  const startIndex = filteredCompetitions.length === 0 ? 0 : (currentPage - 1) * pageSize + 1;
+  const endIndex = Math.min(currentPage * pageSize, filteredCompetitions.length);
 
   return (
-    <section className="container section event-list-section">
-      <div className="event-list-panel">
-        <div className="event-tab-row">
-          <div className="event-tabs">
-            {tabs.map((item) => (
-              <button
-                className={tab === item.id ? "active" : ""}
-                key={item.id}
-                type="button"
-                onClick={() => setTab(item.id)}
-              >
-                {item.label}
-                <span className="event-tab-count">{counts[item.id] ?? 0}</span>
-              </button>
-            ))}
+    <section className="container section competition-list-section">
+      <div className="competition-list-panel">
+        <div className="result-stats-grid">
+          <div className="result-stat-card">
+            <span className="result-stat-label">辽宁 · 市赛（含省赛）</span>
+            <strong className="result-stat-value">{liaoningSummary.city}</strong>
           </div>
-          <input
-            className="event-search"
-            type="search"
-            value={keyword}
-            onChange={(event) => setKeyword(event.target.value)}
-            placeholder="搜索赛事名称或地点"
-          />
+          <div className="result-stat-card">
+            <span className="result-stat-label">辽宁 · WCA</span>
+            <strong className="result-stat-value">{liaoningSummary.wca}</strong>
+          </div>
+          <div className="result-stat-card">
+            <span className="result-stat-label">辽宁 · 合计</span>
+            <strong className="result-stat-value">{liaoningSummary.total}</strong>
+          </div>
+        </div>
+        <div className="competition-filter-row">
+          <div className="competition-filter-field competition-filter-field-wide">
+            <span>类型</span>
+            <div className="competition-filter-toggle competition-category-toggle">
+              {categoryTabs.map((item) => (
+                <button
+                  className={category === item.id ? "active" : ""}
+                  key={item.id}
+                  onClick={() => setCategory(item.id)}
+                  type="button"
+                >
+                  {item.shortName}
+                </button>
+              ))}
+            </div>
+          </div>
         </div>
 
-        <p className="event-list-count">
-          第 {startIndex}-{endIndex} 条，共 {filtered.length} 条。
+        <p className="competition-list-count">
+          第 {startIndex}-{endIndex} 条，共 {filteredCompetitions.length} 条。
         </p>
 
-        <div className="event-table-wrap">
-          <table className="event-list-table">
+        <div className="competition-table-wrap">
+          <table className="competition-list-table">
             <thead>
               <tr>
-                <th className="col-date">日期</th>
-                <th className="col-cat">类别</th>
-                <th className="col-name">赛事名称</th>
-                <th className="col-loc">地点</th>
-                <th className="col-link">查看</th>
+                <th>日期</th>
+                <th>比赛类别</th>
+                <th>比赛名称</th>
+                <th>赞助商</th>
+                <th>省份</th>
+                <th>城市</th>
+                <th>地点</th>
+                <th>来源</th>
+                <th>公示/查看</th>
               </tr>
             </thead>
             <tbody>
-              {visible.map((event) => (
-                <tr key={event.id}>
-                  <td className="col-date" data-label="日期">
-                    {event.date || "—"}
-                  </td>
-                  <td className="col-cat" data-label="类别">
-                    <span className={`event-chip event-chip-${event.category}`}>
-                      {eventCategoryLabels[event.category]}
-                    </span>
-                  </td>
-                  <td className="col-name" data-label="赛事名称">
-                    {event.external ? (
-                      <span className="event-name">{event.name}</span>
-                    ) : (
-                      <Link className="event-name event-name-link" href={event.href}>
-                        {event.name}
+              {visibleCompetitions.map((competition) => {
+                const categoryInfo = getCompetitionCategory(competition.category);
+                return (
+                  <tr key={competition.id}>
+                    <td data-label="日期">{competition.date}</td>
+                    <td data-label="比赛类别">
+                      <span className={`competition-type type-${competition.category}`}>
+                        {categoryInfo?.shortName || "未分类"}
+                      </span>
+                    </td>
+                    <td data-label="比赛名称">
+                      <Link className="competition-name-link" href={`/competitions/${competition.slug}`}>
+                        {getCompetitionDisplayName(competition)}
                       </Link>
-                    )}
-                  </td>
-                  <td className="col-loc" data-label="地点">
-                    {event.location || "—"}
-                  </td>
-                  <td className="col-link" data-label="查看">
-                    {event.external ? (
-                      <a className="event-link" href={event.href} target="_blank" rel="noopener noreferrer">
-                        WCA ↗
-                      </a>
-                    ) : (
-                      <Link className="event-link" href={event.href}>
-                        {event.category === "national" ? "专题" : "详情"}
-                      </Link>
-                    )}
-                  </td>
-                </tr>
-              ))}
-              {visible.length === 0 ? (
+                    </td>
+                    <td data-label="赞助商">{competition.sponsor || "—"}</td>
+                    <td data-label="省份">{competition.province}</td>
+                    <td data-label="城市">{competition.city}</td>
+                    <td data-label="地点">{competition.venue || competition.address}</td>
+                    <td data-label="来源">
+                      {competition.dataSourceUrl ? (
+                        <Link className="competition-source-link" href={competition.dataSourceUrl} target="_blank">
+                          <strong>{competition.dataSource || "资料来源"}</strong>
+                          <span>查看来源</span>
+                        </Link>
+                      ) : (
+                        <span className="competition-source-pending">
+                          <strong>{competition.dataSource || "待补充"}</strong>
+                          <span>{competition.dataSource ? "已记录" : "后续整理"}</span>
+                        </span>
+                      )}
+                    </td>
+                    <td data-label="公示/查看">
+                      {competition.externalUrl ? (
+                        <Link className="competition-source-link" href={competition.externalUrl} target="_blank">
+                          <strong>{competition.publicPlatform || "外部平台"}</strong>
+                          <span>{competition.publicMethod || "点击查看"}</span>
+                        </Link>
+                      ) : (
+                        <span className="competition-source-pending">
+                          <strong>{competition.publicPlatform || "待补充"}</strong>
+                          <span>{competition.publicMethod || "后续整理"}</span>
+                        </span>
+                      )}
+                    </td>
+                  </tr>
+                );
+              })}
+              {visibleCompetitions.length === 0 ? (
                 <tr>
-                  <td colSpan={5} className="event-empty">
-                    当前筛选条件下暂无赛事。
-                  </td>
+                  <td colSpan={9}>当前筛选条件下暂无赛事。</td>
                 </tr>
               ) : null}
             </tbody>
           </table>
         </div>
-
-        <div className="event-pagination">
-          <button type="button" onClick={() => setPage((value) => Math.max(1, value - 1))} disabled={currentPage === 1}>
+        <div className="competition-pagination">
+          <button type="button" onClick={() => setPage((value) => Math.max(1, value - 1))} disabled={page === 1}>
             上一页
           </button>
           <span>
