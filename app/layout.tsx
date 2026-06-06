@@ -56,7 +56,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               <Link href="/liaoning-rankings">辽宁排名</Link>
               <Link href="/competitions">赛事记录</Link>
               <Link href="/weekly">周赛系统</Link>
-              <Link href="/judges">裁判信息</Link>
+              <Link href="/judges">裁判员名单</Link>
               <Link href="/about">关于本站</Link>
             </nav>
             <div className="footer-meta">

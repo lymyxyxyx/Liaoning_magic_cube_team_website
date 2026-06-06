@@ -1,5 +1,6 @@
 "use client";
 
+import { CalendarDays, Search, Users } from "lucide-react";
 import { useMemo, useState } from "react";
 import type { LiaoningCompetition } from "@/lib/liaoning-competitions";
 
@@ -50,6 +51,22 @@ export function LiaoningCompetitionsClient({
     return set.size;
   }, [initialCompetitions]);
 
+  const totalEntries = useMemo(
+    () => initialCompetitions.reduce((total, competition) => total + competition.playerCount, 0),
+    [initialCompetitions]
+  );
+
+  const yearRange = useMemo(() => {
+    const competitionYears = initialCompetitions
+      .map((competition) => competition.year)
+      .filter((value) => value > 0)
+      .sort((a, b) => a - b);
+    if (competitionYears.length === 0) return "暂无";
+    const first = competitionYears[0];
+    const last = competitionYears[competitionYears.length - 1];
+    return first === last ? String(first) : `${first}–${last}`;
+  }, [initialCompetitions]);
+
   function resetPage<T>(setter: (value: T) => void) {
     return (value: T) => {
       setter(value);
@@ -58,34 +75,49 @@ export function LiaoningCompetitionsClient({
   }
 
   return (
-    <section className="container section competition-list-section">
-      <div className="competition-list-panel">
-        <div className="result-stats-grid">
-          <div className="result-stat-card">
-            <span className="result-stat-label">收录赛事</span>
-            <strong className="result-stat-value">{initialCompetitions.length}</strong>
+    <section className="container section competition-list-section liaoning-competitions-section">
+      <div className="liaoning-competition-overview">
+        <div className="liaoning-competition-intro">
+          <span className="eyebrow">WCA 参赛足迹</span>
+          <h2>辽宁选手的赛事参与统计</h2>
+          <p>以本站辽宁选手名单为基础，汇总他们参加过的 WCA 正式比赛。可按赛事、城市、年份或选手姓名查询。</p>
+        </div>
+        <div className="liaoning-competition-stats">
+          <div className="liaoning-competition-stat">
+            <CalendarDays size={19} />
+            <span>收录赛事</span>
+            <strong>{initialCompetitions.length}</strong>
           </div>
-          <div className="result-stat-card">
-            <span className="result-stat-label">涉及辽宁选手</span>
-            <strong className="result-stat-value">{totalPlayers}</strong>
+          <div className="liaoning-competition-stat">
+            <Users size={19} />
+            <span>辽宁选手</span>
+            <strong>{totalPlayers}</strong>
           </div>
-          <div className="result-stat-card">
-            <span className="result-stat-label">年份跨度</span>
-            <strong className="result-stat-value">{years.length > 1 ? `${years.length - 1}` : "0"}</strong>
+          <div className="liaoning-competition-stat">
+            <span className="liaoning-competition-stat-mark">Σ</span>
+            <span>累计人次</span>
+            <strong>{totalEntries}</strong>
+          </div>
+          <div className="liaoning-competition-stat">
+            <span className="liaoning-competition-stat-mark">年</span>
+            <span>赛事年份</span>
+            <strong className="liaoning-competition-year-range">{yearRange}</strong>
           </div>
         </div>
+      </div>
 
-        <div className="competition-filter-row">
-          <div className="competition-filter-field competition-filter-field-wide">
-            <span>搜索</span>
+      <div className="competition-list-panel liaoning-competition-panel">
+        <div className="liaoning-competition-toolbar">
+          <label className="liaoning-competition-search">
+            <Search size={17} />
             <input
               type="search"
               value={keyword}
               onChange={(event) => resetPage(setKeyword)(event.target.value)}
-              placeholder="按赛事名称、城市或选手姓名搜索"
+              placeholder="搜索赛事、城市或选手姓名"
             />
-          </div>
-          <div className="competition-filter-field">
+          </label>
+          <label className="liaoning-competition-year">
             <span>年份</span>
             <select value={year} onChange={(event) => resetPage(setYear)(event.target.value)}>
               {years.map((item) => (
@@ -94,10 +126,13 @@ export function LiaoningCompetitionsClient({
                 </option>
               ))}
             </select>
-          </div>
+          </label>
+          <span className="liaoning-competition-result-count">
+            共 <strong>{filtered.length}</strong> 场赛事
+          </span>
         </div>
 
-        <p className="competition-list-count">
+        <p className="competition-list-count liaoning-competition-list-count">
           第 {startIndex}-{endIndex} 条，共 {filtered.length} 条。
         </p>
 
@@ -107,8 +142,8 @@ export function LiaoningCompetitionsClient({
           </p>
         ) : null}
 
-        <div className="competition-table-wrap">
-          <table className="competition-list-table">
+        <div className="competition-table-wrap liaoning-competition-table-wrap">
+          <table className="competition-list-table liaoning-competition-table">
             <thead>
               <tr>
                 <th>日期</th>
@@ -122,16 +157,26 @@ export function LiaoningCompetitionsClient({
             <tbody>
               {visible.map((competition) => (
                 <tr key={competition.id}>
-                  <td data-label="日期">{competition.date || "—"}</td>
+                  <td data-label="日期">
+                    <span className="liaoning-competition-date">{competition.date || "—"}</span>
+                  </td>
                   <td data-label="赛事名称">
-                    <strong>{competition.nameZh}</strong>
+                    <strong className="liaoning-competition-name">{competition.nameZh}</strong>
                     {competition.nameZh !== competition.name ? (
                       <span className="competition-name-en">{competition.name}</span>
                     ) : null}
                   </td>
                   <td data-label="城市">{competition.city || "—"}</td>
-                  <td data-label="辽宁参赛">{competition.playerCount}</td>
-                  <td data-label="辽宁参赛选手">{competition.playerNames.join("、") || "—"}</td>
+                  <td data-label="辽宁参赛">
+                    <span className="liaoning-player-count">{competition.playerCount} 人</span>
+                  </td>
+                  <td data-label="辽宁参赛选手">
+                    <div className="liaoning-player-list">
+                      {competition.playerNames.map((name) => (
+                        <span key={name}>{name}</span>
+                      ))}
+                    </div>
+                  </td>
                   <td data-label="WCA">
                     <a
                       className="competition-source-link"

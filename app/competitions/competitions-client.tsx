@@ -14,20 +14,17 @@ const getShenyangOpenEdition = (slug: string) => {
   return match ? Number(match[1]) : 0;
 };
 
-const categoryIds = new Set(["全部", ...competitionCategories.map((item) => item.id)]);
-
-// 省赛只有一场且已结束，归入“市赛”一并展示，不再单独作为筛选类别。
-const mergedIntoCity = "liaoning-province-open";
 const categoryTabs = [
   { id: "全部", shortName: "全部" },
-  ...competitionCategories.filter((item) => item.id !== mergedIntoCity)
+  { id: "wca-official", shortName: "WCA" },
+  { id: "national-events", shortName: "国赛", href: "/national-events" },
+  { id: "liaoning-province-open", shortName: "省赛" },
+  { id: "shenyang-city-open", shortName: "市赛" }
 ];
+const categoryIds = new Set(categoryTabs.filter((item) => !item.href).map((item) => item.id));
 
 function matchesCategory(competitionCategory: string, selected: string) {
   if (selected === "全部") return true;
-  if (selected === "shenyang-city-open") {
-    return competitionCategory === "shenyang-city-open" || competitionCategory === mergedIntoCity;
-  }
   return competitionCategory === selected;
 }
 
@@ -45,7 +42,9 @@ export function CompetitionsClient() {
   const liaoningSummary = useMemo(() => {
     const liaoningCompetitions = competitions.filter((competition) => competition.province === "辽宁");
     const city = liaoningCompetitions.filter((competition) => competition.category === "shenyang-city-open").length;
-    const province = liaoningCompetitions.filter((competition) => competition.category === mergedIntoCity).length;
+    const province = liaoningCompetitions.filter(
+      (competition) => competition.category === "liaoning-province-open"
+    ).length;
     return {
       city: city + province,
       wca: liaoningCompetitions.filter((competition) => competition.category === "wca-official").length,
@@ -96,16 +95,22 @@ export function CompetitionsClient() {
           <div className="competition-filter-field competition-filter-field-wide">
             <span>类型</span>
             <div className="competition-filter-toggle competition-category-toggle">
-              {categoryTabs.map((item) => (
-                <button
-                  className={category === item.id ? "active" : ""}
-                  key={item.id}
-                  onClick={() => setCategory(item.id)}
-                  type="button"
-                >
-                  {item.shortName}
-                </button>
-              ))}
+              {categoryTabs.map((item) =>
+                item.href ? (
+                  <Link className="competition-category-link" href={item.href} key={item.id}>
+                    {item.shortName}
+                  </Link>
+                ) : (
+                  <button
+                    className={category === item.id ? "active" : ""}
+                    key={item.id}
+                    onClick={() => setCategory(item.id)}
+                    type="button"
+                  >
+                    {item.shortName}
+                  </button>
+                )
+              )}
             </div>
           </div>
         </div>

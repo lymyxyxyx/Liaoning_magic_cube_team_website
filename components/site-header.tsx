@@ -19,7 +19,7 @@ const navItems: NavItem[] = [
   { href: "/liaoning-competitions", label: "辽宁WCA赛事" },
   { href: "/national-events", label: "国赛" },
   { href: "/weekly", label: "周赛" },
-  { href: "/judges", label: "裁判信息" },
+  { href: "/judges", label: "裁判员名单" },
   { href: "/commercial-teams", label: "商业战队成员" }
 ];
 

@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Database, Trophy } from "lucide-react";
+import { Database } from "lucide-react";
 import { PageHero } from "@/components/page-hero";
 import type { Metadata } from "next";
 import { getLiaoningRecords, type LocalRecordEvent, type LocalRecordGender, type LocalRecordResult } from "@/lib/local-records";
@@ -160,12 +160,6 @@ export default async function LiaoningRecordsPage({
         className="ranking-page-hero local-ranking-page-hero"
         label="本地省市归属"
         title="辽宁纪录"
-        actions={
-          <Link className="button primary" href="/liaoning-rankings">
-            <Trophy size={16} />
-            辽宁排名
-          </Link>
-        }
       >
         展示辽宁选手各项目当前最好单次与平均。
       </PageHero>

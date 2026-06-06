@@ -43,7 +43,7 @@ export default function HomePage() {
           <span>每周魔方周赛成绩、个人最好与排名</span>
         </Link>
         <Link href="/judges" className="home-entry">
-          <strong>裁判信息</strong>
+          <strong>裁判员名单</strong>
           <span>辽宁地区 WCA 裁判编号、级别与培训</span>
         </Link>
         <Link href="/commercial-teams" className="home-entry">

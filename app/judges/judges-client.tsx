@@ -72,7 +72,7 @@ export function JudgesClient({ initialJudges }: Props) {
   const canEdit = editPassword !== null;
 
   async function enterEditMode() {
-    const password = window.prompt("请输入裁判信息编辑口令");
+    const password = window.prompt("请输入裁判员名单编辑口令");
     if (password === null) return;
 
     try {
