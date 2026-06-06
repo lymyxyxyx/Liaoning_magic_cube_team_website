@@ -16,6 +16,21 @@ const getShenyangOpenEdition = (slug: string) => {
 
 const categoryIds = new Set(["全部", ...competitionCategories.map((item) => item.id)]);
 
+// 省赛只有一场且已结束，归入“市赛”一并展示，不再单独作为筛选类别。
+const mergedIntoCity = "liaoning-province-open";
+const categoryTabs = [
+  { id: "全部", shortName: "全部" },
+  ...competitionCategories.filter((item) => item.id !== mergedIntoCity)
+];
+
+function matchesCategory(competitionCategory: string, selected: string) {
+  if (selected === "全部") return true;
+  if (selected === "shenyang-city-open") {
+    return competitionCategory === "shenyang-city-open" || competitionCategory === mergedIntoCity;
+  }
+  return competitionCategory === selected;
+}
+
 export function CompetitionsClient() {
   const [category, setCategory] = useState("全部");
   const [page, setPage] = useState(1);
@@ -29,9 +44,10 @@ export function CompetitionsClient() {
 
   const liaoningSummary = useMemo(() => {
     const liaoningCompetitions = competitions.filter((competition) => competition.province === "辽宁");
+    const city = liaoningCompetitions.filter((competition) => competition.category === "shenyang-city-open").length;
+    const province = liaoningCompetitions.filter((competition) => competition.category === mergedIntoCity).length;
     return {
-      city: liaoningCompetitions.filter((competition) => competition.category === "shenyang-city-open").length,
-      province: liaoningCompetitions.filter((competition) => competition.category === "liaoning-province-open").length,
+      city: city + province,
       wca: liaoningCompetitions.filter((competition) => competition.category === "wca-official").length,
       total: liaoningCompetitions.length
     };
@@ -39,9 +55,7 @@ export function CompetitionsClient() {
 
   const filteredCompetitions = useMemo(() => {
     return competitions
-      .filter((competition) => {
-        return category === "全部" || competition.category === category;
-      })
+      .filter((competition) => matchesCategory(competition.category, category))
       .sort((a, b) => {
         if (a.category === "shenyang-city-open" && b.category === "shenyang-city-open") {
           return getShenyangOpenEdition(b.slug) - getShenyangOpenEdition(a.slug);
@@ -66,23 +80,23 @@ export function CompetitionsClient() {
       <div className="competition-list-panel">
         <div className="result-stats-grid">
           <div className="result-stat-card">
-            <span className="result-stat-label">辽宁 · 市赛</span>
+            <span className="result-stat-label">辽宁 · 市赛（含省赛）</span>
             <strong className="result-stat-value">{liaoningSummary.city}</strong>
-          </div>
-          <div className="result-stat-card">
-            <span className="result-stat-label">辽宁 · 省赛</span>
-            <strong className="result-stat-value">{liaoningSummary.province}</strong>
           </div>
           <div className="result-stat-card">
             <span className="result-stat-label">辽宁 · WCA</span>
             <strong className="result-stat-value">{liaoningSummary.wca}</strong>
+          </div>
+          <div className="result-stat-card">
+            <span className="result-stat-label">辽宁 · 合计</span>
+            <strong className="result-stat-value">{liaoningSummary.total}</strong>
           </div>
         </div>
         <div className="competition-filter-row">
           <div className="competition-filter-field competition-filter-field-wide">
             <span>类型</span>
             <div className="competition-filter-toggle competition-category-toggle">
-              {[{ id: "全部", shortName: "全部" }, ...competitionCategories].map((item) => (
+              {categoryTabs.map((item) => (
                 <button
                   className={category === item.id ? "active" : ""}
                   key={item.id}

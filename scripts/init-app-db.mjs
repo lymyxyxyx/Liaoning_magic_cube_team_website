@@ -166,6 +166,16 @@ async function main() {
       )
     `);
 
+    // Admin-curated JSON datasets (judges, coaches, local profiles).
+    // PostgreSQL is the source of truth; the data/*.json mirror is a fallback.
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS app_documents (
+        key TEXT PRIMARY KEY,
+        content JSONB NOT NULL,
+        updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+      )
+    `);
+
     await client.query(`
       CREATE TABLE IF NOT EXISTS wca_import_metadata (
         id TEXT PRIMARY KEY,

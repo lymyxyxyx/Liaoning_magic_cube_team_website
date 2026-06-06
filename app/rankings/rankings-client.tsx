@@ -344,7 +344,17 @@ export function RankingsClient() {
 
   return (
     <>
-      <PageHero className="ranking-page-hero" label="WCA 官方数据本地库" title={`${titleEventName}排名`}>
+      <PageHero
+        className="ranking-page-hero"
+        label="WCA 官方数据本地库"
+        title={`${titleEventName}排名`}
+        actions={
+          <Link className="button" href="/sum-of-ranks">
+            综合排名
+            <ChevronRight size={16} />
+          </Link>
+        }
+      >
         {activeScopeLabel} · {modeLabels[mode]} · {genderLabels[gender]}性别
       </PageHero>
 

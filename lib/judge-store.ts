@@ -1,4 +1,4 @@
-import { promises as fs } from "node:fs";
+import { readAppDocument, writeAppDocument } from "@/lib/app-document-store";
 import {
   judgeGenders,
   judgeLevelTypes,
@@ -18,19 +18,13 @@ type RawJudge = Partial<Judge> & {
 };
 
 export async function readJudges(): Promise<Judge[]> {
-  try {
-    const payload = await fs.readFile(dataPath, "utf-8");
-    const parsed = JSON.parse(payload) as RawJudge[];
-    return normalizeJudges(parsed);
-  } catch {
-    return [];
-  }
+  const raw = await readAppDocument<RawJudge>("judges", dataPath);
+  return normalizeJudges(raw ?? []);
 }
 
 export async function writeJudges(judges: RawJudge[]) {
   const normalized = normalizeJudges(judges);
-  await fs.mkdir(`${process.cwd()}/data`, { recursive: true });
-  await fs.writeFile(dataPath, `${JSON.stringify(normalized, null, 2)}\n`, "utf-8");
+  await writeAppDocument("judges", dataPath, normalized);
   return normalized;
 }
 

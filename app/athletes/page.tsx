@@ -4,13 +4,12 @@ export default function AthletesPage() {
   return (
     <>
       <PageHero label="人员档案" title="运动员列表">
-        运动员资料整理中，后续将按 WCA ID 关联个人主页。
+        运动员信息暂未开放。
       </PageHero>
-
       <section className="container section">
-        <div className="competition-empty">
-          <strong>暂无数据</strong>
-          <p>运动员列表待补充。</p>
+        <div className="info-block">
+          <h2>运动员暂未开放</h2>
+          <p>本站目前只维护“选手”概念，暂无独立的“运动员”体系，该页面待相关标准明确后再上线。</p>
         </div>
       </section>
     </>

@@ -3209,7 +3209,7 @@ textarea {
 }
 
 .competition-category-toggle {
-  grid-template-columns: repeat(6, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
 .competition-filter-toggle button {
@@ -3244,6 +3244,44 @@ textarea {
   color: var(--muted);
   font-size: 13px;
   font-weight: 700;
+}
+
+.competition-filter-field input,
+.competition-filter-field select {
+  min-height: 38px;
+  padding: 0 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fff;
+  color: var(--text-body);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.competition-filter-field input:focus,
+.competition-filter-field select:focus {
+  outline: none;
+  border-color: var(--blue);
+}
+
+.competition-name-en {
+  display: block;
+  margin-top: 2px;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.competition-list-empty {
+  margin: 0;
+  padding: 12px 18px;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.6;
+  background: var(--soft);
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
 }
 
 .competition-table-wrap {

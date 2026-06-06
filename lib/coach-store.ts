@@ -1,4 +1,4 @@
-import { promises as fs } from "node:fs";
+import { readAppDocument, writeAppDocument } from "@/lib/app-document-store";
 import { coachGenders, coachLevelTypes, type Coach, type CoachGender, type CoachLevelType } from "@/lib/coach-types";
 
 const dataPath = `${process.cwd()}/data/coaches.json`;
@@ -9,19 +9,13 @@ type RawCoach = Partial<Coach> & {
 };
 
 export async function readCoaches(): Promise<Coach[]> {
-  try {
-    const payload = await fs.readFile(dataPath, "utf-8");
-    const parsed = JSON.parse(payload) as RawCoach[];
-    return normalizeCoaches(parsed);
-  } catch {
-    return [];
-  }
+  const raw = await readAppDocument<RawCoach>("coaches", dataPath);
+  return normalizeCoaches(raw ?? []);
 }
 
 export async function writeCoaches(coaches: RawCoach[]) {
   const normalized = normalizeCoaches(coaches);
-  await fs.mkdir(`${process.cwd()}/data`, { recursive: true });
-  await fs.writeFile(dataPath, `${JSON.stringify(normalized, null, 2)}\n`, "utf-8");
+  await writeAppDocument("coaches", dataPath, normalized);
   return normalized;
 }
 

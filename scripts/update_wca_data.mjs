@@ -235,6 +235,8 @@ async function addIndexes(client) {
   await client.query('CREATE INDEX IF NOT EXISTS "wca_countries_id_idx" ON "wca_countries" ("id")');
   await client.query('CREATE INDEX IF NOT EXISTS "wca_competitions_id_idx" ON "wca_competitions" ("id")');
   await client.query('CREATE INDEX IF NOT EXISTS "wca_competitions_date_idx" ON "wca_competitions" ((year::int), (month::int), (day::int), "id")');
+  await client.query('CREATE INDEX IF NOT EXISTS "wca_results_person_id_idx" ON "wca_results" ("person_id")');
+  await client.query('CREATE INDEX IF NOT EXISTS "wca_results_competition_id_idx" ON "wca_results" ("competition_id")');
   await client.query('CREATE INDEX IF NOT EXISTS "wca_results_single_lookup_idx" ON "wca_results" ("event_id", "person_id", "best")');
   await client.query('CREATE INDEX IF NOT EXISTS "wca_results_average_lookup_idx" ON "wca_results" ("event_id", "person_id", "average")');
   await client.query('CREATE INDEX IF NOT EXISTS "wca_results_single_competition_lookup_idx" ON "wca_results" ("event_id", "person_id", "best", "competition_id")');

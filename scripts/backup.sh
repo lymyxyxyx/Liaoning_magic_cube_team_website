@@ -39,17 +39,21 @@ else
   echo "[backup]   Database dumped: $(wc -c < "${backup_dir}/ln_cubing.sql") bytes"
 fi
 
-# 2. Copy JSON data files
+# 2. Copy all JSON data files (auto-discovered, so new files are never missed)
 echo "[backup] Copying JSON data files..."
-for json_file in local-profiles.json judges.json commercial-teams.json account-books.json; do
-  src="${DATA_DIR}/${json_file}"
-  if [[ -f "$src" ]]; then
-    if $DRY_RUN; then
-      echo "[backup]   Would copy ${json_file} ($(stat -f%z "$src" 2>/dev/null || stat -c%s "$src" 2>/dev/null) bytes)"
-    else
-      cp "$src" "${backup_dir}/${json_file}"
-      echo "[backup]   Copied ${json_file}"
-    fi
+shopt -s nullglob
+json_files=("${DATA_DIR}"/*.json)
+shopt -u nullglob
+if (( ${#json_files[@]} == 0 )); then
+  echo "[backup]   No JSON data files found in ${DATA_DIR}"
+fi
+for src in "${json_files[@]}"; do
+  json_file=$(basename "$src")
+  if $DRY_RUN; then
+    echo "[backup]   Would copy ${json_file} ($(stat -f%z "$src" 2>/dev/null || stat -c%s "$src" 2>/dev/null) bytes)"
+  else
+    cp "$src" "${backup_dir}/${json_file}"
+    echo "[backup]   Copied ${json_file}"
   fi
 done
 

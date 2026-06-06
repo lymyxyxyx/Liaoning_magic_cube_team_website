@@ -1,6 +1,8 @@
-import { promises as fs } from "node:fs";
+import { readAppDocument, writeAppDocument } from "@/lib/app-document-store";
 import { localProfiles, type LocalProfile } from "@/lib/local-profiles";
 import { getPostgresPool } from "@/lib/postgres";
+
+const documentKey = "local-profiles";
 
 const dataPath = `${process.cwd()}/data/local-profiles.json`;
 const defaultCreatedBy = "刘一鸣";
@@ -18,19 +20,14 @@ type WcaPersonRow = {
 };
 
 export async function readLocalProfiles() {
-  try {
-    const payload = await fs.readFile(dataPath, "utf-8");
-    const parsed = JSON.parse(payload) as LocalProfile[];
-    return parsed.map(normalizeProfile).filter(Boolean) as LocalProfile[];
-  } catch {
-    return localProfiles;
-  }
+  const raw = await readAppDocument<LocalProfile>(documentKey, dataPath);
+  if (!raw) return localProfiles;
+  return raw.map(normalizeProfile).filter(Boolean) as LocalProfile[];
 }
 
 export async function writeLocalProfiles(profiles: LocalProfile[]) {
-  await fs.mkdir(`${process.cwd()}/data`, { recursive: true });
   const normalized = profiles.map(normalizeProfile).filter(Boolean) as LocalProfile[];
-  await fs.writeFile(dataPath, `${JSON.stringify(normalized, null, 2)}\n`, "utf-8");
+  await writeAppDocument(documentKey, dataPath, normalized);
   return normalized;
 }
 
@@ -60,8 +57,7 @@ export async function mergeLocalProfiles(profiles: LocalProfile[]) {
   }
 
   const merged = order.map((key) => byId.get(key)).filter(Boolean) as LocalProfile[];
-  await fs.mkdir(`${process.cwd()}/data`, { recursive: true });
-  await fs.writeFile(dataPath, `${JSON.stringify(merged, null, 2)}\n`, "utf-8");
+  await writeAppDocument(documentKey, dataPath, merged);
   return merged;
 }
 

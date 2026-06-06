@@ -84,9 +84,25 @@ Current production `APP_URL` should be:
 APP_URL=https://lncubing.com
 ```
 
+## Admin Datasets: PostgreSQL Source of Truth
+
+Judges, coaches, and local profiles are stored in the PostgreSQL `app_documents`
+table (one JSONB row per dataset, keys `judges` / `coaches` / `local-profiles`).
+PostgreSQL is the source of truth, so a single `pg_dump` now captures this data.
+
+The matching `data/*.json` files are kept as a mirror: they are written on every
+save (for `backup.sh` and offline/dev fallback) and read only when the database
+is unavailable. Migration is automatic — on the first read after deploy, if the
+database row is empty but the JSON file exists, the file content is loaded into
+`app_documents`. No manual migration step is required; `npm run db:init` also
+creates the table on fresh environments.
+
 ## Runtime Data Backups
 
 Server-entered runtime data should be backed up regularly, but should not be blindly committed to GitHub.
+
+`scripts/backup.sh` now auto-discovers and copies every `data/*.json` file (so newly
+added datasets are never missed), in addition to dumping PostgreSQL.
 
 Back up these server-local paths before risky deploys, data imports, migrations, or manual cleanup:
 
