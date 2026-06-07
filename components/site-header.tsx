@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { type SyntheticEvent, useEffect, useRef } from "react";
 import { Shield, Settings, ChevronDown, Menu, X } from "lucide-react";
+import { SiteSearch } from "./site-search";
 
 type NavItem = {
   href?: string;
@@ -141,6 +142,8 @@ export function SiteHeader() {
           })}
         </div>
       </details>
+      <div className="header-actions">
+      <SiteSearch />
       <details className="admin-pass-popover" onToggle={handleDetailsToggle}>
         <summary className="admin-link" title="后台管理">
           <Settings size={18} />
@@ -159,6 +162,7 @@ export function SiteHeader() {
           </button>
         </form>
       </details>
+      </div>
     </header>
   );
 }

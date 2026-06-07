@@ -1,6 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { Trophy } from "lucide-react";
+import { HomeSearchTrigger } from "@/components/site-search";
 
 export default function HomePage() {
   return (
@@ -13,6 +14,7 @@ export default function HomePage() {
             <p>
               汇集辽宁地区魔方选手的 WCA 排名、赛事记录、荣誉经历与周赛成绩，为选手、家长和魔方爱好者提供一站式信息查询。
             </p>
+            <HomeSearchTrigger />
             <div className="hero-actions">
               <Link className="button primary" href="/liaoning-rankings">
                 <Trophy size={18} />
