@@ -18,6 +18,15 @@ function timingSafeStringEqual(a: string, b: string): boolean {
 }
 
 export async function POST(request: NextRequest) {
+  const host = request.headers.get("host") || "";
+  if (host.split(":")[0] === "www.lncubing.com") {
+    const canonicalUrl = request.nextUrl.clone();
+    canonicalUrl.hostname = "lncubing.com";
+    canonicalUrl.port = "";
+    canonicalUrl.protocol = "https:";
+    return NextResponse.redirect(canonicalUrl, { status: 307 });
+  }
+
   const adminPassword = process.env.ADMIN_PASSWORD;
   if (!adminPassword) {
     return NextResponse.json({ message: "Server configuration error" }, { status: 500 });
