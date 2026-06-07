@@ -206,6 +206,11 @@ main {
   transition: background 0.15s ease, color 0.15s ease;
 }
 
+.main-nav a,
+.nav-dropdown summary {
+  font-weight: 550;
+}
+
 .button.disabled,
 .button:disabled {
   opacity: 0.45;
@@ -540,7 +545,6 @@ main {
 
 .home-entry:hover {
   border-color: var(--blue);
-  box-shadow: 0 8px 28px rgba(36, 87, 197, 0.1);
 }
 
 .home-entry strong {
