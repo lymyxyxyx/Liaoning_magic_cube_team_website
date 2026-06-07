@@ -5,16 +5,16 @@
   --line: #d9e2ee;
   --surface: #ffffff;
   --soft: #eef4fb;
-  --blue: #2457c5;
-  --blue-deep: #173b8f;
-  --red: #d33b3f;
+  --blue: #2563eb;
+  --blue-deep: #1e40af;
+  --red: #dc2626;
   --red-soft: #fff0f0;
   --green: #178b58;
   --yellow: #a86b00;
   --gold: #b7791f;
   --page-bg: #f3f6fb;
-  --shadow: 0 18px 45px rgba(23, 32, 51, 0.1);
-  --shadow-soft: 0 10px 28px rgba(23, 32, 51, 0.07);
+  --shadow: 0 1px 2px rgba(23, 32, 51, 0.04), 0 4px 12px rgba(23, 32, 51, 0.06);
+  --shadow-soft: 0 1px 2px rgba(23, 32, 51, 0.04);
   --surface-2: #f8fafc;
   --header-bg: rgba(255, 255, 255, 0.9);
   --text-body: #344054;
@@ -30,8 +30,8 @@
     --soft: #1e2b42;
     --page-bg: #0f1621;
     --red-soft: #2e1215;
-    --shadow: 0 18px 45px rgba(0, 0, 0, 0.45);
-    --shadow-soft: 0 10px 28px rgba(0, 0, 0, 0.35);
+    --shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 4px 12px rgba(0, 0, 0, 0.35);
+    --shadow-soft: 0 1px 2px rgba(0, 0, 0, 0.3);
     --surface-2: #1c2740;
     --header-bg: rgba(15, 22, 34, 0.92);
     --text-body: #94a3b8;
@@ -162,8 +162,8 @@ main {
   place-items: center;
   border-radius: 8px;
   color: #fff;
-  background: var(--red);
-  box-shadow: 0 10px 22px rgba(211, 59, 63, 0.2);
+  background: var(--blue);
+  box-shadow: none;
 }
 
 .brand strong,
