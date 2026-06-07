@@ -3,6 +3,11 @@ import Link from "next/link";
 
 const adminCards = [
   {
+    title: "新闻动态",
+    href: "/admin/news",
+    description: "发布与维护首页和新闻页展示的赛事、成绩、公告与活动动态。"
+  },
+  {
     title: "辽宁选手库",
     href: "/admin/local-player-library",
     description: "维护本地选手 WCA ID、省份、城市和人工核对记录。"

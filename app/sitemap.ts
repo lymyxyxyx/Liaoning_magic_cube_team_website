@@ -1,5 +1,6 @@
 import type { MetadataRoute } from "next";
 import { competitions, people } from "@/lib/data";
+import { getPublishedNews } from "@/lib/news-store";
 
 const base = "https://lncubing.com";
 
@@ -18,15 +19,22 @@ const staticPaths = [
   "/weekly",
   "/judges",
   "/commercial-teams",
+  "/news",
   "/about"
 ];
 
-export default function sitemap(): MetadataRoute.Sitemap {
+export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const now = new Date();
 
   const staticEntries = staticPaths.map((path) => ({
     url: `${base}${path}`,
     lastModified: now
+  }));
+
+  const news = await getPublishedNews();
+  const newsEntries = news.map((item) => ({
+    url: `${base}/news/${item.slug}`,
+    lastModified: item.date ? new Date(item.date) : now
   }));
 
   const peopleEntries = people.map((person) => ({
@@ -39,5 +47,5 @@ export default function sitemap(): MetadataRoute.Sitemap {
     lastModified: now
   }));
 
-  return [...staticEntries, ...peopleEntries, ...competitionEntries];
+  return [...staticEntries, ...newsEntries, ...peopleEntries, ...competitionEntries];
 }
