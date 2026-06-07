@@ -14,6 +14,7 @@
   --gold: #b7791f;
   --radius: 10px;
   --radius-sm: 8px;
+  --page-w: 1360px;
   --page-bg: #f3f6fb;
   --shadow: 0 1px 2px rgba(23, 32, 51, 0.04), 0 4px 12px rgba(23, 32, 51, 0.06);
   --shadow-soft: 0 1px 2px rgba(23, 32, 51, 0.04);
@@ -367,7 +368,7 @@ main {
 .page-hero,
 .split-hero,
 .stat-band {
-  width: min(1160px, calc(100% - 36px));
+  width: min(var(--page-w), calc(100% - 36px));
   margin: 0 auto;
 }
 
@@ -405,7 +406,7 @@ main {
   display: flex;
   flex-direction: column;
   align-items: flex-start;
-  width: min(1160px, calc(100% - 36px));
+  width: min(var(--page-w), calc(100% - 36px));
   margin: 0 auto;
   padding: 34px 0 28px;
 }
@@ -422,8 +423,8 @@ main {
 .hero-copy h1,
 .page-hero h1 {
   margin: 10px 0 14px;
-  font-size: clamp(28px, 3.8vw, 42px);
-  line-height: 1.12;
+  font-size: 26px;
+  line-height: 1.15;
   letter-spacing: 0;
 }
 
@@ -3661,11 +3662,11 @@ textarea {
 }
 
 .competition-list-section {
-  width: min(1480px, calc(100% - 36px));
+  width: min(var(--page-w), calc(100% - 36px));
 }
 
 .page-hero.competition-page-hero {
-  width: min(1480px, calc(100% - 36px));
+  width: min(var(--page-w), calc(100% - 36px));
 }
 
 .result-stats-grid {
@@ -5362,11 +5363,11 @@ textarea {
 }
 
 .local-rankings-section {
-  width: min(1360px, calc(100% - 36px));
+  width: min(var(--page-w), calc(100% - 36px));
 }
 
 .page-hero.local-ranking-page-hero {
-  width: min(1360px, calc(100% - 36px));
+  width: min(var(--page-w), calc(100% - 36px));
 }
 
 .local-ranking-filter-card .ranking-field:nth-child(4) .ranking-toggle {
@@ -5823,7 +5824,7 @@ textarea {
 }
 
 .wca-page {
-  width: min(1280px, calc(100% - 48px));
+  width: min(var(--page-w), calc(100% - 48px));
   margin: 0 auto;
   padding: 36px 0 54px;
 }
