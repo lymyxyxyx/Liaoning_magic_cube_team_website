@@ -96,7 +96,8 @@ export async function getWeeklyMeets(): Promise<WeeklyMeet[]> {
       events: []
       };
     });
-  } catch {
+  } catch (error) {
+    console.error("[weekly-db] getWeeklyMeets: database query failed, falling back to static data", error);
     return weeklyMeets;
   }
 }
@@ -172,7 +173,8 @@ export async function getWeeklyMeetBySlug(slug: string): Promise<WeeklyMeet | nu
     threeAgeGroups: ageGroupEvents.map(buildEvent),
     events: otherEvents.map(buildEvent)
     };
-  } catch {
+  } catch (error) {
+    console.error("[weekly-db] getWeeklyMeetBySlug: database query failed, falling back to static data", error);
     return weeklyMeets.find((meet) => meet.slug === slug) || null;
   }
 }
