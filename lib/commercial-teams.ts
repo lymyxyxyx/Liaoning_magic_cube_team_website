@@ -321,6 +321,60 @@ export const commercialTeamMembers: Person[] = [
     wcaId: "2024HUAX01",
     wcaUrl: "https://cubing.com/results/person/2024HUAX01"
   },
+  {
+    id: "ct-liu-xin-tong",
+    slug: "liu-xintong",
+    name: "刘欣彤",
+    avatar: "/visuals/avatar-default.svg",
+    roles: ["运动员"],
+    city: "沈阳",
+    gender: "女",
+    bio: "",
+    visible: true,
+    mainEvent: "三阶速拧"
+  },
+  {
+    id: "ct-2025YAOM01",
+    slug: "yao-mengyu",
+    name: "姚孟妤",
+    avatar: "/visuals/avatar-default.svg",
+    roles: ["运动员"],
+    city: "沈阳",
+    gender: "女",
+    bio: "",
+    visible: true,
+    mainEvent: "三阶速拧",
+    wcaId: "2025YAOM01",
+    wcaUrl: "https://cubing.com/results/person/2025YAOM01"
+  },
+  {
+    id: "ct-2025ZHAH02",
+    slug: "zhang-haobo",
+    name: "张皓博",
+    avatar: "/visuals/avatar-default.svg",
+    roles: ["运动员"],
+    city: "沈阳",
+    gender: "男",
+    bio: "",
+    visible: true,
+    mainEvent: "三阶速拧",
+    wcaId: "2025ZHAH02",
+    wcaUrl: "https://cubing.com/results/person/2025ZHAH02"
+  },
+  {
+    id: "ct-2025YUMA02",
+    slug: "yu-maoyang",
+    name: "于茂洋",
+    avatar: "/visuals/avatar-default.svg",
+    roles: ["运动员"],
+    city: "沈阳",
+    gender: "男",
+    bio: "",
+    visible: true,
+    mainEvent: "三阶速拧",
+    wcaId: "2025YUMA02",
+    wcaUrl: "https://cubing.com/results/person/2025YUMA02"
+  },
 
   // 魔域战队
   {
@@ -465,7 +519,7 @@ export const commercialTeams: CommercialTeam[] = [
     brandUrl: "https://www.gancube.com",
     description: "启航队是宇宙爆速社面向新生代选手的培养梯队，成员持续更新中。",
     members: commercialTeamMembers.filter(m =>
-      ["王一桐", "孟思竣", "王冠泽", "金奕霖", "王梓灏", "李雨桐", "朱斐然", "王皓泽", "华夏"].includes(m.name)
+      ["王一桐", "孟思竣", "王冠泽", "金奕霖", "王梓灏", "李雨桐", "朱斐然", "王皓泽", "华夏", "刘欣彤", "姚孟妤", "张皓博", "于茂洋"].includes(m.name)
     )
   },
   {
