@@ -2,8 +2,7 @@
 
 import Link from "next/link";
 import { type SyntheticEvent, useEffect, useRef } from "react";
-import { Shield, Settings, ChevronDown, Menu, X } from "lucide-react";
-import { SiteSearch } from "./site-search";
+import { Shield, ChevronDown, Menu, X } from "lucide-react";
 
 type NavItem = {
   href?: string;
@@ -13,11 +12,10 @@ type NavItem = {
 
 const navItems: NavItem[] = [
   { href: "/", label: "首页" },
-  { href: "/news", label: "新闻" },
   { href: "/liaoning-rankings", label: "辽宁排名" },
   { href: "/liaoning-records", label: "辽宁纪录" },
   { href: "/rankings", label: "WCA排名" },
-  { href: "/competitions", label: "全部比赛" },
+  { href: "/competitions", label: "赛事列表" },
   { href: "/liaoning-competitions", label: "辽宁WCA赛事" },
   { href: "/national-events", label: "国赛" },
   { href: "/weekly", label: "周赛" },
@@ -143,27 +141,6 @@ export function SiteHeader() {
           })}
         </div>
       </details>
-      <div className="header-actions">
-      <SiteSearch />
-      <details className="admin-pass-popover" onToggle={handleDetailsToggle}>
-        <summary className="admin-link" title="后台管理">
-          <Settings size={18} />
-          <span>后台</span>
-        </summary>
-        <form className="admin-pass-dialog" action="/api/admin-auth?next=/admin" method="post" aria-label="后台口令">
-          <div className="admin-pass-dialog-heading">
-            <div>
-              <strong>后台口令</strong>
-              <span>输入后直接进入管理后台</span>
-            </div>
-          </div>
-          <input autoFocus inputMode="numeric" type="password" name="password" placeholder="请输入口令" />
-          <button className="button primary" type="submit">
-            进入后台
-          </button>
-        </form>
-      </details>
-      </div>
     </header>
   );
 }

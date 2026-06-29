@@ -58,6 +58,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               <Link href="/weekly">周赛系统</Link>
               <Link href="/judges">裁判员名单</Link>
               <Link href="/about">关于本站</Link>
+              <Link href="/privacy">隐私说明</Link>
             </nav>
             <div className="footer-meta">
               <a href="https://beian.miit.gov.cn" target="_blank" rel="noopener noreferrer">

@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
-import { competitionCategories, competitions, getCompetitionCategory, getCompetitionDisplayName } from "@/lib/data";
+import { competitions, getCompetitionCategory, getCompetitionDisplayName } from "@/lib/data";
 
 const pageSize = 20;
 const getSortableDate = (date: string) => {
@@ -17,15 +17,19 @@ const getShenyangOpenEdition = (slug: string) => {
 const categoryTabs = [
   { id: "全部", shortName: "全部" },
   { id: "wca-official", shortName: "WCA" },
-  { id: "national-events", shortName: "国赛", href: "/national-events" },
   { id: "liaoning-province-open", shortName: "省赛" },
   { id: "shenyang-city-open", shortName: "市赛" }
 ];
-const categoryIds = new Set(categoryTabs.filter((item) => !item.href).map((item) => item.id));
+const categoryIds = new Set(categoryTabs.map((item) => item.id));
 
 function matchesCategory(competitionCategory: string, selected: string) {
   if (selected === "全部") return true;
   return competitionCategory === selected;
+}
+
+function getExternalPlatformLabel(url: string, fallback?: string) {
+  if (url.includes("cubing.com")) return "粗饼";
+  return fallback || "外部平台";
 }
 
 export function CompetitionsClient() {
@@ -37,19 +41,6 @@ export function CompetitionsClient() {
     if (requestedCategory && categoryIds.has(requestedCategory)) {
       setCategory(requestedCategory);
     }
-  }, []);
-
-  const liaoningSummary = useMemo(() => {
-    const liaoningCompetitions = competitions.filter((competition) => competition.province === "辽宁");
-    const city = liaoningCompetitions.filter((competition) => competition.category === "shenyang-city-open").length;
-    const province = liaoningCompetitions.filter(
-      (competition) => competition.category === "liaoning-province-open"
-    ).length;
-    return {
-      city: city + province,
-      wca: liaoningCompetitions.filter((competition) => competition.category === "wca-official").length,
-      total: liaoningCompetitions.length
-    };
   }, []);
 
   const filteredCompetitions = useMemo(() => {
@@ -77,40 +68,20 @@ export function CompetitionsClient() {
   return (
     <section className="container section competition-list-section">
       <div className="competition-list-panel">
-        <div className="result-stats-grid">
-          <div className="result-stat-card">
-            <span className="result-stat-label">辽宁 · 市赛（含省赛）</span>
-            <strong className="result-stat-value">{liaoningSummary.city}</strong>
-          </div>
-          <div className="result-stat-card">
-            <span className="result-stat-label">辽宁 · WCA</span>
-            <strong className="result-stat-value">{liaoningSummary.wca}</strong>
-          </div>
-          <div className="result-stat-card">
-            <span className="result-stat-label">辽宁 · 合计</span>
-            <strong className="result-stat-value">{liaoningSummary.total}</strong>
-          </div>
-        </div>
         <div className="competition-filter-row">
           <div className="competition-filter-field competition-filter-field-wide">
             <span>类型</span>
             <div className="competition-filter-toggle competition-category-toggle">
-              {categoryTabs.map((item) =>
-                item.href ? (
-                  <Link className="competition-category-link" href={item.href} key={item.id}>
-                    {item.shortName}
-                  </Link>
-                ) : (
-                  <button
-                    className={category === item.id ? "active" : ""}
-                    key={item.id}
-                    onClick={() => setCategory(item.id)}
-                    type="button"
-                  >
-                    {item.shortName}
-                  </button>
-                )
-              )}
+              {categoryTabs.map((item) => (
+                <button
+                  className={category === item.id ? "active" : ""}
+                  key={item.id}
+                  onClick={() => setCategory(item.id)}
+                  type="button"
+                >
+                  {item.shortName}
+                </button>
+              ))}
             </div>
           </div>
         </div>
@@ -126,17 +97,28 @@ export function CompetitionsClient() {
                 <th>日期</th>
                 <th>比赛类别</th>
                 <th>比赛名称</th>
-                <th>赞助商</th>
                 <th>省份</th>
                 <th>城市</th>
                 <th>地点</th>
-                <th>来源</th>
-                <th>公示/查看</th>
+                <th>链接</th>
               </tr>
             </thead>
             <tbody>
               {visibleCompetitions.map((competition) => {
                 const categoryInfo = getCompetitionCategory(competition.category);
+                const primaryLink = competition.externalUrl
+                  ? {
+                      href: competition.externalUrl,
+                      label: getExternalPlatformLabel(competition.externalUrl, competition.publicPlatform),
+                      action: competition.publicMethod || "查看"
+                    }
+                  : competition.dataSourceUrl
+                    ? {
+                        href: competition.dataSourceUrl,
+                        label: competition.dataSource || "资料来源",
+                        action: "查看"
+                      }
+                    : null;
                 return (
                   <tr key={competition.id}>
                     <td data-label="日期">{competition.date}</td>
@@ -150,33 +132,19 @@ export function CompetitionsClient() {
                         {getCompetitionDisplayName(competition)}
                       </Link>
                     </td>
-                    <td data-label="赞助商">{competition.sponsor || "—"}</td>
                     <td data-label="省份">{competition.province}</td>
                     <td data-label="城市">{competition.city}</td>
                     <td data-label="地点">{competition.venue || competition.address}</td>
-                    <td data-label="来源">
-                      {competition.dataSourceUrl ? (
-                        <Link className="competition-source-link" href={competition.dataSourceUrl} target="_blank">
-                          <strong>{competition.dataSource || "资料来源"}</strong>
-                          <span>查看来源</span>
+                    <td data-label="链接">
+                      {primaryLink ? (
+                        <Link className="competition-source-link" href={primaryLink.href} target="_blank">
+                          <strong>{primaryLink.label}</strong>
+                          <span>{primaryLink.action}</span>
                         </Link>
                       ) : (
                         <span className="competition-source-pending">
                           <strong>{competition.dataSource || "待补充"}</strong>
-                          <span>{competition.dataSource ? "已记录" : "后续整理"}</span>
-                        </span>
-                      )}
-                    </td>
-                    <td data-label="公示/查看">
-                      {competition.externalUrl ? (
-                        <Link className="competition-source-link" href={competition.externalUrl} target="_blank">
-                          <strong>{competition.publicPlatform || "外部平台"}</strong>
-                          <span>{competition.publicMethod || "点击查看"}</span>
-                        </Link>
-                      ) : (
-                        <span className="competition-source-pending">
-                          <strong>{competition.publicPlatform || "待补充"}</strong>
-                          <span>{competition.publicMethod || "后续整理"}</span>
+                          <span>后续整理</span>
                         </span>
                       )}
                     </td>
@@ -185,7 +153,7 @@ export function CompetitionsClient() {
               })}
               {visibleCompetitions.length === 0 ? (
                 <tr>
-                  <td colSpan={9}>当前筛选条件下暂无赛事。</td>
+                  <td colSpan={7}>当前筛选条件下暂无赛事。</td>
                 </tr>
               ) : null}
             </tbody>

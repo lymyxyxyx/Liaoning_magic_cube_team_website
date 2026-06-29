@@ -374,7 +374,7 @@ main {
 
 .hero-band {
   background: #0f1d36;
-  padding-bottom: 12px;
+  padding: 14px 0 22px;
 }
 
 .hero-band .hero-copy h1 {
@@ -408,7 +408,9 @@ main {
   align-items: flex-start;
   width: min(var(--page-w), calc(100% - 36px));
   margin: 0 auto;
-  padding: 34px 0 28px;
+  min-height: 260px;
+  justify-content: center;
+  padding: 56px 0 52px;
 }
 
 .home-hero h1 {
@@ -3666,7 +3668,7 @@ textarea {
 }
 
 .page-hero.competition-page-hero {
-  width: min(var(--page-w), calc(100% - 36px));
+  width: min(860px, calc(100% - 36px));
 }
 
 .result-stats-grid {
@@ -4138,27 +4140,30 @@ textarea {
 
 .competition-list-table {
   width: 100%;
-  min-width: 1280px;
+  min-width: 1120px;
   border-collapse: collapse;
-  font-size: 14px;
+  font-size: 13px;
 }
 
 .competition-list-table th {
-  padding: 10px 12px;
+  padding: 8px 10px;
   border-bottom: 1px solid var(--line);
   background: var(--surface-2);
   color: var(--muted);
   text-align: left;
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 700;
   letter-spacing: 0.02em;
   text-transform: uppercase;
+  white-space: nowrap;
 }
 
 .competition-list-table td {
-  padding: 11px 12px;
+  padding: 8px 10px;
   border-bottom: 1px solid var(--line);
-  vertical-align: top;
+  vertical-align: middle;
+  line-height: 1.35;
+  white-space: nowrap;
 }
 
 .competition-list-table tbody tr {
@@ -4180,43 +4185,43 @@ textarea {
 }
 
 .competition-list-table td:nth-child(2) {
-  width: 104px;
+  width: 92px;
 }
 
-.competition-list-table td:nth-child(4) {
-  width: 84px;
-  white-space: nowrap;
+.competition-list-table td:nth-child(3) {
+  min-width: 300px;
 }
 
-.competition-list-table td:nth-child(5),
-.competition-list-table td:nth-child(6) {
+.competition-list-table td:nth-child(4),
+.competition-list-table td:nth-child(5) {
   width: 74px;
   white-space: nowrap;
 }
 
-.competition-list-table td:nth-child(8),
-.competition-list-table td:nth-child(9) {
-  width: 126px;
+.competition-list-table td:nth-child(7) {
+  width: 168px;
 }
 
 .competition-source-link,
 .competition-source-pending {
-  display: inline-grid;
-  gap: 3px;
-  align-content: start;
+  display: inline-flex;
+  align-items: baseline;
+  gap: 6px;
+  max-width: 100%;
+  white-space: nowrap;
 }
 
 .competition-source-link strong,
 .competition-source-pending strong {
   color: var(--text-body);
-  font-size: 14px;
+  font-size: 12px;
   font-weight: 850;
 }
 
 .competition-source-link span,
 .competition-source-pending span {
   color: var(--muted);
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 700;
 }
 
@@ -4270,8 +4275,14 @@ textarea {
 }
 
 .competition-name-link {
+  display: inline-block;
+  max-width: 420px;
+  overflow: hidden;
   color: var(--blue);
   font-weight: 750;
+  text-overflow: ellipsis;
+  vertical-align: bottom;
+  white-space: nowrap;
 }
 
 .competition-type {

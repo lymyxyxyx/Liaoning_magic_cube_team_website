@@ -1,5 +1,4 @@
 import Link from "next/link";
-import { HomeSearchTrigger } from "@/components/site-search";
 import { NewsCard } from "@/components/news-card";
 import { getPublishedNews } from "@/lib/news-store";
 
@@ -15,7 +14,14 @@ export default async function HomePage() {
           <span className="eyebrow">辽宁魔方</span>
           <h1>辽宁地区魔方信息查询网</h1>
           <p>排名、纪录、赛事、周赛与档案，一站式查询。</p>
-          <HomeSearchTrigger />
+          <div className="hero-actions">
+            <Link className="button primary" href="/liaoning-rankings">
+              辽宁排名
+            </Link>
+            <Link className="button" href="/liaoning-records">
+              辽宁纪录
+            </Link>
+          </div>
         </section>
       </div>
       {news.length > 0 ? (

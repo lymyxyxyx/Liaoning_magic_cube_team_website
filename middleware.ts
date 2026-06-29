@@ -47,6 +47,10 @@ export async function middleware(request: NextRequest) {
     return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
   }
 
+  if (pathname === "/api/commercial-teams" && request.method !== "GET" && !(await hasAdminSession(request))) {
+    return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
+  }
+
   if (pathname.startsWith("/api/admin") && !(await hasAdminSession(request))) {
     return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
   }
@@ -59,6 +63,7 @@ export const config = {
     "/admin",
     "/admin/:path*",
     "/api/local-profiles",
+    "/api/commercial-teams",
     "/api/account-books",
     "/api/admin/:path*"
   ]

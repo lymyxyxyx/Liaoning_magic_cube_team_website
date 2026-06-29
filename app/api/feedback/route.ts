@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createFeedbackMessage } from "@/lib/feedback-store";
 
-const allowedTypes = new Set(["名单反馈", "成绩问题", "页面问题", "合作咨询", "其他"]);
+const allowedTypes = new Set(["名单反馈", "信息更正", "成绩问题", "删除/隐藏请求", "页面问题", "合作咨询", "其他"]);
 
 export async function POST(request: NextRequest) {
   const payload = (await request.json().catch(() => null)) as

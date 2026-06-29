@@ -20,7 +20,8 @@ const staticPaths = [
   "/judges",
   "/commercial-teams",
   "/news",
-  "/about"
+  "/about",
+  "/privacy"
 ];
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
