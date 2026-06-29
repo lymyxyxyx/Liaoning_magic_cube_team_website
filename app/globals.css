@@ -7791,6 +7791,53 @@ a.commercial-member-link:hover {
     grid-column: 1 / -1;
   }
 
+  .competition-list-table tr {
+    grid-template-columns: 1fr;
+    gap: 9px;
+    padding: 14px 12px;
+  }
+
+  .competition-list-table td,
+  .competition-list-table td:nth-child(1),
+  .competition-list-table td:nth-child(2),
+  .competition-list-table td:nth-child(4),
+  .competition-list-table td:nth-child(5),
+  .competition-list-table td:last-child {
+    display: grid;
+    grid-column: 1 / -1;
+    grid-template-columns: 76px minmax(0, 1fr);
+    gap: 10px;
+    align-items: start;
+    justify-content: stretch;
+    width: 100%;
+    font-weight: 700;
+  }
+
+  .competition-list-table td::before {
+    min-width: 0;
+    padding-top: 2px;
+    line-height: 1.35;
+  }
+
+  .competition-list-table td:nth-child(3),
+  .competition-list-table td:nth-child(6) {
+    align-items: start;
+  }
+
+  .competition-list-table .competition-name-link,
+  .competition-list-table .competition-source-link,
+  .competition-list-table .competition-source-pending {
+    min-width: 0;
+    white-space: normal;
+    word-break: break-word;
+    overflow-wrap: anywhere;
+  }
+
+  .competition-list-table .competition-source-link,
+  .competition-list-table .competition-source-pending {
+    justify-self: start;
+  }
+
   .sum-ranks-workspace {
     gap: 12px;
   }
