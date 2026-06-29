@@ -8072,20 +8072,20 @@ a.commercial-member-link:hover {
   }
 
   .ranking-results-section .wca-ranking-results-table {
-    min-width: 0;
-    width: 100%;
+    min-width: 742px;
+    width: 742px;
     table-layout: fixed;
   }
 
   .ranking-results-section .local-ranking-results-table {
-    min-width: 0;
-    width: 100%;
+    min-width: 850px;
+    width: 850px;
     table-layout: fixed;
   }
 
   .ranking-results-section .local-ranking-results-table.has-gender-ranks {
-    min-width: 0;
-    width: 100%;
+    min-width: 1080px;
+    width: 1080px;
   }
 
   .ranking-results-section .result-table thead {
@@ -8140,7 +8140,7 @@ a.commercial-member-link:hover {
 
   .ranking-results-section .wca-ranking-results-table th:nth-child(2),
   .ranking-results-section .wca-ranking-results-table td:nth-child(2) {
-    width: auto;
+    width: 160px;
     min-width: 0;
   }
 
@@ -8166,14 +8166,17 @@ a.commercial-member-link:hover {
 
   .ranking-results-section .wca-ranking-results-table th:nth-child(6),
   .ranking-results-section .wca-ranking-results-table td:nth-child(6) {
-    display: none;
+    width: 46px;
   }
 
   .ranking-results-section .wca-ranking-results-table th:nth-child(7),
-  .ranking-results-section .wca-ranking-results-table td:nth-child(7),
+  .ranking-results-section .wca-ranking-results-table td:nth-child(7) {
+    width: 220px;
+  }
+
   .ranking-results-section .wca-ranking-results-table th:nth-child(8),
   .ranking-results-section .wca-ranking-results-table td:nth-child(8) {
-    display: none;
+    width: 120px;
   }
 
   .ranking-results-section .wca-ranking-results-table .flag-label {
@@ -8232,7 +8235,7 @@ a.commercial-member-link:hover {
 
   .ranking-results-section .local-ranking-results-table th:nth-child(2),
   .ranking-results-section .local-ranking-results-table td:nth-child(2) {
-    width: auto;
+    width: 158px;
     min-width: 0;
   }
 
@@ -8259,18 +8262,31 @@ a.commercial-member-link:hover {
   .ranking-results-section .local-ranking-results-table th:nth-child(6),
   .ranking-results-section .local-ranking-results-table td:nth-child(6),
   .ranking-results-section .local-ranking-results-table th:nth-child(7),
-  .ranking-results-section .local-ranking-results-table td:nth-child(7),
+  .ranking-results-section .local-ranking-results-table td:nth-child(7) {
+    width: 62px;
+  }
+
   .ranking-results-section .local-ranking-results-table th:nth-child(8),
   .ranking-results-section .local-ranking-results-table td:nth-child(8),
   .ranking-results-section .local-ranking-results-table th:nth-child(9),
   .ranking-results-section .local-ranking-results-table td:nth-child(9),
   .ranking-results-section .local-ranking-results-table.has-gender-ranks th:nth-child(10),
-  .ranking-results-section .local-ranking-results-table.has-gender-ranks td:nth-child(10),
+  .ranking-results-section .local-ranking-results-table.has-gender-ranks td:nth-child(10) {
+    width: 76px;
+  }
+
+  .ranking-results-section .local-ranking-results-table:not(.has-gender-ranks) th:nth-child(8),
+  .ranking-results-section .local-ranking-results-table:not(.has-gender-ranks) td:nth-child(8),
   .ranking-results-section .local-ranking-results-table.has-gender-ranks th:nth-child(11),
-  .ranking-results-section .local-ranking-results-table.has-gender-ranks td:nth-child(11),
+  .ranking-results-section .local-ranking-results-table.has-gender-ranks td:nth-child(11) {
+    width: 220px;
+  }
+
+  .ranking-results-section .local-ranking-results-table:not(.has-gender-ranks) th:nth-child(9),
+  .ranking-results-section .local-ranking-results-table:not(.has-gender-ranks) td:nth-child(9),
   .ranking-results-section .local-ranking-results-table.has-gender-ranks th:nth-child(12),
   .ranking-results-section .local-ranking-results-table.has-gender-ranks td:nth-child(12) {
-    display: none;
+    width: 150px;
   }
 
   .ranking-results-section .result-table td::before {
