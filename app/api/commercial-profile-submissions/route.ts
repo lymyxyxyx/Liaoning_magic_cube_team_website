@@ -19,14 +19,14 @@ export async function POST(request: NextRequest) {
   const mainEvent = cleanString(payload.mainEvent);
   const note = cleanString(payload.note);
 
-  if (!playerName || !teamName || !bio || !submitterRole || !contact) {
-    return NextResponse.json({ message: "请填写姓名、战队、简介、提交人身份和联系方式。" }, { status: 400 });
+  if (!playerName || !bio) {
+    return NextResponse.json({ message: "请填写选手姓名和简介内容。" }, { status: 400 });
   }
   if (playerName.length > 40 || teamName.length > 80 || contact.length > 120) {
     return NextResponse.json({ message: "姓名、战队或联系方式过长。" }, { status: 400 });
   }
-  if (bio.length < 12 || bio.length > 500) {
-    return NextResponse.json({ message: "简介建议填写 12-500 个字。" }, { status: 400 });
+  if (bio.length > 500) {
+    return NextResponse.json({ message: "简介内容请控制在 500 个字以内。" }, { status: 400 });
   }
   if (note.length > 500) {
     return NextResponse.json({ message: "备注内容过长。" }, { status: 400 });

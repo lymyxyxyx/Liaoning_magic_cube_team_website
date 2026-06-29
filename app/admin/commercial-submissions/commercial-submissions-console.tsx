@@ -103,7 +103,7 @@ export function CommercialSubmissionsConsole() {
                   <span className={`commercial-review-badge status-${submission.status}`}>{statusLabels[submission.status]}</span>
                   <h2>{submission.playerName}</h2>
                   <p>
-                    {submission.teamName}
+                    {submission.teamName || "未填写战队"}
                     {submission.city ? ` · ${submission.city}` : ""}
                     {submission.wcaId ? ` · ${submission.wcaId}` : ""}
                   </p>
@@ -116,8 +116,8 @@ export function CommercialSubmissionsConsole() {
 
               <div className="commercial-review-meta">
                 <span>主项：{submission.mainEvent || "未填写"}</span>
-                <span>提交人：{submission.submitterRole}</span>
-                <span>联系方式：{submission.contact}</span>
+                <span>提交人：{submission.submitterRole || "未填写"}</span>
+                <span>联系方式：{submission.contact || "未填写"}</span>
                 <span>提交时间：{formatDate(submission.createdAt)}</span>
               </div>
 

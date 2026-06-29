@@ -8,13 +8,13 @@ export type CommercialProfileSubmission = {
   id: string;
   status: CommercialSubmissionStatus;
   playerName: string;
-  teamName: string;
+  teamName?: string;
   city?: string;
   wcaId?: string;
   mainEvent?: string;
   bio: string;
-  submitterRole: string;
-  contact: string;
+  submitterRole?: string;
+  contact?: string;
   note?: string;
   createdAt: string;
   reviewedAt?: string;
@@ -37,13 +37,13 @@ export async function writeCommercialProfileSubmissions(submissions: CommercialP
 
 export async function addCommercialProfileSubmission(input: {
   playerName: string;
-  teamName: string;
+  teamName?: string;
   city?: string;
   wcaId?: string;
   mainEvent?: string;
   bio: string;
-  submitterRole: string;
-  contact: string;
+  submitterRole?: string;
+  contact?: string;
   note?: string;
 }) {
   const submissions = await readCommercialProfileSubmissions();
@@ -51,13 +51,13 @@ export async function addCommercialProfileSubmission(input: {
     id: `commercial-submission-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`,
     status: "pending",
     playerName: cleanRequiredString(input.playerName),
-    teamName: cleanRequiredString(input.teamName),
+    teamName: cleanOptionalString(input.teamName),
     city: cleanOptionalString(input.city),
     wcaId: cleanOptionalString(input.wcaId)?.toUpperCase(),
     mainEvent: cleanOptionalString(input.mainEvent),
     bio: cleanRequiredString(input.bio),
-    submitterRole: cleanRequiredString(input.submitterRole),
-    contact: cleanRequiredString(input.contact),
+    submitterRole: cleanOptionalString(input.submitterRole),
+    contact: cleanOptionalString(input.contact),
     note: cleanOptionalString(input.note),
     createdAt: new Date().toISOString()
   };
@@ -72,11 +72,8 @@ function normalizeSubmissions(submissions: Partial<CommercialProfileSubmission>[
     .map((submission) => {
       const id = cleanRequiredString(submission.id);
       const playerName = cleanRequiredString(submission.playerName);
-      const teamName = cleanRequiredString(submission.teamName);
       const bio = cleanRequiredString(submission.bio);
-      const submitterRole = cleanRequiredString(submission.submitterRole);
-      const contact = cleanRequiredString(submission.contact);
-      if (!id || !playerName || !teamName || !bio || !submitterRole || !contact) return null;
+      if (!id || !playerName || !bio) return null;
       const status = commercialSubmissionStatuses.includes(submission.status as CommercialSubmissionStatus)
         ? (submission.status as CommercialSubmissionStatus)
         : "pending";
@@ -84,13 +81,13 @@ function normalizeSubmissions(submissions: Partial<CommercialProfileSubmission>[
         id,
         status,
         playerName,
-        teamName,
+        teamName: cleanOptionalString(submission.teamName),
         city: cleanOptionalString(submission.city),
         wcaId: cleanOptionalString(submission.wcaId)?.toUpperCase(),
         mainEvent: cleanOptionalString(submission.mainEvent),
         bio,
-        submitterRole,
-        contact,
+        submitterRole: cleanOptionalString(submission.submitterRole),
+        contact: cleanOptionalString(submission.contact),
         note: cleanOptionalString(submission.note),
         createdAt: cleanRequiredString(submission.createdAt) || new Date().toISOString(),
         reviewedAt: cleanOptionalString(submission.reviewedAt),

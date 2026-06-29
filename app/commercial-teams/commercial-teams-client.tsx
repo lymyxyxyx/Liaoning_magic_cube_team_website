@@ -43,15 +43,22 @@ export function CommercialTeamsClient({ initialTeams, teamOptions, wcaNameEntrie
     teamName: teamOptions[0] || ""
   });
   const [status, setStatus] = useState("");
+  const [dialogStatus, setDialogStatus] = useState("");
+  const [submissionSucceeded, setSubmissionSucceeded] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   function updateDraft(patch: Partial<SubmissionDraft>) {
     setDraft((current) => ({ ...current, ...patch }));
+    setDialogStatus("");
   }
 
   async function submitProfile() {
+    if (!draft.playerName.trim() || !draft.bio.trim()) {
+      setDialogStatus("请填写选手姓名和简介内容。");
+      return;
+    }
     setIsSubmitting(true);
-    setStatus("提交中...");
+    setDialogStatus("提交中...");
     try {
       const response = await fetch("/api/commercial-profile-submissions", {
         method: "POST",
@@ -61,10 +68,11 @@ export function CommercialTeamsClient({ initialTeams, teamOptions, wcaNameEntrie
       const payload = (await response.json()) as { message?: string };
       if (!response.ok) throw new Error(payload.message || "提交失败。");
       setStatus("已提交，管理员审核后会更新展示。");
+      setDialogStatus("");
+      setSubmissionSucceeded(true);
       setDraft({ ...emptySubmissionDraft, teamName: teamOptions[0] || "" });
-      setIsFormOpen(false);
     } catch (error) {
-      setStatus(error instanceof Error ? error.message : "提交失败，请稍后再试。");
+      setDialogStatus(error instanceof Error ? error.message : "提交失败，请稍后再试。");
     } finally {
       setIsSubmitting(false);
     }
@@ -77,7 +85,15 @@ export function CommercialTeamsClient({ initialTeams, teamOptions, wcaNameEntrie
           <strong>成员简介补充</strong>
           <span>选手、家长或老师可以提交简介，审核通过后再展示。</span>
         </div>
-        <button className="button primary" type="button" onClick={() => setIsFormOpen(true)}>
+        <button
+          className="button primary"
+          type="button"
+          onClick={() => {
+            setDialogStatus("");
+            setSubmissionSucceeded(false);
+            setIsFormOpen(true);
+          }}
+        >
           提交成员简介
         </button>
       </div>
@@ -89,71 +105,101 @@ export function CommercialTeamsClient({ initialTeams, teamOptions, wcaNameEntrie
             <div className="commercial-submission-dialog-head">
               <div>
                 <strong>提交成员简介</strong>
-                <span>联系方式仅用于后台核对，前台不会展示。</span>
+                <span>只需填写选手姓名和简介内容，其他信息可选；联系方式仅后台可见。</span>
               </div>
-              <button className="icon-button" type="button" onClick={() => setIsFormOpen(false)} aria-label="关闭">
+              <button
+                className="icon-button"
+                type="button"
+                onClick={() => {
+                  setIsFormOpen(false);
+                  setDialogStatus("");
+                  setSubmissionSucceeded(false);
+                }}
+                aria-label="关闭"
+              >
                 <X size={16} />
               </button>
             </div>
-            <div className="commercial-submission-form">
-              <label>
-                选手姓名
-                <input value={draft.playerName} onChange={(event) => updateDraft({ playerName: event.target.value })} />
-              </label>
-              <label>
-                所属战队
-                <select value={draft.teamName} onChange={(event) => updateDraft({ teamName: event.target.value })}>
-                  {teamOptions.map((teamName) => (
-                    <option key={teamName} value={teamName}>
-                      {teamName}
-                    </option>
-                  ))}
-                </select>
-              </label>
-              <label>
-                城市
-                <input value={draft.city} onChange={(event) => updateDraft({ city: event.target.value })} placeholder="如：沈阳" />
-              </label>
-              <label>
-                WCA ID
-                <input value={draft.wcaId} onChange={(event) => updateDraft({ wcaId: event.target.value })} placeholder="可选" />
-              </label>
-              <label>
-                主项
-                <input value={draft.mainEvent} onChange={(event) => updateDraft({ mainEvent: event.target.value })} placeholder="如：三阶速拧" />
-              </label>
-              <label>
-                提交人身份
-                <select value={draft.submitterRole} onChange={(event) => updateDraft({ submitterRole: event.target.value })}>
-                  <option value="">请选择</option>
-                  <option value="选手本人">选手本人</option>
-                  <option value="家长">家长</option>
-                  <option value="老师/教练">老师/教练</option>
-                  <option value="战队管理员">战队管理员</option>
-                  <option value="其他">其他</option>
-                </select>
-              </label>
-              <label className="commercial-submission-wide">
-                联系方式
-                <input value={draft.contact} onChange={(event) => updateDraft({ contact: event.target.value })} placeholder="微信、手机号或邮箱，仅后台可见" />
-              </label>
-              <label className="commercial-submission-wide">
-                简介内容
-                <textarea value={draft.bio} onChange={(event) => updateDraft({ bio: event.target.value })} placeholder="建议包含主项、代表成绩、战队身份等。涉及未成年人时请确认已获监护人同意。" />
-              </label>
-              <label className="commercial-submission-wide">
-                备注
-                <textarea value={draft.note} onChange={(event) => updateDraft({ note: event.target.value })} placeholder="可填写证明链接、需要更正的原简介等，选填。" />
-              </label>
-            </div>
-            <div className="commercial-submission-actions">
-              <button className="button button--ghost" type="button" onClick={() => setIsFormOpen(false)} disabled={isSubmitting}>
-                取消
-              </button>
-              <button className="button primary" type="button" onClick={submitProfile} disabled={isSubmitting}>
-                {isSubmitting ? "提交中" : "提交审核"}
-              </button>
-            </div>
+            {submissionSucceeded ? (
+              <div className="commercial-submission-success" role="status">
+                <strong>提交成功</strong>
+                <span>信息已经进入后台待审核列表，管理员审核后会更新展示。</span>
+                <button
+                  className="button primary"
+                  type="button"
+                  onClick={() => {
+                    setIsFormOpen(false);
+                    setSubmissionSucceeded(false);
+                  }}
+                >
+                  知道了
+                </button>
+              </div>
+            ) : (
+              <>
+                <div className="commercial-submission-form">
+                  <label>
+                    选手姓名 <em>必填</em>
+                    <input value={draft.playerName} onChange={(event) => updateDraft({ playerName: event.target.value })} />
+                  </label>
+                  <label>
+                    所属战队
+                    <select value={draft.teamName} onChange={(event) => updateDraft({ teamName: event.target.value })}>
+                      <option value="">不确定 / 暂不填写</option>
+                      {teamOptions.map((teamName) => (
+                        <option key={teamName} value={teamName}>
+                          {teamName}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                  <label>
+                    城市
+                    <input value={draft.city} onChange={(event) => updateDraft({ city: event.target.value })} placeholder="如：沈阳，选填" />
+                  </label>
+                  <label>
+                    WCA ID
+                    <input value={draft.wcaId} onChange={(event) => updateDraft({ wcaId: event.target.value })} placeholder="选填" />
+                  </label>
+                  <label>
+                    主项
+                    <input value={draft.mainEvent} onChange={(event) => updateDraft({ mainEvent: event.target.value })} placeholder="如：三阶速拧，选填" />
+                  </label>
+                  <label>
+                    提交人身份
+                    <select value={draft.submitterRole} onChange={(event) => updateDraft({ submitterRole: event.target.value })}>
+                      <option value="">选填</option>
+                      <option value="选手本人">选手本人</option>
+                      <option value="家长">家长</option>
+                      <option value="老师/教练">老师/教练</option>
+                      <option value="战队管理员">战队管理员</option>
+                      <option value="其他">其他</option>
+                    </select>
+                  </label>
+                  <label className="commercial-submission-wide">
+                    联系方式
+                    <input value={draft.contact} onChange={(event) => updateDraft({ contact: event.target.value })} placeholder="微信、手机号或邮箱，选填，仅后台可见" />
+                  </label>
+                  <label className="commercial-submission-wide">
+                    简介内容 <em>必填</em>
+                    <textarea value={draft.bio} onChange={(event) => updateDraft({ bio: event.target.value })} placeholder="建议包含主项、代表成绩、战队身份等。涉及未成年人时请确认已获监护人同意。" />
+                  </label>
+                  <label className="commercial-submission-wide">
+                    备注
+                    <textarea value={draft.note} onChange={(event) => updateDraft({ note: event.target.value })} placeholder="可填写证明链接、需要更正的原简介等，选填。" />
+                  </label>
+                </div>
+                {dialogStatus ? <p className="commercial-submission-dialog-status" role="alert">{dialogStatus}</p> : null}
+                <div className="commercial-submission-actions">
+                  <button className="button button--ghost" type="button" onClick={() => setIsFormOpen(false)} disabled={isSubmitting}>
+                    取消
+                  </button>
+                  <button className="button primary" type="button" onClick={submitProfile} disabled={isSubmitting}>
+                    {isSubmitting ? "提交中" : "提交审核"}
+                  </button>
+                </div>
+              </>
+            )}
           </div>
         </div>
       ) : null}

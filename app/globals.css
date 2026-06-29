@@ -6801,6 +6801,13 @@ textarea {
   font-weight: 760;
 }
 
+.commercial-submission-form em {
+  color: var(--red);
+  font-style: normal;
+  font-size: 11px;
+  font-weight: 850;
+}
+
 .commercial-submission-form input,
 .commercial-submission-form select,
 .commercial-submission-form textarea,
@@ -6824,6 +6831,38 @@ textarea {
 
 .commercial-submission-wide {
   grid-column: 1 / -1;
+}
+
+.commercial-submission-dialog-status {
+  margin: 0;
+  padding: 9px 10px;
+  border: 1px solid #f4c7c7;
+  border-radius: 6px;
+  background: #fff1f1;
+  color: #991b1b;
+  font-size: 13px;
+  font-weight: 760;
+}
+
+.commercial-submission-success {
+  display: grid;
+  justify-items: start;
+  gap: 10px;
+  padding: 18px;
+  border: 1px solid #b9e7c7;
+  border-radius: 8px;
+  background: #f0fff5;
+  color: #166534;
+}
+
+.commercial-submission-success strong {
+  font-size: 20px;
+}
+
+.commercial-submission-success span {
+  color: #23663a;
+  font-size: 14px;
+  line-height: 1.6;
 }
 
 .commercial-submission-actions,
@@ -9196,6 +9235,44 @@ a.commercial-member-link:hover {
 }
 
 @media (max-width: 760px) {
+  .commercial-submission-panel,
+  .commercial-review-toolbar,
+  .commercial-review-card header {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .commercial-submission-backdrop {
+    align-items: end;
+    padding: 10px;
+  }
+
+  .commercial-submission-dialog {
+    width: 100%;
+    max-height: calc(100dvh - 20px);
+    padding: 14px;
+  }
+
+  .commercial-submission-form {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+
+  .commercial-submission-form textarea {
+    min-height: 118px;
+  }
+
+  .commercial-submission-actions {
+    position: sticky;
+    bottom: -14px;
+    padding-top: 8px;
+    background: var(--surface);
+  }
+
+  .commercial-review-tabs {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
   .weekly-library-shell {
     gap: 7px;
   }
