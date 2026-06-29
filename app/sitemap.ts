@@ -15,8 +15,6 @@ const staticPaths = [
   "/competitions",
   "/liaoning-competitions",
   "/provincial-competition",
-  "/national-events",
-  "/weekly",
   "/judges",
   "/commercial-teams",
   "/news",

@@ -7,14 +7,14 @@ import { getPostgresPool } from "@/lib/postgres";
 export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
-  title: "商业战队成员",
-  description: "GAN、魔域、魔方格等品牌赞助魔方战队的辽宁成员名录与所属战队信息。",
+  title: "战队成员",
+  description: "GAN、魔域、魔方格等魔方战队的辽宁成员名录与所属战队信息。",
   alternates: { canonical: "/commercial-teams" },
   openGraph: {
     type: "website",
     url: "/commercial-teams",
-    title: "商业战队成员",
-    description: "品牌赞助魔方战队的辽宁成员名录。"
+    title: "战队成员",
+    description: "魔方战队的辽宁成员名录。"
   }
 };
 
@@ -43,8 +43,8 @@ export default async function CommercialTeamsPage() {
 
   return (
     <>
-      <PageHero label="商业战队成员" title="辽宁魔方少儿战队商业合作">
-        辽宁选手商业战队与青少年梯队信息。
+      <PageHero label="战队成员" title="辽宁魔方战队成员">
+        辽宁选手战队与青少年梯队信息。
       </PageHero>
 
       <section className="container section">
