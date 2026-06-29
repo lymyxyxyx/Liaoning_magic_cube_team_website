@@ -494,7 +494,7 @@ main {
 .liaoning-map-wrap {
   position: relative;
   min-height: 280px;
-  overflow: hidden;
+  overflow: visible;
   border: 2px solid rgba(255, 255, 255, 0.24);
   border-radius: 8px;
   background:
@@ -574,12 +574,14 @@ main {
 }
 
 .liaoning-map-labels circle {
+  display: none;
   fill: #173f7a;
   stroke: #ffffff;
   stroke-width: 2.4;
 }
 
 .liaoning-map-labels text {
+  display: none;
   fill: #173154;
   font-size: 11.5px;
   font-weight: 800;
@@ -589,6 +591,114 @@ main {
   stroke: rgba(255, 255, 255, 0.92);
   stroke-linejoin: round;
   stroke-width: 4.2px;
+}
+
+.home-city-markers {
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+  pointer-events: none;
+}
+
+.home-city-marker {
+  position: absolute;
+  display: grid;
+  grid-template-columns: auto auto;
+  gap: 2px 4px;
+  align-items: center;
+  min-width: 42px;
+  max-width: 76px;
+  padding: 3px 5px;
+  border: 1px solid rgba(255, 255, 255, 0.8);
+  border-radius: 7px;
+  background: rgba(255, 255, 255, 0.84);
+  color: #173154;
+  cursor: pointer;
+  font: inherit;
+  line-height: 1.05;
+  pointer-events: auto;
+  transform: translate(-50%, -50%);
+  box-shadow: 0 8px 18px rgba(6, 15, 32, 0.14);
+}
+
+.home-city-marker:focus-visible {
+  outline: 2px solid #173f7a;
+  outline-offset: 2px;
+}
+
+.home-city-marker-title {
+  overflow: hidden;
+  font-size: 10px;
+  font-weight: 900;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.home-city-marker-count {
+  color: #0d7e84;
+  font-size: 9px;
+  font-weight: 900;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.home-city-popover {
+  position: absolute;
+  left: 50%;
+  bottom: calc(100% + 6px);
+  z-index: 8;
+  display: grid;
+  gap: 3px;
+  width: 150px;
+  padding: 8px;
+  border: 1px solid rgba(23, 63, 122, 0.14);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.96);
+  color: #10213d;
+  opacity: 0;
+  pointer-events: none;
+  text-align: left;
+  transform: translate(-50%, 6px) scale(0.98);
+  transition:
+    opacity 0.16s ease,
+    transform 0.16s ease;
+  box-shadow: 0 18px 34px rgba(6, 15, 32, 0.18);
+}
+
+.home-city-marker:hover,
+.home-city-marker:focus {
+  z-index: 9;
+  background: #fff7cc;
+}
+
+.home-city-marker:hover .home-city-popover,
+.home-city-marker:focus .home-city-popover {
+  opacity: 1;
+  transform: translate(-50%, 0) scale(1);
+}
+
+.home-city-popover b {
+  color: #173f7a;
+  font-size: 11px;
+  line-height: 1.1;
+}
+
+.home-city-popover span,
+.home-city-popover small {
+  overflow: hidden;
+  font-size: 10px;
+  font-weight: 780;
+  line-height: 1.18;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.home-city-popover span {
+  color: #0d7e84;
+}
+
+.home-city-popover small {
+  color: #42607f;
 }
 
 .home-map-stats-trigger {

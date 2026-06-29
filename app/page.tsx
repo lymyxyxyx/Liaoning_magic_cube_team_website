@@ -6,8 +6,16 @@ import { getPublishedNews } from "@/lib/news-store";
 
 export const revalidate = 120;
 
+const cityMarkerOffsets: Record<string, [number, number]> = {
+  鞍山: [-14, 2],
+  辽阳: [18, -4],
+  盘锦: [0, 14],
+  锦州: [-8, -10]
+};
+
 export default async function HomePage() {
   const [news, homeStats] = await Promise.all([getPublishedNews(8), getHomeStats()]);
+  const cityStatsByName = new Map(homeStats.cities.map((city) => [city.city, city]));
 
   return (
     <>
@@ -32,9 +40,6 @@ export default async function HomePage() {
 
           <div className="liaoning-unity-card" aria-label="辽宁省各城市行政边界图">
             <div className="liaoning-map-wrap">
-              <button className="home-map-stats-trigger" type="button" aria-label="查看辽宁魔方收录数据">
-                数据雷达
-              </button>
               <svg className="liaoning-map liaoning-admin-map" viewBox="0 0 520 360" role="img">
                 <title>辽宁省各城市行政边界示意图</title>
                 <g className="liaoning-map-confetti" aria-hidden="true">
@@ -65,22 +70,32 @@ export default async function HomePage() {
                   ))}
                 </g>
               </svg>
-              <div className="home-map-stats-panel" aria-live="polite">
-                <span className="home-map-stats-kicker">辽宁数据雷达</span>
-                <strong>{homeStats.playerCount}</strong>
-                <span>名选手已收录</span>
-                <div className="home-map-leader-grid">
-                  <div>
-                    <span>男子三速平均第一</span>
-                    <b>{homeStats.topMaleAverage?.name || "同步中"}</b>
-                    {homeStats.topMaleAverage ? <small>{homeStats.topMaleAverage.result}</small> : null}
-                  </div>
-                  <div>
-                    <span>女子三速平均第一</span>
-                    <b>{homeStats.topFemaleAverage?.name || "同步中"}</b>
-                    {homeStats.topFemaleAverage ? <small>{homeStats.topFemaleAverage.result}</small> : null}
-                  </div>
-                </div>
+              <div className="home-city-markers" aria-label={`已收录 ${homeStats.playerCount} 名有 WCA ID 的辽宁选手`}>
+                {liaoningCityMapPaths.map((city) => {
+                  const stats = cityStatsByName.get(city.name);
+                  const markerOffset = cityMarkerOffsets[city.name] || [0, 0];
+                  const x = `${((city.label[0] + markerOffset[0]) / 520) * 100}%`;
+                  const y = `${((city.label[1] + markerOffset[1]) / 360) * 100}%`;
+
+                  return (
+                    <button
+                      className="home-city-marker"
+                      type="button"
+                      key={city.name}
+                      style={{ left: x, top: y }}
+                      aria-label={`${city.name}，${stats?.playerCount || 0} 名选手，男子第一 ${stats?.topMaleAverage?.name || "暂无"}，女子第一 ${stats?.topFemaleAverage?.name || "暂无"}`}
+                    >
+                      <span className="home-city-marker-title">{city.name}</span>
+                      <span className="home-city-marker-count">{stats?.playerCount || 0}人</span>
+                      <span className="home-city-popover">
+                        <b>{city.name}</b>
+                        <span>{stats?.playerCount || 0} 名选手</span>
+                        <small>男 {stats?.topMaleAverage ? `${stats.topMaleAverage.name} ${stats.topMaleAverage.result}` : "暂无"}</small>
+                        <small>女 {stats?.topFemaleAverage ? `${stats.topFemaleAverage.name} ${stats.topFemaleAverage.result}` : "暂无"}</small>
+                      </span>
+                    </button>
+                  );
+                })}
               </div>
             </div>
           </div>

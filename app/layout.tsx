@@ -63,7 +63,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               <a href="https://beian.miit.gov.cn" target="_blank" rel="noopener noreferrer">
                 辽ICP备2026010407号-1
               </a>
-              <Link href="/admin/login">站点管理</Link>
+              <a href="https://lncubing.com/admin/login">站点管理</a>
             </div>
           </div>
         </footer>
