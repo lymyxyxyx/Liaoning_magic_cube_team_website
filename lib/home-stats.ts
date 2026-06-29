@@ -1,7 +1,7 @@
+import { readFile } from "node:fs/promises";
 import { readLocalProfiles } from "@/lib/local-profile-store";
 import { getPostgresPool } from "@/lib/postgres";
 import { formatWcaResult } from "@/lib/wca-result-format";
-import china333Rankings from "@/data/wca_china_333_rankings.json";
 
 type TopAverageRow = {
   name: string;
@@ -77,7 +77,7 @@ export async function getHomeStats(): Promise<HomeStats> {
       topFemaleAverage: topFemale ? toTopAverage(topFemale) : undefined
     };
   } catch {
-    const fallback = getFallbackTopAverage(wcaIds);
+    const fallback = await getFallbackTopAverage(wcaIds);
     return {
       playerCount,
       topMaleAverage: fallback.topMaleAverage,
@@ -94,9 +94,9 @@ function toTopAverage(row: TopAverageRow) {
   };
 }
 
-function getFallbackTopAverage(wcaIds: string[]) {
+async function getFallbackTopAverage(wcaIds: string[]) {
   const localWcaIds = new Set(wcaIds);
-  const averageRankings = (china333Rankings.average || []) as China333RankingEntry[];
+  const averageRankings = await readChina333AverageRankings();
   const topMale = averageRankings.find((row) => row.gender === "m" && localWcaIds.has(row.wcaId));
   const topFemale = averageRankings.find((row) => row.gender === "f" && localWcaIds.has(row.wcaId));
 
@@ -104,6 +104,16 @@ function getFallbackTopAverage(wcaIds: string[]) {
     topMaleAverage: topMale ? toFallbackTopAverage(topMale) : undefined,
     topFemaleAverage: topFemale ? toFallbackTopAverage(topFemale) : undefined
   };
+}
+
+async function readChina333AverageRankings() {
+  try {
+    const raw = await readFile(`${process.cwd()}/data/wca_china_333_rankings.json`, "utf8");
+    const parsed = JSON.parse(raw) as { average?: China333RankingEntry[] };
+    return Array.isArray(parsed.average) ? parsed.average : [];
+  } catch {
+    return [];
+  }
 }
 
 function toFallbackTopAverage(row: China333RankingEntry) {
