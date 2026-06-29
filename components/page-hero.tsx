@@ -9,7 +9,7 @@ export function PageHero({
 }: {
   label: string;
   title: string;
-  children: ReactNode;
+  children?: ReactNode;
   actions?: ReactNode;
   className?: string;
 }) {
@@ -18,7 +18,7 @@ export function PageHero({
       <div>
         <span className="eyebrow">{label}</span>
         <h1>{title}</h1>
-        <p>{children}</p>
+        {children ? <p>{children}</p> : null}
       </div>
       {actions ? <div className="hero-actions">{actions}</div> : null}
     </section>

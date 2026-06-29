@@ -48,7 +48,11 @@ export default async function CommercialTeamsPage() {
       </PageHero>
 
       <section className="container section">
-        <CommercialTeamsClient initialTeams={publicTeams} wcaNameEntries={[...wcaNames.entries()]} />
+        <CommercialTeamsClient
+          initialTeams={publicTeams}
+          teamOptions={publicTeams.map((team) => team.name)}
+          wcaNameEntries={[...wcaNames.entries()]}
+        />
       </section>
     </>
   );

@@ -374,12 +374,15 @@ main {
 
 .hero-band {
   position: relative;
+  display: grid;
+  align-items: center;
+  min-height: calc(100svh - 86px);
   overflow: hidden;
   background:
     radial-gradient(circle at 78% 20%, rgba(255, 193, 88, 0.28), transparent 26%),
     radial-gradient(circle at 28% 86%, rgba(44, 192, 143, 0.2), transparent 28%),
     linear-gradient(135deg, #122244 0%, #18386b 48%, #0e5a73 100%);
-  padding: 16px 0 24px;
+  padding: 20px 0 36px;
 }
 
 .hero-band::before {
@@ -423,13 +426,13 @@ main {
   position: relative;
   z-index: 1;
   display: grid;
-  grid-template-columns: minmax(0, 0.9fr) minmax(360px, 1.1fr);
-  gap: 32px;
+  grid-template-columns: minmax(0, 0.82fr) minmax(420px, 1.18fr);
+  gap: 34px;
   align-items: center;
   width: min(var(--page-w), calc(100% - 36px));
   margin: 0 auto;
-  min-height: 340px;
-  padding: 44px 0 42px;
+  min-height: min(620px, calc(100svh - 150px));
+  padding: 30px 0 52px;
 }
 
 .home-hero-copy {
@@ -438,19 +441,19 @@ main {
 
 .home-hero h1 {
   margin: 8px 0 12px;
-  font-size: clamp(30px, 4.4vw, 54px);
-  line-height: 1.08;
+  font-size: clamp(28px, 3.4vw, 42px);
+  line-height: 1.12;
 }
 
 .home-hero p {
   margin: 0;
-  max-width: 460px;
-  font-size: clamp(15px, 1.5vw, 18px);
-  line-height: 1.7;
+  max-width: 400px;
+  font-size: clamp(14px, 1.25vw, 16px);
+  line-height: 1.65;
 }
 
 .home-hero-actions {
-  margin-top: 26px;
+  margin-top: 20px;
 }
 
 .hero-actions .home-record-button {
@@ -478,8 +481,8 @@ main {
 }
 
 .liaoning-unity-card {
-  min-height: 312px;
-  padding: 16px;
+  min-height: 372px;
+  padding: 18px;
   border: 2px solid rgba(255, 255, 255, 0.34);
   border-radius: 8px;
   background:
@@ -493,7 +496,7 @@ main {
 
 .liaoning-map-wrap {
   position: relative;
-  min-height: 280px;
+  min-height: 336px;
   overflow: visible;
   border: 2px solid rgba(255, 255, 255, 0.24);
   border-radius: 8px;
@@ -507,7 +510,7 @@ main {
 .liaoning-map {
   display: block;
   width: 100%;
-  height: 280px;
+  height: 336px;
 }
 
 .liaoning-admin-map {
@@ -4067,7 +4070,7 @@ textarea {
 }
 
 .page-hero.competition-page-hero {
-  width: min(860px, calc(100% - 36px));
+  width: min(var(--page-w), calc(100% - 36px));
 }
 
 .result-stats-grid {
@@ -4135,7 +4138,7 @@ textarea {
 }
 
 .competition-category-toggle {
-  grid-template-columns: repeat(5, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
 }
 
 .competition-filter-toggle button,
@@ -4428,7 +4431,7 @@ textarea {
     grid-template-columns: 1fr;
     gap: 24px;
     min-height: 0;
-    padding: 34px 0 36px;
+    padding: 34px 0 46px;
   }
 
   .home-hero-copy {
@@ -4451,16 +4454,16 @@ textarea {
 
 @media (max-width: 620px) {
   .hero-band {
-    padding: 10px 0 16px;
+    padding: 12px 0 28px;
   }
 
   .home-hero {
     width: min(var(--page-w), calc(100% - 28px));
-    padding: 26px 0 30px;
+    padding: 26px 0 36px;
   }
 
   .home-hero h1 {
-    font-size: 30px;
+    font-size: 28px;
   }
 
   .home-hero p {
@@ -4529,7 +4532,7 @@ textarea {
   }
 
   .competition-category-toggle {
-    grid-template-columns: repeat(5, minmax(62px, 1fr));
+    grid-template-columns: repeat(4, minmax(62px, 1fr));
     overflow-x: auto;
   }
 
@@ -5679,7 +5682,7 @@ textarea {
 }
 
 .judges-table {
-  min-width: 1120px;
+  min-width: 980px;
   table-layout: fixed;
 }
 
@@ -5748,9 +5751,7 @@ textarea {
 }
 
 .judges-table th:nth-child(2),
-.judges-table td:nth-child(2),
-.judges-table th:nth-child(3),
-.judges-table td:nth-child(3) {
+.judges-table td:nth-child(2) {
   text-align: left;
 }
 
@@ -5761,41 +5762,36 @@ textarea {
 
 .judges-table th:nth-child(2),
 .judges-table td:nth-child(2) {
-  width: 142px;
+  width: 112px;
 }
 
 .judges-table th:nth-child(3),
 .judges-table td:nth-child(3) {
-  width: 92px;
+  width: 54px;
 }
 
 .judges-table th:nth-child(4),
 .judges-table td:nth-child(4) {
-  width: 54px;
+  width: 108px;
 }
 
 .judges-table th:nth-child(5),
 .judges-table td:nth-child(5) {
-  width: 108px;
+  width: 134px;
 }
 
 .judges-table th:nth-child(6),
 .judges-table td:nth-child(6) {
-  width: 134px;
+  width: 144px;
 }
 
 .judges-table th:nth-child(7),
 .judges-table td:nth-child(7) {
-  width: 132px;
+  width: 190px;
 }
 
 .judges-table th:nth-child(8),
 .judges-table td:nth-child(8) {
-  width: 190px;
-}
-
-.judges-table th:nth-child(9),
-.judges-table td:nth-child(9) {
   width: 148px;
 }
 
@@ -6712,6 +6708,253 @@ textarea {
   gap: 30px;
 }
 
+.commercial-submission-panel {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  margin-bottom: 14px;
+  padding: 14px 16px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface);
+  box-shadow: var(--shadow-soft);
+}
+
+.commercial-submission-panel div {
+  display: grid;
+  gap: 3px;
+}
+
+.commercial-submission-panel strong {
+  color: var(--ink);
+  font-size: 16px;
+}
+
+.commercial-submission-panel span,
+.commercial-submission-status {
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.commercial-submission-status {
+  margin: 0 0 14px;
+}
+
+.commercial-submission-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 70;
+  display: grid;
+  place-items: center;
+  padding: 18px;
+  background: rgba(15, 23, 42, 0.46);
+}
+
+.commercial-submission-dialog {
+  display: grid;
+  gap: 14px;
+  width: min(720px, 100%);
+  max-height: min(760px, calc(100vh - 36px));
+  overflow: auto;
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface);
+  box-shadow: 0 26px 70px rgba(15, 23, 42, 0.26);
+}
+
+.commercial-submission-dialog-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.commercial-submission-dialog-head div {
+  display: grid;
+  gap: 3px;
+}
+
+.commercial-submission-dialog-head strong {
+  color: var(--ink);
+  font-size: 18px;
+}
+
+.commercial-submission-dialog-head span {
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.commercial-submission-form {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.commercial-submission-form label,
+.commercial-review-field {
+  display: grid;
+  gap: 6px;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 760;
+}
+
+.commercial-submission-form input,
+.commercial-submission-form select,
+.commercial-submission-form textarea,
+.commercial-review-field textarea {
+  width: 100%;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 9px 10px;
+  background: var(--surface);
+  color: var(--ink);
+  font: inherit;
+  font-size: 13px;
+}
+
+.commercial-submission-form textarea,
+.commercial-review-field textarea {
+  min-height: 94px;
+  resize: vertical;
+  line-height: 1.55;
+}
+
+.commercial-submission-wide {
+  grid-column: 1 / -1;
+}
+
+.commercial-submission-actions,
+.commercial-review-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.commercial-review-console {
+  display: grid;
+  gap: 16px;
+}
+
+.commercial-review-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.commercial-review-tabs {
+  display: inline-grid;
+  grid-template-columns: repeat(4, minmax(90px, 1fr));
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface);
+}
+
+.commercial-review-tabs button {
+  min-height: 38px;
+  border: 0;
+  border-right: 1px solid var(--line);
+  background: transparent;
+  color: var(--text-body);
+  cursor: pointer;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 780;
+}
+
+.commercial-review-tabs button:last-child {
+  border-right: 0;
+}
+
+.commercial-review-tabs button.active {
+  background: var(--blue);
+  color: #fff;
+}
+
+.commercial-review-status {
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.commercial-review-list {
+  display: grid;
+  gap: 14px;
+}
+
+.commercial-review-card {
+  display: grid;
+  gap: 12px;
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface);
+  box-shadow: var(--shadow-soft);
+}
+
+.commercial-review-card header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.commercial-review-card header div {
+  display: grid;
+  gap: 4px;
+}
+
+.commercial-review-card h2 {
+  margin: 0;
+  color: var(--ink);
+  font-size: 20px;
+}
+
+.commercial-review-card p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.commercial-review-badge {
+  width: fit-content;
+  padding: 3px 7px;
+  border-radius: 999px;
+  background: #eef4ff;
+  color: #1f4c9a;
+  font-size: 12px;
+  font-weight: 850;
+}
+
+.commercial-review-badge.status-approved {
+  background: #e7f8ed;
+  color: #166534;
+}
+
+.commercial-review-badge.status-rejected {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.commercial-review-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.commercial-review-meta span {
+  padding: 4px 7px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--soft);
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 760;
+}
+
 .commercial-edit-toolbar {
   display: flex;
   align-items: center;
@@ -7006,10 +7249,7 @@ a.commercial-member-link:hover {
 
 .commercial-member-bio {
   margin: 0;
-  display: -webkit-box;
-  overflow: hidden;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 2;
+  overflow: visible;
   font-size: 13px;
   line-height: 1.65;
   color: var(--muted);
@@ -7400,7 +7640,7 @@ a.commercial-member-link:hover {
   }
 
   .competition-category-toggle {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: repeat(4, minmax(0, 1fr));
   }
 
   .weekly-list {
@@ -7699,8 +7939,8 @@ a.commercial-member-link:hover {
 
   .judges-table {
     display: table;
-    min-width: 1060px;
-    width: 1060px;
+    min-width: 930px;
+    width: 930px;
     table-layout: fixed;
   }
 
@@ -7739,9 +7979,7 @@ a.commercial-member-link:hover {
   }
 
   .judges-table th:nth-child(2),
-  .judges-table td:nth-child(2),
-  .judges-table th:nth-child(3),
-  .judges-table td:nth-child(3) {
+  .judges-table td:nth-child(2) {
     text-align: left;
   }
 
@@ -7752,22 +7990,22 @@ a.commercial-member-link:hover {
 
   .judges-table th:nth-child(2),
   .judges-table td:nth-child(2) {
-    width: 136px;
+    width: 104px;
   }
 
   .judges-table th:nth-child(3),
   .judges-table td:nth-child(3) {
-    width: 90px;
+    width: 52px;
   }
 
   .judges-table th:nth-child(4),
   .judges-table td:nth-child(4) {
-    width: 52px;
+    width: 105px;
   }
 
   .judges-table th:nth-child(5),
   .judges-table td:nth-child(5) {
-    width: 105px;
+    width: 138px;
   }
 
   .judges-table th:nth-child(6),
@@ -7777,11 +8015,6 @@ a.commercial-member-link:hover {
 
   .judges-table th:nth-child(7),
   .judges-table td:nth-child(7) {
-    width: 138px;
-  }
-
-  .judges-table th:nth-child(8),
-  .judges-table td:nth-child(8) {
     width: 200px;
   }
 
@@ -8128,7 +8361,6 @@ a.commercial-member-link:hover {
   }
 
   .commercial-member-bio {
-    -webkit-line-clamp: 2;
     font-size: 12px;
     line-height: 1.55;
   }
@@ -8829,7 +9061,7 @@ a.commercial-member-link:hover {
   }
 
   .competition-category-toggle {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: repeat(4, minmax(0, 1fr));
   }
 
   .national-stop-grid,

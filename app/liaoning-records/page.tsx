@@ -160,9 +160,7 @@ export default async function LiaoningRecordsPage({
         className="ranking-page-hero local-ranking-page-hero"
         label="本地省市归属"
         title="辽宁纪录"
-      >
-        展示辽宁选手各项目当前最好单次与平均。
-      </PageHero>
+      />
 
       <section className="container section local-rankings-section liaoning-records-section">
         <nav className="liaoning-record-gender-tabs" aria-label="辽宁纪录分类">

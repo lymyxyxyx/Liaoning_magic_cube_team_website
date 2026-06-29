@@ -23,8 +23,8 @@ export default async function HomePage() {
         <section className="home-hero animate-in">
           <div className="home-hero-copy">
             <span className="eyebrow">辽宁魔方</span>
-            <h1>辽宁地区魔方信息查询网</h1>
-            <p>连接辽宁各城市魔方选手，查询排名、纪录、赛事与档案。</p>
+            <h1>辽宁魔方信息库</h1>
+            <p>排名、纪录、赛事与选手档案，一站查询。</p>
             <div className="hero-actions home-hero-actions">
               <Link className="button primary" href="/liaoning-rankings">
                 辽宁排名
@@ -33,7 +33,7 @@ export default async function HomePage() {
                 辽宁纪录
               </Link>
               <Link className="button home-competition-button" href="/liaoning-competitions">
-                辽宁选手参赛纪录
+                辽宁选手参赛记录
               </Link>
             </div>
           </div>

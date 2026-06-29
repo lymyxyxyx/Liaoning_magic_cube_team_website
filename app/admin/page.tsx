@@ -28,6 +28,11 @@ const adminCards = [
     description: "管理周赛设置和历史数据；日常录成绩统一使用前台立即参加入口。"
   },
   {
+    title: "成员简介审核",
+    href: "/admin/commercial-submissions",
+    description: "审核选手、家长或老师提交的战队成员简介补充与更正。"
+  },
+  {
     title: "比赛账单",
     href: "/admin/accounts",
     description: "管理单场比赛收入、支出、分类小计和结余。"

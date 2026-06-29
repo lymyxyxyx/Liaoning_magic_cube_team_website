@@ -73,7 +73,7 @@ export default function NationalEventsPage() {
           </Link>
         }
       >
-        2026年巡回赛暨段级位积分赛由7场分站赛与1场总决赛组成，本站先整理竞赛总规程摘要、最新赛历、项目组别、参赛办法与奖励规则，后续可继续补充各站通知和辽宁选手参赛纪录。
+        2026年巡回赛暨段级位积分赛由7场分站赛与1场总决赛组成，本站先整理竞赛总规程摘要、最新赛历、项目组别、参赛办法与奖励规则，后续可继续补充各站通知和辽宁选手参赛记录。
       </PageHero>
 
       <section className="container section national-topic-section">

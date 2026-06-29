@@ -1,6 +1,6 @@
 "use client";
 
-import { Edit3, GripVertical, Plus, Save, Trash2, X } from "lucide-react";
+import { GripVertical, Plus, Save, Trash2, X } from "lucide-react";
 import { type DragEvent, useMemo, useState } from "react";
 import {
   judgeGenders,
@@ -292,8 +292,8 @@ export function JudgesClient({ initialJudges }: Props) {
           <span className="eyebrow">在线表格</span>
           <h2>裁判员信息</h2>
         </div>
-        <div className="judges-toolbar-actions">
-          {canEdit ? (
+        {canEdit ? (
+          <div className="judges-toolbar-actions">
             <>
               <button className="button primary" type="button" onClick={() => setIsCreating(true)}>
                 <Plus size={16} />
@@ -304,13 +304,8 @@ export function JudgesClient({ initialJudges }: Props) {
                 退出编辑
               </button>
             </>
-          ) : (
-            <button className="button primary" type="button" onClick={enterEditMode}>
-              <Edit3 size={16} />
-              编辑
-            </button>
-          )}
-        </div>
+          </div>
+        ) : null}
       </div>
 
       {notice ? <p className="judges-notice">{notice}</p> : null}
@@ -407,7 +402,6 @@ export function JudgesClient({ initialJudges }: Props) {
           <thead>
             <tr>
               <th>序号</th>
-              <th>编号</th>
               <th>姓名</th>
               <th>性别</th>
               <th>地区</th>
@@ -420,7 +414,7 @@ export function JudgesClient({ initialJudges }: Props) {
           <tbody>
             {sortedJudges.length === 0 ? (
               <tr>
-                <td colSpan={canEdit ? 9 : 8}>暂无裁判员信息{canEdit ? "，请点击右上角新建。" : "。"}</td>
+                <td colSpan={canEdit ? 8 : 7}>暂无裁判员信息{canEdit ? "，请点击右上角新建。" : "。"}</td>
               </tr>
             ) : (
               sortedJudges.map((judge, index) => {
@@ -461,9 +455,6 @@ export function JudgesClient({ initialJudges }: Props) {
                     </td>
                     {isEditing && editDraft ? (
                       <>
-                        <td data-label="编号">
-                          <input value={editDraft.number || ""} onChange={(e) => updateEditDraft({ number: e.target.value })} placeholder="可选" />
-                        </td>
                         <td data-label="姓名">
                           <input value={editDraft.name} onChange={(e) => updateEditDraft({ name: e.target.value })} />
                         </td>
@@ -512,7 +503,6 @@ export function JudgesClient({ initialJudges }: Props) {
                       </>
                     ) : (
                       <>
-                        <td data-label="编号">{judge.number || "-"}</td>
                         <td data-label="姓名">{judge.name}</td>
                         <td data-label="性别">{judge.gender}</td>
                         <td data-label="地区">

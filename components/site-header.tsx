@@ -16,7 +16,7 @@ const navItems: NavItem[] = [
   { href: "/liaoning-records", label: "辽宁纪录" },
   { href: "/rankings", label: "WCA排名" },
   { href: "/competitions", label: "赛事列表" },
-  { href: "/liaoning-competitions", label: "辽宁选手参赛纪录" },
+  { href: "/liaoning-competitions", label: "辽宁选手参赛记录" },
   { href: "/judges", label: "裁判信息" },
   { href: "/commercial-teams", label: "战队成员" }
 ];
