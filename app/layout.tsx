@@ -55,7 +55,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             <nav className="footer-nav" aria-label="底部导航">
               <Link href="/liaoning-rankings">辽宁排名</Link>
               <Link href="/competitions">赛事记录</Link>
-              <Link href="/judges">裁判信息</Link>
+              <Link href="/judges">裁判员</Link>
               <Link href="/about">关于本站</Link>
               <Link href="/privacy">隐私说明</Link>
             </nav>

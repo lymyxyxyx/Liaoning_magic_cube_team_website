@@ -7,14 +7,14 @@ export default function AdminRankingFeedbackPage() {
     <>
       <PageHero
         label="后台管理"
-        title="辽宁排名说明与反馈"
+        title="信息反馈接收"
         actions={
           <Link className="button" href="/admin">
             返回后台首页
           </Link>
         }
       >
-        维护辽宁排名认定口径，并处理名单、成绩和页面反馈。
+        处理关于本站提交的信息更正、隐藏删除、补充资料和页面问题。
       </PageHero>
       <RankingFeedbackConsole />
     </>

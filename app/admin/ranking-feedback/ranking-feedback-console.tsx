@@ -63,8 +63,8 @@ export function RankingFeedbackConsole() {
     <section className="container section admin-console-shell">
       <div className="admin-workspace-heading">
         <div>
-          <h1>辽宁排名认定说明</h1>
-          <p>这部分先放在后台维护，前台排名页只保留筛选和名单。</p>
+          <h1>反馈处理</h1>
+          <p>关于本站表单提交的反馈会进入下方列表；排名认定口径暂放在本页备查。</p>
         </div>
         <span className="status">{feedbackStatus}</span>
       </div>
@@ -81,8 +81,8 @@ export function RankingFeedbackConsole() {
       <div className="admin-card admin-feedback-card">
         <div className="admin-card-heading">
           <div>
-            <h2>名单反馈</h2>
-            <p>免登录表单提交的名单、成绩和页面问题会汇总在这里。</p>
+            <h2>信息反馈接收</h2>
+            <p>关于本站表单提交的更正、隐藏、补充和页面问题会汇总在这里。</p>
           </div>
           <span className="admin-local-count">{feedbackMessages.length} 条</span>
         </div>

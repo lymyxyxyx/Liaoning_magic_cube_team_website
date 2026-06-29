@@ -149,6 +149,8 @@ main {
   grid-template-columns: auto 1fr auto;
   gap: 24px;
   align-items: center;
+  min-height: 74px;
+  box-sizing: border-box;
   padding: 14px clamp(18px, 5vw, 64px);
   border-bottom: 1px solid rgba(217, 226, 238, 0.92);
   background: var(--header-bg);
@@ -190,7 +192,15 @@ main {
   display: flex;
   gap: 4px;
   justify-content: center;
-  flex-wrap: wrap;
+  min-width: 0;
+  overflow-x: auto;
+  overflow-y: hidden;
+  flex-wrap: nowrap;
+  scrollbar-width: none;
+}
+
+.main-nav::-webkit-scrollbar {
+  display: none;
 }
 
 .header-actions {
@@ -224,6 +234,7 @@ main {
 
 .main-nav a,
 .nav-dropdown summary {
+  flex: 0 0 auto;
   padding: 0 10px;
   font-weight: 550;
 }
@@ -426,8 +437,8 @@ main {
   position: relative;
   z-index: 1;
   display: grid;
-  grid-template-columns: minmax(0, 0.82fr) minmax(420px, 1.18fr);
-  gap: 34px;
+  grid-template-columns: minmax(0, 0.72fr) minmax(480px, 1.28fr);
+  gap: 30px;
   align-items: center;
   width: min(var(--page-w), calc(100% - 36px));
   margin: 0 auto;
@@ -481,41 +492,39 @@ main {
 }
 
 .liaoning-unity-card {
-  min-height: 372px;
-  padding: 18px;
-  border: 2px solid rgba(255, 255, 255, 0.34);
+  min-height: 422px;
+  padding: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.26);
   border-radius: 8px;
   background:
-    linear-gradient(145deg, rgba(255, 255, 255, 0.2), rgba(255, 255, 255, 0.08)),
-    rgba(255, 255, 255, 0.11);
-  box-shadow:
-    0 24px 54px rgba(6, 15, 32, 0.2),
-    inset 0 1px 0 rgba(255, 255, 255, 0.32);
+    linear-gradient(145deg, rgba(125, 219, 255, 0.18), rgba(145, 240, 207, 0.1)),
+    rgba(13, 35, 70, 0.16);
+  box-shadow: 0 18px 42px rgba(6, 15, 32, 0.18);
   backdrop-filter: blur(12px);
 }
 
 .liaoning-map-wrap {
   position: relative;
-  min-height: 336px;
+  min-height: 394px;
   overflow: visible;
-  border: 2px solid rgba(255, 255, 255, 0.24);
+  border: 1px solid rgba(255, 255, 255, 0.18);
   border-radius: 8px;
   background:
-    radial-gradient(circle at 17% 18%, rgba(255, 232, 119, 0.34), transparent 18%),
-    radial-gradient(circle at 78% 78%, rgba(255, 142, 142, 0.28), transparent 24%),
-    radial-gradient(circle at 38% 38%, rgba(119, 234, 205, 0.24), transparent 42%),
-    linear-gradient(145deg, rgba(255, 255, 255, 0.2), rgba(218, 236, 255, 0.1));
+    radial-gradient(circle at 18% 18%, rgba(255, 232, 119, 0.24), transparent 18%),
+    radial-gradient(circle at 80% 80%, rgba(255, 142, 142, 0.2), transparent 24%),
+    radial-gradient(circle at 42% 40%, rgba(119, 234, 205, 0.2), transparent 42%),
+    linear-gradient(145deg, rgba(28, 79, 132, 0.28), rgba(14, 42, 82, 0.1));
 }
 
 .liaoning-map {
   display: block;
   width: 100%;
-  height: 336px;
+  height: 394px;
 }
 
 .liaoning-admin-map {
-  padding: 8px;
-  filter: drop-shadow(0 14px 20px rgba(8, 20, 42, 0.18));
+  padding: 2px;
+  filter: none;
 }
 
 .liaoning-map-confetti rect,
@@ -4179,32 +4188,32 @@ textarea {
 
 .liaoning-competitions-section {
   display: grid;
-  gap: 14px;
+  gap: 10px;
 }
 
 .liaoning-competition-overview {
   display: grid;
   grid-template-columns: minmax(280px, 0.9fr) minmax(560px, 1.4fr);
-  gap: 16px;
-  padding: 18px;
+  gap: 12px;
+  padding: 14px;
   border: 1px solid var(--line);
-  border-radius: 12px;
+  border-radius: 8px;
   background: linear-gradient(135deg, color-mix(in srgb, var(--blue) 8%, var(--surface)), var(--surface) 60%);
   box-shadow: var(--shadow-soft);
 }
 
 .liaoning-competition-intro h2 {
-  margin: 6px 0 8px;
-  font-size: clamp(20px, 2.1vw, 28px);
-  line-height: 1.18;
+  margin: 4px 0 6px;
+  font-size: clamp(19px, 1.8vw, 24px);
+  line-height: 1.16;
 }
 
 .liaoning-competition-intro p {
   max-width: 620px;
   margin: 0;
   color: var(--muted);
-  font-size: 13px;
-  line-height: 1.6;
+  font-size: 12px;
+  line-height: 1.5;
 }
 
 .liaoning-competition-stats {
@@ -4216,16 +4225,16 @@ textarea {
 .liaoning-competition-stat {
   display: grid;
   align-content: center;
-  min-height: 92px;
-  padding: 12px;
+  min-height: 76px;
+  padding: 9px 10px;
   border: 1px solid color-mix(in srgb, var(--blue) 14%, var(--line));
-  border-radius: 10px;
+  border-radius: 8px;
   background: color-mix(in srgb, var(--surface) 92%, transparent);
 }
 
 .liaoning-competition-stat svg,
 .liaoning-competition-stat-mark {
-  margin-bottom: 6px;
+  margin-bottom: 4px;
   color: var(--blue);
 }
 
@@ -4244,7 +4253,7 @@ textarea {
 .liaoning-competition-stat strong {
   margin-top: 2px;
   color: var(--ink);
-  font-size: 23px;
+  font-size: 20px;
   line-height: 1.15;
   font-variant-numeric: tabular-nums;
 }
@@ -4257,8 +4266,8 @@ textarea {
   display: grid;
   grid-template-columns: minmax(280px, 1fr) 160px auto;
   align-items: flex-end;
-  gap: 10px;
-  padding: 12px 14px;
+  gap: 8px;
+  padding: 10px 12px;
   border-bottom: 1px solid var(--line);
   background: var(--surface);
 }
@@ -4266,9 +4275,9 @@ textarea {
 .liaoning-competition-search {
   display: flex;
   align-items: center;
-  gap: 7px;
-  min-height: 36px;
-  padding: 0 10px;
+  gap: 6px;
+  min-height: 32px;
+  padding: 0 9px;
   border: 1px solid var(--line);
   border-radius: 8px;
   color: var(--muted);
@@ -4302,8 +4311,8 @@ textarea {
 }
 
 .liaoning-competition-year select {
-  min-height: 36px;
-  padding: 0 10px;
+  min-height: 32px;
+  padding: 0 9px;
   border: 1px solid var(--line);
   border-radius: 8px;
   background: var(--surface);
@@ -4313,7 +4322,7 @@ textarea {
 }
 
 .liaoning-competition-result-count {
-  padding: 0 2px 8px;
+  padding: 0 2px 7px;
   color: var(--muted);
   font-size: 12px;
   white-space: nowrap;
@@ -4325,8 +4334,8 @@ textarea {
 }
 
 .liaoning-competition-list-count {
-  padding-top: 6px;
-  padding-bottom: 6px;
+  padding-top: 5px;
+  padding-bottom: 5px;
   background: var(--surface-2);
 }
 
@@ -4338,14 +4347,14 @@ textarea {
 .liaoning-competition-table th {
   text-transform: none;
   font-size: 10px;
-  padding-top: 7px;
-  padding-bottom: 7px;
+  padding-top: 6px;
+  padding-bottom: 6px;
 }
 
 .liaoning-competition-table td {
-  padding-top: 7px;
-  padding-bottom: 7px;
-  line-height: 1.35;
+  padding-top: 5px;
+  padding-bottom: 5px;
+  line-height: 1.3;
 }
 
 .liaoning-competition-table td:nth-child(2) {
@@ -4378,8 +4387,8 @@ textarea {
 
 .liaoning-competition-name {
   color: var(--ink);
-  font-size: 13px;
-  line-height: 1.35;
+  font-size: 12.5px;
+  line-height: 1.28;
 }
 
 .liaoning-competition-table .competition-name-en {
@@ -4391,7 +4400,7 @@ textarea {
 
 .liaoning-player-count {
   display: inline-flex;
-  padding: 3px 7px;
+  padding: 2px 6px;
   border-radius: 999px;
   background: color-mix(in srgb, var(--blue) 9%, var(--surface));
   color: var(--blue);
@@ -4403,12 +4412,12 @@ textarea {
 .liaoning-player-list {
   display: flex;
   flex-wrap: wrap;
-  gap: 4px;
+  gap: 3px;
 }
 
 .liaoning-player-list span {
   display: inline-flex;
-  padding: 2px 5px;
+  padding: 1px 4px;
   border: 1px solid var(--line);
   border-radius: 6px;
   background: var(--surface);
@@ -4482,16 +4491,16 @@ textarea {
   }
 
   .liaoning-unity-card {
-    padding: 12px;
-    min-height: 248px;
+    padding: 10px;
+    min-height: 286px;
   }
 
   .liaoning-map-wrap {
-    min-height: 232px;
+    min-height: 266px;
   }
 
   .liaoning-map {
-    height: 232px;
+    height: 266px;
   }
 
   .home-map-stats-trigger {
@@ -4543,39 +4552,54 @@ textarea {
   }
 
   .liaoning-competitions-section {
-    gap: 12px;
+    gap: 10px;
   }
 
   .liaoning-competition-overview {
-    gap: 16px;
-    padding: 16px;
+    gap: 12px;
+    padding: 12px;
   }
 
   .liaoning-competition-intro h2 {
-    font-size: 22px;
+    margin-bottom: 5px;
+    font-size: 20px;
   }
 
   .liaoning-competition-intro p {
-    font-size: 13px;
-    line-height: 1.65;
+    font-size: 12px;
+    line-height: 1.5;
   }
 
   .liaoning-competition-stats {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 5px;
   }
 
   .liaoning-competition-stat {
-    min-height: 96px;
-    padding: 12px;
+    min-height: 62px;
+    padding: 7px 5px;
   }
 
   .liaoning-competition-stat strong {
-    font-size: 23px;
+    font-size: 17px;
+  }
+
+  .liaoning-competition-stat strong.liaoning-competition-year-range {
+    font-size: 11px;
+  }
+
+  .liaoning-competition-stat span:nth-child(2) {
+    font-size: 10px;
   }
 
   .liaoning-competition-toolbar {
-    grid-template-columns: 1fr;
-    padding: 12px;
+    grid-template-columns: minmax(0, 1fr) 106px;
+    padding: 10px;
+  }
+
+  .liaoning-competition-result-count {
+    grid-column: 1 / -1;
+    padding: 0;
   }
 
   .liaoning-competition-result-count {
@@ -6250,6 +6274,21 @@ textarea {
   color: var(--blue);
   font-size: 11px;
   font-weight: 680;
+}
+
+.wca-ranking-results-table .liaoning-record-badge {
+  min-width: 36px;
+  height: 21px;
+  margin-right: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.72);
+  background: linear-gradient(135deg, #ff5a3d, #ff9f1c);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 0;
+  box-shadow:
+    0 0 0 2px rgba(255, 159, 28, 0.16),
+    0 6px 14px rgba(180, 54, 25, 0.22);
 }
 
 .liaoning-record-person {
@@ -8250,10 +8289,12 @@ a.commercial-member-link:hover {
   }
 
   .ranking-results-section .wca-ranking-results-table .liaoning-record-badge {
+    min-width: 30px;
+    height: 18px;
     margin-right: 4px;
-    padding: 1px 4px;
+    padding: 1px 5px;
     font-size: 10px;
-    font-weight: 650;
+    font-weight: 900;
   }
 
   .ranking-results-section .wca-ranking-results-table .ranking-person-name {

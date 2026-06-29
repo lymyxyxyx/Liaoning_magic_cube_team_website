@@ -20,6 +20,11 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ message: "Invalid feedback" }, { status: 400 });
   }
 
+  const name = cleanText(payload.name, 80);
+  if (!name) {
+    return NextResponse.json({ message: "请填写姓名" }, { status: 400 });
+  }
+
   const message = cleanText(payload.message, 1200);
   if (message.length < 4) {
     return NextResponse.json({ message: "请填写反馈内容" }, { status: 400 });
@@ -31,8 +36,8 @@ export async function POST(request: NextRequest) {
   }
 
   const id = await createFeedbackMessage({
-    type: allowedTypes.has(payload.type || "") ? payload.type || "名单反馈" : "其他",
-    name: cleanText(payload.name, 80),
+    type: allowedTypes.has(payload.type || "") ? payload.type || "其他" : "其他",
+    name,
     wcaId,
     contact: cleanText(payload.contact, 120),
     message,

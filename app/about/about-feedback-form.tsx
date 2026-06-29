@@ -12,6 +12,15 @@ export function AboutFeedbackForm() {
     event.preventDefault();
     const form = event.currentTarget;
     const formData = new FormData(form);
+    const name = String(formData.get("name") || "").trim();
+    const message = String(formData.get("message") || "").trim();
+
+    if (!name || message.length < 4) {
+      setStatus("error");
+      setNotice(!name ? "请填写姓名。" : "请填写反馈内容，至少 4 个字。");
+      return;
+    }
+
     setStatus("submitting");
     setNotice("");
 
@@ -20,10 +29,10 @@ export function AboutFeedbackForm() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         type: formData.get("type"),
-        name: formData.get("name"),
+        name,
         wcaId: formData.get("wcaId"),
         contact: formData.get("contact"),
-        message: formData.get("message"),
+        message,
         website: formData.get("website"),
         pageUrl: window.location.href
       })
@@ -45,8 +54,9 @@ export function AboutFeedbackForm() {
   return (
     <form className="local-contact-box" onSubmit={handleSubmit}>
       <label className="field">
-        反馈类型
-        <select name="type" defaultValue="信息更正">
+        反馈类型（选填）
+        <select name="type" defaultValue="">
+          <option value="">请选择</option>
           {feedbackTypes.map((type) => (
             <option key={type} value={type}>
               {type}
@@ -56,20 +66,20 @@ export function AboutFeedbackForm() {
       </label>
       <div className="form-grid">
         <label className="field">
-          姓名
-          <input name="name" placeholder="可填写本人或相关选手姓名" />
+          姓名（必填）
+          <input name="name" required placeholder="本人或相关选手姓名" />
         </label>
         <label className="field">
-          WCA ID
+          WCA ID（选填）
           <input name="wcaId" placeholder="如 2019XXXX01，可留空" />
         </label>
       </div>
       <label className="field">
-        联系方式
+        联系方式（选填）
         <input name="contact" placeholder="微信、邮箱或其他方便联系的方式" />
       </label>
       <label className="field">
-        反馈内容
+        反馈内容（必填）
         <textarea name="message" minLength={4} required placeholder="请说明需要更正、隐藏、删除或补充的内容，以及对应页面或资料来源。" />
       </label>
       <label className="feedback-honeypot" aria-hidden="true">
