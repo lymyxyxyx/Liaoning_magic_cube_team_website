@@ -18,6 +18,11 @@ const adminCards = [
     description: "查看并处理关于本站提交的信息更正、隐藏删除、补充资料和页面问题。"
   },
   {
+    title: "访问统计",
+    href: "/admin/analytics",
+    description: "查看本站访问人次、最近趋势和热门页面，仅后台可见。"
+  },
+  {
     title: "周赛选手库",
     href: "/admin/weekly-player-library",
     description: "维护周赛录入使用的选手资料、生日和自动组别。"

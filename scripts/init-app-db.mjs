@@ -166,6 +166,20 @@ async function main() {
       )
     `);
 
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS page_views (
+        id BIGSERIAL PRIMARY KEY,
+        path TEXT NOT NULL,
+        referrer TEXT NOT NULL DEFAULT '',
+        user_agent TEXT NOT NULL DEFAULT '',
+        device_type TEXT NOT NULL DEFAULT 'unknown',
+        created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+      )
+    `);
+
+    await client.query("CREATE INDEX IF NOT EXISTS page_views_created_at_idx ON page_views (created_at)");
+    await client.query("CREATE INDEX IF NOT EXISTS page_views_path_idx ON page_views (path)");
+
     // Admin-curated JSON datasets (judges, coaches, local profiles).
     // PostgreSQL is the source of truth; the data/*.json mirror is a fallback.
     await client.query(`

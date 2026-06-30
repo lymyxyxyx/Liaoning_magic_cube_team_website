@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { GeistSans } from "geist/font/sans";
+import { AnalyticsTracker } from "@/components/analytics-tracker";
 import { SiteHeader } from "@/components/site-header";
 import "./globals.css";
 
@@ -44,6 +45,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="zh-CN">
       <body className={GeistSans.className}>
+        <AnalyticsTracker />
         <SiteHeader />
         <main>{children}</main>
         <footer className="site-footer">
