@@ -833,6 +833,24 @@ main {
   font-variant-numeric: tabular-nums;
 }
 
+@media (min-width: 981px) {
+  .home-hero {
+    grid-template-columns: minmax(0, 0.64fr) minmax(540px, 1.36fr);
+  }
+
+  .liaoning-unity-card {
+    min-height: 464px;
+  }
+
+  .liaoning-map-wrap {
+    min-height: 436px;
+  }
+
+  .liaoning-map {
+    height: 436px;
+  }
+}
+
 .hero-copy h1,
 .page-hero h1 {
   margin: 10px 0 14px;
@@ -1795,6 +1813,7 @@ main {
 .analytics-dashboard {
   display: grid;
   gap: 18px;
+  font-size: 13px;
 }
 
 .analytics-metric-grid {
@@ -1810,11 +1829,11 @@ main {
 
 .analytics-metric-card span {
   color: var(--muted);
-  font-size: 14px;
+  font-size: 12px;
 }
 
 .analytics-metric-card strong {
-  font-size: clamp(28px, 4vw, 42px);
+  font-size: clamp(24px, 3.4vw, 36px);
   line-height: 1;
 }
 
@@ -1835,7 +1854,7 @@ main {
   gap: 12px;
   align-items: center;
   color: var(--muted);
-  font-size: 14px;
+  font-size: 13px;
 }
 
 .analytics-bar-row div {
