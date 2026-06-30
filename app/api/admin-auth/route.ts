@@ -82,8 +82,8 @@ async function readAuthPayload(request: NextRequest) {
 }
 
 function getSafeNextPath(value: string | null) {
-  if (!value || !value.startsWith("/") || value.startsWith("//")) return "/admin/accounts";
-  if (value.startsWith("/admin/login")) return "/admin/accounts";
+  if (!value || !value.startsWith("/") || value.startsWith("//")) return "/admin";
+  if (value.startsWith("/admin/login")) return "/admin";
   return value;
 }
 
