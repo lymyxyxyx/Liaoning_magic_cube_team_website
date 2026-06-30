@@ -112,6 +112,20 @@ export const commercialTeamMembers: Person[] = [
     wcaUrl: "https://cubing.com/results/person/2019GAOY03"
   },
   {
+    id: "ct-gao-yu-chen",
+    slug: "gao-yu-chen",
+    name: "高雨宸",
+    avatar: "/visuals/avatar-default.svg",
+    roles: ["运动员"],
+    city: "大连",
+    gender: "男",
+    bio: "主修三速，三单",
+    visible: true,
+    mainEvent: "三阶速拧",
+    wcaId: "2025GAOY04",
+    wcaUrl: "https://cubing.com/results/person/2025GAOY04"
+  },
+  {
     id: "ct-zheng-ming-zhu",
     slug: "zheng-ming-zhu",
     name: "郑名竹",
@@ -509,7 +523,7 @@ export const commercialTeams: CommercialTeam[] = [
     brandUrl: "https://www.gancube.com",
     description: "Speed ACE（宇宙爆速社）是 GANCUBE 旗下面向青少年的梯队体系，分为领航队和启航队。领航队汇聚省内成绩突出的青少年选手，多人已在 WCA 赛事中取得优异名次。",
     members: commercialTeamMembers.filter(m =>
-      ["高云淼", "郑名竹", "张涵涤", "夏紫晨", "徐雅芊", "李祐萱", "韩沐遥"].includes(m.name)
+      ["高云淼", "高雨宸", "郑名竹", "张涵涤", "夏紫晨", "徐雅芊", "李祐萱", "韩沐遥"].includes(m.name)
     )
   },
   {
