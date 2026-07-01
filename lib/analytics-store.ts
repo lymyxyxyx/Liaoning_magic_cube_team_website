@@ -153,7 +153,7 @@ export async function getAnalyticsSummary(): Promise<AnalyticsSummary> {
     dailyViews: dailyViews.rows.map((row) => ({ date: row.date, views: toNumber(row.views) })),
     recentViews: recentViews.rows.map((row) => ({
       path: row.path,
-      visitorIp: row.visitor_ip || "未知",
+      visitorIp: row.visitor_ip || "未记录",
       deviceType: row.device_type || "unknown",
       createdAt: row.created_at
     }))

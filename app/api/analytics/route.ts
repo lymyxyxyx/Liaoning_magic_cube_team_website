@@ -21,12 +21,17 @@ export async function POST(request: NextRequest) {
 
 function getClientIp(request: NextRequest) {
   const forwardedFor = request.headers.get("x-forwarded-for");
-  if (forwardedFor) return forwardedFor.split(",")[0]?.trim() || "";
+  const forwardedIp = forwardedFor
+    ?.split(",")
+    .map((value) => value.trim())
+    .find((value) => value && value.toLowerCase() !== "unknown");
 
   return (
+    forwardedIp ||
     request.headers.get("x-real-ip") ||
     request.headers.get("cf-connecting-ip") ||
     request.headers.get("true-client-ip") ||
+    request.ip ||
     ""
   );
 }
