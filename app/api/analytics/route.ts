@@ -9,11 +9,24 @@ export async function POST(request: NextRequest) {
     await recordPageView({
       path: payload.path,
       referrer: payload.referrer || "",
-      userAgent: request.headers.get("user-agent") || ""
+      userAgent: request.headers.get("user-agent") || "",
+      visitorIp: getClientIp(request)
     });
   } catch {
     // Analytics must never break the public site.
   }
 
   return new NextResponse(null, { status: 204 });
+}
+
+function getClientIp(request: NextRequest) {
+  const forwardedFor = request.headers.get("x-forwarded-for");
+  if (forwardedFor) return forwardedFor.split(",")[0]?.trim() || "";
+
+  return (
+    request.headers.get("x-real-ip") ||
+    request.headers.get("cf-connecting-ip") ||
+    request.headers.get("true-client-ip") ||
+    ""
+  );
 }

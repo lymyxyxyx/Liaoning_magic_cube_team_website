@@ -1892,6 +1892,48 @@ main {
   color: var(--ink);
 }
 
+.analytics-visit-list {
+  display: grid;
+  gap: 0;
+  overflow-x: auto;
+}
+
+.analytics-visit-row {
+  display: grid;
+  grid-template-columns: 148px 150px 82px minmax(220px, 1fr);
+  gap: 14px;
+  align-items: center;
+  min-width: 680px;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--line);
+  color: var(--muted);
+}
+
+.analytics-visit-row:last-child {
+  border-bottom: 0;
+}
+
+.analytics-visit-row span,
+.analytics-visit-row strong {
+  overflow-wrap: anywhere;
+}
+
+.analytics-visit-row strong {
+  color: var(--ink);
+  font-weight: 700;
+}
+
+.analytics-visit-row--head {
+  padding-top: 4px;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.analytics-visit-row--head span {
+  color: inherit;
+}
+
 @media (max-width: 760px) {
   .analytics-metric-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));

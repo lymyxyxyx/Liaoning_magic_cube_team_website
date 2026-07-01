@@ -25,7 +25,7 @@ export default async function AdminAnalyticsPage() {
           </Link>
         }
       >
-        查看本站访问人次、最近趋势和热门页面。统计仅在后台展示。
+        查看本站访问人次、最近趋势、热门页面和最近访问 IP。统计仅在后台展示。
       </PageHero>
       <section className="container section admin-console-shell">
         {summary ? <AnalyticsDashboard summary={summary} /> : <p className="admin-inline-notice">{error}</p>}
@@ -95,6 +95,35 @@ function AnalyticsDashboard({ summary }: { summary: AnalyticsSummary }) {
           )}
         </article>
       </div>
+
+      <article className="admin-card">
+        <div className="admin-card-heading">
+          <div>
+            <h2>最近访问</h2>
+            <p>最近 30 条页面访问记录，时间按北京时间显示。</p>
+          </div>
+        </div>
+        {summary.recentViews.length > 0 ? (
+          <div className="analytics-visit-list">
+            <div className="analytics-visit-row analytics-visit-row--head">
+              <span>时间</span>
+              <span>访问 IP</span>
+              <span>设备</span>
+              <span>页面</span>
+            </div>
+            {summary.recentViews.map((view, index) => (
+              <div className="analytics-visit-row" key={`${view.createdAt}-${view.path}-${index}`}>
+                <span>{view.createdAt}</span>
+                <strong>{view.visitorIp}</strong>
+                <span>{formatDevice(view.deviceType)}</span>
+                <span>{view.path}</span>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <p className="admin-inline-notice">暂无访问记录。</p>
+        )}
+      </article>
     </div>
   );
 }
@@ -112,4 +141,11 @@ function formatDay(value: string) {
   const date = new Date(`${value}T00:00:00+08:00`);
   if (Number.isNaN(date.getTime())) return value;
   return new Intl.DateTimeFormat("zh-CN", { month: "2-digit", day: "2-digit" }).format(date);
+}
+
+function formatDevice(value: string) {
+  if (value === "mobile") return "移动端";
+  if (value === "tablet") return "平板";
+  if (value === "desktop") return "桌面端";
+  return "未知";
 }
