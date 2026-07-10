@@ -6,6 +6,15 @@ export type EnrichmentOutput = {
   bio: string;
 };
 
+type FemaleRanks = {
+  f_s_wr: number;
+  f_s_ar: number;
+  f_s_cr: number;
+  f_a_wr: number;
+  f_a_ar: number;
+  f_a_cr: number;
+};
+
 const EVENT_NAMES: Record<string, string> = {
   "333": "三阶速拧",
   "222": "二阶",
@@ -43,15 +52,17 @@ function rankLevel(wr: number): string {
 }
 
 export async function enrichMembers(
-  items: { wcaId: string; teamName: string }[]
+  items: { wcaId: string; teamName: string; gender?: string }[]
 ): Promise<Map<string, EnrichmentOutput>> {
   const result = new Map<string, EnrichmentOutput>();
   const ids = [...new Set(items.map((i) => i.wcaId))];
   if (ids.length === 0) return result;
 
+  const femaleIds = items.filter((i) => i.gender === "女").map((i) => i.wcaId);
+
   try {
     const pool = getPostgresPool();
-    const [sr, ar] = await Promise.all([
+    const [sr, ar, fsr, far] = await Promise.all([
       pool.query(
         `SELECT person_id, event_id, best, world_rank, continent_rank, country_rank
          FROM wca_ranks_single
@@ -66,7 +77,61 @@ export async function enrichMembers(
          ORDER BY person_id, world_rank::int`,
         [ids]
       ),
+      femaleIds.length > 0
+        ? pool.query(
+            `SELECT fws.event_id, fws.person_id,
+                    fws.rank AS f_s_wr, COALESCE(fas.rank, 999999) AS f_s_ar, COALESCE(fcs.rank, 999999) AS f_s_cr
+             FROM (SELECT r.event_id, r.person_id, ROW_NUMBER() OVER (PARTITION BY r.event_id ORDER BY r.best::int) AS rank
+                   FROM wca_ranks_single r JOIN wca_persons p ON p.wca_id = r.person_id AND p.sub_id = '1'
+                   WHERE p.gender = 'f' AND r.best::int > 0) fws
+             LEFT JOIN (SELECT r.event_id, r.person_id, ROW_NUMBER() OVER (PARTITION BY r.event_id ORDER BY r.best::int) AS rank
+                        FROM wca_ranks_single r JOIN wca_persons p ON p.wca_id = r.person_id AND p.sub_id = '1'
+                        JOIN wca_countries c ON c.id = p.country_id
+                        WHERE p.gender = 'f' AND r.best::int > 0 AND c.continent_id = '_Asia') fas
+               ON fas.event_id = fws.event_id AND fas.person_id = fws.person_id
+             LEFT JOIN (SELECT r.event_id, r.person_id, ROW_NUMBER() OVER (PARTITION BY r.event_id ORDER BY r.best::int) AS rank
+                        FROM wca_ranks_single r JOIN wca_persons p ON p.wca_id = r.person_id AND p.sub_id = '1'
+                        WHERE p.gender = 'f' AND r.best::int > 0 AND p.country_id = 'China') fcs
+               ON fcs.event_id = fws.event_id AND fcs.person_id = fws.person_id
+             WHERE fws.person_id = ANY($1::text[])`,
+            [femaleIds]
+          )
+        : { rows: [] },
+      femaleIds.length > 0
+        ? pool.query(
+            `SELECT fwa.event_id, fwa.person_id,
+                    fwa.rank AS f_a_wr, COALESCE(faa.rank, 999999) AS f_a_ar, COALESCE(fca.rank, 999999) AS f_a_cr
+             FROM (SELECT r.event_id, r.person_id, ROW_NUMBER() OVER (PARTITION BY r.event_id ORDER BY r.best::int) AS rank
+                   FROM wca_ranks_average r JOIN wca_persons p ON p.wca_id = r.person_id AND p.sub_id = '1'
+                   WHERE p.gender = 'f' AND r.best::int > 0) fwa
+             LEFT JOIN (SELECT r.event_id, r.person_id, ROW_NUMBER() OVER (PARTITION BY r.event_id ORDER BY r.best::int) AS rank
+                        FROM wca_ranks_average r JOIN wca_persons p ON p.wca_id = r.person_id AND p.sub_id = '1'
+                        JOIN wca_countries c ON c.id = p.country_id
+                        WHERE p.gender = 'f' AND r.best::int > 0 AND c.continent_id = '_Asia') faa
+               ON faa.event_id = fwa.event_id AND faa.person_id = fwa.person_id
+             LEFT JOIN (SELECT r.event_id, r.person_id, ROW_NUMBER() OVER (PARTITION BY r.event_id ORDER BY r.best::int) AS rank
+                        FROM wca_ranks_average r JOIN wca_persons p ON p.wca_id = r.person_id AND p.sub_id = '1'
+                        WHERE p.gender = 'f' AND r.best::int > 0 AND p.country_id = 'China') fca
+               ON fca.event_id = fwa.event_id AND fca.person_id = fwa.person_id
+             WHERE fwa.person_id = ANY($1::text[])`,
+            [femaleIds]
+          )
+        : { rows: [] },
     ]);
+
+    const frMap = new Map<string, Map<string, { s: { wr: number; ar: number; cr: number }; a: { wr: number; ar: number; cr: number } }>>();
+    for (const r of fsr.rows) {
+      if (!frMap.has(r.person_id)) frMap.set(r.person_id, new Map());
+      const emap = frMap.get(r.person_id)!;
+      if (!emap.has(r.event_id)) emap.set(r.event_id, { s: { wr: 0, ar: 0, cr: 0 }, a: { wr: 0, ar: 0, cr: 0 } });
+      emap.get(r.event_id)!.s = { wr: r.f_s_wr, ar: r.f_s_ar, cr: r.f_s_cr };
+    }
+    for (const r of far.rows) {
+      if (!frMap.has(r.person_id)) frMap.set(r.person_id, new Map());
+      const emap = frMap.get(r.person_id)!;
+      if (!emap.has(r.event_id)) emap.set(r.event_id, { s: { wr: 0, ar: 0, cr: 0 }, a: { wr: 0, ar: 0, cr: 0 } });
+      emap.get(r.event_id)!.a = { wr: r.f_a_wr, ar: r.f_a_ar, cr: r.f_a_cr };
+    }
 
     const sMap = new Map<string, any[]>();
     const aMap = new Map<string, any[]>();
@@ -148,7 +213,8 @@ export async function enrichMembers(
         }
 
         const rankParts: string[] = [];
-        if (awr && awr <= 500) {
+        const showAvg = awr != null && awr <= 500;
+        if (showAvg) {
           let r = `${ename}平均世界第${awr}`;
           if (acr && acr <= 10) r += `、亚洲第${acr}`;
           if (anr && anr <= 10) r += `、中国第${anr}`;
@@ -163,6 +229,28 @@ export async function enrichMembers(
         } else if (snr && snr <= 50) {
           rankParts.push(`${ename}单次中国第${snr}`);
         }
+
+        // Append female-specific ranking for female members
+        if (item.gender === "女") {
+          const efr = frMap.get(item.wcaId)?.get(t.eid);
+          if (efr) {
+            const fw = showAvg ? efr.a.wr : efr.s.wr;
+            const fa = showAvg ? efr.a.ar : efr.s.ar;
+            const fc = showAvg ? efr.a.cr : efr.s.cr;
+            const femRanks: string[] = [];
+            if (fw > 0 && fw <= 2000) femRanks.push(`女子世界第${fw}`);
+            if (fa > 0 && fa <= 500) femRanks.push(`女子亚洲第${fa}`);
+            if (fc > 0 && fc <= 200) femRanks.push(`女子中国第${fc}`);
+            if (femRanks.length > 0) {
+              if (rankParts.length > 0) {
+                rankParts[rankParts.length - 1] += `（${femRanks.join("、")}）`;
+              } else {
+                rankParts.push(femRanks.join("、"));
+              }
+            }
+          }
+        }
+
         if (rankParts.length > 0) parts.push(rankParts.join("，"));
 
         const times: string[] = [];
