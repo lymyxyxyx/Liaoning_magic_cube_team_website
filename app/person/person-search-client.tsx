@@ -63,7 +63,7 @@ export function PersonSearchClient() {
           加载中…
         </div>
       ) : filtered.length > 0 ? (
-        <div className="table-wrap">
+        <div className="person-list-table-wrap">
           <table className="result-table person-list-table">
             <thead>
               <tr>

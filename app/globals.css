@@ -10094,8 +10094,12 @@ a.commercial-member-link:hover {
   font-weight: 600;
 }
 
-.person-list-table {
+.person-list-table-wrap {
+  overflow: auto;
   margin-top: 12px;
+}
+
+.person-list-table {
   min-width: 600px;
 }
 
