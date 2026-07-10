@@ -43,9 +43,7 @@ export default async function CommercialTeamsPage() {
   const wcaNames = await getWcaNames([...new Set(allWcaIds)]);
 
   const enrichmentItems = teams.flatMap((t) =>
-    t.members
-      .filter((m) => m.wcaId)
-      .map((m) => ({ wcaId: m.wcaId!, teamName: t.name, currentBio: m.bio }))
+    t.members.filter((m) => m.wcaId).map((m) => ({ wcaId: m.wcaId!, teamName: t.name }))
   );
   const enrichmentMap = await enrichMembers(enrichmentItems);
 

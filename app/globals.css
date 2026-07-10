@@ -7628,12 +7628,12 @@ a.commercial-member-link:hover {
 
 .commercial-member-tag {
   display: inline-block;
-  padding: 2px 8px;
+  padding: 2px 10px;
   font-size: 11px;
   line-height: 1.5;
-  border-radius: 4px;
-  background: var(--accent);
-  color: var(--bg);
+  border-radius: 20px;
+  background: rgba(100, 116, 139, 0.12);
+  color: var(--muted);
   white-space: nowrap;
 }
 

@@ -33,19 +33,6 @@ const TEAM_SUFFIX: Record<string, string> = {
   "未来星之队": "未来星之队成员。",
 };
 
-function isPlaceholder(bio: string): boolean {
-  if (!bio || bio.length < 20) return true;
-  const generic = [
-    "宇宙爆速社领航队成员",
-    "宇宙爆速社启航队成员",
-    "魔域梦之队成员（葫芦岛）",
-    "魔域梦之队成员，参加多场省内外赛事",
-    "未来星之队成员，奇艺魔方格",
-    "主修三速，三单",
-  ];
-  return generic.some((p) => bio.includes(p));
-}
-
 function rankLevel(wr: number): string {
   if (wr === 1) return "世界冠军";
   if (wr <= 3) return `世界第${wr}`;
@@ -56,25 +43,24 @@ function rankLevel(wr: number): string {
 }
 
 export async function enrichMembers(
-  items: { wcaId: string; teamName: string; currentBio: string }[]
+  items: { wcaId: string; teamName: string }[]
 ): Promise<Map<string, EnrichmentOutput>> {
   const result = new Map<string, EnrichmentOutput>();
-  const targets = items.filter((i) => isPlaceholder(i.currentBio));
-  const ids = [...new Set(targets.map((i) => i.wcaId))];
+  const ids = [...new Set(items.map((i) => i.wcaId))];
   if (ids.length === 0) return result;
 
   try {
     const pool = getPostgresPool();
     const [sr, ar] = await Promise.all([
       pool.query(
-        `SELECT person_id, event_id, best, world_rank, continent_rank
+        `SELECT person_id, event_id, best, world_rank, continent_rank, country_rank
          FROM wca_ranks_single
          WHERE person_id = ANY($1::text[]) AND best::int > 0
          ORDER BY person_id, world_rank::int`,
         [ids]
       ),
       pool.query(
-        `SELECT person_id, event_id, best, world_rank, continent_rank
+        `SELECT person_id, event_id, best, world_rank, continent_rank, country_rank
          FROM wca_ranks_average
          WHERE person_id = ANY($1::text[]) AND best::int > 0
          ORDER BY person_id, world_rank::int`,
@@ -93,7 +79,7 @@ export async function enrichMembers(
       aMap.get(r.person_id)!.push(r);
     }
 
-    for (const item of targets) {
+    for (const item of items) {
       const singles = sMap.get(item.wcaId) || [];
       const avgs = aMap.get(item.wcaId) || [];
       if (singles.length === 0 && avgs.length === 0) continue;
@@ -122,7 +108,21 @@ export async function enrichMembers(
       if (scored.length === 0) continue;
 
       const top = scored.slice(0, 2);
-      const specialties = scored.slice(0, 3).map((s) => EVENT_NAMES[s.eid] || s.eid);
+
+      const tagSet = new Set<string>();
+      for (const s of scored.slice(0, 3)) {
+        tagSet.add(EVENT_NAMES[s.eid] || s.eid);
+      }
+      for (const [eid, d] of events) {
+        const cnr = Math.min(
+          d.single ? parseInt(d.single.country_rank) : 999999,
+          d.avg ? parseInt(d.avg.country_rank) : 999999
+        );
+        if (cnr <= 50) {
+          tagSet.add(EVENT_NAMES[eid] || eid);
+        }
+      }
+      const specialties = [...tagSet];
 
       const suffix = TEAM_SUFFIX[item.teamName] || `${item.teamName}成员。`;
       const lines: string[] = [];
@@ -135,6 +135,8 @@ export async function enrichMembers(
         const swr = t.d.single ? parseInt(t.d.single.world_rank) : null;
         const acr = t.d.avg ? parseInt(t.d.avg.continent_rank) : null;
         const scr = t.d.single ? parseInt(t.d.single.continent_rank) : null;
+        const anr = t.d.avg ? parseInt(t.d.avg.country_rank) : null;
+        const snr = t.d.single ? parseInt(t.d.single.country_rank) : null;
 
         const level = rankLevel(t.wr);
         const parts: string[] = [];
@@ -149,17 +151,23 @@ export async function enrichMembers(
         if (awr && awr <= 500) {
           let r = `${ename}平均世界第${awr}`;
           if (acr && acr <= 10) r += `、亚洲第${acr}`;
+          if (anr && anr <= 10) r += `、中国第${anr}`;
           rankParts.push(r);
         } else if (swr && swr <= 500) {
           let r = `${ename}单次世界第${swr}`;
           if (scr && scr <= 10) r += `、亚洲第${scr}`;
+          if (snr && snr <= 10) r += `、中国第${snr}`;
           rankParts.push(r);
+        } else if (anr && anr <= 50) {
+          rankParts.push(`${ename}平均中国第${anr}`);
+        } else if (snr && snr <= 50) {
+          rankParts.push(`${ename}单次中国第${snr}`);
         }
         if (rankParts.length > 0) parts.push(rankParts.join("，"));
 
         const times: string[] = [];
-        if (abest != null) times.push(`平均最佳 ${formatWcaResult(t.eid, abest, "average")}`);
-        if (sbest != null) times.push(`单次最佳 ${formatWcaResult(t.eid, sbest, "single")}`);
+        if (abest != null) times.push(`平均最佳 ${formatWcaResult(t.eid, abest, "average")}s`);
+        if (sbest != null) times.push(`单次最佳 ${formatWcaResult(t.eid, sbest, "single")}s`);
         if (times.length > 0) times[0] = `个人${times[0]}`;
         if (times.length > 0) parts.push(times.join("、"));
 
