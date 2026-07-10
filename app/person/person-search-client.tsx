@@ -77,15 +77,15 @@ export function PersonSearchClient() {
             <tbody>
               {filtered.map((person) => (
                 <tr key={person.wcaId}>
-                  <td>
+                  <td data-label="WCA ID">
                     <Link href={`/person/${person.wcaId}`} className="table-person-link">
                       {person.wcaId}
                     </Link>
                   </td>
-                  <td className="name-cell">{person.name}</td>
-                  <td>{person.gender === "m" ? "男" : person.gender === "f" ? "女" : "-"}</td>
-                  <td>{person.city || "-"}</td>
-                  <td>{person.province || "-"}</td>
+                  <td className="name-cell" data-label="姓名">{person.name}</td>
+                  <td data-label="性别">{person.gender === "m" ? "男" : person.gender === "f" ? "女" : "-"}</td>
+                  <td data-label="城市">{person.city || "-"}</td>
+                  <td data-label="省份">{person.province || "-"}</td>
                 </tr>
               ))}
             </tbody>

@@ -10118,6 +10118,87 @@ a.commercial-member-link:hover {
   font-weight: 600;
 }
 
+@media (max-width: 640px) {
+  .person-search-card {
+    padding: 16px;
+  }
+
+  .person-list-table-wrap {
+    overflow: visible;
+    border: 0;
+    background: transparent;
+    margin-top: 0;
+  }
+
+  .person-list-table {
+    min-width: 0;
+    display: block;
+  }
+
+  .person-list-table thead {
+    display: none;
+  }
+
+  .person-list-table tbody,
+  .person-list-table tr {
+    display: block;
+  }
+
+  .person-list-table tr {
+    padding: 12px 14px;
+    border: 1px solid var(--line);
+    border-radius: var(--radius-sm);
+    background: var(--surface-2);
+    margin-bottom: 8px;
+  }
+
+  .person-list-table tr:last-child {
+    margin-bottom: 0;
+  }
+
+  .person-list-table td {
+    display: inline;
+    padding: 0;
+    border: 0;
+    font-size: 14px;
+    white-space: normal;
+    color: var(--muted);
+  }
+
+  .person-list-table td:first-child {
+    display: block;
+    margin-bottom: 5px;
+    color: var(--ink);
+  }
+
+  .person-list-table td:first-child::before {
+    content: none;
+  }
+
+  .person-list-table td:not(:first-child)::before {
+    content: attr(data-label) ": ";
+  }
+
+  .person-list-table td + td::before {
+    content: " · " attr(data-label) ": ";
+  }
+
+  .person-list-table td.name-cell {
+    font-weight: 400;
+    color: var(--muted);
+  }
+
+  .person-list-table .table-person-link {
+    font-weight: 600;
+    font-size: 15px;
+    text-decoration: none;
+  }
+
+  .person-list-table .table-person-link:hover {
+    text-decoration: underline;
+  }
+}
+
 .spin {
   animation: spin 1s linear infinite;
 }
