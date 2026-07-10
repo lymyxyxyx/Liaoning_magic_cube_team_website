@@ -306,6 +306,13 @@ function MemberCard({ member, wcaName }: { member: Person; wcaName?: string }) {
           )}
         </div>
         {member.bio && <p className="commercial-member-bio">{member.bio}</p>}
+        {member.specialties && member.specialties.length > 0 && (
+          <div className="commercial-member-tags">
+            {member.specialties.map((tag) => (
+              <span key={tag} className="commercial-member-tag">{tag}</span>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );

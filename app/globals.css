@@ -7619,6 +7619,24 @@ a.commercial-member-link:hover {
   color: var(--muted);
 }
 
+.commercial-member-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin-top: 8px;
+}
+
+.commercial-member-tag {
+  display: inline-block;
+  padding: 2px 8px;
+  font-size: 11px;
+  line-height: 1.5;
+  border-radius: 4px;
+  background: var(--accent);
+  color: var(--bg);
+  white-space: nowrap;
+}
+
 .commercial-member-actions {
   display: flex;
   justify-content: flex-end;
@@ -8805,6 +8823,16 @@ a.commercial-member-link:hover {
   .commercial-member-bio {
     font-size: 12px;
     line-height: 1.55;
+  }
+
+  .commercial-member-tags {
+    gap: 4px;
+    margin-top: 6px;
+  }
+
+  .commercial-member-tag {
+    font-size: 10px;
+    padding: 1px 6px;
   }
 
   .commercial-member-actions {

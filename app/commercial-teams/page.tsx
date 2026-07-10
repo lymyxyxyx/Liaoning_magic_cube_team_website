@@ -3,6 +3,7 @@ import { PageHero } from "@/components/page-hero";
 import { CommercialTeamsClient } from "@/app/commercial-teams/commercial-teams-client";
 import { readCommercialTeams } from "@/lib/commercial-team-store";
 import { getPostgresPool } from "@/lib/postgres";
+import { enrichMembers } from "@/lib/commercial-team-enrichment";
 
 export const dynamic = "force-dynamic";
 
@@ -40,6 +41,23 @@ export default async function CommercialTeamsPage() {
     .filter((id): id is string => Boolean(id));
 
   const wcaNames = await getWcaNames([...new Set(allWcaIds)]);
+
+  const enrichmentItems = teams.flatMap((t) =>
+    t.members
+      .filter((m) => m.wcaId)
+      .map((m) => ({ wcaId: m.wcaId!, teamName: t.name, currentBio: m.bio }))
+  );
+  const enrichmentMap = await enrichMembers(enrichmentItems);
+
+  for (const team of publicTeams) {
+    for (const member of team.members) {
+      if (member.wcaId && enrichmentMap.has(member.wcaId)) {
+        const enriched = enrichmentMap.get(member.wcaId)!;
+        member.specialties = enriched.specialties;
+        member.bio = enriched.bio;
+      }
+    }
+  }
 
   return (
     <>
