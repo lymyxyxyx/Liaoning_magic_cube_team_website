@@ -213,20 +213,20 @@ export async function enrichMembers(
         }
 
         const rankParts: string[] = [];
-        const showAvg = awr != null && awr <= 500;
+        const showAvg = awr != null && awr <= 200;
         if (showAvg) {
           let r = `${ename}平均世界第${awr}`;
           if (acr && acr <= 10) r += `、亚洲第${acr}`;
           if (anr && anr <= 10) r += `、中国第${anr}`;
           rankParts.push(r);
-        } else if (swr && swr <= 500) {
+        } else if (swr && swr <= 200) {
           let r = `${ename}单次世界第${swr}`;
           if (scr && scr <= 10) r += `、亚洲第${scr}`;
           if (snr && snr <= 10) r += `、中国第${snr}`;
           rankParts.push(r);
-        } else if (anr && anr <= 50) {
+        } else if (anr && anr <= 200) {
           rankParts.push(`${ename}平均中国第${anr}`);
-        } else if (snr && snr <= 50) {
+        } else if (snr && snr <= 200) {
           rankParts.push(`${ename}单次中国第${snr}`);
         }
 
@@ -238,8 +238,8 @@ export async function enrichMembers(
             const fa = showAvg ? efr.a.ar : efr.s.ar;
             const fc = showAvg ? efr.a.cr : efr.s.cr;
             const femRanks: string[] = [];
-            if (fw > 0 && fw <= 2000) femRanks.push(`女子世界第${fw}`);
-            if (fa > 0 && fa <= 500) femRanks.push(`女子亚洲第${fa}`);
+            if (fw > 0 && fw <= 200) femRanks.push(`女子世界第${fw}`);
+            if (fa > 0 && fa <= 200) femRanks.push(`女子亚洲第${fa}`);
             if (fc > 0 && fc <= 200) femRanks.push(`女子中国第${fc}`);
             if (femRanks.length > 0) {
               if (rankParts.length > 0) {

@@ -443,6 +443,7 @@ export const commercialTeamMembers: Person[] = [
     roles: ["运动员"],
     city: "葫芦岛",
     gender: "女",
+    specialties: ["枫叶"],
     bio: "魔域梦之队成员（葫芦岛）",
     visible: true,
     mainEvent: "三阶速拧"
@@ -455,6 +456,7 @@ export const commercialTeamMembers: Person[] = [
     roles: ["运动员"],
     city: "葫芦岛",
     gender: "男",
+    specialties: ["枫叶"],
     bio: "魔域梦之队成员（葫芦岛）",
     visible: true,
     mainEvent: "三阶速拧"
