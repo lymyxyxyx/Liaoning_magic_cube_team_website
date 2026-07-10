@@ -45,6 +45,7 @@ type SolveAttempt = {
 type CompetitionResult = {
   competitionId: string;
   competitionName: string;
+  competitionNameZh?: string | null;
   eventId: string;
   roundTypeId: string;
   pos: number;
@@ -103,6 +104,16 @@ const allEvents = [
 
 function getEventName(id: string) {
   return eventChineseNames[id] || allEvents.find((e) => e.id === id)?.name || id;
+}
+
+function getCompetitionDisplayName(result: Pick<CompetitionResult, "competitionName" | "competitionNameZh">) {
+  return result.competitionNameZh || result.competitionName;
+}
+
+function RankBadge({ value }: { value: number | null }) {
+  if (value == null || value <= 0) return <>-</>;
+  const highlightClass = value <= 3 ? "rank-badge rank-badge-podium" : value <= 10 ? "rank-badge rank-badge-top10" : "rank-badge";
+  return <span className={highlightClass}>{value}</span>;
 }
 
 export function PersonDetailClient({ wcaId }: { wcaId: string }) {
@@ -166,11 +177,6 @@ export function PersonDetailClient({ wcaId }: { wcaId: string }) {
     const list = resultsByEvent.get(r.eventId) || [];
     list.push(r);
     resultsByEvent.set(r.eventId, list);
-  }
-
-  function renderRank(value: number | null) {
-    if (value == null || value <= 0) return "-";
-    return value;
   }
 
   return (
@@ -252,19 +258,19 @@ export function PersonDetailClient({ wcaId }: { wcaId: string }) {
                     <td className="result-cell">
                       {single ? formatWcaResult(eventId, single.best, "single") : "-"}
                     </td>
-                    <td className="rank-cell">{profile.city && single ? renderRank(single.cityRank) : "-"}</td>
-                    <td className="rank-cell">{profile.province && single ? renderRank(single.provinceRank) : "-"}</td>
-                    <td className="rank-cell">{single ? renderRank(single.countryRank) : "-"}</td>
-                    <td className="rank-cell">{single ? renderRank(single.continentRank) : "-"}</td>
-                    <td className="rank-cell">{single ? renderRank(single.worldRank) : "-"}</td>
+                    <td className="rank-cell">{profile.city && single ? <RankBadge value={single.cityRank} /> : "-"}</td>
+                    <td className="rank-cell">{profile.province && single ? <RankBadge value={single.provinceRank} /> : "-"}</td>
+                    <td className="rank-cell">{single ? <RankBadge value={single.countryRank} /> : "-"}</td>
+                    <td className="rank-cell">{single ? <RankBadge value={single.continentRank} /> : "-"}</td>
+                    <td className="rank-cell">{single ? <RankBadge value={single.worldRank} /> : "-"}</td>
                     <td className="result-cell">
                       {average ? formatWcaResult(eventId, average.best, "average") : "-"}
                     </td>
-                    <td className="rank-cell">{profile.city && average ? renderRank(average.cityRank) : "-"}</td>
-                    <td className="rank-cell">{profile.province && average ? renderRank(average.provinceRank) : "-"}</td>
-                    <td className="rank-cell">{average ? renderRank(average.countryRank) : "-"}</td>
-                    <td className="rank-cell">{average ? renderRank(average.continentRank) : "-"}</td>
-                    <td className="rank-cell">{average ? renderRank(average.worldRank) : "-"}</td>
+                    <td className="rank-cell">{profile.city && average ? <RankBadge value={average.cityRank} /> : "-"}</td>
+                    <td className="rank-cell">{profile.province && average ? <RankBadge value={average.provinceRank} /> : "-"}</td>
+                    <td className="rank-cell">{average ? <RankBadge value={average.countryRank} /> : "-"}</td>
+                    <td className="rank-cell">{average ? <RankBadge value={average.continentRank} /> : "-"}</td>
+                    <td className="rank-cell">{average ? <RankBadge value={average.worldRank} /> : "-"}</td>
                     <td className="medal-cell medal-gold">{medal?.gold || "-"}</td>
                     <td className="medal-cell medal-silver">{medal?.silver || "-"}</td>
                     <td className="medal-cell medal-bronze">{medal?.bronze || "-"}</td>
@@ -382,7 +388,13 @@ function EventResultsTable({ eventId, results }: { eventId: string; results: Com
                   target="_blank"
                   rel="noopener noreferrer"
                 >
-                  {r.competitionName} <ExternalLink size={11} />
+                  <span>
+                    <strong>{getCompetitionDisplayName(r)}</strong>
+                    {r.competitionNameZh && r.competitionNameZh !== r.competitionName && (
+                      <small>{r.competitionName}</small>
+                    )}
+                  </span>
+                  <ExternalLink size={11} />
                 </a>
               </td>
               <td>{roundTypeLabels[r.roundTypeId] || r.roundTypeId}</td>
@@ -417,7 +429,12 @@ function CompetitionResultsTable({ results, allEventIds }: { results: Competitio
       {sortedComps.map(([compId, compResults]) => (
         <details key={compId} className="comp-details" open>
           <summary>
-            <strong>{compResults[0].competitionName}</strong>
+            <span className="comp-summary-name">
+              <strong>{getCompetitionDisplayName(compResults[0])}</strong>
+              {compResults[0].competitionNameZh && compResults[0].competitionNameZh !== compResults[0].competitionName && (
+                <small>{compResults[0].competitionName}</small>
+              )}
+            </span>
             <span className="comp-date">{compResults[0].date}</span>
           </summary>
           <table className="result-table person-results-table">

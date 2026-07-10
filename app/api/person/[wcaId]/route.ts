@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getPostgresPool } from "@/lib/postgres";
 import { readLocalProfiles } from "@/lib/local-profile-store";
+import { getCubingCompetitionNameZhByWcaId } from "@/lib/cubing-competition-name";
 
 export const dynamic = "force-dynamic";
 
@@ -24,6 +25,7 @@ type RankRow = {
 type ResultRow = {
   competitionId: string;
   competitionName: string;
+  competitionNameZh?: string | null;
   eventId: string;
   roundTypeId: string;
   pos: number;
@@ -290,7 +292,10 @@ export async function GET(
       })),
       medals: medalsResult.rows,
       solveAttempts: solveAttemptsResult.rows,
-      results: resultsResult.rows
+      results: resultsResult.rows.map((result) => ({
+        ...result,
+        competitionNameZh: getCubingCompetitionNameZhByWcaId(result.competitionId, result.competitionName)
+      }))
     });
   } catch (error) {
     console.error("Person API error:", error);
