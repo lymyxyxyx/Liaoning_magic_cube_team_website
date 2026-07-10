@@ -32,6 +32,9 @@ export default async function HomePage() {
               <Link className="button home-record-button" href="/liaoning-records">
                 辽宁纪录
               </Link>
+              <Link className="button home-person-button" href="/person">
+                辽宁选手
+              </Link>
               <Link className="button home-competition-button" href="/liaoning-competitions">
                 辽宁选手参赛记录
               </Link>

@@ -464,7 +464,23 @@ main {
 }
 
 .home-hero-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
   margin-top: 20px;
+  max-width: 360px;
+}
+
+.hero-actions .home-person-button {
+  border-color: rgba(200, 180, 255, 0.5);
+  background: rgba(200, 180, 255, 0.14);
+  color: #f0ecff;
+}
+
+.hero-actions .home-person-button:hover {
+  border-color: #c8b4ff;
+  color: #ffffff;
+  background: rgba(200, 180, 255, 0.22);
 }
 
 .hero-actions .home-record-button {
