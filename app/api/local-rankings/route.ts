@@ -75,8 +75,8 @@ export async function GET(request: NextRequest) {
   const province = cleanText(params.get("province"), "辽宁");
   const city = cleanText(params.get("city"), "沈阳");
   const scope = params.get("scope") === "province" ? "province" : "city";
-  const page = Math.max(1, Math.min(5000, Number(params.get("page") || 1) || 1));
-  const offset = (page - 1) * pageSize;
+  let page = Math.max(1, Math.min(5000, Number(params.get("page") || 1) || 1));
+  const selectedWcaId = (params.get("wcaId") || "").trim().toUpperCase();
   const genderWhere = gender === "all" ? "" : "AND p.gender = $3";
   const localProfiles = await readLocalProfiles();
   const visibleProfiles = localProfiles.filter((profile) => profile.visible);
@@ -105,6 +105,33 @@ export async function GET(request: NextRequest) {
       { headers: wcaRankingCacheHeaders }
     );
   }
+
+  if (selectedWcaId && wcaIds.includes(selectedWcaId)) {
+    const selectedGender = gender === "all" ? [] : [gender];
+    const positionResult = await getPostgresPool().query<{ position: number }>(
+      `
+        SELECT ranked.position::int
+        FROM (
+          SELECT
+            r.person_id,
+            ROW_NUMBER() OVER (ORDER BY r.best::int, r.world_rank::int, r.person_id) AS position
+          FROM ${rankingTables[mode]} r
+          JOIN wca_persons p ON p.wca_id = r.person_id AND p.sub_id = '1'
+          WHERE r.event_id = $1
+            AND r.person_id = ANY($2::text[])
+            AND r.country_rank::int > 0
+            ${gender === "all" ? "" : "AND p.gender = $3"}
+        ) ranked
+        WHERE ranked.person_id = $${gender === "all" ? 3 : 4}
+        LIMIT 1
+      `,
+      [event, wcaIds, ...selectedGender, selectedWcaId]
+    );
+    const position = positionResult.rows[0]?.position;
+    if (position) page = Math.ceil(position / pageSize);
+  }
+
+  const offset = (page - 1) * pageSize;
 
   const localInfo = new Map(selectedWcaProfiles.map((profile) => [profile.wcaId as string, profile]));
   const queryParams: (string | string[] | number)[] = [event, wcaIds];

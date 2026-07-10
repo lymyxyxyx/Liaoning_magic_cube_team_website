@@ -1,8 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { CalendarClock, ChevronLeft, ChevronRight, ExternalLink } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { CalendarClock, ChevronLeft, ChevronRight, ExternalLink, Search, X } from "lucide-react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { PageHero } from "@/components/page-hero";
 import { WcaFlag } from "@/components/wca-flag";
 import { getCubingCompetitionNameZhByWcaId } from "@/lib/cubing-competition-name";
@@ -49,6 +49,13 @@ type LocalRankingsResponse = {
   hasNextPage: boolean;
   provinces: string[];
   cities: string[];
+};
+
+type RankingPlayer = {
+  wcaId: string;
+  name: string;
+  province: string;
+  city: string;
 };
 
 const modeLabels: Record<RankingMode, string> = {
@@ -207,6 +214,11 @@ export function LiaoningRankingsClient() {
   const [rankings, setRankings] = useState<LocalRankingsResponse | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
+  const [playerQuery, setPlayerQuery] = useState("");
+  const [playerSuggestions, setPlayerSuggestions] = useState<RankingPlayer[]>([]);
+  const [selectedPlayer, setSelectedPlayer] = useState<RankingPlayer | null>(null);
+  const [isPlayerSearchOpen, setIsPlayerSearchOpen] = useState(false);
+  const playerSearchRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -235,6 +247,40 @@ export function LiaoningRankingsClient() {
   }, []);
 
   useEffect(() => {
+    if (selectedPlayer || !playerQuery.trim()) {
+      setPlayerSuggestions([]);
+      return;
+    }
+
+    const controller = new AbortController();
+    const timer = window.setTimeout(() => {
+      const params = new URLSearchParams({ q: playerQuery, province, city, scope });
+      fetch(`/api/local-rankings/players?${params}`, { signal: controller.signal })
+        .then((response) => (response.ok ? response.json() : Promise.reject(new Error("players"))))
+        .then((payload: { players?: RankingPlayer[] }) => {
+          setPlayerSuggestions(payload.players || []);
+          setIsPlayerSearchOpen(true);
+        })
+        .catch((requestError) => {
+          if (requestError.name !== "AbortError") setPlayerSuggestions([]);
+        });
+    }, 180);
+
+    return () => {
+      window.clearTimeout(timer);
+      controller.abort();
+    };
+  }, [playerQuery, selectedPlayer, province, city, scope]);
+
+  useEffect(() => {
+    function closePlayerSearch(event: MouseEvent) {
+      if (!playerSearchRef.current?.contains(event.target as Node)) setIsPlayerSearchOpen(false);
+    }
+    document.addEventListener("mousedown", closePlayerSearch);
+    return () => document.removeEventListener("mousedown", closePlayerSearch);
+  }, []);
+
+  useEffect(() => {
     const controller = new AbortController();
     let didUseDevelopmentFallback = false;
     const params = new URLSearchParams({
@@ -246,6 +292,7 @@ export function LiaoningRankingsClient() {
       gender,
       page: String(page)
     });
+    if (selectedPlayer) params.set("wcaId", selectedPlayer.wcaId);
 
     setIsLoading(true);
     setError("");
@@ -292,7 +339,7 @@ export function LiaoningRankingsClient() {
       if (developmentFallbackTimer) window.clearTimeout(developmentFallbackTimer);
       controller.abort();
     };
-  }, [event, province, city, scope, mode, gender, page]);
+  }, [event, province, city, scope, mode, gender, page, selectedPlayer]);
 
   const eventName = useMemo(() => {
     const found = events.find((item) => item.id === event);
@@ -304,6 +351,7 @@ export function LiaoningRankingsClient() {
         .filter((row) => scope === "province" || row.city === city)
         .map((row, index) => ({ ...row, rank: index + 1, genderLocalRank: index + 1 }))
     : rankings?.rows || [];
+  const visibleRows = selectedPlayer ? rows.filter((row) => row.wcaId === selectedPlayer.wcaId) : rows;
   const provinces = rankings?.provinces?.length ? rankings.provinces : ["辽宁"];
   const cities = rankings?.cities?.length ? rankings.cities : ["沈阳"];
   const areaLabel = scope === "province" ? `${province}省` : `${city}市`;
@@ -325,6 +373,22 @@ export function LiaoningRankingsClient() {
     setPage(1);
   }
 
+  function choosePlayer(player: RankingPlayer) {
+    setSelectedPlayer(player);
+    setPlayerQuery(`${player.name} · ${player.wcaId}`);
+    setPlayerSuggestions([]);
+    setIsPlayerSearchOpen(false);
+    setPage(1);
+  }
+
+  function clearPlayer() {
+    setSelectedPlayer(null);
+    setPlayerQuery("");
+    setPlayerSuggestions([]);
+    setIsPlayerSearchOpen(false);
+    setPage(1);
+  }
+
   return (
     <>
       <PageHero className="ranking-page-hero local-ranking-page-hero" label="本地省市归属" title={`${areaLabel} ${eventName}排名`}>
@@ -333,6 +397,56 @@ export function LiaoningRankingsClient() {
 
       <section className="container section local-rankings-section rankings-workspace">
         <section className="weekly-event-section ranking-filter-section">
+          <div className="ranking-player-search" ref={playerSearchRef}>
+            <label htmlFor="liaoning-ranking-player-search">检索选手</label>
+            <div className={`ranking-player-search-input ${isPlayerSearchOpen ? "is-open" : ""}`}>
+              <Search size={18} aria-hidden="true" />
+              <input
+                id="liaoning-ranking-player-search"
+                type="search"
+                value={playerQuery}
+                placeholder="输入姓名或 WCA ID"
+                autoComplete="off"
+                onChange={(changeEvent) => {
+                  setPlayerQuery(changeEvent.target.value);
+                  setSelectedPlayer(null);
+                  setIsPlayerSearchOpen(true);
+                }}
+                onFocus={() => setIsPlayerSearchOpen(true)}
+                onKeyDown={(keyboardEvent) => {
+                  if (keyboardEvent.key === "Enter" && playerSuggestions[0]) {
+                    keyboardEvent.preventDefault();
+                    choosePlayer(playerSuggestions[0]);
+                  }
+                  if (keyboardEvent.key === "Escape") setIsPlayerSearchOpen(false);
+                }}
+                role="combobox"
+                aria-autocomplete="list"
+                aria-controls="liaoning-ranking-player-options"
+                aria-expanded={isPlayerSearchOpen && Boolean(playerQuery.trim())}
+              />
+              {playerQuery ? (
+                <button type="button" onClick={clearPlayer} aria-label="清空选手检索">
+                  <X size={17} />
+                </button>
+              ) : null}
+            </div>
+            {isPlayerSearchOpen && playerQuery.trim() && !selectedPlayer ? (
+              <div className="ranking-player-suggestions" id="liaoning-ranking-player-options" role="listbox">
+                {playerSuggestions.length ? (
+                  playerSuggestions.map((player) => (
+                    <button type="button" role="option" aria-selected="false" key={player.wcaId} onClick={() => choosePlayer(player)}>
+                      <span>{player.name}</span>
+                      <small>{player.wcaId} · {player.city}</small>
+                    </button>
+                  ))
+                ) : (
+                  <div className="ranking-player-search-empty">未找到匹配选手</div>
+                )}
+              </div>
+            ) : null}
+          </div>
+
           <div className="ranking-filter-card local-ranking-filter-card" aria-label="辽宁排名筛选">
             <div className="ranking-field">
               <span>榜单类型</span>
@@ -422,7 +536,7 @@ export function LiaoningRankingsClient() {
         <section className="weekly-event-section ranking-results-section">
           <div className="section-header">
             <div>
-              <h2>{eventName}{scopeLabels[scope]} <small>本页 {rows.length} 人</small></h2>
+              <h2>{eventName}{scopeLabels[scope]} <small>{selectedPlayer ? "已定位 1 人" : `本页 ${visibleRows.length} 人`}</small></h2>
             </div>
             <div className="ranking-source-line">
               {updateDateLabel ? (
@@ -465,13 +579,13 @@ export function LiaoningRankingsClient() {
                     <td colSpan={totalColumnCount}>加载中...</td>
                   </tr>
                 ) : null}
-                {!isLoading && rows.length === 0 ? (
+                {!isLoading && visibleRows.length === 0 ? (
                   <tr>
-                    <td colSpan={totalColumnCount}>当前筛选没有辽宁本地排名数据。</td>
+                    <td colSpan={totalColumnCount}>{selectedPlayer ? "该选手在当前项目与筛选条件下暂无排名。" : "当前筛选没有辽宁本地排名数据。"}</td>
                   </tr>
                 ) : null}
                 {!isLoading
-                  ? rows.map((row) => (
+                  ? visibleRows.map((row) => (
                       <tr key={`${scope}-${mode}-${event}-${row.wcaId}`}>
                         <td data-label={scopeLabels[scope]}>{row.rank}</td>
                         <td data-label="姓名">
@@ -532,7 +646,7 @@ export function LiaoningRankingsClient() {
             </table>
           </div>
 
-          <div className="wca-pagination">
+          <div className="wca-pagination" hidden={Boolean(selectedPlayer)}>
             <button type="button" onClick={() => setPage((value) => Math.max(1, value - 1))} disabled={page === 1}>
               <ChevronLeft size={18} />
               上一页
