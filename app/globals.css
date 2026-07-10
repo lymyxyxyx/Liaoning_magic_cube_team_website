@@ -10043,6 +10043,33 @@ a.commercial-member-link:hover {
   font-size: 14px;
 }
 
+.person-search-count {
+  margin-top: 12px;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.person-list-table {
+  margin-top: 12px;
+  min-width: 600px;
+}
+
+.person-list-table th:nth-child(1),
+.person-list-table td:nth-child(1) {
+  width: 140px;
+}
+
+.person-list-table th:nth-child(2),
+.person-list-table td:nth-child(2) {
+  text-align: left;
+  min-width: 180px;
+}
+
+.person-list-table .name-cell {
+  font-weight: 600;
+}
+
 .spin {
   animation: spin 1s linear infinite;
 }
