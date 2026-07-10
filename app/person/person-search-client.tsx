@@ -9,6 +9,8 @@ type PersonSearchResult = {
   name: string;
   countryId: string;
   gender: string;
+  province: string | null;
+  city: string | null;
 };
 
 export function PersonSearchClient() {
@@ -49,7 +51,7 @@ export function PersonSearchClient() {
         <Search size={18} />
         <input
           type="text"
-          placeholder="输入 WCA ID 或选手姓名…"
+          placeholder="输入 WCA ID 或选手姓名（仅限辽宁选手）…"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           autoFocus
@@ -80,6 +82,7 @@ export function PersonSearchClient() {
                 <span className="person-search-meta">
                   {person.wcaId} · {person.countryId}
                   {person.gender === "m" ? " · 男" : person.gender === "f" ? " · 女" : ""}
+                  {person.province ? ` · ${[person.city, person.province].filter(Boolean).join(" ")}` : ""}
                 </span>
               </div>
               <ExternalLink size={16} />

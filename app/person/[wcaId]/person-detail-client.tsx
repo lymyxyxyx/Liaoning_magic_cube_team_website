@@ -12,9 +12,6 @@ type PersonProfile = {
   countryName: string;
   continentId: string;
   gender: string;
-  birthYear: number;
-  birthMonth: number;
-  birthDay: number;
   competitionCount: number;
   careerFirst: string | null;
   careerLast: string | null;

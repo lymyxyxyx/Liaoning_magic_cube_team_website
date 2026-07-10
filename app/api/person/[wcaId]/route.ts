@@ -11,9 +11,6 @@ type PersonInfo = {
   countryName: string;
   continentId: string;
   gender: string;
-  year: number;
-  month: number;
-  day: number;
 };
 
 type RankRow = {
@@ -58,13 +55,25 @@ export async function GET(
   }
 
   try {
+    const profiles = await readLocalProfiles();
+    const localProfile = profiles.find(
+      (p) => p.wcaId?.toUpperCase() === wcaId
+    );
+
+    if (!localProfile || !localProfile.wcaId) {
+      return NextResponse.json({ error: "该选手不在辽宁选手库中" }, { status: 404 });
+    }
+
+    const province = localProfile.province;
+    const city = localProfile.city;
+
     const pool = getPostgresPool();
 
     const personResult = await pool.query<PersonInfo>(
       `SELECT p.wca_id AS "wcaId", p.name, p.country_id AS "countryId",
               COALESCE(cn.name, p.country_id) AS "countryName",
               cn.continent_id AS "continentId",
-              p.gender, p.year::int AS year, p.month::int AS month, p.day::int AS day
+              p.gender
        FROM wca_persons p
        LEFT JOIN wca_countries cn ON cn.id = p.country_id
        WHERE p.wca_id = $1 AND p.sub_id = '1'
@@ -73,7 +82,7 @@ export async function GET(
     );
 
     if (personResult.rows.length === 0) {
-      return NextResponse.json({ error: "Person not found" }, { status: 404 });
+      return NextResponse.json({ error: "WCA 数据库中未找到该选手" }, { status: 404 });
     }
 
     const person = personResult.rows[0];
@@ -120,100 +129,78 @@ export async function GET(
       )
     ]);
 
-    const profiles = await readLocalProfiles();
-    const localProfile = profiles.find(
-      (p) => p.wcaId?.toUpperCase() === wcaId
-    );
-    const province = localProfile?.province ?? null;
-    const city = localProfile?.city ?? null;
+    const provinceWcaIds = profiles
+      .filter((p) => p.province === province && p.wcaId)
+      .map((p) => p.wcaId as string);
 
-    let provinceSingleRanks: Map<string, number> = new Map();
-    let provinceAverageRanks: Map<string, number> = new Map();
-    let citySingleRanks: Map<string, number> = new Map();
-    let cityAverageRanks: Map<string, number> = new Map();
+    const cityWcaIds = profiles
+      .filter((p) => p.city === city && p.province === province && p.wcaId)
+      .map((p) => p.wcaId as string);
 
-    if (province) {
-      const provinceWcaIds = profiles
-        .filter((p) => p.province === province && p.wcaId)
-        .map((p) => p.wcaId as string);
+    const [provinceSingleResult, provinceAverageResult, citySingleResult, cityAverageResult] =
+      await Promise.all([
+        provinceWcaIds.length > 0
+          ? pool.query<{ eventId: string; rank: number }>(
+              `SELECT sub.event_id AS "eventId", sub.rank::int AS rank
+               FROM (
+                 SELECT r.event_id, r.person_id,
+                        ROW_NUMBER() OVER (PARTITION BY r.event_id ORDER BY r.best::int, r.world_rank::int, r.person_id) AS rank
+                 FROM wca_ranks_single r
+                 JOIN wca_persons p ON p.wca_id = r.person_id AND p.sub_id = '1'
+                 WHERE p.wca_id = ANY($1::text[]) AND r.best > 0
+               ) sub
+               WHERE sub.person_id = $2`,
+              [provinceWcaIds, wcaId]
+            )
+          : { rows: [] },
+        provinceWcaIds.length > 0
+          ? pool.query<{ eventId: string; rank: number }>(
+              `SELECT sub.event_id AS "eventId", sub.rank::int AS rank
+               FROM (
+                 SELECT r.event_id, r.person_id,
+                        ROW_NUMBER() OVER (PARTITION BY r.event_id ORDER BY r.best::int, r.world_rank::int, r.person_id) AS rank
+                 FROM wca_ranks_average r
+                 JOIN wca_persons p ON p.wca_id = r.person_id AND p.sub_id = '1'
+                 WHERE p.wca_id = ANY($1::text[]) AND r.best > 0
+               ) sub
+               WHERE sub.person_id = $2`,
+              [provinceWcaIds, wcaId]
+            )
+          : { rows: [] },
+        cityWcaIds.length > 0
+          ? pool.query<{ eventId: string; rank: number }>(
+              `SELECT sub.event_id AS "eventId", sub.rank::int AS rank
+               FROM (
+                 SELECT r.event_id, r.person_id,
+                        ROW_NUMBER() OVER (PARTITION BY r.event_id ORDER BY r.best::int, r.world_rank::int, r.person_id) AS rank
+                 FROM wca_ranks_single r
+                 JOIN wca_persons p ON p.wca_id = r.person_id AND p.sub_id = '1'
+                 WHERE p.wca_id = ANY($1::text[]) AND r.best > 0
+               ) sub
+               WHERE sub.person_id = $2`,
+              [cityWcaIds, wcaId]
+            )
+          : { rows: [] },
+        cityWcaIds.length > 0
+          ? pool.query<{ eventId: string; rank: number }>(
+              `SELECT sub.event_id AS "eventId", sub.rank::int AS rank
+               FROM (
+                 SELECT r.event_id, r.person_id,
+                        ROW_NUMBER() OVER (PARTITION BY r.event_id ORDER BY r.best::int, r.world_rank::int, r.person_id) AS rank
+                 FROM wca_ranks_average r
+                 JOIN wca_persons p ON p.wca_id = r.person_id AND p.sub_id = '1'
+                 WHERE p.wca_id = ANY($1::text[]) AND r.best > 0
+               ) sub
+               WHERE sub.person_id = $2`,
+              [cityWcaIds, wcaId]
+            )
+          : { rows: [] }
+      ]);
 
-      if (provinceWcaIds.length > 0 && singleRanks.rows.length > 0) {
-        const pr = await pool.query<{ eventId: string; rank: number }>(
-          `SELECT sub.event_id AS "eventId", sub.rank::int AS rank
-           FROM (
-             SELECT r.event_id, r.person_id,
-                    ROW_NUMBER() OVER (PARTITION BY r.event_id ORDER BY r.best::int, r.world_rank::int, r.person_id) AS rank
-             FROM wca_ranks_single r
-             JOIN wca_persons p ON p.wca_id = r.person_id AND p.sub_id = '1'
-             WHERE p.wca_id = ANY($1::text[]) AND r.best > 0
-           ) sub
-           WHERE sub.person_id = $2`,
-          [provinceWcaIds, wcaId]
-        );
-        pr.rows.forEach((r) => provinceSingleRanks.set(r.eventId, r.rank));
-      }
-
-      if (provinceWcaIds.length > 0 && averageRanks.rows.length > 0) {
-        const pr = await pool.query<{ eventId: string; rank: number }>(
-          `SELECT sub.event_id AS "eventId", sub.rank::int AS rank
-           FROM (
-             SELECT r.event_id, r.person_id,
-                    ROW_NUMBER() OVER (PARTITION BY r.event_id ORDER BY r.best::int, r.world_rank::int, r.person_id) AS rank
-             FROM wca_ranks_average r
-             JOIN wca_persons p ON p.wca_id = r.person_id AND p.sub_id = '1'
-             WHERE p.wca_id = ANY($1::text[]) AND r.best > 0
-           ) sub
-           WHERE sub.person_id = $2`,
-          [provinceWcaIds, wcaId]
-        );
-        pr.rows.forEach((r) => provinceAverageRanks.set(r.eventId, r.rank));
-      }
-    }
-
-    if (city) {
-      const cityWcaIds = profiles
-        .filter((p) => p.city === city && p.province === province && p.wcaId)
-        .map((p) => p.wcaId as string);
-
-      if (cityWcaIds.length > 0 && singleRanks.rows.length > 0) {
-        const cr = await pool.query<{ eventId: string; rank: number }>(
-          `SELECT sub.event_id AS "eventId", sub.rank::int AS rank
-           FROM (
-             SELECT r.event_id, r.person_id,
-                    ROW_NUMBER() OVER (PARTITION BY r.event_id ORDER BY r.best::int, r.world_rank::int, r.person_id) AS rank
-             FROM wca_ranks_single r
-             JOIN wca_persons p ON p.wca_id = r.person_id AND p.sub_id = '1'
-             WHERE p.wca_id = ANY($1::text[]) AND r.best > 0
-           ) sub
-           WHERE sub.person_id = $2`,
-          [cityWcaIds, wcaId]
-        );
-        cr.rows.forEach((r) => citySingleRanks.set(r.eventId, r.rank));
-      }
-
-      if (cityWcaIds.length > 0 && averageRanks.rows.length > 0) {
-        const cr = await pool.query<{ eventId: string; rank: number }>(
-          `SELECT sub.event_id AS "eventId", sub.rank::int AS rank
-           FROM (
-             SELECT r.event_id, r.person_id,
-                    ROW_NUMBER() OVER (PARTITION BY r.event_id ORDER BY r.best::int, r.world_rank::int, r.person_id) AS rank
-             FROM wca_ranks_average r
-             JOIN wca_persons p ON p.wca_id = r.person_id AND p.sub_id = '1'
-             WHERE p.wca_id = ANY($1::text[]) AND r.best > 0
-           ) sub
-           WHERE sub.person_id = $2`,
-          [cityWcaIds, wcaId]
-        );
-        cr.rows.forEach((r) => cityAverageRanks.set(r.eventId, r.rank));
-      }
-    }
-
-    const eventIds = [
-      ...new Set([
-        ...singleRanks.rows.map((r) => r.eventId),
-        ...averageRanks.rows.map((r) => r.eventId)
-      ])
-    ];
+    const provinceSingleRanks = new Map(provinceSingleResult.rows.map((r) => [r.eventId, r.rank]));
+    const provinceAverageRanks = new Map(provinceAverageResult.rows.map((r) => [r.eventId, r.rank]));
+    const citySingleRanks = new Map(citySingleResult.rows.map((r) => [r.eventId, r.rank]));
+    const cityAverageRanks = new Map(cityAverageResult.rows.map((r) => [r.eventId, r.rank]));
 
     const medalsResult = await pool.query<MedalRow>(
       `SELECT
@@ -277,9 +264,6 @@ export async function GET(
         countryName: person.countryName,
         continentId: person.continentId,
         gender: person.gender,
-        birthYear: person.year,
-        birthMonth: person.month,
-        birthDay: person.day,
         competitionCount,
         careerFirst: career?.firstDate ?? null,
         careerLast: career?.lastDate ?? null,
