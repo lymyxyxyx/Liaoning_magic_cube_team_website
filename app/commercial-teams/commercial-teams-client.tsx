@@ -289,7 +289,6 @@ function MemberCard({ member, wcaName }: { member: Person; wcaName?: string }) {
             <span className="commercial-member-meta">
               <span>{member.gender || "未填性别"}</span>
               <span>{member.city}</span>
-              {member.mainEvent ? <span>{member.mainEvent}</span> : null}
             </span>
           </div>
           {cubingUrl ? (
