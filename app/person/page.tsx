@@ -10,7 +10,7 @@ export const metadata: Metadata = {
 export default function PersonSearchPage() {
   return (
     <>
-      <PageHero label="选手" title="选手查询">
+      <PageHero label="辽宁选手" title="辽宁选手">
         通过 WCA ID 或姓名搜索辽宁选手库中的魔方选手，查看详细成绩、排名与参赛记录
       </PageHero>
       <section className="person-search-section">
