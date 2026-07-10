@@ -113,7 +113,7 @@ export async function GET(
                 continent_rank::int AS "continentRank",
                 country_rank::int AS "countryRank"
          FROM wca_ranks_single
-         WHERE person_id = $1 AND best > 0
+         WHERE person_id = $1 AND best::int > 0
          ORDER BY event_id`,
         [wcaId]
       ),
@@ -123,7 +123,7 @@ export async function GET(
                 continent_rank::int AS "continentRank",
                 country_rank::int AS "countryRank"
          FROM wca_ranks_average
-         WHERE person_id = $1 AND best > 0
+         WHERE person_id = $1 AND best::int > 0
          ORDER BY event_id`,
         [wcaId]
       )
@@ -147,7 +147,7 @@ export async function GET(
                         ROW_NUMBER() OVER (PARTITION BY r.event_id ORDER BY r.best::int, r.world_rank::int, r.person_id) AS rank
                  FROM wca_ranks_single r
                  JOIN wca_persons p ON p.wca_id = r.person_id AND p.sub_id = '1'
-                 WHERE p.wca_id = ANY($1::text[]) AND r.best > 0
+                 WHERE p.wca_id = ANY($1::text[]) AND r.best::int > 0
                ) sub
                WHERE sub.person_id = $2`,
               [provinceWcaIds, wcaId]
@@ -161,7 +161,7 @@ export async function GET(
                         ROW_NUMBER() OVER (PARTITION BY r.event_id ORDER BY r.best::int, r.world_rank::int, r.person_id) AS rank
                  FROM wca_ranks_average r
                  JOIN wca_persons p ON p.wca_id = r.person_id AND p.sub_id = '1'
-                 WHERE p.wca_id = ANY($1::text[]) AND r.best > 0
+                 WHERE p.wca_id = ANY($1::text[]) AND r.best::int > 0
                ) sub
                WHERE sub.person_id = $2`,
               [provinceWcaIds, wcaId]
@@ -175,7 +175,7 @@ export async function GET(
                         ROW_NUMBER() OVER (PARTITION BY r.event_id ORDER BY r.best::int, r.world_rank::int, r.person_id) AS rank
                  FROM wca_ranks_single r
                  JOIN wca_persons p ON p.wca_id = r.person_id AND p.sub_id = '1'
-                 WHERE p.wca_id = ANY($1::text[]) AND r.best > 0
+                 WHERE p.wca_id = ANY($1::text[]) AND r.best::int > 0
                ) sub
                WHERE sub.person_id = $2`,
               [cityWcaIds, wcaId]
@@ -189,7 +189,7 @@ export async function GET(
                         ROW_NUMBER() OVER (PARTITION BY r.event_id ORDER BY r.best::int, r.world_rank::int, r.person_id) AS rank
                  FROM wca_ranks_average r
                  JOIN wca_persons p ON p.wca_id = r.person_id AND p.sub_id = '1'
-                 WHERE p.wca_id = ANY($1::text[]) AND r.best > 0
+                 WHERE p.wca_id = ANY($1::text[]) AND r.best::int > 0
                ) sub
                WHERE sub.person_id = $2`,
               [cityWcaIds, wcaId]
