@@ -170,9 +170,20 @@ export async function GET(request: NextRequest) {
         ORDER BY page_ranks.rank, page_ranks."worldRank", page_ranks."wcaId"
       `
       : `
-        WITH filtered_ranks AS (
+        WITH gender_world_ranks AS (
+          SELECT
+            r.person_id AS "wcaId",
+            ROW_NUMBER() OVER (ORDER BY r.world_rank::int, r.person_id)::int AS "genderWorldRank"
+          FROM ${rankingTable} r
+          JOIN wca_persons p ON p.wca_id = r.person_id AND p.sub_id = '1'
+          WHERE r.event_id = $1
+            AND r.world_rank::int > 0
+            AND p.gender = $${genderParamIndex}
+        ),
+        filtered_ranks AS (
           SELECT
             r.${rankColumn}::int AS "regionRank",
+            gwr."genderWorldRank",
             r.world_rank::int AS "overallWorldRank",
             r.person_id AS "wcaId",
             r.event_id,
@@ -185,6 +196,7 @@ export async function GET(request: NextRequest) {
           FROM ${rankingTable} r
           JOIN wca_persons p ON p.wca_id = r.person_id AND p.sub_id = '1'
           LEFT JOIN wca_countries cn ON cn.id = p.country_id
+          JOIN gender_world_ranks gwr ON gwr."wcaId" = r.person_id
           WHERE r.event_id = $1
             ${locationWhere}
             AND r.${rankColumn}::int > 0
@@ -193,7 +205,7 @@ export async function GET(request: NextRequest) {
         ranked_ranks AS (
           SELECT
             ROW_NUMBER() OVER (ORDER BY "regionRank", "overallWorldRank", "wcaId")::int AS rank,
-            ROW_NUMBER() OVER (ORDER BY "overallWorldRank", "regionRank", "wcaId")::int AS "worldRank",
+            "genderWorldRank" AS "worldRank",
             "wcaId",
             event_id,
             best,
@@ -314,9 +326,20 @@ export async function GET(request: NextRequest) {
         LIMIT $${limitParam} OFFSET $${offsetParam}
       `
       : `
-        WITH filtered_ranks AS (
+        WITH gender_world_ranks AS (
+          SELECT
+            r.person_id AS "wcaId",
+            ROW_NUMBER() OVER (ORDER BY r.world_rank::int, r.person_id)::int AS "genderWorldRank"
+          FROM ${rankingTable} r
+          JOIN wca_persons p ON p.wca_id = r.person_id AND p.sub_id = '1'
+          WHERE r.event_id = $1
+            AND r.world_rank::int > 0
+            AND p.gender = $${genderParamIndex}
+        ),
+        filtered_ranks AS (
           SELECT
             r.${rankColumn}::int AS "regionRank",
+            gwr."genderWorldRank",
             r.world_rank::int AS "overallWorldRank",
             r.person_id AS "wcaId",
             r.event_id,
@@ -329,6 +352,7 @@ export async function GET(request: NextRequest) {
           FROM ${rankingTable} r
           JOIN wca_persons p ON p.wca_id = r.person_id AND p.sub_id = '1'
           LEFT JOIN wca_countries cn ON cn.id = p.country_id
+          JOIN gender_world_ranks gwr ON gwr."wcaId" = r.person_id
           WHERE r.event_id = $1
             ${locationWhere}
             AND r.${rankColumn}::int > 0
@@ -337,7 +361,7 @@ export async function GET(request: NextRequest) {
         ranked_ranks AS (
           SELECT
             ROW_NUMBER() OVER (ORDER BY "regionRank", "overallWorldRank", "wcaId")::int AS rank,
-            ROW_NUMBER() OVER (ORDER BY "overallWorldRank", "regionRank", "wcaId")::int AS "worldRank",
+            "genderWorldRank" AS "worldRank",
             "wcaId",
             name,
             country,

@@ -118,7 +118,7 @@ function RecordCell({ record }: { record?: LocalRecordResult }) {
         <strong>{record.value}</strong>
         <span className="liaoning-record-badge">{record.mode === "single" ? "单次" : "平均"}</span>
       </div>
-      <Link className="liaoning-record-person" href={`https://cubing.com/results/person/${record.wcaId}`} referrerPolicy="no-referrer" rel="noopener noreferrer" target="_blank">
+      <Link className="liaoning-record-person" href={`/people/${record.wcaId}`}>
         {record.personName}
       </Link>
       <span className="liaoning-record-meta">

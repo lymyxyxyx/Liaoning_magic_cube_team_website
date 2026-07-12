@@ -1740,6 +1740,8 @@ main {
 
 .profile-panel {
   align-self: start;
+  background: linear-gradient(145deg, #ffffff 0%, #f4f8ff 100%);
+  border-color: #dbe5f4;
 }
 
 .profile-avatar {
@@ -1752,6 +1754,49 @@ main {
 .detail-main h1 {
   margin: 16px 0 8px;
   font-size: 30px;
+}
+
+.profile-external-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 20px;
+}
+
+.profile-external-links .button {
+  min-height: 38px;
+  padding: 0 13px;
+}
+
+.profile-external-links .button-secondary {
+  border-color: #dbe5f4;
+  background: #f7f9fc;
+  color: var(--ink);
+}
+
+.profile-achievements {
+  gap: 10px;
+}
+
+.profile-achievements .achievement-badge {
+  display: flex;
+  gap: 10px;
+  padding: 13px;
+  border-radius: 12px;
+  box-shadow: none;
+  background: #fffaf0;
+  border-color: #f2e3bd;
+}
+
+.profile-achievements .achievement-badge h3 {
+  margin: 3px 0 0;
+  font-size: 16px;
+}
+
+.profile-achievements .achievement-badge p {
+  margin-top: 4px;
+  font-size: 13px;
+  line-height: 1.45;
 }
 
 .definition-list {

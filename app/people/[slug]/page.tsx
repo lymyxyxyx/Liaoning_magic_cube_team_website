@@ -11,6 +11,41 @@ import {
 } from "@/lib/data";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
+import { getPostgresPool } from "@/lib/postgres";
+
+async function getPersonProfile(slug: string) {
+  const knownPerson = getPersonBySlug(slug);
+  if (knownPerson) return knownPerson;
+
+  const wcaId = slug.toUpperCase();
+  if (!/^\d{4}[A-Z]{4}\d{2}$/.test(wcaId)) return null;
+
+  try {
+    const { rows } = await getPostgresPool().query<{ wca_id: string; name: string; country_id: string }>(
+      "SELECT wca_id, name, country_id FROM wca_persons WHERE wca_id = $1 AND sub_id = '1' LIMIT 1",
+      [wcaId]
+    );
+    const row = rows[0];
+    if (!row) return null;
+    return {
+      id: `wca-${row.wca_id}`,
+      slug: row.wca_id,
+      name: row.name,
+      avatar: "/visuals/avatar-lin.svg",
+      roles: ["运动员"] as ["运动员"],
+      city: row.country_id === "China" ? "中国" : row.country_id || "待补充",
+      mainEvent: "WCA 竞速项目",
+      wcaId: row.wca_id,
+      wcaUrl: `https://www.worldcubeassociation.org/persons/${row.wca_id}`,
+      bio: "该选手的站内个人资料正在整理中。你可以通过下方链接查看其官方成绩与比赛记录。",
+      specialties: [],
+      rankingNote: "暂无辽宁或城市归属排名",
+      visible: true
+    };
+  } catch {
+    return null;
+  }
+}
 
 export function generateStaticParams() {
   return people.map((person) => ({ slug: person.slug }));
@@ -33,8 +68,8 @@ export function generateMetadata({ params }: { params: { slug: string } }): Meta
   };
 }
 
-export default function PersonDetailPage({ params }: { params: { slug: string } }) {
-  const person = getPersonBySlug(params.slug);
+export default async function PersonDetailPage({ params }: { params: { slug: string } }) {
+  const person = await getPersonProfile(params.slug);
 
   if (!person) {
     notFound();
@@ -67,14 +102,20 @@ export default function PersonDetailPage({ params }: { params: { slug: string } 
             <dd>{person.rankingNote || "待整理"}</dd>
           </div>
         </dl>
-        {person.wcaUrl ? (
-          <div className="section-actions">
-            <Link className="button" href={person.wcaUrl} target="_blank">
+        <div className="section-actions profile-external-links">
+          {person.wcaUrl ? (
+            <Link className="button" href={person.wcaUrl} target="_blank" rel="noopener noreferrer">
               WCA 主页
               <ExternalLink size={16} />
             </Link>
-          </div>
-        ) : null}
+          ) : null}
+          {person.wcaId ? (
+            <Link className="button button-secondary" href={`https://cubing.com/results/person/${person.wcaId}`} target="_blank" rel="noopener noreferrer">
+              Cubing 主页
+              <ExternalLink size={16} />
+            </Link>
+          ) : null}
+        </div>
       </aside>
 
       <div className="detail-main">
@@ -108,7 +149,7 @@ export default function PersonDetailPage({ params }: { params: { slug: string } 
 
         <div className="info-block">
           <h2>重要荣誉或勋章</h2>
-          <div className="grid two">
+          <div className="grid two profile-achievements">
             {achievements.length > 0 ? (
               achievements.map((achievement) => (
                 <AchievementBadge

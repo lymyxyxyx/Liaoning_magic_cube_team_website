@@ -591,10 +591,7 @@ export function LiaoningRankingsClient() {
                         <td data-label="姓名">
                           <Link
                             className="table-person-link"
-                            href={`https://cubing.com/results/person/${row.wcaId}`}
-                            referrerPolicy="no-referrer"
-                            rel="noopener noreferrer"
-                            target="_blank"
+                            href={`/people/${row.wcaId}`}
                           >
                             {row.name}
                           </Link>
