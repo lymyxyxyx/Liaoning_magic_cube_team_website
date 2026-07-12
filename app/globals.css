@@ -6317,6 +6317,55 @@ textarea {
   min-width: 900px;
 }
 
+/* Local rankings keep full competition and attempt details visible. */
+.local-ranking-results-table {
+  width: 1380px;
+  min-width: 1380px;
+  table-layout: fixed;
+}
+
+.local-ranking-results-table.has-gender-ranks {
+  width: 1680px;
+  min-width: 1680px;
+}
+
+.local-ranking-results-table th:nth-child(1),
+.local-ranking-results-table td:nth-child(1) { width: 55px; }
+
+.local-ranking-results-table th:nth-child(2),
+.local-ranking-results-table td:nth-child(2) { width: 230px; }
+
+.local-ranking-results-table th:nth-child(3),
+.local-ranking-results-table td:nth-child(3) { width: 50px; }
+
+.local-ranking-results-table th:nth-child(4),
+.local-ranking-results-table td:nth-child(4) { width: 65px; }
+
+.local-ranking-results-table th:nth-child(5),
+.local-ranking-results-table td:nth-child(5) { width: 120px; }
+
+.local-ranking-results-table th:nth-child(6),
+.local-ranking-results-table td:nth-child(6),
+.local-ranking-results-table th:nth-child(7),
+.local-ranking-results-table td:nth-child(7) { width: 80px; }
+
+.local-ranking-results-table.has-gender-ranks th:nth-child(8),
+.local-ranking-results-table.has-gender-ranks td:nth-child(8),
+.local-ranking-results-table.has-gender-ranks th:nth-child(9),
+.local-ranking-results-table.has-gender-ranks td:nth-child(9),
+.local-ranking-results-table.has-gender-ranks th:nth-child(10),
+.local-ranking-results-table.has-gender-ranks td:nth-child(10) { width: 100px; }
+
+.local-ranking-results-table:not(.has-gender-ranks) th:nth-child(8),
+.local-ranking-results-table:not(.has-gender-ranks) td:nth-child(8),
+.local-ranking-results-table.has-gender-ranks th:nth-child(11),
+.local-ranking-results-table.has-gender-ranks td:nth-child(11) { width: 430px; }
+
+.local-ranking-results-table:not(.has-gender-ranks) th:nth-child(9),
+.local-ranking-results-table:not(.has-gender-ranks) td:nth-child(9),
+.local-ranking-results-table.has-gender-ranks th:nth-child(12),
+.local-ranking-results-table.has-gender-ranks td:nth-child(12) { width: 270px; }
+
 .wca-ranking-results-table {
   min-width: 1040px;
 }
