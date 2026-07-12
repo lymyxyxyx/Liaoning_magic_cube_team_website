@@ -1961,10 +1961,10 @@ main {
 
 .analytics-visit-row {
   display: grid;
-  grid-template-columns: 148px 150px 82px minmax(220px, 1fr);
+  grid-template-columns: 148px 150px 190px 82px minmax(220px, 1fr);
   gap: 14px;
   align-items: center;
-  min-width: 680px;
+  min-width: 880px;
   padding: 12px 0;
   border-bottom: 1px solid var(--line);
   color: var(--muted);

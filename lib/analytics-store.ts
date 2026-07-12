@@ -23,6 +23,7 @@ export type AnalyticsDailyStat = {
 export type AnalyticsRecentView = {
   path: string;
   visitorIp: string;
+  visitorLocation: string;
   deviceType: string;
   createdAt: string;
 };
@@ -44,6 +45,7 @@ type DailyRow = {
 type RecentViewRow = {
   path: string;
   visitor_ip: string;
+  visitor_location: string;
   device_type: string;
   created_at: string;
 };
@@ -60,6 +62,7 @@ export async function ensureAnalyticsTable() {
           referrer TEXT NOT NULL DEFAULT '',
           user_agent TEXT NOT NULL DEFAULT '',
           visitor_ip TEXT NOT NULL DEFAULT '',
+          visitor_location TEXT NOT NULL DEFAULT '',
           device_type TEXT NOT NULL DEFAULT 'unknown',
           created_at TIMESTAMPTZ NOT NULL DEFAULT now()
         )
@@ -67,6 +70,7 @@ export async function ensureAnalyticsTable() {
     )
     .then(async () => {
       await getPostgresPool().query("ALTER TABLE page_views ADD COLUMN IF NOT EXISTS visitor_ip TEXT NOT NULL DEFAULT ''");
+      await getPostgresPool().query("ALTER TABLE page_views ADD COLUMN IF NOT EXISTS visitor_location TEXT NOT NULL DEFAULT ''");
       await getPostgresPool().query("CREATE INDEX IF NOT EXISTS page_views_created_at_idx ON page_views (created_at)");
       await getPostgresPool().query("CREATE INDEX IF NOT EXISTS page_views_path_idx ON page_views (path)");
     })
@@ -81,12 +85,13 @@ export async function recordPageView(input: { path: string; referrer?: string; u
 
   const userAgent = (input.userAgent || "").slice(0, 500);
   const visitorIp = normalizeIp(input.visitorIp || "");
+  const visitorLocation = await resolveIpLocation(visitorIp);
   await getPostgresPool().query(
-    `
-      INSERT INTO page_views (path, referrer, user_agent, visitor_ip, device_type)
-      VALUES ($1, $2, $3, $4, $5)
+      `
+      INSERT INTO page_views (path, referrer, user_agent, visitor_ip, visitor_location, device_type)
+      VALUES ($1, $2, $3, $4, $5, $6)
     `,
-    [path, (input.referrer || "").slice(0, 500), userAgent, visitorIp, getDeviceType(userAgent)]
+    [path, (input.referrer || "").slice(0, 500), userAgent, visitorIp, visitorLocation, getDeviceType(userAgent)]
   );
 }
 
@@ -135,6 +140,7 @@ export async function getAnalyticsSummary(): Promise<AnalyticsSummary> {
         SELECT
           path,
           visitor_ip,
+          visitor_location,
           device_type,
           to_char(created_at AT TIME ZONE 'Asia/Shanghai', 'YYYY-MM-DD HH24:MI:SS') AS created_at
         FROM page_views
@@ -143,6 +149,8 @@ export async function getAnalyticsSummary(): Promise<AnalyticsSummary> {
       `
     )
   ]);
+
+  const resolvedLocations = await resolveRecentLocations(recentViews.rows);
 
   return {
     totalViews: toNumber(total.rows[0]?.count),
@@ -154,10 +162,53 @@ export async function getAnalyticsSummary(): Promise<AnalyticsSummary> {
     recentViews: recentViews.rows.map((row) => ({
       path: row.path,
       visitorIp: row.visitor_ip || "未记录",
+      visitorLocation: resolvedLocations.get(row.visitor_ip) || row.visitor_location || "未知",
       deviceType: row.device_type || "unknown",
       createdAt: row.created_at
     }))
   };
+}
+
+async function resolveRecentLocations(rows: RecentViewRow[]) {
+  const locations = new Map(rows.map((row) => [row.visitor_ip, row.visitor_location]));
+  const pendingIps = Array.from(
+    new Set(rows.map((row) => row.visitor_ip).filter((ip) => ip && !locations.get(ip)))
+  );
+  if (pendingIps.length === 0) return locations;
+
+  const resolved = await Promise.all(pendingIps.map(async (ip) => [ip, await resolveIpLocation(ip)] as const));
+  await Promise.all(
+    resolved.map(async ([ip, location]) => {
+      locations.set(ip, location);
+      await getPostgresPool().query("UPDATE page_views SET visitor_location = $1 WHERE visitor_ip = $2 AND visitor_location = ''", [
+        location,
+        ip
+      ]);
+    })
+  );
+  return locations;
+}
+
+async function resolveIpLocation(ip: string) {
+  if (!ip) return "未记录";
+  if (isPrivateIp(ip)) return "内网地址";
+
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 1800);
+  try {
+    const response = await fetch(`https://ipwho.is/${encodeURIComponent(ip)}?fields=success,country,region,city`, {
+      signal: controller.signal,
+      cache: "no-store"
+    });
+    if (!response.ok) return "未知";
+    const payload = (await response.json()) as { success?: boolean; country?: string; region?: string; city?: string };
+    if (!payload.success) return "未知";
+    return [payload.country, payload.region, payload.city].filter(Boolean).join(" · ") || "未知";
+  } catch {
+    return "未知";
+  } finally {
+    clearTimeout(timeout);
+  }
 }
 
 function normalizePath(path: string) {
@@ -193,6 +244,18 @@ function normalizeIp(value: string) {
   if (!ip) return "";
   if (/^\d{1,3}(\.\d{1,3}){3}:\d+$/.test(ip)) return ip.slice(0, ip.lastIndexOf(":"));
   return ip.slice(0, 100);
+}
+
+function isPrivateIp(ip: string) {
+  return (
+    ip === "::1" ||
+    ip.startsWith("127.") ||
+    ip.startsWith("10.") ||
+    ip.startsWith("192.168.") ||
+    /^172\.(1[6-9]|2\d|3[0-1])\./.test(ip) ||
+    ip.startsWith("fc") ||
+    ip.startsWith("fd")
+  );
 }
 
 function toNumber(value: string | number | undefined) {

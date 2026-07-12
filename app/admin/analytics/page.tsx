@@ -108,6 +108,7 @@ function AnalyticsDashboard({ summary }: { summary: AnalyticsSummary }) {
             <div className="analytics-visit-row analytics-visit-row--head">
               <span>时间</span>
               <span>访问 IP</span>
+              <span>归属地</span>
               <span>设备</span>
               <span>页面</span>
             </div>
@@ -115,6 +116,7 @@ function AnalyticsDashboard({ summary }: { summary: AnalyticsSummary }) {
               <div className="analytics-visit-row" key={`${view.createdAt}-${view.path}-${index}`}>
                 <span>{view.createdAt}</span>
                 <strong>{view.visitorIp}</strong>
+                <span>{view.visitorLocation}</span>
                 <span>{formatDevice(view.deviceType)}</span>
                 <span>{view.path}</span>
               </div>
