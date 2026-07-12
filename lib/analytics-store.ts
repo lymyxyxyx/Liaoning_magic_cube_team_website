@@ -24,6 +24,7 @@ export type AnalyticsRecentView = {
   path: string;
   visitorIp: string;
   visitorLocation: string;
+  visitorLocationZh: string;
   deviceType: string;
   createdAt: string;
 };
@@ -46,6 +47,7 @@ type RecentViewRow = {
   path: string;
   visitor_ip: string;
   visitor_location: string;
+  visitor_location_zh: string;
   device_type: string;
   created_at: string;
 };
@@ -63,6 +65,7 @@ export async function ensureAnalyticsTable() {
           user_agent TEXT NOT NULL DEFAULT '',
           visitor_ip TEXT NOT NULL DEFAULT '',
           visitor_location TEXT NOT NULL DEFAULT '',
+          visitor_location_zh TEXT NOT NULL DEFAULT '',
           device_type TEXT NOT NULL DEFAULT 'unknown',
           created_at TIMESTAMPTZ NOT NULL DEFAULT now()
         )
@@ -71,6 +74,7 @@ export async function ensureAnalyticsTable() {
     .then(async () => {
       await getPostgresPool().query("ALTER TABLE page_views ADD COLUMN IF NOT EXISTS visitor_ip TEXT NOT NULL DEFAULT ''");
       await getPostgresPool().query("ALTER TABLE page_views ADD COLUMN IF NOT EXISTS visitor_location TEXT NOT NULL DEFAULT ''");
+      await getPostgresPool().query("ALTER TABLE page_views ADD COLUMN IF NOT EXISTS visitor_location_zh TEXT NOT NULL DEFAULT ''");
       await getPostgresPool().query("CREATE INDEX IF NOT EXISTS page_views_created_at_idx ON page_views (created_at)");
       await getPostgresPool().query("CREATE INDEX IF NOT EXISTS page_views_path_idx ON page_views (path)");
     })
@@ -85,13 +89,16 @@ export async function recordPageView(input: { path: string; referrer?: string; u
 
   const userAgent = (input.userAgent || "").slice(0, 500);
   const visitorIp = normalizeIp(input.visitorIp || "");
-  const visitorLocation = await resolveIpLocation(visitorIp);
+  const cachedLocations = await getCachedLocations(visitorIp);
+  const [visitorLocation, visitorLocationZh] = cachedLocations
+    ? [cachedLocations.location, cachedLocations.locationZh]
+    : await Promise.all([resolveIpLocation(visitorIp), resolveIpLocation(visitorIp, "zh-CN")]);
   await getPostgresPool().query(
       `
-      INSERT INTO page_views (path, referrer, user_agent, visitor_ip, visitor_location, device_type)
-      VALUES ($1, $2, $3, $4, $5, $6)
+      INSERT INTO page_views (path, referrer, user_agent, visitor_ip, visitor_location, visitor_location_zh, device_type)
+      VALUES ($1, $2, $3, $4, $5, $6, $7)
     `,
-    [path, (input.referrer || "").slice(0, 500), userAgent, visitorIp, visitorLocation, getDeviceType(userAgent)]
+    [path, (input.referrer || "").slice(0, 500), userAgent, visitorIp, visitorLocation, visitorLocationZh, getDeviceType(userAgent)]
   );
 }
 
@@ -141,6 +148,7 @@ export async function getAnalyticsSummary(): Promise<AnalyticsSummary> {
           path,
           visitor_ip,
           visitor_location,
+          visitor_location_zh,
           device_type,
           to_char(created_at AT TIME ZONE 'Asia/Shanghai', 'YYYY-MM-DD HH24:MI:SS') AS created_at
         FROM page_views
@@ -151,6 +159,7 @@ export async function getAnalyticsSummary(): Promise<AnalyticsSummary> {
   ]);
 
   const resolvedLocations = await resolveRecentLocations(recentViews.rows);
+  const resolvedChineseLocations = await resolveRecentLocations(recentViews.rows, "zh-CN");
 
   return {
     totalViews: toNumber(total.rows[0]?.count),
@@ -163,24 +172,42 @@ export async function getAnalyticsSummary(): Promise<AnalyticsSummary> {
       path: row.path,
       visitorIp: row.visitor_ip || "未记录",
       visitorLocation: resolvedLocations.get(row.visitor_ip) || row.visitor_location || "未知",
+      visitorLocationZh: resolvedChineseLocations.get(row.visitor_ip) || row.visitor_location_zh || "未知",
       deviceType: row.device_type || "unknown",
       createdAt: row.created_at
     }))
   };
 }
 
-async function resolveRecentLocations(rows: RecentViewRow[]) {
-  const locations = new Map(rows.map((row) => [row.visitor_ip, row.visitor_location]));
+async function getCachedLocations(ip: string) {
+  if (!ip) return null;
+  const { rows } = await getPostgresPool().query<{ visitor_location: string; visitor_location_zh: string }>(
+    `
+      SELECT visitor_location, visitor_location_zh
+      FROM page_views
+      WHERE visitor_ip = $1 AND visitor_location <> '' AND visitor_location_zh <> ''
+      ORDER BY created_at DESC
+      LIMIT 1
+    `,
+    [ip]
+  );
+  const row = rows[0];
+  return row ? { location: row.visitor_location, locationZh: row.visitor_location_zh } : null;
+}
+
+async function resolveRecentLocations(rows: RecentViewRow[], language?: "zh-CN") {
+  const field = language ? "visitor_location_zh" : "visitor_location";
+  const locations = new Map(rows.map((row) => [row.visitor_ip, row[field]]));
   const pendingIps = Array.from(
     new Set(rows.map((row) => row.visitor_ip).filter((ip) => ip && !locations.get(ip)))
   );
   if (pendingIps.length === 0) return locations;
 
-  const resolved = await Promise.all(pendingIps.map(async (ip) => [ip, await resolveIpLocation(ip)] as const));
+  const resolved = await Promise.all(pendingIps.map(async (ip) => [ip, await resolveIpLocation(ip, language)] as const));
   await Promise.all(
     resolved.map(async ([ip, location]) => {
       locations.set(ip, location);
-      await getPostgresPool().query("UPDATE page_views SET visitor_location = $1 WHERE visitor_ip = $2 AND visitor_location = ''", [
+      await getPostgresPool().query(`UPDATE page_views SET ${field} = $1 WHERE visitor_ip = $2 AND ${field} = ''`, [
         location,
         ip
       ]);
@@ -189,14 +216,16 @@ async function resolveRecentLocations(rows: RecentViewRow[]) {
   return locations;
 }
 
-async function resolveIpLocation(ip: string) {
+async function resolveIpLocation(ip: string, language?: "zh-CN") {
   if (!ip) return "未记录";
   if (isPrivateIp(ip)) return "内网地址";
 
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 1800);
   try {
-    const response = await fetch(`https://ipwho.is/${encodeURIComponent(ip)}?fields=success,country,region,city`, {
+    const searchParams = new URLSearchParams({ fields: "success,country,region,city" });
+    if (language) searchParams.set("lang", language);
+    const response = await fetch(`https://ipwho.is/${encodeURIComponent(ip)}?${searchParams}`, {
       signal: controller.signal,
       cache: "no-store"
     });

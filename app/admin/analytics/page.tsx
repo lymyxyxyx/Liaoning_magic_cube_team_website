@@ -109,6 +109,7 @@ function AnalyticsDashboard({ summary }: { summary: AnalyticsSummary }) {
               <span>时间</span>
               <span>访问 IP</span>
               <span>归属地</span>
+              <span>中文归属地</span>
               <span>设备</span>
               <span>页面</span>
             </div>
@@ -117,6 +118,7 @@ function AnalyticsDashboard({ summary }: { summary: AnalyticsSummary }) {
                 <span>{view.createdAt}</span>
                 <strong>{view.visitorIp}</strong>
                 <span>{view.visitorLocation}</span>
+                <span>{view.visitorLocationZh}</span>
                 <span>{formatDevice(view.deviceType)}</span>
                 <span>{view.path}</span>
               </div>
