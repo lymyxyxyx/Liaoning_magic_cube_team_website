@@ -8760,6 +8760,24 @@ a.commercial-member-link:hover {
     text-align: left;
   }
 
+  /* Keep long competition names on one readable line instead of squeezing the row height. */
+  .ranking-results-section .local-ranking-results-table .ranking-competition-link {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    width: 100%;
+    min-width: 0;
+    gap: 6px;
+    align-items: center;
+    white-space: nowrap;
+  }
+
+  .ranking-results-section .local-ranking-results-table .ranking-competition-link > span {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
   .ranking-results-section .local-ranking-results-table:not(.has-gender-ranks) th:nth-child(9),
   .ranking-results-section .local-ranking-results-table:not(.has-gender-ranks) td:nth-child(9),
   .ranking-results-section .local-ranking-results-table.has-gender-ranks th:nth-child(12),
