@@ -8,6 +8,9 @@ export type AnalyticsSummary = {
   topPages: AnalyticsPageStat[];
   dailyViews: AnalyticsDailyStat[];
   recentViews: AnalyticsRecentView[];
+  recentViewsPage: number;
+  recentViewsPageSize: number;
+  recentViewsTotal: number;
 };
 
 export type AnalyticsPageStat = {
@@ -102,9 +105,12 @@ export async function recordPageView(input: { path: string; referrer?: string; u
   );
 }
 
-export async function getAnalyticsSummary(): Promise<AnalyticsSummary> {
+export async function getAnalyticsSummary(page = 1, pageSize = 50): Promise<AnalyticsSummary> {
   await ensureAnalyticsTable();
   const pool = getPostgresPool();
+  const recentViewsPageSize = Math.max(1, Math.min(100, Math.trunc(pageSize) || 50));
+  const recentViewsPage = Math.max(1, Math.trunc(page) || 1);
+  const recentViewsOffset = (recentViewsPage - 1) * recentViewsPageSize;
   const [total, today, yesterday, last7Days, topPages, dailyViews, recentViews] = await Promise.all([
     pool.query<CountRow>("SELECT COUNT(*)::int AS count FROM page_views"),
     pool.query<CountRow>("SELECT COUNT(*)::int AS count FROM page_views WHERE created_at >= date_trunc('day', now())"),
@@ -153,8 +159,9 @@ export async function getAnalyticsSummary(): Promise<AnalyticsSummary> {
           to_char(created_at AT TIME ZONE 'Asia/Shanghai', 'YYYY-MM-DD HH24:MI:SS') AS created_at
         FROM page_views
         ORDER BY created_at DESC
-        LIMIT 30
-      `
+        LIMIT $1 OFFSET $2
+      `,
+      [recentViewsPageSize, recentViewsOffset]
     )
   ]);
 
@@ -168,6 +175,9 @@ export async function getAnalyticsSummary(): Promise<AnalyticsSummary> {
     last7DaysViews: toNumber(last7Days.rows[0]?.count),
     topPages: topPages.rows.map((row) => ({ path: row.path, views: toNumber(row.views) })),
     dailyViews: dailyViews.rows.map((row) => ({ date: row.date, views: toNumber(row.views) })),
+    recentViewsPage,
+    recentViewsPageSize,
+    recentViewsTotal: toNumber(total.rows[0]?.count),
     recentViews: recentViews.rows.map((row) => ({
       path: row.path,
       visitorIp: row.visitor_ip || "未记录",

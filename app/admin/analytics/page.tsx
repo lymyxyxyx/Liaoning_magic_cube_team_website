@@ -4,12 +4,14 @@ import { getAnalyticsSummary, type AnalyticsSummary } from "@/lib/analytics-stor
 
 export const dynamic = "force-dynamic";
 
-export default async function AdminAnalyticsPage() {
+export default async function AdminAnalyticsPage({ searchParams }: { searchParams?: { page?: string | string[] } }) {
   let summary: AnalyticsSummary | null = null;
   let error = "";
+  const pageValue = Array.isArray(searchParams?.page) ? searchParams?.page[0] : searchParams?.page;
+  const page = Math.max(1, Number(pageValue || 1) || 1);
 
   try {
-    summary = await getAnalyticsSummary();
+    summary = await getAnalyticsSummary(page);
   } catch {
     error = "暂时无法读取访问统计，请确认数据库已初始化。";
   }
@@ -99,8 +101,8 @@ function AnalyticsDashboard({ summary }: { summary: AnalyticsSummary }) {
       <article className="admin-card">
         <div className="admin-card-heading">
           <div>
-            <h2>最近访问</h2>
-            <p>最近 30 条页面访问记录，时间按北京时间显示。</p>
+              <h2>全部访问记录</h2>
+              <p>按时间倒序展示，每页 50 条，时间按北京时间显示。</p>
           </div>
         </div>
         {summary.recentViews.length > 0 ? (
@@ -127,6 +129,27 @@ function AnalyticsDashboard({ summary }: { summary: AnalyticsSummary }) {
         ) : (
           <p className="admin-inline-notice">暂无访问记录。</p>
         )}
+        {summary.recentViewsTotal > summary.recentViewsPageSize ? (
+          <nav className="analytics-pagination" aria-label="访问记录分页">
+            {summary.recentViewsPage > 1 ? (
+              <Link className="button button-secondary" href={`/admin/analytics?page=${summary.recentViewsPage - 1}`}>
+                上一页
+              </Link>
+            ) : (
+              <span className="button button-secondary is-disabled">上一页</span>
+            )}
+            <span>
+              第 {summary.recentViewsPage} / {Math.max(1, Math.ceil(summary.recentViewsTotal / summary.recentViewsPageSize))} 页 · 共 {formatNumber(summary.recentViewsTotal)} 条
+            </span>
+            {summary.recentViewsPage * summary.recentViewsPageSize < summary.recentViewsTotal ? (
+              <Link className="button button-secondary" href={`/admin/analytics?page=${summary.recentViewsPage + 1}`}>
+                下一页
+              </Link>
+            ) : (
+              <span className="button button-secondary is-disabled">下一页</span>
+            )}
+          </nav>
+        ) : null}
       </article>
     </div>
   );
