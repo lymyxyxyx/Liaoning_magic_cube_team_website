@@ -6496,10 +6496,19 @@ textarea {
 }
 
 .ranking-competition-link {
-  display: inline-flex;
+  display: inline-grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
   gap: 6px;
   align-items: center;
-  white-space: normal;
+  width: 100%;
+  min-width: 0;
+  white-space: nowrap;
+}
+
+.ranking-competition-link > span {
+  display: block;
+  min-width: 0;
+  white-space: nowrap !important;
 }
 
 .ranking-region-short {
@@ -8526,14 +8535,14 @@ a.commercial-member-link:hover {
   }
 
   .ranking-results-section .local-ranking-results-table {
-    min-width: 850px;
-    width: 850px;
+    min-width: 930px;
+    width: 930px;
     table-layout: fixed;
   }
 
   .ranking-results-section .local-ranking-results-table.has-gender-ranks {
-    min-width: 1080px;
-    width: 1080px;
+    min-width: 1160px;
+    width: 1160px;
   }
 
   .ranking-results-section .result-table thead {
@@ -8729,7 +8738,7 @@ a.commercial-member-link:hover {
   .ranking-results-section .local-ranking-results-table:not(.has-gender-ranks) td:nth-child(8),
   .ranking-results-section .local-ranking-results-table.has-gender-ranks th:nth-child(11),
   .ranking-results-section .local-ranking-results-table.has-gender-ranks td:nth-child(11) {
-    width: 220px;
+    width: 300px;
   }
 
   .ranking-results-section .local-ranking-results-table:not(.has-gender-ranks) th:nth-child(9),
@@ -8773,8 +8782,6 @@ a.commercial-member-link:hover {
 
   .ranking-results-section .local-ranking-results-table .ranking-competition-link > span {
     min-width: 0;
-    overflow: hidden;
-    text-overflow: ellipsis;
     white-space: nowrap;
   }
 
