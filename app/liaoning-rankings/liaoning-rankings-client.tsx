@@ -591,7 +591,7 @@ export function LiaoningRankingsClient() {
                         <td data-label="姓名">
                           <Link
                             className="table-person-link"
-                            href={`/people/${row.wcaId}`}
+                            href={`/person/${row.wcaId}`}
                           >
                             {row.name}
                           </Link>
