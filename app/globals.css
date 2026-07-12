@@ -8535,14 +8535,14 @@ a.commercial-member-link:hover {
   }
 
   .ranking-results-section .local-ranking-results-table {
-    min-width: 930px;
-    width: 930px;
+    min-width: 1180px;
+    width: 1180px;
     table-layout: fixed;
   }
 
   .ranking-results-section .local-ranking-results-table.has-gender-ranks {
-    min-width: 1160px;
-    width: 1160px;
+    min-width: 1370px;
+    width: 1370px;
   }
 
   .ranking-results-section .result-table thead {
@@ -8738,14 +8738,14 @@ a.commercial-member-link:hover {
   .ranking-results-section .local-ranking-results-table:not(.has-gender-ranks) td:nth-child(8),
   .ranking-results-section .local-ranking-results-table.has-gender-ranks th:nth-child(11),
   .ranking-results-section .local-ranking-results-table.has-gender-ranks td:nth-child(11) {
-    width: 300px;
+    width: 420px;
   }
 
   .ranking-results-section .local-ranking-results-table:not(.has-gender-ranks) th:nth-child(9),
   .ranking-results-section .local-ranking-results-table:not(.has-gender-ranks) td:nth-child(9),
   .ranking-results-section .local-ranking-results-table.has-gender-ranks th:nth-child(12),
   .ranking-results-section .local-ranking-results-table.has-gender-ranks td:nth-child(12) {
-    width: 150px;
+    width: 220px;
   }
 
   .ranking-results-section .result-table td::before {
