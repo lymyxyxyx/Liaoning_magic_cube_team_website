@@ -5,6 +5,7 @@ import { PageHero } from "@/components/page-hero";
 import { getSingleBest, type WeeklyEvent } from "@/lib/weekly";
 import { getWeeklyMeetBySlug } from "@/lib/weekly-db";
 import { WeeklyImageExportButton } from "./weekly-image-export-button";
+import { isWeeklyCompetitionEnabled } from "@/lib/weekly-feature";
 
 export const dynamic = "force-dynamic";
 
@@ -21,6 +22,7 @@ function formatAttempt(value: number | "DNF" | null) {
 }
 
 export default async function WeeklyDetailPage({ params }: { params: { slug: string } }) {
+  if (!isWeeklyCompetitionEnabled()) notFound();
   const meet = await getWeeklyMeetBySlug(params.slug);
 
   if (!meet) {

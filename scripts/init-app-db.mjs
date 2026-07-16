@@ -53,9 +53,15 @@ async function main() {
         summary TEXT NOT NULL DEFAULT '',
         pb_note TEXT NOT NULL DEFAULT '',
         three_age_intro TEXT NOT NULL DEFAULT '',
+        status TEXT NOT NULL DEFAULT 'open',
+        starts_at TIMESTAMPTZ,
+        ends_at TIMESTAMPTZ,
         created_at TIMESTAMPTZ NOT NULL DEFAULT now()
       )
     `);
+    await client.query("ALTER TABLE weekly_meets ADD COLUMN IF NOT EXISTS status TEXT NOT NULL DEFAULT 'open'");
+    await client.query("ALTER TABLE weekly_meets ADD COLUMN IF NOT EXISTS starts_at TIMESTAMPTZ");
+    await client.query("ALTER TABLE weekly_meets ADD COLUMN IF NOT EXISTS ends_at TIMESTAMPTZ");
 
     await client.query(`
       CREATE TABLE IF NOT EXISTS weekly_meet_intros (
@@ -75,10 +81,14 @@ async function main() {
         event_name TEXT NOT NULL,
         group_name TEXT,
         is_all_around BOOLEAN NOT NULL DEFAULT FALSE,
+        format TEXT NOT NULL DEFAULT 'avg5',
+        attempt_count INTEGER NOT NULL DEFAULT 5,
         seq INTEGER NOT NULL DEFAULT 0,
         PRIMARY KEY (id, meet_id)
       )
     `);
+    await client.query("ALTER TABLE weekly_events ADD COLUMN IF NOT EXISTS format TEXT NOT NULL DEFAULT 'avg5'");
+    await client.query("ALTER TABLE weekly_events ADD COLUMN IF NOT EXISTS attempt_count INTEGER NOT NULL DEFAULT 5");
 
     await client.query(`
       CREATE TABLE IF NOT EXISTS weekly_results (
@@ -95,8 +105,20 @@ async function main() {
         average NUMERIC(10, 3) NOT NULL,
         personal_best NUMERIC(10, 3) NOT NULL,
         pb_refreshed BOOLEAN NOT NULL DEFAULT FALSE,
+        player_id TEXT,
+        source TEXT NOT NULL DEFAULT 'self',
+        updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
         FOREIGN KEY (event_id, meet_id) REFERENCES weekly_events(id, meet_id) ON DELETE CASCADE
       )
+    `);
+    await client.query("ALTER TABLE weekly_results ADD COLUMN IF NOT EXISTS player_id TEXT");
+    await client.query("ALTER TABLE weekly_results ADD COLUMN IF NOT EXISTS source TEXT NOT NULL DEFAULT 'self'");
+    await client.query("ALTER TABLE weekly_results ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ NOT NULL DEFAULT now()");
+    await client.query("CREATE INDEX IF NOT EXISTS weekly_results_player_id_idx ON weekly_results (player_id)");
+    await client.query(`
+      CREATE UNIQUE INDEX IF NOT EXISTS weekly_results_meet_event_player_idx
+      ON weekly_results (meet_id, event_id, player_id)
+      WHERE player_id IS NOT NULL
     `);
 
     await client.query(`
@@ -105,6 +127,33 @@ async function main() {
         seq INTEGER NOT NULL,
         value NUMERIC(10, 3),
         PRIMARY KEY (result_id, seq)
+      )
+    `);
+
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS weekly_result_revisions (
+        id BIGSERIAL PRIMARY KEY,
+        result_id INTEGER NOT NULL,
+        action TEXT NOT NULL,
+        reason TEXT NOT NULL DEFAULT '',
+        previous_attempts JSONB NOT NULL DEFAULT '[]'::jsonb,
+        next_attempts JSONB NOT NULL DEFAULT '[]'::jsonb,
+        previous_average NUMERIC(10, 3),
+        next_average NUMERIC(10, 3),
+        actor TEXT NOT NULL DEFAULT 'admin',
+        created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+      )
+    `);
+    await client.query("CREATE INDEX IF NOT EXISTS weekly_result_revisions_result_id_idx ON weekly_result_revisions (result_id, created_at DESC)");
+
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS weekly_meet_event_configs (
+        meet_id TEXT NOT NULL REFERENCES weekly_meets(id) ON DELETE CASCADE,
+        event_id TEXT NOT NULL,
+        format TEXT NOT NULL DEFAULT 'avg5',
+        enabled BOOLEAN NOT NULL DEFAULT TRUE,
+        seq INTEGER NOT NULL DEFAULT 0,
+        PRIMARY KEY (meet_id, event_id)
       )
     `);
 

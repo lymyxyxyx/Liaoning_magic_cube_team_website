@@ -1,10 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
-import { listWeeklyResults, saveWeeklyResult } from "@/lib/weekly-entry-store";
+import { getWeeklyMeetEntryAvailability, listWeeklyResults, saveWeeklyResult } from "@/lib/weekly-entry-store";
 import { findWeeklyPlayerLibraryEntry } from "@/lib/weekly-player-library";
+import { isWeeklyCompetitionEnabled } from "@/lib/weekly-feature";
 
 export const dynamic = "force-dynamic";
 
 export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
+  if (!isWeeklyCompetitionEnabled()) return NextResponse.json({ message: "Not found" }, { status: 404 });
   const eventId = request.nextUrl.searchParams.get("eventId") || "333";
   const format = request.nextUrl.searchParams.get("format") || "avg5";
   try {
@@ -19,6 +21,7 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
 }
 
 export async function POST(request: NextRequest, { params }: { params: { id: string } }) {
+  if (!isWeeklyCompetitionEnabled()) return NextResponse.json({ message: "Not found" }, { status: 404 });
   const payload = (await request.json().catch(() => null)) as {
     eventId?: string;
     player?: {
@@ -41,6 +44,8 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
     if (!payload?.eventId || !payload.player || !payload.attempts) {
       return NextResponse.json({ message: "缺少成绩录入信息" }, { status: 400 });
     }
+    const availability = await getWeeklyMeetEntryAvailability(params.id);
+    if (!availability.canEnter) return NextResponse.json({ message: availability.message }, { status: 403 });
     const libraryPlayer = await findWeeklyPlayerLibraryEntry({ id: payload.player.id, name: payload.player.name });
     if (!libraryPlayer) return NextResponse.json({ message: "请先从周赛选手库选择选手" }, { status: 400 });
 

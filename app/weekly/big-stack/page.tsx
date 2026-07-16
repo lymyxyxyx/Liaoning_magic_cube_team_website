@@ -3,8 +3,11 @@ import { BarChart3, Medal, Trophy } from "lucide-react";
 import { PageHero } from "@/components/page-hero";
 import { bigStackIntro, getRankedBigStackRecords } from "@/lib/big-stack";
 import { people } from "@/lib/data";
+import { isWeeklyCompetitionEnabled } from "@/lib/weekly-feature";
+import { notFound } from "next/navigation";
 
 export default function WeeklyBigStackPage() {
+  if (!isWeeklyCompetitionEnabled()) notFound();
   const bigStackRanking = getRankedBigStackRecords();
   const peopleByName = new Map(people.map((person) => [person.name, person]));
   const topThree = bigStackRanking.slice(0, 3);

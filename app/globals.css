@@ -3905,6 +3905,37 @@ textarea {
   justify-content: center;
 }
 
+.weekly-result-actions {
+  display: flex;
+  gap: 6px;
+  white-space: nowrap;
+}
+
+.weekly-result-actions .button {
+  min-width: 32px;
+  min-height: 32px;
+  padding: 6px;
+}
+
+.weekly-correction-reason {
+  display: grid;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.weekly-correction-reason input {
+  min-height: 38px;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  padding: 8px 10px;
+  font: inherit;
+}
+
+.weekly-cancel-correction {
+  justify-content: center;
+}
+
 .weekly-entry-shell--public .weekly-save-result {
   min-height: 32px;
   border-radius: 7px;

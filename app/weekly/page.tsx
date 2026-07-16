@@ -2,6 +2,9 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { PageHero } from "@/components/page-hero";
 import { getWeeklyMeets } from "@/lib/weekly-db";
+import { listWeeklyMeetOptions } from "@/lib/weekly-entry-store";
+import { isWeeklyCompetitionEnabled } from "@/lib/weekly-feature";
+import { notFound } from "next/navigation";
 
 export const dynamic = "force-dynamic";
 
@@ -17,8 +20,13 @@ export const metadata: Metadata = {
   }
 };
 
-function getCurrentWeekStatus(now = new Date()) {
+function getCurrentWeekStatus(endAt?: string | null, now = new Date()) {
   const current = new Date(now);
+  if (endAt) {
+    const end = new Date(endAt);
+    const remaining = end.getTime() - current.getTime();
+    return { dateRange: `截止时间：${end.toLocaleString("zh-CN", { hour12: false })}`, remainingPercent: Math.max(0, Math.min(100, Math.round((remaining / (7 * 86400000)) * 100))) };
+  }
   const day = current.getDay();
   const daysFromMonday = day === 0 ? 6 : day - 1;
   const monday = new Date(current);
@@ -43,10 +51,11 @@ function getCurrentWeekStatus(now = new Date()) {
 }
 
 export default async function WeeklyPage() {
+  if (!isWeeklyCompetitionEnabled()) notFound();
   const weeklyMeets = await getWeeklyMeets();
-  const latestWeekNumber = weeklyMeets.length > 0 ? Math.max(...weeklyMeets.map((m) => m.weekNumber)) : 328;
-  const currentWeekNumber = latestWeekNumber + 1;
-  const currentWeekStatus = getCurrentWeekStatus();
+  const configuredMeets = await listWeeklyMeetOptions().catch(() => []);
+  const currentMeet = configuredMeets.find((meet) => meet.status === "open");
+  const currentWeekStatus = getCurrentWeekStatus(currentMeet?.endsAt);
   const earliestWeekNumber = weeklyMeets.length > 0 ? Math.min(...weeklyMeets.map((m) => m.weekNumber)) : 1;
   const previousWeeks = Array.from({ length: earliestWeekNumber - 1 }, (_, i) => earliestWeekNumber - 1 - i);
 
@@ -57,11 +66,11 @@ export default async function WeeklyPage() {
       </PageHero>
 
       <section className="container section weekly-home-section">
-        <Link className="weekly-feature weekly-feature--test" href="/weekly/results">
+        {currentMeet ? <Link className="weekly-feature weekly-feature--test" href="/weekly/results">
           <div>
             <h2>
-              当前周赛（第{currentWeekNumber}周）
-              <small>{currentWeekStatus.dateRange}</small>
+              {currentMeet.title}
+              <small>{currentMeet.dateLabel} · {currentWeekStatus.dateRange}</small>
             </h2>
             <div className="weekly-current-progress" aria-label={`本周剩余 ${currentWeekStatus.remainingPercent}%`}>
               <span>
@@ -71,7 +80,7 @@ export default async function WeeklyPage() {
             </div>
           </div>
           <strong>立即参加</strong>
-        </Link>
+        </Link> : <div className="weekly-feature weekly-feature--disabled"><div><h2>本周周赛暂未开放</h2><small>请关注后续公告。</small></div></div>}
 
         {weeklyMeets.length > 0 || previousWeeks.length > 0 ? (
           <details className="weekly-history-fold">

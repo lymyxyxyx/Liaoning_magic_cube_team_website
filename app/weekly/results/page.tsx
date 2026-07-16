@@ -1,14 +1,21 @@
 import { PageHero } from "@/components/page-hero";
-import { listWeeklyMeetOptions } from "@/lib/weekly-entry-store";
+import { listWeeklyMeetEventConfigs, listWeeklyMeetOptions } from "@/lib/weekly-entry-store";
 import { getWeeklyAgeGroup } from "@/lib/weekly-age-groups";
 import { getMofang602SeedWeeklyPlayers, listWeeklyPlayerLibrary } from "@/lib/weekly-player-library";
-import { WCA_EVENTS } from "@/lib/wca-events";
+import { WCA_EVENTS, WEEKLY_DEFAULT_EVENTS } from "@/lib/wca-events";
 import { WeeklyResultEntryConsole } from "../admin/weekly-result-entry-console";
+import { isWeeklyCompetitionEnabled } from "@/lib/weekly-feature";
+import { notFound } from "next/navigation";
 
 export const dynamic = "force-dynamic";
 
 export default async function WeeklyResultsEntryPage() {
+  if (!isWeeklyCompetitionEnabled()) notFound();
   const meets = await listWeeklyMeetOptions().catch(() => []);
+  const currentMeet = meets.find((meet) => meet.status === "open") || meets.find((meet) => meet.id !== "weekly-test-entry");
+  const eventConfigs = currentMeet ? await listWeeklyMeetEventConfigs(currentMeet.id).catch(() => []) : [];
+  const eventConfigIds = new Set(eventConfigs.filter((config) => config.enabled).map((config) => config.eventId));
+  const events = eventConfigIds.size > 0 ? WCA_EVENTS.filter((event) => eventConfigIds.has(event.id)) : WEEKLY_DEFAULT_EVENTS;
   const players = await listWeeklyPlayerLibrary()
     .catch(() => getMofang602SeedWeeklyPlayers())
     .then((libraryPlayers) =>
@@ -35,7 +42,7 @@ export default async function WeeklyResultsEntryPage() {
       >
         默认录入当前周赛，选择项目和赛制后输入成绩。
       </PageHero>
-      <WeeklyResultEntryConsole initialMeets={meets} initialPlayers={players} events={WCA_EVENTS} mode="public" />
+      <WeeklyResultEntryConsole initialMeets={meets} initialPlayers={players} events={events} initialEventConfigs={eventConfigs} mode="public" />
     </>
   );
 }

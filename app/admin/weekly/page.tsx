@@ -3,6 +3,7 @@ import { PageHero } from "@/components/page-hero";
 import { listWeeklyMeetOptions } from "@/lib/weekly-entry-store";
 import { WCA_EVENTS } from "@/lib/wca-events";
 import { WeeklyResultEntryConsole } from "@/app/weekly/admin/weekly-result-entry-console";
+import { WeeklyMeetConfigConsole } from "./weekly-meet-config-console";
 
 export const dynamic = "force-dynamic";
 
@@ -24,6 +25,9 @@ export default async function AdminWeeklyPage() {
         <Link className="button" href="/weekly">
           查看周赛页
         </Link>
+      </section>
+      <section className="container section weekly-admin-workspace">
+        <WeeklyMeetConfigConsole initialMeets={meets} events={WCA_EVENTS} />
       </section>
       <section className="container section weekly-admin-workspace">
         <WeeklyResultEntryConsole initialMeets={meets} events={WCA_EVENTS} variant="workspace" />

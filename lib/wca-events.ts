@@ -25,6 +25,12 @@ export const WCA_EVENTS = [
   { id: "bigstack300", name: "大堆（300个）", englishName: "Big Stack 300" }
 ] as const;
 
+export const WEEKLY_DEFAULT_EVENT_IDS = ["222", "333", "pyram", "skewb", "maple", "mirror", "individual"] as const;
+
+export const WEEKLY_DEFAULT_EVENTS = WCA_EVENTS.filter((event) =>
+  WEEKLY_DEFAULT_EVENT_IDS.includes(event.id as (typeof WEEKLY_DEFAULT_EVENT_IDS)[number])
+);
+
 export type WcaEventId = (typeof WCA_EVENTS)[number]["id"];
 
 export function getWcaEventName(eventId: string) {

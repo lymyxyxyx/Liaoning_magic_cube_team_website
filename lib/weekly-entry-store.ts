@@ -1,6 +1,6 @@
 import { getPostgresPool } from "@/lib/postgres";
 import type { PoolClient } from "pg";
-import { getWcaEventName, isWcaEventId } from "@/lib/wca-events";
+import { getWcaEventName, isWcaEventId, WEEKLY_DEFAULT_EVENT_IDS } from "@/lib/wca-events";
 import { getWeeklyAgeGroup } from "@/lib/weekly-age-groups";
 import {
   calculateResultByFormat,
@@ -20,6 +20,9 @@ export type WeeklyMeetOption = {
   slug: string;
   title: string;
   dateLabel: string;
+  status?: string;
+  startsAt?: string | null;
+  endsAt?: string | null;
 };
 
 export type WeeklyPlayer = {
@@ -45,6 +48,13 @@ export type WeeklyEnteredResult = {
   detail: string;
 };
 
+export type WeeklyMeetEventConfig = {
+  eventId: string;
+  format: WeeklyResultFormat;
+  enabled: boolean;
+  seq: number;
+};
+
 type WeeklyPlayerRow = {
   id: string;
   name: string;
@@ -65,6 +75,8 @@ type WeeklyResultRow = {
   age_group: string | null;
   average: string;
   personal_best: string;
+  player_id: string | null;
+  source: string;
 };
 
 type WeeklyAttemptRow = {
@@ -80,33 +92,85 @@ const testWeeklyMeet: WeeklyMeetOption = {
   dateLabel: "调试用"
 };
 
-export async function ensureWeeklyEntryTables() {
-  const pool = getPostgresPool();
-  await pool.query(`
-    CREATE TABLE IF NOT EXISTS weekly_players (
-      id TEXT PRIMARY KEY,
-      name TEXT NOT NULL,
-      slug TEXT NOT NULL DEFAULT '',
-      wca_id TEXT NOT NULL DEFAULT '',
-      gender TEXT NOT NULL DEFAULT '男',
-      province TEXT NOT NULL DEFAULT '辽宁',
-      city TEXT NOT NULL DEFAULT '',
-      birth_date TEXT NOT NULL DEFAULT '',
-      created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-      updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
-    )
-  `);
-  await pool.query("ALTER TABLE weekly_players ADD COLUMN IF NOT EXISTS birth_date TEXT NOT NULL DEFAULT ''");
-  await pool.query("CREATE INDEX IF NOT EXISTS weekly_players_name_idx ON weekly_players (name)");
+let weeklySchemaPromise: Promise<void> | null = null;
+
+export function ensureWeeklyEntryTables() {
+  if (weeklySchemaPromise) return weeklySchemaPromise;
+
+  weeklySchemaPromise = (async () => {
+    const pool = getPostgresPool();
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS weekly_players (
+        id TEXT PRIMARY KEY,
+        name TEXT NOT NULL,
+        slug TEXT NOT NULL DEFAULT '',
+        wca_id TEXT NOT NULL DEFAULT '',
+        gender TEXT NOT NULL DEFAULT '男',
+        province TEXT NOT NULL DEFAULT '辽宁',
+        city TEXT NOT NULL DEFAULT '',
+        birth_date TEXT NOT NULL DEFAULT '',
+        created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+        updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+      )
+    `);
+    await pool.query("ALTER TABLE weekly_players ADD COLUMN IF NOT EXISTS birth_date TEXT NOT NULL DEFAULT ''");
+    await pool.query("CREATE INDEX IF NOT EXISTS weekly_players_name_idx ON weekly_players (name)");
+
+    await pool.query("ALTER TABLE weekly_meets ADD COLUMN IF NOT EXISTS status TEXT NOT NULL DEFAULT 'open'");
+    await pool.query("ALTER TABLE weekly_meets ADD COLUMN IF NOT EXISTS starts_at TIMESTAMPTZ");
+    await pool.query("ALTER TABLE weekly_meets ADD COLUMN IF NOT EXISTS ends_at TIMESTAMPTZ");
+    await pool.query("ALTER TABLE weekly_events ADD COLUMN IF NOT EXISTS format TEXT NOT NULL DEFAULT 'avg5'");
+    await pool.query("ALTER TABLE weekly_events ADD COLUMN IF NOT EXISTS attempt_count INTEGER NOT NULL DEFAULT 5");
+    await pool.query("ALTER TABLE weekly_results ADD COLUMN IF NOT EXISTS player_id TEXT");
+    await pool.query("ALTER TABLE weekly_results ADD COLUMN IF NOT EXISTS source TEXT NOT NULL DEFAULT 'self'");
+    await pool.query("ALTER TABLE weekly_results ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ NOT NULL DEFAULT now()");
+    await pool.query("CREATE INDEX IF NOT EXISTS weekly_results_player_id_idx ON weekly_results (player_id)");
+    await pool.query(`
+      CREATE UNIQUE INDEX IF NOT EXISTS weekly_results_meet_event_player_idx
+      ON weekly_results (meet_id, event_id, player_id)
+      WHERE player_id IS NOT NULL
+    `);
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS weekly_result_revisions (
+        id BIGSERIAL PRIMARY KEY,
+        result_id INTEGER NOT NULL,
+        action TEXT NOT NULL,
+        reason TEXT NOT NULL DEFAULT '',
+        previous_attempts JSONB NOT NULL DEFAULT '[]'::jsonb,
+        next_attempts JSONB NOT NULL DEFAULT '[]'::jsonb,
+        previous_average NUMERIC(10, 3),
+        next_average NUMERIC(10, 3),
+        actor TEXT NOT NULL DEFAULT 'admin',
+        created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+      )
+    `);
+    await pool.query("CREATE INDEX IF NOT EXISTS weekly_result_revisions_result_id_idx ON weekly_result_revisions (result_id, created_at DESC)");
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS weekly_meet_event_configs (
+        meet_id TEXT NOT NULL REFERENCES weekly_meets(id) ON DELETE CASCADE,
+        event_id TEXT NOT NULL,
+        format TEXT NOT NULL DEFAULT 'avg5',
+        enabled BOOLEAN NOT NULL DEFAULT TRUE,
+        seq INTEGER NOT NULL DEFAULT 0,
+        PRIMARY KEY (meet_id, event_id)
+      )
+    `);
+  })().catch((error) => {
+    weeklySchemaPromise = null;
+    throw error;
+  });
+
+  return weeklySchemaPromise;
 }
 
 export async function listWeeklyMeetOptions(): Promise<WeeklyMeetOption[]> {
   try {
     const pool = getPostgresPool();
     const { rows } = await pool.query<WeeklyMeetOption>(
-      `SELECT id, slug, title, date_label AS "dateLabel"
+      `SELECT id, slug, title, date_label AS "dateLabel", status,
+              starts_at AS "startsAt", ends_at AS "endsAt"
        FROM weekly_meets
-       ORDER BY week_number DESC, created_at DESC`
+       ORDER BY CASE status WHEN 'open' THEN 0 WHEN 'draft' THEN 1 ELSE 2 END, week_number DESC, created_at DESC`
     );
     if (rows.length > 0) return withTestMeet(rows);
   } catch {
@@ -118,17 +182,111 @@ export async function listWeeklyMeetOptions(): Promise<WeeklyMeetOption[]> {
       id: meet.id,
       slug: meet.slug,
       title: meet.title,
-      dateLabel: meet.dateLabel
+      dateLabel: meet.dateLabel,
+      status: "published"
     }))
   );
 }
 
+export async function listWeeklyMeetEventConfigs(meetId: string): Promise<WeeklyMeetEventConfig[]> {
+  await ensureWeeklyEntryTables();
+  const pool = getPostgresPool();
+  const { rows } = await pool.query<{ event_id: string; format: string; enabled: boolean; seq: number }>(
+    `SELECT event_id, format, enabled, seq
+     FROM weekly_meet_event_configs
+     WHERE meet_id = $1
+     ORDER BY seq, event_id`,
+    [meetId]
+  );
+  return rows.map((row) => ({
+    eventId: row.event_id,
+    format: getWeeklyResultFormat(row.format).id,
+    enabled: row.enabled,
+    seq: row.seq
+  }));
+}
+
+export async function getWeeklyMeetEntryAvailability(meetIdOrSlug: string) {
+  await ensureWeeklyEntryTables();
+  const pool = getPostgresPool();
+  const { rows } = await pool.query<{ status: string; starts_at: string | null; ends_at: string | null }>(
+    `SELECT status, starts_at, ends_at
+     FROM weekly_meets
+     WHERE id = $1 OR slug = $1
+     LIMIT 1`,
+    [meetIdOrSlug]
+  );
+  const meet = rows[0];
+  if (!meet) return { canEnter: false, message: "周赛不存在" };
+  if (meet.status !== "open") return { canEnter: false, message: "本周赛暂未开放成绩录入" };
+  const now = Date.now();
+  if (meet.starts_at && new Date(meet.starts_at).getTime() > now) return { canEnter: false, message: "周赛尚未开始" };
+  if (meet.ends_at && new Date(meet.ends_at).getTime() < now) return { canEnter: false, message: "本周赛成绩录入已截止" };
+  return { canEnter: true, message: "" };
+}
+
+export async function createWeeklyMeet() {
+  await ensureWeeklyEntryTables();
+  const pool = getPostgresPool();
+  const { rows } = await pool.query<{ week_number: number }>("SELECT week_number FROM weekly_meets ORDER BY week_number DESC LIMIT 1");
+  const weekNumber = (rows[0]?.week_number || 0) + 1;
+  const now = new Date();
+  const year = now.getFullYear();
+  const yearWeek = getIsoWeek(now);
+  const id = `weekly-${weekNumber}`;
+  const title = `辽宁魔方线上周赛第${weekNumber}周`;
+  const dateLabel = `${year}年第${yearWeek}周`;
+
+  await pool.query(
+    `INSERT INTO weekly_meets
+      (id, slug, title, week_number, year, year_week, event, date_label, summary, pb_note, three_age_intro, status)
+     VALUES ($1,$2,$3,$4,$5,$6,'三阶',$7,'','','','draft')`,
+    [id, String(weekNumber), title, weekNumber, year, yearWeek, dateLabel]
+  );
+  await saveWeeklyMeetEventConfigs(pool, id, defaultWeeklyMeetEventConfigs());
+  return { id, slug: String(weekNumber), title, dateLabel, status: "draft" } satisfies WeeklyMeetOption;
+}
+
+export async function updateWeeklyMeetConfig(input: {
+  id: string;
+  title: string;
+  dateLabel: string;
+  status: "draft" | "open" | "closed" | "archived";
+  startsAt?: string | null;
+  endsAt?: string | null;
+  eventConfigs: WeeklyMeetEventConfig[];
+}) {
+  if (!input.title.trim() || !input.dateLabel.trim()) throw new Error("请填写周赛标题和周期");
+  if (!input.eventConfigs.some((item) => item.enabled)) throw new Error("请至少开放一个项目");
+  await ensureWeeklyEntryTables();
+  const pool = getPostgresPool();
+  const client = await pool.connect();
+  try {
+    await client.query("BEGIN");
+    const updated = await client.query(
+      `UPDATE weekly_meets
+       SET title = $1, date_label = $2, status = $3, starts_at = $4, ends_at = $5
+       WHERE id = $6`,
+      [input.title.trim(), input.dateLabel.trim(), input.status, input.startsAt || null, input.endsAt || null, input.id]
+    );
+    if (updated.rowCount === 0) throw new Error("周赛不存在");
+    await saveWeeklyMeetEventConfigs(client, input.id, input.eventConfigs);
+    await client.query("COMMIT");
+  } catch (error) {
+    await client.query("ROLLBACK");
+    throw error;
+  } finally {
+    client.release();
+  }
+}
+
 export async function searchWeeklyPlayers(query: string): Promise<WeeklyPlayer[]> {
   const q = query.trim();
+  const upperQuery = q.toUpperCase();
   try {
     const libraryPlayers = await listWeeklyPlayerLibrary();
     return libraryPlayers
-      .filter((player) => !q || player.name.includes(q))
+      .filter((player) => !q || player.name.includes(q) || (player.wcaId || "").toUpperCase().includes(upperQuery))
       .map((player) => ({
         id: player.id,
         name: player.name,
@@ -144,7 +302,7 @@ export async function searchWeeklyPlayers(query: string): Promise<WeeklyPlayer[]
       .slice(0, 20);
   } catch {
     return getMofang602SeedWeeklyPlayers()
-      .filter((player) => !q || player.name.includes(q))
+      .filter((player) => !q || player.name.includes(q) || (player.wcaId || "").toUpperCase().includes(upperQuery))
       .map((player) => ({
         id: player.id,
         name: player.name,
@@ -200,6 +358,7 @@ export async function listWeeklyResults(meetIdOrSlug: string, eventId: string, f
   if (!isWcaEventId(eventId)) throw new Error("项目不正确");
   const formatConfig = getWeeklyResultFormat(format);
 
+  await ensureWeeklyEntryTables();
   const pool = getPostgresPool();
   const meet = await resolveWeeklyMeet(meetIdOrSlug);
   if (!meet) throw new Error("周赛不存在");
@@ -229,7 +388,7 @@ export async function listWeeklyResults(meetIdOrSlug: string, eventId: string, f
       id: row.id,
       rank: index + 1,
       player: {
-        id: row.player_slug ? `code:${row.player_slug}` : row.player_name,
+        id: row.player_id || (row.player_slug ? `code:${row.player_slug}` : row.player_name),
         name: row.player_name,
         slug: row.player_slug,
         wcaId: "",
@@ -264,6 +423,7 @@ export async function saveWeeklyResult(input: {
 
   const parsedAttempts = input.attempts.map(parseResultInput);
   const calculated = calculateResultByFormat(parsedAttempts, formatConfig.id);
+  await ensureWeeklyEntryTables();
   const meet = input.meetId === testWeeklyMeet.id ? await ensureTestWeeklyMeet() : await resolveWeeklyMeet(input.meetId);
   if (!meet) throw new Error("周赛不存在");
 
@@ -278,24 +438,34 @@ export async function saveWeeklyResult(input: {
   try {
     await client.query("BEGIN");
     await client.query(
-      `INSERT INTO weekly_events (id, meet_id, kind, title, event_name, group_name, is_all_around, seq)
-       VALUES ($1,$2,$3,$4,$5,NULL,FALSE,$6)
-       ON CONFLICT (id, meet_id) DO UPDATE SET title = EXCLUDED.title, event_name = EXCLUDED.event_name`,
-      [eventKey, meet.id, "other", `${eventName} · ${formatConfig.name}`, eventName, eventOrder(input.eventId)]
+      `INSERT INTO weekly_events (id, meet_id, kind, title, event_name, group_name, is_all_around, format, attempt_count, seq)
+       VALUES ($1,$2,$3,$4,$5,NULL,FALSE,$6,$7,$8)
+       ON CONFLICT (id, meet_id) DO UPDATE
+       SET title = EXCLUDED.title,
+           event_name = EXCLUDED.event_name,
+           format = EXCLUDED.format,
+           attempt_count = EXCLUDED.attempt_count`,
+      [eventKey, meet.id, "other", `${eventName} · ${formatConfig.name}`, eventName, formatConfig.id, formatConfig.attemptCount, eventOrder(input.eventId)]
     );
 
     const existing = await client.query<{ id: number }>(
-      "SELECT id FROM weekly_results WHERE meet_id = $1 AND event_id = $2 AND player_name = $3 LIMIT 1",
-      [meet.id, eventKey, playerName]
+      `SELECT id FROM weekly_results
+       WHERE meet_id = $1 AND event_id = $2
+         AND (player_id = $3 OR (player_id IS NULL AND player_name = $4))
+       ORDER BY player_id NULLS LAST
+       LIMIT 1`,
+      [meet.id, eventKey, input.player.id, playerName]
     );
 
     let resultId = existing.rows[0]?.id;
     if (resultId) {
       await client.query(
         `UPDATE weekly_results
-         SET player_slug = $1, gender = $2, age_group = $3, average = $4, personal_best = $5
-         WHERE id = $6`,
+         SET player_id = $1, player_slug = $2, gender = $3, age_group = $4,
+             average = $5, personal_best = $6, source = 'self', updated_at = now()
+         WHERE id = $7`,
         [
+          input.player.id,
           playerSlug,
           input.player.gender === "女" ? "女" : "男",
           playerAgeGroup || null,
@@ -308,12 +478,13 @@ export async function saveWeeklyResult(input: {
     } else {
       const inserted = await client.query<{ id: number }>(
         `INSERT INTO weekly_results
-          (event_id, meet_id, rank, player_name, player_slug, gender, age_group, level, grade, average, personal_best, pb_refreshed)
-         VALUES ($1,$2,0,$3,$4,$5,$6,'','',$7,$8,FALSE)
+          (event_id, meet_id, rank, player_id, player_name, player_slug, gender, age_group, level, grade, average, personal_best, pb_refreshed, source, updated_at)
+         VALUES ($1,$2,0,$3,$4,$5,$6,$7,'','',$8,$9,FALSE,'self',now())
          RETURNING id`,
         [
           eventKey,
           meet.id,
+          input.player.id,
           playerName,
           playerSlug,
           input.player.gender === "女" ? "女" : "男",
@@ -336,6 +507,100 @@ export async function saveWeeklyResult(input: {
     await rerankWeeklyEvent(client, meet.id, eventKey);
     await client.query("COMMIT");
     return calculated;
+  } catch (error) {
+    await client.query("ROLLBACK");
+    throw error;
+  } finally {
+    client.release();
+  }
+}
+
+export async function correctWeeklyResult(input: {
+  resultId: number;
+  format: WeeklyResultFormat;
+  attempts: string[];
+  reason: string;
+}) {
+  const reason = input.reason.trim();
+  if (!reason) throw new Error("请填写修改原因");
+
+  const formatConfig = getWeeklyResultFormat(input.format);
+  if (!Array.isArray(input.attempts) || input.attempts.length !== formatConfig.attemptCount) {
+    throw new Error(`必须录入 ${formatConfig.attemptCount} 次成绩`);
+  }
+
+  const parsedAttempts = input.attempts.map(parseResultInput);
+  const calculated = calculateResultByFormat(parsedAttempts, formatConfig.id);
+  await ensureWeeklyEntryTables();
+
+  const pool = getPostgresPool();
+  const client = await pool.connect();
+  try {
+    await client.query("BEGIN");
+    const result = await client.query<{ id: number; meet_id: string; event_id: string; average: string }>(
+      "SELECT id, meet_id, event_id, average FROM weekly_results WHERE id = $1 FOR UPDATE",
+      [input.resultId]
+    );
+    if (!result.rows[0]) throw new Error("成绩不存在或已被删除");
+
+    const previousAttempts = await readWeeklyAttempts(client, input.resultId);
+    await client.query(
+      `UPDATE weekly_results
+       SET average = $1, personal_best = $2, source = 'admin', updated_at = now()
+       WHERE id = $3`,
+      [resultValueToSeconds(calculated.average), resultValueToSeconds(calculated.best), input.resultId]
+    );
+    await client.query("DELETE FROM weekly_attempts WHERE result_id = $1", [input.resultId]);
+    await insertWeeklyAttempts(client, input.resultId, parsedAttempts);
+    await client.query(
+      `INSERT INTO weekly_result_revisions
+        (result_id, action, reason, previous_attempts, next_attempts, previous_average, next_average)
+       VALUES ($1,'corrected',$2,$3,$4,$5,$6)`,
+      [
+        input.resultId,
+        reason,
+        JSON.stringify(previousAttempts.map(formatResult)),
+        JSON.stringify(parsedAttempts.map(formatResult)),
+        result.rows[0].average,
+        resultValueToSeconds(calculated.average)
+      ]
+    );
+    await rerankWeeklyEvent(client, result.rows[0].meet_id, result.rows[0].event_id);
+    await client.query("COMMIT");
+    return calculated;
+  } catch (error) {
+    await client.query("ROLLBACK");
+    throw error;
+  } finally {
+    client.release();
+  }
+}
+
+export async function deleteWeeklyResult(input: { resultId: number; reason: string }) {
+  const reason = input.reason.trim();
+  if (!reason) throw new Error("请填写删除原因");
+
+  await ensureWeeklyEntryTables();
+  const pool = getPostgresPool();
+  const client = await pool.connect();
+  try {
+    await client.query("BEGIN");
+    const result = await client.query<{ id: number; meet_id: string; event_id: string; average: string }>(
+      "SELECT id, meet_id, event_id, average FROM weekly_results WHERE id = $1 FOR UPDATE",
+      [input.resultId]
+    );
+    if (!result.rows[0]) throw new Error("成绩不存在或已被删除");
+
+    const previousAttempts = await readWeeklyAttempts(client, input.resultId);
+    await client.query(
+      `INSERT INTO weekly_result_revisions
+        (result_id, action, reason, previous_attempts, previous_average)
+       VALUES ($1,'deleted',$2,$3,$4)`,
+      [input.resultId, reason, JSON.stringify(previousAttempts.map(formatResult)), result.rows[0].average]
+    );
+    await client.query("DELETE FROM weekly_results WHERE id = $1", [input.resultId]);
+    await rerankWeeklyEvent(client, result.rows[0].meet_id, result.rows[0].event_id);
+    await client.query("COMMIT");
   } catch (error) {
     await client.query("ROLLBACK");
     throw error;
@@ -400,6 +665,53 @@ async function rerankWeeklyEvent(client: PoolClient, meetId: string, eventId: st
   for (const [index, row] of rows.entries()) {
     await client.query("UPDATE weekly_results SET rank = $1 WHERE id = $2", [index + 1, row.id]);
   }
+}
+
+async function readWeeklyAttempts(client: PoolClient, resultId: number): Promise<ResultValue[]> {
+  const { rows } = await client.query<WeeklyAttemptRow>(
+    "SELECT result_id, seq, value FROM weekly_attempts WHERE result_id = $1 ORDER BY seq",
+    [resultId]
+  );
+  return rows.map((row) => secondsToResultValue(row.value));
+}
+
+async function insertWeeklyAttempts(client: PoolClient, resultId: number, attempts: ResultValue[]) {
+  for (const [index, attempt] of attempts.entries()) {
+    await client.query("INSERT INTO weekly_attempts (result_id, seq, value) VALUES ($1,$2,$3)", [
+      resultId,
+      index + 1,
+      resultValueToSeconds(attempt)
+    ]);
+  }
+}
+
+function defaultWeeklyMeetEventConfigs(): WeeklyMeetEventConfig[] {
+  return WEEKLY_DEFAULT_EVENT_IDS.map((eventId, index) => ({
+    eventId,
+    format: eventId === "individual" ? "best1" : "avg5",
+    enabled: true,
+    seq: index
+  }));
+}
+
+async function saveWeeklyMeetEventConfigs(client: Pick<PoolClient, "query">, meetId: string, configs: WeeklyMeetEventConfig[]) {
+  await client.query("DELETE FROM weekly_meet_event_configs WHERE meet_id = $1", [meetId]);
+  for (const [index, config] of configs.entries()) {
+    if (!isWcaEventId(config.eventId)) throw new Error("项目不正确");
+    await client.query(
+      `INSERT INTO weekly_meet_event_configs (meet_id, event_id, format, enabled, seq)
+       VALUES ($1,$2,$3,$4,$5)`,
+      [meetId, config.eventId, getWeeklyResultFormat(config.format).id, config.enabled, config.seq ?? index]
+    );
+  }
+}
+
+function getIsoWeek(date: Date) {
+  const target = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+  const day = target.getUTCDay() || 7;
+  target.setUTCDate(target.getUTCDate() + 4 - day);
+  const yearStart = new Date(Date.UTC(target.getUTCFullYear(), 0, 1));
+  return Math.ceil(((target.getTime() - yearStart.getTime()) / 86400000 + 1) / 7);
 }
 
 function getWeeklyEventKey(meetId: string, eventId: string, format: string) {
