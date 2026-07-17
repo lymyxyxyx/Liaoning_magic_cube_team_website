@@ -13,7 +13,8 @@ import {
   type WeeklyResultFormat
 } from "@/lib/weekly-result-utils";
 import { weeklyMeets } from "@/lib/weekly";
-import { ensureWeeklyPlayerLibraryTable, getMofang602SeedWeeklyPlayers, listWeeklyPlayerLibrary } from "@/lib/weekly-player-library";
+import { ensureWeeklyPlayerLibraryTable, getMofang602SeedWeeklyPlayers, listWeeklyEligiblePlayers } from "@/lib/weekly-player-library";
+import { matchesWeeklyPlayerQuery } from "@/lib/weekly-player-search";
 
 export type WeeklyMeetOption = {
   id: string;
@@ -283,11 +284,10 @@ export async function updateWeeklyMeetConfig(input: {
 
 export async function searchWeeklyPlayers(query: string): Promise<WeeklyPlayer[]> {
   const q = query.trim();
-  const upperQuery = q.toUpperCase();
   try {
-    const libraryPlayers = await listWeeklyPlayerLibrary();
+    const libraryPlayers = await listWeeklyEligiblePlayers();
     return libraryPlayers
-      .filter((player) => !q || player.name.includes(q) || (player.wcaId || "").toUpperCase().includes(upperQuery))
+      .filter((player) => !q || matchesWeeklyPlayerQuery(player, q))
       .map((player) => ({
         id: player.id,
         name: player.name,
@@ -303,7 +303,7 @@ export async function searchWeeklyPlayers(query: string): Promise<WeeklyPlayer[]
       .slice(0, 20);
   } catch {
     return getMofang602SeedWeeklyPlayers()
-      .filter((player) => !q || player.name.includes(q) || (player.wcaId || "").toUpperCase().includes(upperQuery))
+      .filter((player) => !q || matchesWeeklyPlayerQuery(player, q))
       .map((player) => ({
         id: player.id,
         name: player.name,

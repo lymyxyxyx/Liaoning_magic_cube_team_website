@@ -154,6 +154,20 @@ export async function listWeeklyPlayerLibrary(): Promise<WeeklyPlayerLibraryEntr
   return players;
 }
 
+export async function listWeeklyEligiblePlayers(): Promise<WeeklyPlayerLibraryEntry[]> {
+  const [wcaPlayers, libraryPlayers] = await Promise.all([listWcaLiaoningPlayers(), listWeeklyPlayerLibrary()]);
+  return mergeWeeklyEligiblePlayers(wcaPlayers, libraryPlayers);
+}
+
+export async function findWeeklyEligiblePlayer(input: { id?: string; name?: string }) {
+  const id = input.id?.trim() || "";
+  const name = input.name?.trim() || "";
+  if (!id && !name) return null;
+
+  const players = await listWeeklyEligiblePlayers();
+  return players.find((player) => player.id === id) || players.find((player) => player.wcaId === id.toUpperCase()) || players.find((player) => player.name === name) || null;
+}
+
 export function getMofang602SeedWeeklyPlayers(): WeeklyPlayerLibraryEntry[] {
   return [
     ...mofang602Names.map((name) => ({
@@ -287,6 +301,51 @@ async function enrichWeeklyPlayerMatches(players: WeeklyPlayerLibraryEntry[]) {
       city: localMatch?.city || player.city || ""
     };
   });
+}
+
+async function listWcaLiaoningPlayers(): Promise<WeeklyPlayerLibraryEntry[]> {
+  const profiles = await enrichLocalProfiles(await readLocalProfiles());
+  return profiles
+    .filter((profile) => profile.visible && profile.province === "辽宁" && profile.wcaId && profile.name)
+    .map((profile) => ({
+      id: `wca:${profile.wcaId}`,
+      name: profile.name,
+      wcaId: profile.wcaId,
+      gender: "" as const,
+      birthDate: "",
+      ageGroup: "",
+      ageGroupIsFuzzy: false,
+      province: profile.province,
+      city: profile.city,
+      source: "WCA 辽宁选手库"
+    }));
+}
+
+function mergeWeeklyEligiblePlayers(wcaPlayers: WeeklyPlayerLibraryEntry[], libraryPlayers: WeeklyPlayerLibraryEntry[]) {
+  const merged: WeeklyPlayerLibraryEntry[] = [];
+  const indexByName = new Map<string, number>();
+  const seenWcaIds = new Set<string>();
+
+  for (const player of [...wcaPlayers, ...libraryPlayers]) {
+    const wcaId = player.wcaId?.trim().toUpperCase() || "";
+    const name = player.name.trim();
+    if (!name || (wcaId && seenWcaIds.has(wcaId))) continue;
+
+    const existingIndex = indexByName.get(name);
+    if (existingIndex !== undefined) {
+      const existing = merged[existingIndex];
+      if (existing.wcaId || !wcaId) continue;
+      merged[existingIndex] = { ...player, wcaId };
+      seenWcaIds.add(wcaId);
+      continue;
+    }
+
+    merged.push({ ...player, wcaId });
+    indexByName.set(name, merged.length - 1);
+    if (wcaId) seenWcaIds.add(wcaId);
+  }
+
+  return merged;
 }
 
 async function persistWeeklyPlayerMatches(players: WeeklyPlayerLibraryEntry[]) {

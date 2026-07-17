@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getWeeklyMeetEntryAvailability, listWeeklyResults, saveWeeklyResult } from "@/lib/weekly-entry-store";
-import { findWeeklyPlayerLibraryEntry } from "@/lib/weekly-player-library";
+import { findWeeklyEligiblePlayer } from "@/lib/weekly-player-library";
 import { isWeeklyCompetitionEnabled } from "@/lib/weekly-feature";
 
 export const dynamic = "force-dynamic";
@@ -48,7 +48,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     }
     const availability = await getWeeklyMeetEntryAvailability(id);
     if (!availability.canEnter) return NextResponse.json({ message: availability.message }, { status: 403 });
-    const libraryPlayer = await findWeeklyPlayerLibraryEntry({ id: payload.player.id, name: payload.player.name });
+    const libraryPlayer = await findWeeklyEligiblePlayer({ id: payload.player.id, name: payload.player.name });
     if (!libraryPlayer) return NextResponse.json({ message: "请先从周赛选手库选择选手" }, { status: 400 });
 
     const calculated = await saveWeeklyResult({

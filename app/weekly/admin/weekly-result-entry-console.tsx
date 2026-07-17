@@ -14,12 +14,15 @@ import {
   type WeeklyResultFormat
 } from "@/lib/weekly-result-utils";
 import type { WCA_EVENTS } from "@/lib/wca-events";
+import { matchesWeeklyPlayerQuery } from "@/lib/weekly-player-search";
 
 type MeetOption = {
   id: string;
   slug: string;
   title: string;
   dateLabel: string;
+  startsAt?: string | null;
+  endsAt?: string | null;
 };
 
 type WeeklyPlayer = {
@@ -345,9 +348,8 @@ export function WeeklyResultEntryConsole({ initialMeets, initialPlayers = [], ev
   const playerCandidates = useMemo(() => {
     const query = playerQuery.trim();
     if (!query || selectedPlayer) return [];
-    const upperQuery = query.toUpperCase();
     const mergedPlayers = mergePlayers(knownPlayers, players);
-    const filteredPlayers = mergedPlayers.filter((player) => player.name.includes(query) || player.wcaId.toUpperCase().includes(upperQuery));
+    const filteredPlayers = mergedPlayers.filter((player) => matchesWeeklyPlayerQuery(player, query));
     return filteredPlayers.slice(0, 8);
   }, [knownPlayers, playerQuery, players, selectedPlayer]);
 
@@ -362,7 +364,7 @@ export function WeeklyResultEntryConsole({ initialMeets, initialPlayers = [], ev
             <p>
               {isPublicMode
                 ? selectedMeet
-                  ? `${selectedMeet.dateLabel || selectedMeet.title} · 选择项目和赛制`
+                  ? `${selectedMeet.dateLabel || selectedMeet.title} · ${formatMeetPeriod(selectedMeet)} · 选择项目和赛制`
                   : "默认录入当前周赛，请选择项目和赛制。"
                 : "选择周赛和项目，检索选手后录入五次成绩，保存后右侧榜单立即刷新。"}
             </p>
@@ -610,11 +612,24 @@ function compareEnteredResults(a: EnteredResult, b: EnteredResult) {
 
 function formatPlayerMeta(player: WeeklyPlayer) {
   return [
+    `WCA ID：${player.wcaId || "无"}`,
     `性别：${player.gender || "-"}`,
     `省：${player.province || "-"}`,
     `市：${player.city || "-"}`,
     `组别：${getPlayerDisplayAgeGroup(player) || "待补"}`
   ].join(" · ");
+}
+
+function formatMeetPeriod(meet: Pick<MeetOption, "startsAt" | "endsAt">) {
+  const format = (value: Date) => `${value.getFullYear()}年${value.getMonth() + 1}月${value.getDate()}日`;
+  if (meet.startsAt && meet.endsAt) return `${format(new Date(meet.startsAt))} 至 ${format(new Date(meet.endsAt))}`;
+
+  const now = new Date();
+  const monday = new Date(now);
+  monday.setDate(now.getDate() - ((now.getDay() + 6) % 7));
+  const sunday = new Date(monday);
+  sunday.setDate(monday.getDate() + 6);
+  return `${format(monday)} 至 ${format(sunday)}`;
 }
 
 function formatPlayerCandidateMeta(player: WeeklyPlayer) {

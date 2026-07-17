@@ -1,7 +1,7 @@
 import { PageHero } from "@/components/page-hero";
 import { listWeeklyMeetEventConfigs, listWeeklyMeetOptions } from "@/lib/weekly-entry-store";
 import { getWeeklyAgeGroup } from "@/lib/weekly-age-groups";
-import { getMofang602SeedWeeklyPlayers, listWeeklyPlayerLibrary } from "@/lib/weekly-player-library";
+import { getMofang602SeedWeeklyPlayers, listWeeklyEligiblePlayers } from "@/lib/weekly-player-library";
 import { WCA_EVENTS, WEEKLY_DEFAULT_EVENTS } from "@/lib/wca-events";
 import { WeeklyResultEntryConsole } from "../admin/weekly-result-entry-console";
 import { isWeeklyCompetitionEnabled } from "@/lib/weekly-feature";
@@ -16,7 +16,7 @@ export default async function WeeklyResultsEntryPage() {
   const eventConfigs = currentMeet ? await listWeeklyMeetEventConfigs(currentMeet.id).catch(() => []) : [];
   const eventConfigIds = new Set(eventConfigs.filter((config) => config.enabled).map((config) => config.eventId));
   const events = eventConfigIds.size > 0 ? WCA_EVENTS.filter((event) => eventConfigIds.has(event.id)) : WEEKLY_DEFAULT_EVENTS;
-  const players = await listWeeklyPlayerLibrary()
+  const players = await listWeeklyEligiblePlayers()
     .catch(() => getMofang602SeedWeeklyPlayers())
     .then((libraryPlayers) =>
       libraryPlayers.map((player) => ({
