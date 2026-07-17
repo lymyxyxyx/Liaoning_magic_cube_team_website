@@ -1,7 +1,7 @@
 import { getPostgresPool } from "@/lib/postgres";
 import { weeklyMeets } from "@/lib/weekly";
 import type { WeeklyMeet, WeeklyEvent, WeeklyResult, WeeklyAttempt, Gender } from "@/lib/weekly";
-import { WEEKLY_FOCUS_MEET_ID, WEEKLY_FOCUS_MEET_SLUG, isWeeklyFocusMeet } from "@/lib/weekly-feature";
+import { isWeeklyFocusMeet } from "@/lib/weekly-feature";
 
 type MeetRow = {
   id: string;
@@ -55,8 +55,7 @@ export async function getWeeklyMeets(): Promise<WeeklyMeet[]> {
   try {
     const pool = getPostgresPool();
     const meetsResult = await pool.query<MeetRow>(
-      "SELECT * FROM weekly_meets WHERE status = 'open' AND (id = $1 OR slug = $2) ORDER BY week_number DESC",
-      [WEEKLY_FOCUS_MEET_ID, WEEKLY_FOCUS_MEET_SLUG]
+      "SELECT * FROM weekly_meets WHERE status = 'open' ORDER BY week_number DESC"
     );
     if (meetsResult.rows.length === 0) return [];
 
@@ -105,7 +104,6 @@ export async function getWeeklyMeets(): Promise<WeeklyMeet[]> {
 }
 
 export async function getWeeklyMeetBySlug(slug: string): Promise<WeeklyMeet | null> {
-  if (slug !== WEEKLY_FOCUS_MEET_SLUG) return null;
   try {
     const pool = getPostgresPool();
     const meetResult = await pool.query<MeetRow>(
@@ -178,7 +176,7 @@ export async function getWeeklyMeetBySlug(slug: string): Promise<WeeklyMeet | nu
     };
   } catch (error) {
     console.error("[weekly-db] getWeeklyMeetBySlug: database query failed, falling back to static data", error);
-    return weeklyMeets.find((meet) => meet.slug === slug && isWeeklyFocusMeet(meet)) || null;
+    return weeklyMeets.find((meet) => meet.slug === slug) || null;
   }
 }
 

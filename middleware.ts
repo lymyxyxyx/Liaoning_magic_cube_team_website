@@ -21,7 +21,7 @@ function isSecureRequest(request: NextRequest) {
   return request.nextUrl.protocol === "https:" || request.headers.get("x-forwarded-proto") === "https";
 }
 
-export async function proxy(request: NextRequest) {
+export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
   const host = request.headers.get("host") || "";
 
@@ -79,6 +79,10 @@ export async function proxy(request: NextRequest) {
     return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
   }
 
+  if (pathname.startsWith("/api/weekly-admin") && !(await hasWeeklyAdminSession(request))) {
+    return NextResponse.json({ message: "请先登录周赛管理员账号" }, { status: 401 });
+  }
+
   if (pathname.startsWith("/api/admin") && !isWeeklyAdminApi && !(await hasAdminSession(request))) {
     return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
   }
@@ -95,6 +99,7 @@ export const config = {
     "/api/account-books",
     "/api/admin/:path*",
     "/weekly/:path*",
-    "/api/weekly-competitions/:path*"
+    "/api/weekly-competitions/:path*",
+    "/api/weekly-admin/:path*"
   ]
 };

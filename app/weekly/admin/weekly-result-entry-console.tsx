@@ -4,7 +4,7 @@ import { Check, LogIn, Pencil, RefreshCw, Save, Search, Trash2, UserRoundPen, X 
 import Link from "next/link";
 import type { CSSProperties, KeyboardEvent } from "react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { getWeeklyAgeGroup } from "@/lib/weekly-age-groups";
+import { getWeeklyAgeGroup, getWeeklyRankingAgeGroupOrder } from "@/lib/weekly-age-groups";
 import {
   calculateResultByFormat,
   formatResult,
@@ -982,12 +982,7 @@ function toWeeklyPlayer(player: Partial<WeeklyPlayer> & Pick<WeeklyPlayer, "id" 
   };
 }
 
-function getAttemptClass(attempt: ResultValue | undefined, attempts: ResultValue[]) {
-  if (typeof attempt !== "number") return "weekly-attempt-cell";
-  const numericAttempts = attempts.filter((value): value is number => typeof value === "number");
-  if (numericAttempts.length === 0) return "weekly-attempt-cell";
-  if (attempt === Math.min(...numericAttempts)) return "weekly-attempt-cell weekly-attempt-cell--fastest";
-  if (attempt === Math.max(...numericAttempts)) return "weekly-attempt-cell weekly-attempt-cell--slowest";
+function getAttemptClass(_attempt: ResultValue | undefined, _attempts: ResultValue[]) {
   return "weekly-attempt-cell";
 }
 
@@ -999,6 +994,8 @@ function mergePlayers(currentPlayers: WeeklyPlayer[], nextPlayers: WeeklyPlayer[
 }
 
 function compareEnteredResults(a: EnteredResult, b: EnteredResult) {
+  const groupOrder = getWeeklyRankingAgeGroupOrder(a.player.ageGroup || "待补") - getWeeklyRankingAgeGroupOrder(b.player.ageGroup || "待补");
+  if (groupOrder !== 0) return groupOrder;
   const aAverage = typeof a.average === "number" ? a.average : Number.MAX_SAFE_INTEGER;
   const bAverage = typeof b.average === "number" ? b.average : Number.MAX_SAFE_INTEGER;
   if (aAverage !== bAverage) return aAverage - bAverage;
