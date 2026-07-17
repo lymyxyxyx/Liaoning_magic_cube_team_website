@@ -135,9 +135,10 @@ export function WeeklyPlayerLibraryConsole({
       setNotice("姓名不能为空。");
       return;
     }
-    updatePlayer(editingPlayer.id, { ...editingPlayer, name });
+    const nextPlayers = players.map((player) => (player.id === editingPlayer.id ? { ...editingPlayer, name } : player));
+    setPlayers(nextPlayers);
     setEditingPlayer(null);
-    setNotice("已更新选手信息，保存后写入选手库。");
+    savePlayers(nextPlayers);
   }
 
   function removePlayer(id: string) {
@@ -146,13 +147,13 @@ export function WeeklyPlayerLibraryConsole({
     setStatus("有未保存修改");
   }
 
-  function savePlayers() {
+  function savePlayers(nextPlayers = players) {
     setStatus("保存中");
     setNotice("");
     fetch(apiPath, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ players })
+      body: JSON.stringify({ players: nextPlayers })
     })
       .then((response) => response.json().then((payload) => ({ ok: response.ok, payload })))
       .then(({ ok, payload }) => {
@@ -217,7 +218,7 @@ export function WeeklyPlayerLibraryConsole({
                 <Plus size={15} />
                 新建
               </button>
-              <button className="button primary" type="button" onClick={savePlayers}>
+              <button className="button primary" type="button" onClick={() => savePlayers()}>
                 <Save size={15} />
                 保存
               </button>
