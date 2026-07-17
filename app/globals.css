@@ -4205,13 +4205,11 @@ textarea {
 }
 
 .weekly-library-table th:nth-child(4) {
-  width: 128px;
-  padding-left: 10px;
-  padding-right: 10px;
+  width: 62px;
 }
 
 .weekly-library-table th:nth-child(5) {
-  width: 82px;
+  width: 96px;
 }
 
 .weekly-library-table th:nth-child(6) {
@@ -4220,7 +4218,7 @@ textarea {
 
 .weekly-library-table th:nth-child(7),
 .weekly-library-table th:nth-child(8) {
-  width: 50px;
+  width: 58px;
 }
 
 .weekly-library-table th:nth-child(9),
@@ -4275,6 +4273,104 @@ textarea {
   padding: 16px;
   background: var(--surface);
   box-shadow: 0 24px 60px rgb(15 23 42 / 22%);
+}
+
+.weekly-library-pb-fields {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 10px;
+}
+
+.weekly-library-pb-fields legend {
+  padding: 0 5px;
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 850;
+}
+
+.weekly-library-pb-fields p {
+  margin: -3px 0 0;
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.weekly-library-pb-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.weekly-library-pb-grid label {
+  min-width: 0;
+}
+
+.weekly-meet-config {
+  padding: 0;
+  overflow: hidden;
+}
+
+.weekly-meet-config > .weekly-admin-fold-summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 16px 18px;
+  cursor: pointer;
+  list-style: none;
+}
+
+.weekly-meet-config > .weekly-admin-fold-summary::-webkit-details-marker,
+.weekly-event-config-group > summary::-webkit-details-marker {
+  display: none;
+}
+
+.weekly-meet-config > .weekly-admin-fold-summary strong,
+.weekly-meet-config > .weekly-admin-fold-summary small {
+  display: block;
+}
+
+.weekly-meet-config > .weekly-admin-fold-summary strong {
+  font-size: 16px;
+}
+
+.weekly-meet-config > .weekly-admin-fold-summary small,
+.weekly-fold-hint,
+.weekly-event-config-group > summary span {
+  margin-top: 3px;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.weekly-fold-hint {
+  white-space: nowrap;
+}
+
+.weekly-meet-config[open] > .weekly-admin-fold-summary {
+  border-bottom: 1px solid var(--line);
+}
+
+.weekly-meet-config > :not(summary) {
+  margin: 18px;
+}
+
+.weekly-event-config-group > summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  cursor: pointer;
+  list-style: none;
+}
+
+.weekly-event-config-group > summary h3 {
+  margin: 0;
+}
+
+.weekly-event-config-group > summary span {
+  white-space: nowrap;
 }
 
 .weekly-library-edit-form label:first-child {
@@ -11167,4 +11263,18 @@ a.commercial-member-link:hover {
   font-size: 0.72rem;
   font-weight: 800;
   white-space: nowrap;
+}
+
+@media (max-width: 640px) {
+  .weekly-library-pb-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .weekly-meet-config > .weekly-admin-fold-summary {
+    align-items: flex-start;
+  }
+
+  .weekly-fold-hint {
+    font-size: 11px;
+  }
 }

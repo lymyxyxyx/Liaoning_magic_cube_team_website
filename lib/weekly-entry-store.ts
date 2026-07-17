@@ -13,6 +13,7 @@ import {
   type WeeklyResultFormat
 } from "@/lib/weekly-result-utils";
 import { weeklyMeets } from "@/lib/weekly";
+import { isWeeklyFocusMeet } from "@/lib/weekly-feature";
 import { ensureWeeklyPlayerLibraryTable, getMofang602SeedWeeklyPlayers, listWeeklyEligiblePlayers, type WeeklyPersonalBests } from "@/lib/weekly-player-library";
 import { matchesWeeklyPlayerQuery } from "@/lib/weekly-player-search";
 
@@ -183,13 +184,13 @@ export async function listWeeklyMeetOptions(): Promise<WeeklyMeetOption[]> {
        FROM weekly_meets
        ORDER BY CASE status WHEN 'open' THEN 0 WHEN 'draft' THEN 1 ELSE 2 END, week_number DESC, created_at DESC`
     );
-    if (rows.length > 0) return withOptionalTestMeet(rows);
+    if (rows.length > 0) return withOptionalTestMeet(rows.filter(isWeeklyFocusMeet));
   } catch {
     // Local development can run without DATABASE_URL; keep selectors usable from bundled weekly data.
   }
 
   return withOptionalTestMeet(
-    weeklyMeets.map((meet) => ({
+    weeklyMeets.filter(isWeeklyFocusMeet).map((meet) => ({
       id: meet.id,
       slug: meet.slug,
       title: meet.title,
@@ -674,7 +675,7 @@ async function resolveWeeklyMeet(idOrSlug: string) {
      LIMIT 1`,
     [idOrSlug]
   );
-  return rows[0] || null;
+  return rows[0] && isWeeklyFocusMeet(rows[0]) ? rows[0] : null;
 }
 
 async function ensureTestWeeklyMeet() {

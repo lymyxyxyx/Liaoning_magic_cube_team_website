@@ -33,7 +33,7 @@ export function WeeklyMeetConfigConsole({ initialMeets, events }: { initialMeets
       .then((response) => response.ok ? response.json() : Promise.reject(new Error("读取配置失败")))
       .then((payload: { eventConfigs: Config[] }) => setConfigs(payload.eventConfigs || []))
       .catch((error) => setNotice(error instanceof Error ? error.message : "读取配置失败。"));
-  }, [selectedId]);
+  }, [selected, selectedId]);
 
   const configByEvent = useMemo(() => new Map(configs.map((config) => [config.eventId, config])), [configs]);
 
@@ -63,11 +63,17 @@ export function WeeklyMeetConfigConsole({ initialMeets, events }: { initialMeets
   }
 
   return (
-    <section className="admin-card weekly-meet-config">
-      <div className="admin-card-heading"><div><h2>当前周赛配置</h2><p>开放状态的周赛会成为前台“立即参加”的默认场次。</p></div></div>
+    <details className="admin-card weekly-meet-config">
+      <summary className="weekly-admin-fold-summary">
+        <span>
+          <strong>当前周赛配置</strong>
+          <small>当前测试锁定第 328 周，项目和开放时间在这里维护</small>
+        </span>
+        <span className="weekly-fold-hint">展开配置</span>
+      </summary>
       <div className="weekly-meet-config-toolbar">
         <select value={selectedId} onChange={(event) => setSelectedId(event.target.value)}>{meets.map((meet) => <option key={meet.id} value={meet.id}>{meet.title}</option>)}</select>
-        <span className="weekly-test-mode-note">当前为测试阶段，暂只维护测试周赛</span>
+        <span className="weekly-test-mode-note">当前仅维护第 328 周</span>
       </div>
       {selected ? <>
         <div className="weekly-meet-config-fields">
@@ -92,18 +98,18 @@ export function WeeklyMeetConfigConsole({ initialMeets, events }: { initialMeets
                 <p>本周默认开放以下六个项目；个人全能暂不适用段位等级标准。</p>
                 {events.filter((event) => currentEventIds.has(event.id)).map(renderEvent)}
               </section>
-              <section className="weekly-event-config-group weekly-event-config-group--reserved">
-                <h3>其他项目（预留）</h3>
+              <details className="weekly-event-config-group weekly-event-config-group--reserved">
+                <summary><h3>其他项目（预留）</h3><span>后续再开放</span></summary>
                 <p>后续增加项目时，在这里勾选并保存即可。</p>
                 {events.filter((event) => !currentEventIds.has(event.id)).map(renderEvent)}
-              </section>
+              </details>
             </>;
           })()}
         </div>
         <button className="button primary" type="button" disabled={saving} onClick={save}><Save size={16} />{saving ? "保存中" : "保存周赛配置"}</button>
       </> : null}
       {notice ? <p className="admin-inline-notice">{notice}</p> : null}
-    </section>
+    </details>
   );
 }
 

@@ -2,11 +2,10 @@ import Link from "next/link";
 import { PageHero } from "@/components/page-hero";
 import { listWeeklyMeetOptions } from "@/lib/weekly-entry-store";
 import { WCA_EVENTS } from "@/lib/wca-events";
-import { WeeklyResultEntryConsole } from "@/app/weekly/admin/weekly-result-entry-console";
 import { WeeklyMeetConfigConsole } from "./weekly-meet-config-console";
 import { BigStackAdminConsole } from "./big-stack-console";
 import { listBigStackRecords } from "@/lib/big-stack";
-import { listWeeklyPlayerLibrary } from "@/lib/weekly-player-library";
+import { listWeeklyEligiblePlayers } from "@/lib/weekly-player-library";
 import { WeeklyPlayerLibraryConsole } from "@/app/weekly/admin/weekly-player-library-console";
 
 export const dynamic = "force-dynamic";
@@ -14,7 +13,7 @@ export const dynamic = "force-dynamic";
 export default async function AdminWeeklyPage() {
   const meets = await listWeeklyMeetOptions().catch(() => []);
   const bigStackRecords = await listBigStackRecords().catch(() => []);
-  const players = await listWeeklyPlayerLibrary().catch(() => []);
+  const players = await listWeeklyEligiblePlayers().catch(() => []);
 
   return (
     <>
@@ -40,9 +39,6 @@ export default async function AdminWeeklyPage() {
       </section>
       <section className="container section weekly-admin-workspace">
         <WeeklyMeetConfigConsole initialMeets={meets} events={WCA_EVENTS} />
-      </section>
-      <section className="container section weekly-admin-workspace">
-        <WeeklyResultEntryConsole initialMeets={meets} events={WCA_EVENTS} variant="workspace" />
       </section>
       <section id="player-library" className="container section weekly-admin-workspace">
         <WeeklyPlayerLibraryConsole initialPlayers={players} />

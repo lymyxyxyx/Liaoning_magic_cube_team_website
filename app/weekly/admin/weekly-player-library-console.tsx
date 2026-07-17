@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react";
 import { Pencil, Plus, Save, Trash2, X } from "lucide-react";
 import { getWeeklyRankingAgeGroup, weeklyRankingAgeGroups } from "@/lib/weekly-age-groups";
-import type { WeeklyLibraryGender, WeeklyPlayerLibraryEntry } from "@/lib/weekly-player-library";
+import type { WeeklyLibraryGender, WeeklyPersonalBests, WeeklyPlayerLibraryEntry } from "@/lib/weekly-player-library";
 
 type DraftPlayer = WeeklyPlayerLibraryEntry;
 
@@ -109,11 +109,6 @@ export function WeeklyPlayerLibraryConsole({
     setDraft(emptyDraft);
     setNotice("");
     setIsCreatingPlayer(true);
-  }
-
-  function updatePlayer(id: string, next: Partial<DraftPlayer>) {
-    setPlayers((current) => current.map((player) => (player.id === id ? { ...player, ...next } : player)));
-    setStatus("有未保存修改");
   }
 
   function openEditor(player: DraftPlayer) {
@@ -232,7 +227,6 @@ export function WeeklyPlayerLibraryConsole({
                   <th>序号</th>
                   <th>姓名</th>
                   <th>WCA ID</th>
-                  <th>个人 PB</th>
                   <th>性别</th>
                   <th>出生日期</th>
                   <th>组别</th>
@@ -251,7 +245,6 @@ export function WeeklyPlayerLibraryConsole({
                       <strong>{player.name}</strong>
                     </td>
                     <td data-label="WCA ID">{player.wcaId || ""}</td>
-                    <td data-label="个人 PB">{formatPersonalBests(player.personalBests)}</td>
                     <td data-label="性别">{player.gender || ""}</td>
                     <td data-label="出生日期">{player.birthDate || ""}</td>
                     <td data-label="组别">
@@ -393,6 +386,40 @@ function PlayerFields({
           ))}
         </select>
       </label>
+      <fieldset className="weekly-library-pb-fields">
+        <legend>个人 PB</legend>
+        <p>单位：秒。留空表示暂无记录。</p>
+        <div className="weekly-library-pb-grid">
+          {personalBestFields.map((field) => (
+            <label key={field.id}>
+              {field.label} PB
+              <input
+                type="number"
+                min="0"
+                step="0.01"
+                inputMode="decimal"
+                value={formatPersonalBestInput(player.personalBests?.[field.id])}
+                onChange={(event) => onChange(updatePersonalBest(player, field.id, event.target.value))}
+              />
+            </label>
+          ))}
+        </div>
+        <div className="weekly-library-pb-grid">
+          {personalBestFields.map((field) => (
+            <label key={`${field.id}-average`}>
+              {field.label} 平均 PB
+              <input
+                type="number"
+                min="0"
+                step="0.01"
+                inputMode="decimal"
+                value={formatPersonalBestInput(player.personalBestAverages?.[field.id])}
+                onChange={(event) => onChange(updatePersonalBest(player, field.id, event.target.value, true))}
+              />
+            </label>
+          ))}
+        </div>
+      </fieldset>
     </div>
   );
 }
@@ -407,12 +434,26 @@ function createLibraryPlayerId(name: string) {
   return `weekly-library-${base}-${Math.random().toString(36).slice(2, 8)}`;
 }
 
-function formatPersonalBests(personalBests: DraftPlayer["personalBests"]) {
-  if (!personalBests || Object.keys(personalBests).length === 0) return "";
-  const labels: Record<string, string> = { "333": "三", "222": "二", pyram: "金", mirror: "镜", maple: "枫", skewb: "斜", allAround: "全能" };
-  return Object.entries(personalBests)
-    .map(([eventId, value]) => `${labels[eventId] || eventId} ${value}`)
-    .join(" · ");
+const personalBestFields = [
+  { id: "333", label: "三阶" },
+  { id: "222", label: "二阶" },
+  { id: "pyram", label: "金字塔" },
+  { id: "mirror", label: "镜面" },
+  { id: "maple", label: "枫叶" },
+  { id: "skewb", label: "斜转" },
+  { id: "allAround", label: "全能" }
+] as const;
+
+function formatPersonalBestInput(value: number | undefined) {
+  return typeof value === "number" && value > 0 ? String(value) : "";
+}
+
+function updatePersonalBest(player: DraftPlayer, key: keyof WeeklyPersonalBests, rawValue: string, average = false): DraftPlayer {
+  const value = rawValue.trim() ? Number(rawValue) : NaN;
+  const next = { ...(average ? player.personalBestAverages : player.personalBests) };
+  if (Number.isFinite(value) && value > 0) next[key] = value;
+  else delete next[key];
+  return average ? { ...player, personalBestAverages: next } : { ...player, personalBests: next };
 }
 
 function normalizeGender(gender: string): WeeklyLibraryGender {
