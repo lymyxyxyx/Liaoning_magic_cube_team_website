@@ -11,7 +11,7 @@ export const dynamic = "force-dynamic";
 
 export default async function WeeklyResultsEntryPage() {
   if (!isWeeklyCompetitionEnabled()) notFound();
-  const meets = await listWeeklyMeetOptions().catch(() => []);
+  const meets = (await listWeeklyMeetOptions().catch(() => [])).filter((meet) => meet.status === "open");
   const currentMeet = meets.find((meet) => meet.status === "open") || meets.find((meet) => meet.id !== "weekly-test-entry");
   const eventConfigs = currentMeet ? await listWeeklyMeetEventConfigs(currentMeet.id).catch(() => []) : [];
   const eventConfigIds = new Set(eventConfigs.filter((config) => config.enabled).map((config) => config.eventId));

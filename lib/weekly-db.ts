@@ -54,7 +54,7 @@ export async function getWeeklyMeets(): Promise<WeeklyMeet[]> {
   try {
     const pool = getPostgresPool();
     const meetsResult = await pool.query<MeetRow>(
-      "SELECT * FROM weekly_meets ORDER BY week_number DESC"
+      "SELECT * FROM weekly_meets WHERE status = 'open' ORDER BY week_number DESC"
     );
     if (meetsResult.rows.length === 0) return [];
 
@@ -106,7 +106,7 @@ export async function getWeeklyMeetBySlug(slug: string): Promise<WeeklyMeet | nu
   try {
     const pool = getPostgresPool();
     const meetResult = await pool.query<MeetRow>(
-      "SELECT * FROM weekly_meets WHERE slug = $1",
+      "SELECT * FROM weekly_meets WHERE slug = $1 AND status = 'open'",
       [slug]
     );
     if (meetResult.rows.length === 0) return null;

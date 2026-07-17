@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { PageHero } from "@/components/page-hero";
-import { getWeeklyMeets } from "@/lib/weekly-db";
 import { listWeeklyMeetOptions } from "@/lib/weekly-entry-store";
 import { isWeeklyCompetitionEnabled } from "@/lib/weekly-feature";
 import { notFound } from "next/navigation";
@@ -52,12 +51,9 @@ function getCurrentWeekStatus(endAt?: string | null, now = new Date()) {
 
 export default async function WeeklyPage() {
   if (!isWeeklyCompetitionEnabled()) notFound();
-  const weeklyMeets = await getWeeklyMeets();
   const configuredMeets = await listWeeklyMeetOptions().catch(() => []);
   const currentMeet = configuredMeets.find((meet) => meet.status === "open");
   const currentWeekStatus = getCurrentWeekStatus(currentMeet?.endsAt);
-  const earliestWeekNumber = weeklyMeets.length > 0 ? Math.min(...weeklyMeets.map((m) => m.weekNumber)) : 1;
-  const previousWeeks = Array.from({ length: earliestWeekNumber - 1 }, (_, i) => earliestWeekNumber - 1 - i);
 
   return (
     <>
@@ -81,40 +77,6 @@ export default async function WeeklyPage() {
           </div>
           <strong>立即参加</strong>
         </Link> : <div className="weekly-feature weekly-feature--disabled"><div><h2>本周周赛暂未开放</h2><small>请关注后续公告。</small></div></div>}
-
-        {weeklyMeets.length > 0 || previousWeeks.length > 0 ? (
-          <details className="weekly-history-fold">
-            <summary>
-              <div>
-                <strong>历史周赛</strong>
-                <small>
-                  已发布 {weeklyMeets.length} 期，旧内容已收起
-                </small>
-              </div>
-              <span>展开</span>
-            </summary>
-
-            {weeklyMeets.length > 0 ? (
-              <div className="recorded-week-list">
-                {weeklyMeets.map((meet) => (
-                  <Link className="recorded-week-card" href={`/weekly/${meet.slug}`} key={meet.id}>
-                    <span>{meet.title}</span>
-                    <small>{meet.publishedAt ? `发布时间：${meet.publishedAt}` : meet.dateLabel}</small>
-                  </Link>
-                ))}
-              </div>
-            ) : null}
-
-            <div className="weekly-list">
-              {previousWeeks.map((weekNumber) => (
-                <div className="weekly-list-item pending" key={weekNumber}>
-                  <span>辽宁魔方线上周赛第{weekNumber}周总结</span>
-                  <small>待录入</small>
-                </div>
-              ))}
-            </div>
-          </details>
-        ) : null}
 
         <div className="weekly-secondary-links">
           <Link className="button button--ghost" href="/weekly/big-stack">
