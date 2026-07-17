@@ -182,9 +182,23 @@ export function WeeklyResultEntryConsole({ initialMeets, initialPlayers = [], ev
   }, [selectedEventId, selectedFormat]);
 
   useEffect(() => {
+    // 切换项目时保留选手，但不能把上一个项目的成绩带过来。
+    setAttempts(Array.from({ length: selectedFormatConfig.attemptCount }, () => ""));
+    setEditingResult(null);
+    setCorrectionReason("");
+  }, [selectedEventId]);
+
+  useEffect(() => {
     if (!isPublicMode) return;
     const configured = initialEventConfigs.find((config) => config.eventId === selectedEventId && config.enabled);
-    if (configured) setSelectedFormat(configured.format);
+    if (configured) {
+      const normalizedFormat = selectedEventId === "individual"
+        ? "best1"
+        : configured.format === "best3"
+          ? "best3"
+          : "avg5";
+      setSelectedFormat(normalizedFormat);
+    }
   }, [initialEventConfigs, isPublicMode, selectedEventId]);
 
   useEffect(() => {
