@@ -143,6 +143,13 @@ export function WeeklyResultEntryConsole({ initialMeets, initialPlayers = [], ev
         const nextPlayers = payload.players || [];
         setPlayers(nextPlayers);
         setKnownPlayers((prev) => mergePlayers(prev, nextPlayers));
+        // 搜索结果异步返回时，如果已经是唯一的精确姓名/WCA ID，自动完成绑定，
+        // 避免用户必须再点一次同名选项才能保存成绩。
+        const exactPlayer = findPlayerByWcaId(q, nextPlayers) || findPlayerByName(q, nextPlayers);
+        if (exactPlayer) {
+          setSelectedPlayer(exactPlayer);
+          setPlayerQuery(exactPlayer.name);
+        }
       })
       .catch((error) => {
         if (error.name !== "AbortError") setPlayers([]);
