@@ -9,10 +9,14 @@ export function matchesWeeklyPlayerQuery(player: SearchableWeeklyPlayer, query: 
   const normalizedQuery = query.trim().toLowerCase();
   if (!normalizedQuery) return true;
 
+  const chineseName = player.name.match(/[\u3400-\u9fff]/g)?.join("") || "";
+  const fullPinyin = chineseName ? pinyin(chineseName, { toneType: "none", type: "array" }).join("").toLowerCase() : "";
+
   return (
     player.name.includes(query.trim()) ||
     (player.wcaId || "").toLowerCase().includes(normalizedQuery) ||
-    getPinyinInitials(player.name).includes(normalizedQuery)
+    getPinyinInitials(chineseName || player.name).includes(normalizedQuery) ||
+    fullPinyin.includes(normalizedQuery)
   );
 }
 

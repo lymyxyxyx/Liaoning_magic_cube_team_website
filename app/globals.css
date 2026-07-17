@@ -10889,6 +10889,34 @@ a.commercial-member-link:hover {
   background: color-mix(in srgb, var(--blue) 4%, var(--surface));
 }
 
+/* The public score input must remain one flat row at every responsive width. */
+.weekly-entry-shell--public .weekly-attempt-grid label {
+  display: flex;
+  align-items: stretch;
+  min-height: 36px;
+}
+
+.weekly-entry-shell--public .weekly-attempt-grid label span {
+  flex: 0 0 34px;
+  min-height: 34px;
+}
+
+.weekly-entry-shell--public .weekly-entry-panel .weekly-attempt-grid input {
+  display: block;
+  flex: 1 1 auto;
+  width: 0;
+  min-width: 0;
+  min-height: 34px;
+  height: 34px;
+  padding: 2px 7px;
+  appearance: none;
+  -webkit-appearance: none;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
 /* Keep the weekly entry leaderboard as a compact, horizontally scrollable table on phones. */
 @media (max-width: 900px) {
   .weekly-entry-results .result-table-wrap {
