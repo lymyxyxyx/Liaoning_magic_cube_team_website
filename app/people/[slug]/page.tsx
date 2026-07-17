@@ -51,8 +51,9 @@ export function generateStaticParams() {
   return people.map((person) => ({ slug: person.slug }));
 }
 
-export function generateMetadata({ params }: { params: { slug: string } }): Metadata {
-  const person = getPersonBySlug(params.slug);
+export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
+  const { slug } = await params;
+  const person = getPersonBySlug(slug);
   if (!person) return { title: "未找到该人员" };
 
   const parts = [person.city, person.mainEvent, person.wcaId ? `WCA ID ${person.wcaId}` : ""].filter(Boolean);
@@ -68,8 +69,9 @@ export function generateMetadata({ params }: { params: { slug: string } }): Meta
   };
 }
 
-export default async function PersonDetailPage({ params }: { params: { slug: string } }) {
-  const person = await getPersonProfile(params.slug);
+export default async function PersonDetailPage({ params }: { params: Promise<{ slug: string }> }) {
+  const { slug } = await params;
+  const person = await getPersonProfile(slug);
 
   if (!person) {
     notFound();

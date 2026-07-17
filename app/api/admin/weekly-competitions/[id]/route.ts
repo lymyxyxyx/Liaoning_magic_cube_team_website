@@ -3,15 +3,17 @@ import { listWeeklyMeetEventConfigs, updateWeeklyMeetConfig, type WeeklyMeetEven
 
 export const dynamic = "force-dynamic";
 
-export async function GET(_request: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(_request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
   try {
-    return NextResponse.json({ eventConfigs: await listWeeklyMeetEventConfigs(params.id) });
+    return NextResponse.json({ eventConfigs: await listWeeklyMeetEventConfigs(id) });
   } catch (error) {
     return NextResponse.json({ message: error instanceof Error ? error.message : "读取周赛配置失败" }, { status: 400 });
   }
 }
 
-export async function PATCH(request: NextRequest, { params }: { params: { id: string } }) {
+export async function PATCH(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
   const payload = (await request.json().catch(() => null)) as {
     title?: string;
     dateLabel?: string;
@@ -26,7 +28,7 @@ export async function PATCH(request: NextRequest, { params }: { params: { id: st
       return NextResponse.json({ message: "周赛配置不完整" }, { status: 400 });
     }
     await updateWeeklyMeetConfig({
-      id: params.id,
+      id,
       title: payload.title,
       dateLabel: payload.dateLabel,
       status: payload.status,

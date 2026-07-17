@@ -5,12 +5,13 @@ import { isWeeklyCompetitionEnabled } from "@/lib/weekly-feature";
 
 export const dynamic = "force-dynamic";
 
-export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
   if (!isWeeklyCompetitionEnabled()) return NextResponse.json({ message: "Not found" }, { status: 404 });
   const eventId = request.nextUrl.searchParams.get("eventId") || "333";
   const format = request.nextUrl.searchParams.get("format") || "avg5";
   try {
-    const results = await listWeeklyResults(params.id, eventId, format);
+    const results = await listWeeklyResults(id, eventId, format);
     return NextResponse.json({ results });
   } catch (error) {
     if (error instanceof Error && error.message === "项目不正确") {
@@ -20,7 +21,8 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
   }
 }
 
-export async function POST(request: NextRequest, { params }: { params: { id: string } }) {
+export async function POST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
   if (!isWeeklyCompetitionEnabled()) return NextResponse.json({ message: "Not found" }, { status: 404 });
   const payload = (await request.json().catch(() => null)) as {
     eventId?: string;
@@ -44,13 +46,13 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
     if (!payload?.eventId || !payload.player || !payload.attempts) {
       return NextResponse.json({ message: "缺少成绩录入信息" }, { status: 400 });
     }
-    const availability = await getWeeklyMeetEntryAvailability(params.id);
+    const availability = await getWeeklyMeetEntryAvailability(id);
     if (!availability.canEnter) return NextResponse.json({ message: availability.message }, { status: 403 });
     const libraryPlayer = await findWeeklyPlayerLibraryEntry({ id: payload.player.id, name: payload.player.name });
     if (!libraryPlayer) return NextResponse.json({ message: "请先从周赛选手库选择选手" }, { status: 400 });
 
     const calculated = await saveWeeklyResult({
-      meetId: params.id,
+      meetId: id,
       eventId: payload.eventId,
       format: payload.format || "avg5",
       player: {
@@ -67,7 +69,7 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
       },
       attempts: payload.attempts
     });
-    const results = await listWeeklyResults(params.id, payload.eventId, payload.format || "avg5");
+    const results = await listWeeklyResults(id, payload.eventId, payload.format || "avg5");
     return NextResponse.json({ calculated, results });
   } catch (error) {
     return NextResponse.json({ message: error instanceof Error ? error.message : "保存成绩失败" }, { status: 400 });

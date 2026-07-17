@@ -3,7 +3,8 @@ import { correctWeeklyResult, deleteWeeklyResult } from "@/lib/weekly-entry-stor
 
 export const dynamic = "force-dynamic";
 
-export async function PATCH(request: NextRequest, { params }: { params: { id: string } }) {
+export async function PATCH(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
   const payload = (await request.json().catch(() => null)) as {
     attempts?: string[];
     format?: "avg5" | "best3" | "avg3" | "best1";
@@ -11,7 +12,7 @@ export async function PATCH(request: NextRequest, { params }: { params: { id: st
   } | null;
 
   try {
-    const resultId = Number(params.id);
+    const resultId = Number(id);
     if (!Number.isInteger(resultId) || resultId <= 0 || !payload?.attempts || !payload.format) {
       return NextResponse.json({ message: "缺少成绩修改信息" }, { status: 400 });
     }
@@ -27,11 +28,12 @@ export async function PATCH(request: NextRequest, { params }: { params: { id: st
   }
 }
 
-export async function DELETE(request: NextRequest, { params }: { params: { id: string } }) {
+export async function DELETE(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
   const payload = (await request.json().catch(() => null)) as { reason?: string } | null;
 
   try {
-    const resultId = Number(params.id);
+    const resultId = Number(id);
     if (!Number.isInteger(resultId) || resultId <= 0) {
       return NextResponse.json({ message: "成绩不存在" }, { status: 400 });
     }

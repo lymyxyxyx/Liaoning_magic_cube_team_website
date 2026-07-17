@@ -2,7 +2,7 @@
 
 import { Pencil, RefreshCw, Save, Search, Trash2, X } from "lucide-react";
 import type { KeyboardEvent } from "react";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { getWeeklyAgeGroup } from "@/lib/weekly-age-groups";
 import {
   calculateResultByFormat,
@@ -88,106 +88,7 @@ export function WeeklyResultEntryConsole({ initialMeets, initialPlayers = [], ev
     }
   }, [attempts, selectedFormat]);
 
-  useEffect(() => {
-    refreshResults();
-  }, [selectedMeetId, selectedEventId, selectedFormat]);
-
-  useEffect(() => {
-    setAttempts(Array.from({ length: selectedFormatConfig.attemptCount }, () => ""));
-  }, [selectedFormatConfig.attemptCount]);
-
-  useEffect(() => {
-    if (!isPublicMode) return;
-    const configured = initialEventConfigs.find((config) => config.eventId === selectedEventId && config.enabled);
-    if (configured) setSelectedFormat(configured.format);
-  }, [initialEventConfigs, isPublicMode, selectedEventId]);
-
-  useEffect(() => {
-    const input = playerInputRef.current;
-    if (!input) return;
-
-    const syncPlayerQuery = () => {
-      updatePlayerQuery(input.value);
-    };
-
-    input.addEventListener("input", syncPlayerQuery);
-    input.addEventListener("keyup", syncPlayerQuery);
-    input.addEventListener("compositionend", syncPlayerQuery);
-
-    return () => {
-      input.removeEventListener("input", syncPlayerQuery);
-      input.removeEventListener("keyup", syncPlayerQuery);
-      input.removeEventListener("compositionend", syncPlayerQuery);
-    };
-  }, [knownPlayers, players, selectedPlayer]);
-
-  useEffect(() => {
-    const controller = new AbortController();
-    const timer = window.setTimeout(() => {
-      if (!playerQuery.trim()) {
-        setPlayers([]);
-        return;
-      }
-      void searchPlayers(playerQuery, controller.signal);
-    }, 180);
-
-    return () => {
-      window.clearTimeout(timer);
-      controller.abort();
-    };
-  }, [playerQuery]);
-
-  function refreshMeets() {
-    fetch("/api/weekly-competitions")
-      .then((response) => {
-        if (!response.ok) throw new Error("meets");
-        return response.json();
-      })
-      .then((payload: { meets: MeetOption[] }) => {
-        setMeets(payload.meets || []);
-        if (!selectedMeetId && payload.meets?.[0]) {
-          const nextMeetId = mode === "public" ? payload.meets.find((meet) => meet.id !== testMeetId)?.id || payload.meets[0].id : payload.meets[0].id;
-          setSelectedMeetId(nextMeetId);
-        }
-      })
-      .catch(() => setNotice("读取周赛列表失败。"));
-  }
-
-  function refreshResults() {
-    if (!selectedMeetId || !selectedEventId) {
-      setResults([]);
-      return;
-    }
-
-    setIsLoadingResults(true);
-    fetch(
-      `/api/weekly-competitions/${encodeURIComponent(selectedMeetId)}/results?eventId=${encodeURIComponent(selectedEventId)}&format=${encodeURIComponent(selectedFormat)}`
-    )
-      .then((response) => {
-        if (!response.ok) throw new Error("results");
-        return response.json();
-      })
-      .then((payload: { results: EnteredResult[] }) => setResults(payload.results || []))
-      .catch(() => setNotice("读取成绩列表失败。"))
-      .finally(() => setIsLoadingResults(false));
-  }
-
-  function updateAttempt(index: number, value: string) {
-    setAttempts((prev) => prev.map((attempt, attemptIndex) => (attemptIndex === index ? value : attempt)));
-  }
-
-  function updatePlayerQuery(value: string) {
-    setPlayerQuery(value);
-    const exactPlayer = findPlayerByName(value, players) || findPlayerByName(value, knownPlayers);
-    if (exactPlayer) {
-      setSelectedPlayer(exactPlayer);
-    } else if (selectedPlayer && value !== selectedPlayer.name) {
-      setSelectedPlayer(null);
-    }
-    void searchPlayers(value);
-  }
-
-  function searchPlayers(query: string, signal?: AbortSignal) {
+  const searchPlayers = useCallback((query: string, signal?: AbortSignal) => {
     const q = query.trim();
     if (!q) {
       setPlayers([]);
@@ -207,6 +108,85 @@ export function WeeklyResultEntryConsole({ initialMeets, initialPlayers = [], ev
       .catch((error) => {
         if (error.name !== "AbortError") setPlayers([]);
       });
+  }, []);
+
+  const refreshResults = useCallback(() => {
+    if (!selectedMeetId || !selectedEventId) {
+      setResults([]);
+      return;
+    }
+
+    setIsLoadingResults(true);
+    fetch(
+      `/api/weekly-competitions/${encodeURIComponent(selectedMeetId)}/results?eventId=${encodeURIComponent(selectedEventId)}&format=${encodeURIComponent(selectedFormat)}`
+    )
+      .then((response) => {
+        if (!response.ok) throw new Error("results");
+        return response.json();
+      })
+      .then((payload: { results: EnteredResult[] }) => setResults(payload.results || []))
+      .catch(() => setNotice("读取成绩列表失败。"))
+      .finally(() => setIsLoadingResults(false));
+  }, [selectedEventId, selectedFormat, selectedMeetId]);
+
+  useEffect(() => {
+    refreshResults();
+  }, [refreshResults]);
+
+  useEffect(() => {
+    setAttempts(Array.from({ length: selectedFormatConfig.attemptCount }, () => ""));
+  }, [selectedFormatConfig.attemptCount]);
+
+  useEffect(() => {
+    if (!isPublicMode) return;
+    const configured = initialEventConfigs.find((config) => config.eventId === selectedEventId && config.enabled);
+    if (configured) setSelectedFormat(configured.format);
+  }, [initialEventConfigs, isPublicMode, selectedEventId]);
+
+  useEffect(() => {
+    const controller = new AbortController();
+    const timer = window.setTimeout(() => {
+      if (!playerQuery.trim()) {
+        setPlayers([]);
+        return;
+      }
+      void searchPlayers(playerQuery, controller.signal);
+    }, 180);
+
+    return () => {
+      window.clearTimeout(timer);
+      controller.abort();
+    };
+  }, [playerQuery, searchPlayers]);
+
+  function refreshMeets() {
+    fetch("/api/weekly-competitions")
+      .then((response) => {
+        if (!response.ok) throw new Error("meets");
+        return response.json();
+      })
+      .then((payload: { meets: MeetOption[] }) => {
+        setMeets(payload.meets || []);
+        if (!selectedMeetId && payload.meets?.[0]) {
+          const nextMeetId = mode === "public" ? payload.meets.find((meet) => meet.id !== testMeetId)?.id || payload.meets[0].id : payload.meets[0].id;
+          setSelectedMeetId(nextMeetId);
+        }
+      })
+      .catch(() => setNotice("读取周赛列表失败。"));
+  }
+
+  function updateAttempt(index: number, value: string) {
+    setAttempts((prev) => prev.map((attempt, attemptIndex) => (attemptIndex === index ? value : attempt)));
+  }
+
+  function updatePlayerQuery(value: string) {
+    setPlayerQuery(value);
+    const exactPlayer = findPlayerByName(value, players) || findPlayerByName(value, knownPlayers);
+    if (exactPlayer) {
+      setSelectedPlayer(exactPlayer);
+    } else if (selectedPlayer && value !== selectedPlayer.name) {
+      setSelectedPlayer(null);
+    }
   }
 
   function handleAttemptKeyDown(event: KeyboardEvent<HTMLInputElement>, index: number) {
@@ -519,10 +499,8 @@ export function WeeklyResultEntryConsole({ initialMeets, initialPlayers = [], ev
                 <Search size={16} />
                 <input
                   ref={playerInputRef}
+                  value={playerQuery}
                   onChange={(event) => updatePlayerQuery(event.currentTarget.value)}
-                  onInput={(event) => updatePlayerQuery(event.currentTarget.value)}
-                  onKeyUp={(event) => updatePlayerQuery(event.currentTarget.value)}
-                  onCompositionEnd={(event) => updatePlayerQuery(event.currentTarget.value)}
                   placeholder="输入姓名或 WCA ID"
                 />
               </span>

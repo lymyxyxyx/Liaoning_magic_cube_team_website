@@ -1,3 +1,8 @@
+"use client";
+
+import Image from "next/image";
+import { useState } from "react";
+
 function iso2ToFlagEmoji(iso2: string) {
   const upper = iso2.toUpperCase();
   if (!/^[A-Z]{2}$/.test(upper)) return "";
@@ -7,11 +12,12 @@ function iso2ToFlagEmoji(iso2: string) {
 export function WcaFlag({ country, iso2 }: { country: string; iso2?: string | null }) {
   const normalizedIso2 = iso2?.trim().toLowerCase();
   const countryKey = country.toLowerCase().replaceAll(" ", "-");
+  const [failedIso2, setFailedIso2] = useState<string | null>(null);
 
   if (normalizedIso2 === "tw" || countryKey === "chinese-taipei") {
     return (
       <span className="wca-flag flag-svg" aria-hidden="true">
-        <img src="/flags/tw.svg" width={28} height={20} alt="" loading="lazy" />
+        <Image src="/flags/tw.svg" width={28} height={20} alt="" unoptimized />
       </span>
     );
   }
@@ -19,20 +25,18 @@ export function WcaFlag({ country, iso2 }: { country: string; iso2?: string | nu
   if (normalizedIso2 && /^[a-z]{2}$/.test(normalizedIso2)) {
     return (
       <span className="wca-flag flag-emoji" aria-hidden="true">
-        <img
-          src={`/flags/${normalizedIso2}.svg`}
-          width={28}
-          height={20}
-          alt=""
-          loading="lazy"
-          onError={(event) => {
-            const target = event.currentTarget;
-            target.style.display = "none";
-            const fallback = target.nextElementSibling as HTMLElement | null;
-            if (fallback) fallback.style.display = "inline";
-          }}
-        />
-        <span style={{ display: "none" }}>{iso2ToFlagEmoji(normalizedIso2)}</span>
+        {failedIso2 === normalizedIso2 ? (
+          <span>{iso2ToFlagEmoji(normalizedIso2)}</span>
+        ) : (
+          <Image
+            src={`/flags/${normalizedIso2}.svg`}
+            width={28}
+            height={20}
+            alt=""
+            unoptimized
+            onError={() => setFailedIso2(normalizedIso2)}
+          />
+        )}
       </span>
     );
   }

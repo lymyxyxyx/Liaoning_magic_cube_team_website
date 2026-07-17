@@ -48,9 +48,10 @@ type MedalRow = {
 
 export async function GET(
   _request: NextRequest,
-  { params }: { params: { wcaId: string } }
+  { params }: { params: Promise<{ wcaId: string }> }
 ) {
-  const wcaId = params.wcaId.toUpperCase();
+  const { wcaId: rawWcaId } = await params;
+  const wcaId = rawWcaId.toUpperCase();
 
   if (!/^[0-9]{4}[A-Z]{4}[0-9]{2}$/.test(wcaId)) {
     return NextResponse.json({ error: "Invalid WCA ID" }, { status: 400 });
