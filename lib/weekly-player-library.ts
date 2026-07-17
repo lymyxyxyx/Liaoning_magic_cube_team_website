@@ -291,7 +291,8 @@ function normalizePlayers(players: WeeklyPlayerLibraryEntry[]) {
       return {
         id,
         name,
-        wcaId: player.wcaId?.trim().toUpperCase() || "",
+    wcaId: player.wcaId?.trim().toUpperCase() || "",
+    wcaIdConfirmed: Boolean(player.wcaIdConfirmed),
         gender: normalizeGender(player.gender),
         birthDate: player.birthDate.trim(),
         ageGroup: normalizeAgeGroup(player.ageGroup || "", player.birthDate),
