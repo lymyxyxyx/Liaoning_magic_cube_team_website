@@ -10,6 +10,7 @@ export type WeeklyPlayerLibraryEntry = {
   id: string;
   name: string;
   wcaId?: string;
+  wcaIdConfirmed?: boolean;
   gender: WeeklyLibraryGender;
   birthDate: string;
   ageGroup?: string;
@@ -26,6 +27,7 @@ type WeeklyPlayerLibraryRow = {
   id: string;
   name: string;
   wca_id: string;
+  wca_id_confirmed: boolean;
   gender: string;
   birth_date: string;
   age_group_override: string;
@@ -126,6 +128,7 @@ export async function ensureWeeklyPlayerLibraryTable() {
       name TEXT NOT NULL,
       gender TEXT NOT NULL DEFAULT '',
       wca_id TEXT NOT NULL DEFAULT '',
+      wca_id_confirmed BOOLEAN NOT NULL DEFAULT FALSE,
       birth_date TEXT NOT NULL DEFAULT '',
       age_group_override TEXT NOT NULL DEFAULT '',
       age_group_is_fuzzy BOOLEAN NOT NULL DEFAULT FALSE,
@@ -141,6 +144,7 @@ export async function ensureWeeklyPlayerLibraryTable() {
     )
   `);
   await pool.query("ALTER TABLE weekly_player_library ADD COLUMN IF NOT EXISTS wca_id TEXT NOT NULL DEFAULT ''");
+  await pool.query("ALTER TABLE weekly_player_library ADD COLUMN IF NOT EXISTS wca_id_confirmed BOOLEAN NOT NULL DEFAULT FALSE");
   await pool.query("ALTER TABLE weekly_player_library ADD COLUMN IF NOT EXISTS age_group_override TEXT NOT NULL DEFAULT ''");
   await pool.query("ALTER TABLE weekly_player_library ADD COLUMN IF NOT EXISTS age_group_is_fuzzy BOOLEAN NOT NULL DEFAULT FALSE");
   await pool.query("ALTER TABLE weekly_player_library ADD COLUMN IF NOT EXISTS personal_bests JSONB NOT NULL DEFAULT '{}'::jsonb");
@@ -160,7 +164,7 @@ export async function listWeeklyPlayerLibrary(): Promise<WeeklyPlayerLibraryEntr
 
   const pool = getPostgresPool();
   const { rows } = await pool.query<WeeklyPlayerLibraryRow>(
-    `SELECT id, name, wca_id, gender, birth_date, age_group_override, age_group_is_fuzzy, province, city, source, personal_bests, personal_bests_average, updated_at
+    `SELECT id, name, wca_id, wca_id_confirmed, gender, birth_date, age_group_override, age_group_is_fuzzy, province, city, source, personal_bests, personal_bests_average, updated_at
      FROM weekly_player_library
      ORDER BY name`
   );
@@ -208,7 +212,7 @@ export async function findWeeklyPlayerLibraryEntry(input: { id?: string; name?: 
 
   const pool = getPostgresPool();
   const { rows } = await pool.query<WeeklyPlayerLibraryRow>(
-    `SELECT id, name, wca_id, gender, birth_date, age_group_override, age_group_is_fuzzy, province, city, source, personal_bests, updated_at
+    `SELECT id, name, wca_id, wca_id_confirmed, gender, birth_date, age_group_override, age_group_is_fuzzy, province, city, source, personal_bests, updated_at
      FROM weekly_player_library
      WHERE id = $1 OR name = $2
      LIMIT 1`,
@@ -233,11 +237,12 @@ export async function saveWeeklyPlayerLibrary(players: WeeklyPlayerLibraryEntry[
     for (const player of normalizedPlayers) {
       await client.query(
         `INSERT INTO weekly_player_library
-          (id, name, wca_id, gender, birth_date, age_group_override, age_group_is_fuzzy, province, city, source, personal_bests, personal_bests_average, updated_at)
-         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11::jsonb,$12::jsonb,now())
+          (id, name, wca_id, wca_id_confirmed, gender, birth_date, age_group_override, age_group_is_fuzzy, province, city, source, personal_bests, personal_bests_average, updated_at)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12::jsonb,$13::jsonb,now())
          ON CONFLICT (id) DO UPDATE
            SET name = EXCLUDED.name,
                wca_id = EXCLUDED.wca_id,
+               wca_id_confirmed = EXCLUDED.wca_id_confirmed,
                gender = EXCLUDED.gender,
                birth_date = EXCLUDED.birth_date,
                age_group_override = EXCLUDED.age_group_override,
@@ -252,6 +257,7 @@ export async function saveWeeklyPlayerLibrary(players: WeeklyPlayerLibraryEntry[
           player.id,
           player.name,
           player.wcaId || "",
+          Boolean(player.wcaIdConfirmed),
           player.gender,
           player.birthDate,
           player.ageGroup || "",
@@ -331,7 +337,8 @@ async function listWcaLiaoningPlayers(): Promise<WeeklyPlayerLibraryEntry[]> {
     .map((profile) => ({
       id: `wca:${profile.wcaId}`,
       name: profile.name,
-      wcaId: profile.wcaId,
+        wcaId: profile.wcaId,
+        wcaIdConfirmed: false,
       gender: profile.gender === "女" ? "女" : profile.gender === "男" ? "男" : "",
       birthDate: "",
       ageGroup: "",
@@ -362,6 +369,7 @@ function mergeWeeklyEligiblePlayers(wcaPlayers: WeeklyPlayerLibraryEntry[], libr
           merged[existingIndex] = {
             ...existing,
             gender: existing.gender || player.gender,
+            wcaIdConfirmed: existing.wcaIdConfirmed || player.wcaIdConfirmed,
             birthDate: player.birthDate || existing.birthDate,
             ageGroup: player.ageGroup || existing.ageGroup,
             ageGroupIsFuzzy: player.ageGroupIsFuzzy || existing.ageGroupIsFuzzy,
@@ -378,6 +386,7 @@ function mergeWeeklyEligiblePlayers(wcaPlayers: WeeklyPlayerLibraryEntry[], libr
       merged[existingIndex] = {
         ...player,
         wcaId,
+        wcaIdConfirmed: Boolean(player.wcaIdConfirmed),
         personalBests: existing.personalBests || player.personalBests || {},
         personalBestAverages: existing.personalBestAverages || player.personalBestAverages || {}
       };
@@ -518,6 +527,7 @@ function mapLibraryRow(row: WeeklyPlayerLibraryRow): WeeklyPlayerLibraryEntry {
     id: row.id,
     name: row.name,
     wcaId: row.wca_id || "",
+    wcaIdConfirmed: Boolean(row.wca_id_confirmed),
     gender: normalizeGender(row.gender),
     birthDate: row.birth_date || "",
     ageGroup: getWeeklyAgeGroup(row.birth_date || "") || row.age_group_override || "",

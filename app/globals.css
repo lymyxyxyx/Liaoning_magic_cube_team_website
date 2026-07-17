@@ -4284,6 +4284,20 @@ textarea {
   padding: 10px;
 }
 
+.weekly-library-confirm-field span {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 30px;
+  color: var(--muted);
+  font-weight: 650;
+}
+
+.weekly-library-confirm-field input[type="checkbox"] {
+  width: auto;
+  min-height: auto;
+}
+
 .weekly-library-pb-fields legend {
   padding: 0 5px;
   color: var(--text);
@@ -11263,6 +11277,105 @@ a.commercial-member-link:hover {
   font-size: 0.72rem;
   font-weight: 800;
   white-space: nowrap;
+}
+
+.weekly-wca-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--text);
+  font-size: 11px;
+}
+
+.weekly-wca-status svg {
+  color: #16803c;
+}
+
+.weekly-wca-status small {
+  color: #a16207;
+  font-size: 10px;
+  white-space: nowrap;
+}
+
+.weekly-operation-log {
+  display: grid;
+  gap: 8px;
+  margin-top: 16px;
+  border-top: 1px solid var(--line);
+  padding-top: 14px;
+}
+
+.weekly-operation-log-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.weekly-operation-log-heading h3 {
+  margin: 0 0 3px;
+  font-size: 14px;
+}
+
+.weekly-operation-log-heading p,
+.weekly-operation-log-empty {
+  margin: 0;
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.weekly-operation-log-list {
+  display: grid;
+  gap: 5px;
+  max-height: 260px;
+  overflow: auto;
+}
+
+.weekly-operation-log-row {
+  display: grid;
+  grid-template-columns: 42px minmax(70px, 0.7fr) minmax(120px, 1.5fr) auto;
+  align-items: center;
+  gap: 8px;
+  border-bottom: 1px solid #edf1f6;
+  padding: 6px 0;
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.weekly-operation-log-row strong {
+  color: var(--text);
+}
+
+.weekly-operation-log-row time {
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+.weekly-operation-log-action {
+  font-weight: 850;
+}
+
+.weekly-operation-log-action--created { color: #16803c; }
+.weekly-operation-log-action--updated,
+.weekly-operation-log-action--corrected { color: #2563eb; }
+.weekly-operation-log-action--deleted { color: #b42318; }
+
+.weekly-library-form .weekly-library-confirm-field {
+  align-content: start;
+}
+
+.weekly-library-form .weekly-library-confirm-field span {
+  font-size: 11px;
+}
+
+@media (max-width: 700px) {
+  .weekly-operation-log-row {
+    grid-template-columns: auto 1fr auto;
+  }
+
+  .weekly-operation-log-row > span:nth-child(3) {
+    grid-column: 2 / -1;
+  }
 }
 
 @media (max-width: 640px) {

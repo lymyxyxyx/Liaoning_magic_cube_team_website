@@ -145,6 +145,10 @@ async function main() {
       )
     `);
     await client.query("CREATE INDEX IF NOT EXISTS weekly_result_revisions_result_id_idx ON weekly_result_revisions (result_id, created_at DESC)");
+    await client.query("ALTER TABLE weekly_result_revisions ADD COLUMN IF NOT EXISTS meet_id TEXT");
+    await client.query("ALTER TABLE weekly_result_revisions ADD COLUMN IF NOT EXISTS event_id TEXT");
+    await client.query("ALTER TABLE weekly_result_revisions ADD COLUMN IF NOT EXISTS player_id TEXT");
+    await client.query("ALTER TABLE weekly_result_revisions ADD COLUMN IF NOT EXISTS player_name TEXT NOT NULL DEFAULT ''");
 
     await client.query(`
       CREATE TABLE IF NOT EXISTS weekly_meet_event_configs (
@@ -193,6 +197,7 @@ async function main() {
     `);
 
     await client.query("ALTER TABLE weekly_player_library ADD COLUMN IF NOT EXISTS wca_id TEXT NOT NULL DEFAULT ''");
+    await client.query("ALTER TABLE weekly_player_library ADD COLUMN IF NOT EXISTS wca_id_confirmed BOOLEAN NOT NULL DEFAULT FALSE");
     await client.query("ALTER TABLE weekly_player_library ADD COLUMN IF NOT EXISTS age_group_override TEXT NOT NULL DEFAULT ''");
     await client.query("ALTER TABLE weekly_player_library ADD COLUMN IF NOT EXISTS age_group_is_fuzzy BOOLEAN NOT NULL DEFAULT FALSE");
     await client.query("ALTER TABLE weekly_player_library ADD COLUMN IF NOT EXISTS personal_bests JSONB NOT NULL DEFAULT '{}'::jsonb");

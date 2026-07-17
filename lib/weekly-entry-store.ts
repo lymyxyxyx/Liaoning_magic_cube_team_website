@@ -32,6 +32,7 @@ export type WeeklyPlayer = {
   name: string;
   slug: string;
   wcaId: string;
+  wcaIdConfirmed?: boolean;
   gender: "男" | "女";
   province: string;
   city: string;
@@ -50,6 +51,17 @@ export type WeeklyEnteredResult = {
   detail: string;
   pbRefreshed: boolean;
   pbAverageRefreshed: boolean;
+};
+
+export type WeeklyOperationLog = {
+  id: number;
+  resultId: number;
+  action: "created" | "updated" | "corrected" | "deleted";
+  playerName: string;
+  reason: string;
+  previousAverage: number | null;
+  nextAverage: number | null;
+  createdAt: string;
 };
 
 export type WeeklyMeetEventConfig = {
@@ -82,8 +94,11 @@ type WeeklyResultRow = {
   player_id: string | null;
   source: string;
   wca_id?: string | null;
+  wca_id_confirmed?: boolean;
   player_birth_date?: string | null;
   player_age_group?: string | null;
+  player_province?: string | null;
+  player_city?: string | null;
   pb_refreshed?: boolean;
   pb_average_refreshed?: boolean;
   meet_starts_at?: string | null;
@@ -157,6 +172,10 @@ export function ensureWeeklyEntryTables() {
       )
     `);
     await pool.query("CREATE INDEX IF NOT EXISTS weekly_result_revisions_result_id_idx ON weekly_result_revisions (result_id, created_at DESC)");
+    await pool.query("ALTER TABLE weekly_result_revisions ADD COLUMN IF NOT EXISTS meet_id TEXT");
+    await pool.query("ALTER TABLE weekly_result_revisions ADD COLUMN IF NOT EXISTS event_id TEXT");
+    await pool.query("ALTER TABLE weekly_result_revisions ADD COLUMN IF NOT EXISTS player_id TEXT");
+    await pool.query("ALTER TABLE weekly_result_revisions ADD COLUMN IF NOT EXISTS player_name TEXT NOT NULL DEFAULT ''");
     await pool.query(`
       CREATE TABLE IF NOT EXISTS weekly_meet_event_configs (
         meet_id TEXT NOT NULL REFERENCES weekly_meets(id) ON DELETE CASCADE,
@@ -303,6 +322,7 @@ export async function searchWeeklyPlayers(query: string): Promise<WeeklyPlayer[]
         name: player.name,
         slug: "",
         wcaId: player.wcaId || "",
+        wcaIdConfirmed: Boolean(player.wcaIdConfirmed),
         gender: player.gender === "女" ? ("女" as const) : ("男" as const),
         province: player.province,
         city: player.city,
@@ -319,6 +339,7 @@ export async function searchWeeklyPlayers(query: string): Promise<WeeklyPlayer[]
         name: player.name,
         slug: "",
         wcaId: player.wcaId || "",
+        wcaIdConfirmed: Boolean(player.wcaIdConfirmed),
         gender: player.gender === "女" ? ("女" as const) : ("男" as const),
         province: player.province,
         city: player.city,
@@ -371,6 +392,7 @@ export async function listWeeklyResults(meetIdOrSlug: string, eventId: string, f
 
   await ensureWeeklyEntryTables();
   await ensureWeeklyPlayerLibraryTable();
+  const eligiblePlayers = await listWeeklyEligiblePlayers().catch(() => []);
   const pool = getPostgresPool();
   const meet = await resolveWeeklyMeet(meetIdOrSlug);
   if (!meet) throw new Error("周赛不存在");
@@ -382,6 +404,9 @@ export async function listWeeklyResults(meetIdOrSlug: string, eventId: string, f
     `SELECT wr.*, COALESCE(NULLIF(wpl.wca_id, ''), CASE WHEN wr.player_id LIKE 'wca:%' THEN SUBSTRING(wr.player_id FROM 5) ELSE '' END) AS wca_id,
        COALESCE(wpl.birth_date, '') AS player_birth_date,
        COALESCE(wpl.age_group_override, '') AS player_age_group,
+       COALESCE(wpl.province, '') AS player_province,
+       COALESCE(wpl.city, '') AS player_city,
+       COALESCE(wpl.wca_id_confirmed, FALSE) AS wca_id_confirmed,
        wm.starts_at AS meet_starts_at
      FROM weekly_results wr
      LEFT JOIN weekly_player_library wpl ON wpl.id = wr.player_id
@@ -400,6 +425,8 @@ export async function listWeeklyResults(meetIdOrSlug: string, eventId: string, f
 
   const rankByGroup = new Map<string, number>();
   return rows.map((row) => {
+    const matchedPlayer = eligiblePlayers.find((player) => player.id === row.player_id) || eligiblePlayers.find((player) => player.name === row.player_name);
+    const wcaId = row.wca_id || matchedPlayer?.wcaId || "";
     const rankingAgeGroup = getWeeklyRankingAgeGroup("", row.player_age_group || row.age_group || "", row.meet_starts_at ? new Date(row.meet_starts_at) : new Date());
     const rank = (rankByGroup.get(rankingAgeGroup) || 0) + 1;
     rankByGroup.set(rankingAgeGroup, rank);
@@ -411,10 +438,11 @@ export async function listWeeklyResults(meetIdOrSlug: string, eventId: string, f
         id: row.player_id || (row.player_slug ? `code:${row.player_slug}` : row.player_name),
         name: row.player_name,
         slug: row.player_slug,
-        wcaId: row.wca_id || "",
+        wcaId,
+        wcaIdConfirmed: Boolean(row.wca_id_confirmed || matchedPlayer?.wcaIdConfirmed),
         gender: row.gender === "女" ? "女" : "男",
-        province: "辽宁",
-        city: "",
+        province: row.player_province || matchedPlayer?.province || "辽宁",
+        city: row.player_city || matchedPlayer?.city || "",
         birthDate: row.player_birth_date || "",
         ageGroup: rankingAgeGroup,
         ageGroupIsFuzzy: false
@@ -427,6 +455,44 @@ export async function listWeeklyResults(meetIdOrSlug: string, eventId: string, f
       pbAverageRefreshed: Boolean(row.pb_average_refreshed)
     };
   });
+}
+
+export async function listWeeklyOperationLogs(meetIdOrSlug: string, eventId: string, format: string = "avg5"): Promise<WeeklyOperationLog[]> {
+  if (!isWcaEventId(eventId)) throw new Error("项目不正确");
+  const formatConfig = getWeeklyResultFormat(format);
+  await ensureWeeklyEntryTables();
+  const pool = getPostgresPool();
+  const meet = await resolveWeeklyMeet(meetIdOrSlug);
+  if (!meet) throw new Error("周赛不存在");
+  const eventKeys = [getWeeklyEventKey(meet.id, eventId, formatConfig.id)];
+  if (eventId === "333" && formatConfig.id === "avg5") eventKeys.push("main");
+  const { rows } = await pool.query<{
+    id: number;
+    result_id: number;
+    action: string;
+    player_name: string;
+    reason: string;
+    previous_average: string | null;
+    next_average: string | null;
+    created_at: string;
+  }>(
+    `SELECT id, result_id, action, player_name, reason, previous_average, next_average, created_at
+     FROM weekly_result_revisions
+     WHERE meet_id = $1 AND event_id = ANY($2::text[])
+     ORDER BY created_at DESC
+     LIMIT 100`,
+    [meet.id, eventKeys]
+  );
+  return rows.map((row) => ({
+    id: row.id,
+    resultId: row.result_id,
+    action: row.action as WeeklyOperationLog["action"],
+    playerName: row.player_name || "未知选手",
+    reason: row.reason,
+    previousAverage: row.previous_average === null ? null : Number(row.previous_average),
+    nextAverage: row.next_average === null ? null : Number(row.next_average),
+    createdAt: row.created_at
+  }));
 }
 
 export async function saveWeeklyResult(input: {
@@ -487,7 +553,7 @@ export async function saveWeeklyResult(input: {
       [eventKey, meet.id, "other", `${eventName} · ${formatConfig.name}`, eventName, formatConfig.id, formatConfig.attemptCount, eventOrder(input.eventId)]
     );
 
-    const existing = await client.query<{ id: number }>(
+    const existing = await client.query<{ id: number; average: string }>(
       `SELECT id FROM weekly_results
        WHERE meet_id = $1 AND event_id = $2
          AND (player_id = $3 OR (player_id IS NULL AND player_name = $4))
@@ -495,6 +561,7 @@ export async function saveWeeklyResult(input: {
        LIMIT 1`,
       [meet.id, eventKey, input.player.id, playerName]
     );
+    const previousAttempts = existing.rows[0] ? await readWeeklyAttempts(client, existing.rows[0].id) : [];
 
     let resultId = existing.rows[0]?.id;
     if (resultId) {
@@ -547,6 +614,25 @@ export async function saveWeeklyResult(input: {
       ]);
     }
 
+    await client.query(
+      `INSERT INTO weekly_result_revisions
+        (result_id, action, reason, previous_attempts, next_attempts, previous_average, next_average, meet_id, event_id, player_id, player_name)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)`,
+      [
+        resultId,
+        existing.rows[0] ? "updated" : "created",
+        existing.rows[0] ? "成绩录入（覆盖原成绩）" : "成绩录入",
+        JSON.stringify(previousAttempts.map(formatResult)),
+        JSON.stringify(parsedAttempts.map(formatResult)),
+        existing.rows[0]?.average ?? null,
+        resultValueToSeconds(calculated.average),
+        meet.id,
+        eventKey,
+        input.player.id,
+        playerName
+      ]
+    );
+
     await refreshWeeklyPlayerPersonalBest(client, input.player.id, input.eventId, pbEventId);
 
     await rerankWeeklyEvent(client, meet.id, eventKey);
@@ -583,8 +669,8 @@ export async function correctWeeklyResult(input: {
   const client = await pool.connect();
   try {
     await client.query("BEGIN");
-    const result = await client.query<{ id: number; meet_id: string; event_id: string; player_id: string | null; average: string }>(
-      "SELECT id, meet_id, event_id, player_id, average FROM weekly_results WHERE id = $1 FOR UPDATE",
+    const result = await client.query<{ id: number; meet_id: string; event_id: string; player_id: string | null; player_name: string; average: string }>(
+      "SELECT id, meet_id, event_id, player_id, player_name, average FROM weekly_results WHERE id = $1 FOR UPDATE",
       [input.resultId]
     );
     if (!result.rows[0]) throw new Error("成绩不存在或已被删除");
@@ -602,15 +688,19 @@ export async function correctWeeklyResult(input: {
     await insertWeeklyAttempts(client, input.resultId, parsedAttempts);
     await client.query(
       `INSERT INTO weekly_result_revisions
-        (result_id, action, reason, previous_attempts, next_attempts, previous_average, next_average)
-       VALUES ($1,'corrected',$2,$3,$4,$5,$6)`,
+        (result_id, action, reason, previous_attempts, next_attempts, previous_average, next_average, meet_id, event_id, player_id, player_name)
+       VALUES ($1,'corrected',$2,$3,$4,$5,$6,$7,$8,$9,$10)`,
       [
         input.resultId,
         reason,
         JSON.stringify(previousAttempts.map(formatResult)),
         JSON.stringify(parsedAttempts.map(formatResult)),
         result.rows[0].average,
-        resultValueToSeconds(calculated.average)
+        resultValueToSeconds(calculated.average),
+        result.rows[0].meet_id,
+        result.rows[0].event_id,
+        result.rows[0].player_id,
+        result.rows[0].player_name
       ]
     );
     if (result.rows[0].player_id) {
@@ -638,8 +728,8 @@ export async function deleteWeeklyResult(input: { resultId: number; reason: stri
   const client = await pool.connect();
   try {
     await client.query("BEGIN");
-    const result = await client.query<{ id: number; meet_id: string; event_id: string; player_id: string | null; average: string }>(
-      "SELECT id, meet_id, event_id, player_id, average FROM weekly_results WHERE id = $1 FOR UPDATE",
+    const result = await client.query<{ id: number; meet_id: string; event_id: string; player_id: string | null; player_name: string; average: string }>(
+      "SELECT id, meet_id, event_id, player_id, player_name, average FROM weekly_results WHERE id = $1 FOR UPDATE",
       [input.resultId]
     );
     if (!result.rows[0]) throw new Error("成绩不存在或已被删除");
@@ -647,9 +737,9 @@ export async function deleteWeeklyResult(input: { resultId: number; reason: stri
     const previousAttempts = await readWeeklyAttempts(client, input.resultId);
     await client.query(
       `INSERT INTO weekly_result_revisions
-        (result_id, action, reason, previous_attempts, previous_average)
-       VALUES ($1,'deleted',$2,$3,$4)`,
-      [input.resultId, reason, JSON.stringify(previousAttempts.map(formatResult)), result.rows[0].average]
+        (result_id, action, reason, previous_attempts, previous_average, meet_id, event_id, player_id, player_name)
+       VALUES ($1,'deleted',$2,$3,$4,$5,$6,$7,$8)`,
+      [input.resultId, reason, JSON.stringify(previousAttempts.map(formatResult)), result.rows[0].average, result.rows[0].meet_id, result.rows[0].event_id, result.rows[0].player_id, result.rows[0].player_name]
     );
     await client.query("DELETE FROM weekly_results WHERE id = $1", [input.resultId]);
     if (result.rows[0].player_id) {

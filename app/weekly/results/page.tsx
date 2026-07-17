@@ -8,8 +8,6 @@ import { isWeeklyCompetitionEnabled } from "@/lib/weekly-feature";
 import { notFound } from "next/navigation";
 import { cookies } from "next/headers";
 import { verifySessionToken } from "@/lib/auth";
-import { listBigStackRecords, getRankedBigStackRecords } from "@/lib/big-stack";
-import { BigStackCarousel } from "../big-stack/big-stack-carousel";
 
 export const dynamic = "force-dynamic";
 
@@ -28,6 +26,7 @@ export default async function WeeklyResultsEntryPage() {
         name: player.name,
         slug: "",
         wcaId: player.wcaId || "",
+        wcaIdConfirmed: Boolean(player.wcaIdConfirmed),
         gender: player.gender === "女" ? ("女" as const) : ("男" as const),
         province: player.province,
         city: player.city,
@@ -39,7 +38,6 @@ export default async function WeeklyResultsEntryPage() {
 
   const sessionToken = (await cookies()).get("liaoning_weekly_session")?.value || "";
   const initialAdminUnlocked = sessionToken ? await verifySessionToken(sessionToken) : false;
-  const bigStackRecords = getRankedBigStackRecords(await listBigStackRecords().catch(() => []));
 
   return (
     <>
@@ -51,13 +49,6 @@ export default async function WeeklyResultsEntryPage() {
         管理员登录后可录入、修正和删除本周成绩。
       </PageHero>
       <WeeklyResultEntryConsole initialMeets={meets} initialPlayers={players} events={events} initialEventConfigs={eventConfigs} mode="admin" initialAdminUnlocked={initialAdminUnlocked} />
-      <section className="container section weekly-front-big-stack">
-        <div className="section-header">
-          <div><span className="eyebrow">周赛特别榜单</span><h2>单轮大堆纪录</h2><p>一小时内复原三阶魔方数量，按数量从高到低展示。</p></div>
-          <a className="button" href="/weekly/big-stack">查看完整榜单</a>
-        </div>
-        <BigStackCarousel records={bigStackRecords} />
-      </section>
     </>
   );
 }

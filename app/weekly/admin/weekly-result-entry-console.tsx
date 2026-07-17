@@ -1,6 +1,6 @@
 "use client";
 
-import { LogIn, Pencil, RefreshCw, Save, Search, Trash2, X } from "lucide-react";
+import { Check, LogIn, Pencil, RefreshCw, Save, Search, Trash2, UserRoundPen, X } from "lucide-react";
 import Link from "next/link";
 import type { CSSProperties, KeyboardEvent } from "react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -17,6 +17,7 @@ import {
 import type { WCA_EVENTS } from "@/lib/wca-events";
 import { matchesWeeklyPlayerQuery } from "@/lib/weekly-player-search";
 import { getShenyangAssociationGrade } from "@/lib/shenyang-association-grades";
+import type { WeeklyOperationLog } from "@/lib/weekly-entry-store";
 
 type MeetOption = {
   id: string;
@@ -32,6 +33,7 @@ type WeeklyPlayer = {
   name: string;
   slug: string;
   wcaId: string;
+  wcaIdConfirmed?: boolean;
   gender: "男" | "女";
   province: string;
   city: string;
@@ -64,6 +66,7 @@ type Props = {
 
 const emptyAttempts = ["", "", "", "", ""];
 const testMeetId = "weekly-test-entry";
+const deleteReasonOptions = ["数据录入错误", "删除测试数据", "其他（手动填写）"] as const;
 
 // Keep these critical layout values inline for the public entry page. This makes
 // the score fields resilient when an embedded browser temporarily keeps an old
@@ -93,6 +96,7 @@ export function WeeklyResultEntryConsole({ initialMeets, initialPlayers = [], ev
   const [selectedEventId, setSelectedEventId] = useState("333");
   const [selectedFormat, setSelectedFormat] = useState<WeeklyResultFormat>("avg5");
   const [results, setResults] = useState<EnteredResult[]>([]);
+  const [operationLogs, setOperationLogs] = useState<WeeklyOperationLog[]>([]);
   const [resultSearchQuery, setResultSearchQuery] = useState("");
   const [resultAgeGroup, setResultAgeGroup] = useState("全部");
   const [playerQuery, setPlayerQuery] = useState("");
@@ -110,6 +114,9 @@ export function WeeklyResultEntryConsole({ initialMeets, initialPlayers = [], ev
   const [isLoginOpen, setIsLoginOpen] = useState(false);
   const [loginPassword, setLoginPassword] = useState("");
   const [isLoggingIn, setIsLoggingIn] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<EnteredResult | null>(null);
+  const [deleteReason, setDeleteReason] = useState<(typeof deleteReasonOptions)[number]>(deleteReasonOptions[0]);
+  const [deleteCustomReason, setDeleteCustomReason] = useState("");
   const attemptRefs = useRef<Array<HTMLInputElement | null>>([]);
   const playerInputRef = useRef<HTMLInputElement | null>(null);
   const selectedFormatConfig = getWeeklyResultFormat(selectedFormat);
@@ -175,9 +182,24 @@ export function WeeklyResultEntryConsole({ initialMeets, initialPlayers = [], ev
       .finally(() => setIsLoadingResults(false));
   }, [adminUnlocked, selectedEventId, selectedFormat, selectedMeetId]);
 
+  const refreshOperationLogs = useCallback(() => {
+    if (!selectedMeetId || !selectedEventId) {
+      setOperationLogs([]);
+      return;
+    }
+    fetch(`/api/admin/weekly-result-revisions?meetId=${encodeURIComponent(selectedMeetId)}&eventId=${encodeURIComponent(selectedEventId)}&format=${encodeURIComponent(selectedFormat)}`)
+      .then((response) => response.ok ? response.json() : Promise.reject(new Error("logs")))
+      .then((payload: { logs: WeeklyOperationLog[] }) => setOperationLogs(payload.logs || []))
+      .catch(() => setOperationLogs([]));
+  }, [selectedEventId, selectedFormat, selectedMeetId]);
+
   useEffect(() => {
     refreshResults();
   }, [refreshResults]);
+
+  useEffect(() => {
+    if (!isPublicMode) refreshOperationLogs();
+  }, [isPublicMode, refreshOperationLogs]);
 
   useEffect(() => {
     setAttempts(Array.from({ length: selectedFormatConfig.attemptCount }, () => ""));
@@ -326,6 +348,7 @@ export function WeeklyResultEntryConsole({ initialMeets, initialPlayers = [], ev
           setCorrectionReason("");
           setNotice("成绩已纠正并重新排名。");
           refreshResults();
+          refreshOperationLogs();
         })
         .catch((error) => setNotice(error instanceof Error ? error.message : "修改成绩失败。"))
         .finally(() => setIsSaving(false));
@@ -349,6 +372,7 @@ export function WeeklyResultEntryConsole({ initialMeets, initialPlayers = [], ev
         setResults(payload.results || []);
         setAttempts(Array.from({ length: selectedFormatConfig.attemptCount }, () => ""));
         setNotice("成绩已保存。");
+        refreshOperationLogs();
         attemptRefs.current[0]?.focus();
       })
       .catch((error) => {
@@ -408,14 +432,20 @@ export function WeeklyResultEntryConsole({ initialMeets, initialPlayers = [], ev
     setNotice("已取消成绩修改。");
   }
 
-  function removeResult(result: EnteredResult) {
-    const reason = window.prompt(`请输入删除 ${result.player.name} 成绩的原因：`);
-    if (reason === null) return;
-    if (!reason.trim()) {
+  function openDeleteDialog(result: EnteredResult) {
+    setDeleteTarget(result);
+    setDeleteReason(deleteReasonOptions[0]);
+    setDeleteCustomReason("");
+  }
+
+  function confirmDeleteResult() {
+    if (!deleteTarget) return;
+    const reason = deleteReason === "其他（手动填写）" ? deleteCustomReason.trim() : deleteReason;
+    if (!reason) {
       setNotice("请填写删除原因。");
       return;
     }
-
+    const result = deleteTarget;
     setIsSaving(true);
     fetch(`/api/admin/weekly-results/${result.id}`, {
       method: "DELETE",
@@ -432,6 +462,8 @@ export function WeeklyResultEntryConsole({ initialMeets, initialPlayers = [], ev
       .then(() => {
         if (editingResult?.id === result.id) cancelCorrection();
         setNotice(`${result.player.name} 的成绩已删除并重新排名。`);
+        setDeleteTarget(null);
+        refreshOperationLogs();
         refreshResults();
       })
       .catch((error) => setNotice(error instanceof Error ? error.message : "删除成绩失败。"))
@@ -475,7 +507,7 @@ export function WeeklyResultEntryConsole({ initialMeets, initialPlayers = [], ev
           </div>
           {!isPublicMode ? (
             <div className="weekly-entry-heading-actions">
-              <Link className="button" href="/weekly/admin/player-library">选手大库</Link>
+              <Link className="button" href="/admin/weekly#player-library">周赛选手库</Link>
               <button className="button" type="button" onClick={refreshMeets}>
                 <RefreshCw size={16} />
                 刷新周赛
@@ -567,7 +599,14 @@ export function WeeklyResultEntryConsole({ initialMeets, initialPlayers = [], ev
                 {filteredResults.map((result) => (
                   <tr key={result.id}>
                     <td data-label="排名">{result.rank}</td>
-                    <td data-label="WCA ID">{result.player.wcaId}</td>
+                    <td data-label="WCA ID">
+                      {result.player.wcaId ? (
+                        <span className="weekly-wca-status">
+                          {result.player.wcaId}
+                          {result.player.wcaIdConfirmed ? <Check size={13} aria-label="管理员已确认" /> : <small>待确认</small>}
+                        </span>
+                      ) : "-"}
+                    </td>
                     <td data-label="姓名">{result.player.name}</td>
                     <td data-label="组别">{result.player.ageGroup || "待补"}</td>
                     <td data-label="省市">{formatRegion(result.player)}</td>
@@ -584,7 +623,10 @@ export function WeeklyResultEntryConsole({ initialMeets, initialPlayers = [], ev
                         <button className="button" type="button" title="修改成绩" aria-label={`修改 ${result.player.name} 的成绩`} onClick={() => beginCorrection(result)}>
                           <Pencil size={15} />
                         </button>
-                        <button className="button" type="button" title="删除成绩" aria-label={`删除 ${result.player.name} 的成绩`} onClick={() => removeResult(result)}>
+                        <Link className="button" href={`/admin/weekly#player-library:${encodeURIComponent(result.player.id)}`} title="编辑选手资料" aria-label={`编辑 ${result.player.name} 的资料`}>
+                          <UserRoundPen size={15} />
+                        </Link>
+                        <button className="button" type="button" title="删除成绩" aria-label={`删除 ${result.player.name} 的成绩`} onClick={() => openDeleteDialog(result)}>
                           <Trash2 size={15} />
                         </button>
                       </td>
@@ -709,10 +751,67 @@ export function WeeklyResultEntryConsole({ initialMeets, initialPlayers = [], ev
             </button>
           ) : null}
           {notice ? <p className="admin-inline-notice">{notice}</p> : null}
+          {!isPublicMode ? (
+            <div className="weekly-operation-log">
+              <div className="weekly-operation-log-heading">
+                <div>
+                  <h3>操作日志</h3>
+                  <p>当前项目最近 100 条成绩录入、修改和删除记录。</p>
+                </div>
+                <button className="icon-button" type="button" onClick={refreshOperationLogs} title="刷新操作日志" aria-label="刷新操作日志">
+                  <RefreshCw size={15} />
+                </button>
+              </div>
+              {operationLogs.length > 0 ? (
+                <div className="weekly-operation-log-list">
+                  {operationLogs.map((log) => (
+                    <div className="weekly-operation-log-row" key={log.id}>
+                      <span className={`weekly-operation-log-action weekly-operation-log-action--${log.action}`}>{formatOperationAction(log.action)}</span>
+                      <strong>{log.playerName}</strong>
+                      <span>{log.reason}</span>
+                      <time dateTime={log.createdAt}>{formatOperationTime(log.createdAt)}</time>
+                    </div>
+                  ))}
+                </div>
+              ) : <p className="weekly-operation-log-empty">暂无操作记录。</p>}
+            </div>
+          ) : null}
         </div>
 
       </div>
 
+      {deleteTarget ? (
+        <div className="weekly-admin-login-backdrop" role="presentation">
+          <div className="weekly-admin-login-modal" role="dialog" aria-modal="true" aria-labelledby="weekly-delete-title">
+            <div className="admin-card-heading">
+              <div>
+                <span className="eyebrow">删除成绩</span>
+                <h2 id="weekly-delete-title">删除 {deleteTarget.player.name} 的成绩</h2>
+                <p>删除操作会写入操作日志。</p>
+              </div>
+              <button className="icon-button" type="button" aria-label="关闭删除窗口" onClick={() => setDeleteTarget(null)}>
+                <X size={17} />
+              </button>
+            </div>
+            <label className="field admin-login-password">
+              <span>删除原因</span>
+              <select value={deleteReason} onChange={(event) => setDeleteReason(event.target.value as (typeof deleteReasonOptions)[number])}>
+                {deleteReasonOptions.map((reason) => <option value={reason} key={reason}>{reason}</option>)}
+              </select>
+            </label>
+            {deleteReason === "其他（手动填写）" ? (
+              <label className="field admin-login-password">
+                <span>手动填写</span>
+                <textarea value={deleteCustomReason} onChange={(event) => setDeleteCustomReason(event.target.value)} placeholder="请输入删除原因" rows={3} />
+              </label>
+            ) : null}
+            <div className="weekly-admin-login-actions">
+              <button className="button" type="button" onClick={() => setDeleteTarget(null)} disabled={isSaving}>取消</button>
+              <button className="button primary" type="button" onClick={confirmDeleteResult} disabled={isSaving}>确认删除</button>
+            </div>
+          </div>
+        </div>
+      ) : null}
       {isLoginOpen ? (
         <div className="weekly-admin-login-backdrop" role="presentation">
           <div className="weekly-admin-login-modal" role="dialog" aria-modal="true" aria-labelledby="weekly-admin-login-title">
@@ -827,6 +926,16 @@ function formatPlayerCandidateMeta(player: WeeklyPlayer) {
 
 function formatRegion(player: WeeklyPlayer) {
   return [player.province, player.city].filter(Boolean).join(" · ") || "-";
+}
+
+function formatOperationAction(action: WeeklyOperationLog["action"]) {
+  return { created: "录入", updated: "覆盖", corrected: "修改", deleted: "删除" }[action] || action;
+}
+
+function formatOperationTime(value: string) {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return value;
+  return date.toLocaleString("zh-CN", { hour12: false, month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" });
 }
 
 function getPlayerDisplayAgeGroup(player: Pick<WeeklyPlayer, "birthDate" | "ageGroup">) {

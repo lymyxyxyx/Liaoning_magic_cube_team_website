@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Pencil, Plus, Save, Trash2, X } from "lucide-react";
 import { getWeeklyRankingAgeGroup, weeklyRankingAgeGroups } from "@/lib/weekly-age-groups";
 import type { WeeklyLibraryGender, WeeklyPersonalBests, WeeklyPlayerLibraryEntry } from "@/lib/weekly-player-library";
@@ -75,6 +75,15 @@ export function WeeklyPlayerLibraryConsole({
   const [notice, setNotice] = useState("");
   const [isCreatingPlayer, setIsCreatingPlayer] = useState(false);
   const [editingPlayer, setEditingPlayer] = useState<DraftPlayer | null>(null);
+
+  useEffect(() => {
+    const hash = decodeURIComponent(window.location.hash.replace(/^#/, ""));
+    if (!hash.startsWith("player-library:")) return;
+    const player = players.find((item) => item.id === hash.slice("player-library:".length));
+    if (!player) return;
+    openEditor(player);
+    window.history.replaceState(null, "", `${window.location.pathname}${window.location.search}#player-library`);
+  }, [players]);
 
   const visiblePlayers = useMemo(() => {
     const q = query.trim();
@@ -347,6 +356,26 @@ function PlayerFields({
           <option value="男">男</option>
           <option value="女">女</option>
         </select>
+      </label>
+      <label>
+        WCA ID
+        <input
+          value={player.wcaId || ""}
+          onChange={(event) => onChange({ wcaId: event.target.value.trim().toUpperCase(), wcaIdConfirmed: false })}
+          placeholder="例如：2012ZHAN01"
+        />
+      </label>
+      <label className="weekly-library-confirm-field">
+        WCA ID 状态
+        <span>
+          <input
+            type="checkbox"
+            checked={Boolean(player.wcaId && player.wcaIdConfirmed)}
+            disabled={!player.wcaId}
+            onChange={(event) => onChange({ wcaIdConfirmed: event.target.checked })}
+          />
+          已由管理员确认
+        </span>
       </label>
       <label>
         出生年月日
