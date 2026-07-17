@@ -347,7 +347,8 @@ function mergeWeeklyEligiblePlayers(wcaPlayers: WeeklyPlayerLibraryEntry[], libr
     const name = player.name.trim();
     if (!name) continue;
 
-    const existingIndex = (wcaId ? indexByWcaId.get(wcaId) : undefined) ?? indexByName.get(name);
+    const nameKey = getWeeklyPlayerNameKey(name);
+    const existingIndex = (wcaId ? indexByWcaId.get(wcaId) : undefined) ?? indexByName.get(nameKey);
     if (existingIndex !== undefined) {
       const existing = merged[existingIndex];
       if (existing.wcaId || !wcaId) {
@@ -364,7 +365,7 @@ function mergeWeeklyEligiblePlayers(wcaPlayers: WeeklyPlayerLibraryEntry[], libr
             personalBestAverages: Object.keys(player.personalBestAverages || {}).length > 0 ? player.personalBestAverages : existing.personalBestAverages,
             source: player.source && !existing.source.includes(player.source) ? `${existing.source}；${player.source}` : existing.source
           };
-          indexByName.set(name, existingIndex);
+          indexByName.set(nameKey, existingIndex);
         }
         continue;
       }
@@ -374,19 +375,24 @@ function mergeWeeklyEligiblePlayers(wcaPlayers: WeeklyPlayerLibraryEntry[], libr
         personalBests: existing.personalBests || player.personalBests || {},
         personalBestAverages: existing.personalBestAverages || player.personalBestAverages || {}
       };
-      indexByName.set(name, existingIndex);
+      indexByName.set(nameKey, existingIndex);
       indexByWcaId.set(wcaId, existingIndex);
       seenWcaIds.add(wcaId);
       continue;
     }
 
     merged.push({ ...player, wcaId });
-    indexByName.set(name, merged.length - 1);
+    indexByName.set(nameKey, merged.length - 1);
     if (wcaId) indexByWcaId.set(wcaId, merged.length - 1);
     if (wcaId) seenWcaIds.add(wcaId);
   }
 
   return merged;
+}
+
+function getWeeklyPlayerNameKey(name: string) {
+  const chineseName = name.match(/[\u3400-\u9fff]/g)?.join("");
+  return (chineseName || name).trim().toLowerCase();
 }
 
 async function persistWeeklyPlayerMatches(players: WeeklyPlayerLibraryEntry[]) {
