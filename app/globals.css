@@ -11151,6 +11151,12 @@ a.commercial-member-link:hover {
   min-width: 120px;
 }
 
+.weekly-test-mode-note {
+  color: #b45309;
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+
 .weekly-pb-badge {
   display: inline-block;
   margin-left: 6px;

@@ -97,8 +97,9 @@ type WeeklyAttemptRow = {
 const testWeeklyMeet: WeeklyMeetOption = {
   id: "weekly-test-entry",
   slug: "test-entry",
-  title: "测试周赛（成绩录入调试用）",
-  dateLabel: "调试用"
+  title: "当前测试周赛",
+  dateLabel: "测试用",
+  status: "open"
 };
 
 let weeklySchemaPromise: Promise<void> | null = null;
@@ -672,11 +673,12 @@ async function ensureTestWeeklyMeet() {
   const pool = getPostgresPool();
   await pool.query(
     `INSERT INTO weekly_meets
-      (id, slug, title, week_number, year, year_week, published_at, event, date_label, summary, pb_note, three_age_intro)
-     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)
+      (id, slug, title, week_number, year, year_week, status, published_at, event, date_label, summary, pb_note, three_age_intro)
+     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13)
      ON CONFLICT (id) DO UPDATE
        SET title = EXCLUDED.title,
            date_label = EXCLUDED.date_label,
+           status = EXCLUDED.status,
            summary = EXCLUDED.summary`,
     [
       testWeeklyMeet.id,
@@ -685,6 +687,7 @@ async function ensureTestWeeklyMeet() {
       0,
       2026,
       0,
+      "open",
       null,
       "三阶",
       testWeeklyMeet.dateLabel,
@@ -833,7 +836,7 @@ function eventOrder(eventId: string) {
 }
 
 function withTestMeet(meets: WeeklyMeetOption[]) {
-  return [testWeeklyMeet, ...meets.filter((meet) => meet.id !== testWeeklyMeet.id)];
+  return [testWeeklyMeet];
 }
 
 function groupBy<T, K>(items: T[], key: (item: T) => K): Map<K, T[]> {

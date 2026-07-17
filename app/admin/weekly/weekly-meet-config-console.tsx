@@ -1,6 +1,6 @@
 "use client";
 
-import { Plus, Save } from "lucide-react";
+import { Save } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { weeklyResultFormats, type WeeklyResultFormat } from "@/lib/weekly-result-utils";
 import { WEEKLY_DEFAULT_EVENT_IDS } from "@/lib/wca-events";
@@ -45,19 +45,6 @@ export function WeeklyMeetConfigConsole({ initialMeets, events }: { initialMeets
     });
   }
 
-  function createMeet() {
-    setSaving(true);
-    fetch("/api/admin/weekly-competitions", { method: "POST" })
-      .then((response) => response.ok ? response.json() : response.json().then((body) => Promise.reject(new Error(body.message || "新建失败"))))
-      .then((payload: { meet: Meet }) => {
-        setMeets((current) => [payload.meet, ...current]);
-        setSelectedId(payload.meet.id);
-        setNotice("已新建下一周周赛，请完成配置后再开放。");
-      })
-      .catch((error) => setNotice(error instanceof Error ? error.message : "新建周赛失败。"))
-      .finally(() => setSaving(false));
-  }
-
   function save() {
     if (!selected) return;
     setSaving(true);
@@ -80,7 +67,7 @@ export function WeeklyMeetConfigConsole({ initialMeets, events }: { initialMeets
       <div className="admin-card-heading"><div><h2>当前周赛配置</h2><p>开放状态的周赛会成为前台“立即参加”的默认场次。</p></div></div>
       <div className="weekly-meet-config-toolbar">
         <select value={selectedId} onChange={(event) => setSelectedId(event.target.value)}>{meets.map((meet) => <option key={meet.id} value={meet.id}>{meet.title}</option>)}</select>
-        <button className="button" type="button" onClick={createMeet} disabled={saving}><Plus size={16} />新建下一周</button>
+        <span className="weekly-test-mode-note">当前为测试阶段，暂只维护测试周赛</span>
       </div>
       {selected ? <>
         <div className="weekly-meet-config-fields">
