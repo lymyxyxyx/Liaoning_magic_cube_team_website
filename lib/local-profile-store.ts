@@ -11,12 +11,14 @@ export type EnrichedLocalProfile = LocalProfile & {
   name: string;
   country: string;
   existsInWca: boolean;
+  gender?: "男" | "女";
 };
 
 type WcaPersonRow = {
   wca_id: string;
   name: string;
   country_id: string;
+  gender: string;
 };
 
 export async function readLocalProfiles() {
@@ -67,7 +69,7 @@ export async function enrichLocalProfiles(profiles: LocalProfile[]) {
   if (ids.length > 0) {
     try {
       const { rows } = await getPostgresPool().query<WcaPersonRow>(
-        "SELECT wca_id, name, country_id FROM wca_persons WHERE wca_id = ANY($1::text[]) AND sub_id = '1'",
+        "SELECT wca_id, name, country_id, gender FROM wca_persons WHERE wca_id = ANY($1::text[]) AND sub_id = '1'",
         [ids]
       );
       byId = new Map(rows.map((row) => [row.wca_id, row]));
@@ -81,7 +83,8 @@ export async function enrichLocalProfiles(profiles: LocalProfile[]) {
       ...profile,
       name: person?.name || profile.name || "",
       country: person?.country_id || "",
-      existsInWca: Boolean(person)
+      existsInWca: Boolean(person),
+      gender: person?.gender === "f" ? "女" : person?.gender === "m" ? "男" : undefined
     };
   });
 }

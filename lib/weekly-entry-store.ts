@@ -367,7 +367,7 @@ export async function listWeeklyResults(meetIdOrSlug: string, eventId: string, f
 
   const eventKey = getWeeklyEventKey(meet.id, eventId, formatConfig.id);
   const { rows } = await pool.query<WeeklyResultRow>(
-    `SELECT wr.*, wpl.wca_id
+    `SELECT wr.*, COALESCE(NULLIF(wpl.wca_id, ''), CASE WHEN wr.player_id LIKE 'wca:%' THEN SUBSTRING(wr.player_id FROM 5) ELSE '' END) AS wca_id
      FROM weekly_results wr
      LEFT JOIN weekly_player_library wpl ON wpl.id = wr.player_id
      WHERE wr.meet_id = $1 AND wr.event_id = $2

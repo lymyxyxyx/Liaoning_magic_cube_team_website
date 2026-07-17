@@ -311,7 +311,7 @@ async function listWcaLiaoningPlayers(): Promise<WeeklyPlayerLibraryEntry[]> {
       id: `wca:${profile.wcaId}`,
       name: profile.name,
       wcaId: profile.wcaId,
-      gender: "" as const,
+      gender: profile.gender === "女" ? "女" : profile.gender === "男" ? "男" : "",
       birthDate: "",
       ageGroup: "",
       ageGroupIsFuzzy: false,
