@@ -6,6 +6,8 @@ import { WCA_EVENTS, WEEKLY_DEFAULT_EVENTS } from "@/lib/wca-events";
 import { WeeklyResultEntryConsole } from "../admin/weekly-result-entry-console";
 import { isWeeklyCompetitionEnabled } from "@/lib/weekly-feature";
 import { notFound } from "next/navigation";
+import { cookies } from "next/headers";
+import { verifySessionToken } from "@/lib/auth";
 
 export const dynamic = "force-dynamic";
 
@@ -33,16 +35,19 @@ export default async function WeeklyResultsEntryPage() {
       }))
     );
 
+  const sessionToken = (await cookies()).get("liaoning_weekly_session")?.value || "";
+  const initialAdminUnlocked = sessionToken ? await verifySessionToken(sessionToken) : false;
+
   return (
     <>
       <PageHero
         className="page-hero--compact weekly-results-page-hero"
         label="周赛成绩"
-        title="管理员录入"
+        title="周赛成绩"
       >
-        周赛暂不开放选手自行录入；管理员可录入、修正和删除本周成绩。
+        管理员登录后可录入、修正和删除本周成绩。
       </PageHero>
-      <WeeklyResultEntryConsole initialMeets={meets} initialPlayers={players} events={events} initialEventConfigs={eventConfigs} mode="admin" />
+      <WeeklyResultEntryConsole initialMeets={meets} initialPlayers={players} events={events} initialEventConfigs={eventConfigs} mode="admin" initialAdminUnlocked={initialAdminUnlocked} />
     </>
   );
 }

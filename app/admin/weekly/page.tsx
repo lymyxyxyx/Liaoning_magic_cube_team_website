@@ -4,11 +4,14 @@ import { listWeeklyMeetOptions } from "@/lib/weekly-entry-store";
 import { WCA_EVENTS } from "@/lib/wca-events";
 import { WeeklyResultEntryConsole } from "@/app/weekly/admin/weekly-result-entry-console";
 import { WeeklyMeetConfigConsole } from "./weekly-meet-config-console";
+import { BigStackAdminConsole } from "./big-stack-console";
+import { listBigStackRecords } from "@/lib/big-stack";
 
 export const dynamic = "force-dynamic";
 
 export default async function AdminWeeklyPage() {
   const meets = await listWeeklyMeetOptions().catch(() => []);
+  const bigStackRecords = await listBigStackRecords().catch(() => []);
 
   return (
     <>
@@ -32,6 +35,7 @@ export default async function AdminWeeklyPage() {
       <section className="container section weekly-admin-workspace">
         <WeeklyResultEntryConsole initialMeets={meets} events={WCA_EVENTS} variant="workspace" />
       </section>
+      <BigStackAdminConsole initialRecords={bigStackRecords} />
     </>
   );
 }

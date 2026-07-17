@@ -10969,3 +10969,194 @@ a.commercial-member-link:hover {
     justify-content: initial;
   }
 }
+.weekly-admin-lock-panel {
+  display: grid;
+  gap: 5px;
+  margin: 12px 0;
+  padding: 12px;
+  border: 1px solid #f1c56a;
+  border-radius: 12px;
+  background: #fffaf0;
+  color: #72501a;
+}
+
+.weekly-admin-lock-panel strong {
+  color: #553807;
+}
+
+.weekly-admin-lock-panel .button {
+  justify-self: start;
+  margin-top: 3px;
+}
+
+.weekly-admin-login-backdrop {
+  position: fixed;
+  z-index: 1000;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  background: rgba(15, 23, 42, 0.42);
+}
+
+.weekly-admin-login-modal {
+  width: min(100%, 430px);
+  padding: 20px;
+  border: 1px solid #dbe4f2;
+  border-radius: 16px;
+  background: #fff;
+  box-shadow: 0 20px 60px rgba(15, 23, 42, 0.25);
+}
+
+.weekly-admin-login-modal .admin-card-heading {
+  align-items: flex-start;
+}
+
+.weekly-admin-login-modal .admin-login-password {
+  margin: 16px 0;
+}
+
+.weekly-admin-login-modal .admin-login-password input {
+  width: 100%;
+  min-height: 42px;
+  padding: 8px 10px;
+  border: 1px solid #cbd7e8;
+  border-radius: 9px;
+}
+
+.weekly-admin-login-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.weekly-entry-heading-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.big-stack-carousel {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  margin: 22px 0;
+  padding: 24px 28px;
+  border: 1px solid #c9d8f7;
+  border-radius: 18px;
+  background: linear-gradient(120deg, #eef4ff, #ffffff);
+}
+
+.big-stack-carousel strong {
+  display: block;
+  margin-top: 7px;
+  color: var(--ink);
+  font-size: clamp(24px, 5vw, 42px);
+}
+
+.big-stack-carousel p {
+  margin: 4px 0 0;
+  color: var(--muted);
+}
+
+.big-stack-carousel em {
+  color: var(--blue);
+  font-size: clamp(42px, 9vw, 76px);
+  font-style: normal;
+  font-weight: 900;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.big-stack-carousel em small {
+  font-size: 18px;
+}
+
+.big-stack-full-list {
+  margin-top: 18px;
+}
+
+.big-stack-full-list summary {
+  width: fit-content;
+  color: var(--blue);
+  cursor: pointer;
+  font-weight: 800;
+}
+
+.big-stack-admin-console input {
+  width: min(100%, 280px);
+  min-height: 36px;
+  padding: 7px 9px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+}
+/* 周赛项目配置分组 */
+.weekly-event-config-group {
+  margin-top: 1rem;
+  padding: 1rem;
+  border: 1px solid #dbe5f3;
+  border-radius: 14px;
+  background: #fff;
+}
+
+.weekly-event-config-group--reserved {
+  background: #f8fafc;
+}
+
+.weekly-event-config-group h3 {
+  margin: 0 0 0.35rem;
+}
+
+.weekly-event-config-group p {
+  margin: 0 0 0.75rem;
+  color: #64748b;
+  font-size: 0.9rem;
+}
+
+.weekly-result-search-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: 10px;
+  margin: 0 0 14px;
+  padding: 12px;
+  border: 1px solid #dbe5f3;
+  border-radius: 12px;
+  background: #f8fafc;
+}
+
+.weekly-result-search-bar label {
+  display: grid;
+  gap: 5px;
+  color: #64748b;
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+
+.weekly-result-search-bar input,
+.weekly-result-search-bar select {
+  min-height: 38px;
+  min-width: min(280px, 70vw);
+  padding: 7px 10px;
+  border: 1px solid #cbd7e8;
+  border-radius: 8px;
+  background: #fff;
+  color: #1e293b;
+}
+
+.weekly-result-search-bar select {
+  min-width: 120px;
+}
+
+.weekly-pb-badge {
+  display: inline-block;
+  margin-left: 6px;
+  padding: 2px 6px;
+  border-radius: 999px;
+  background: #fff1f2;
+  color: #dc2626;
+  font-size: 0.72rem;
+  font-weight: 800;
+  white-space: nowrap;
+}

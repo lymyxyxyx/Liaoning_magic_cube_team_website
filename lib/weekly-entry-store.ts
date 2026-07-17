@@ -1,7 +1,7 @@
 import { getPostgresPool } from "@/lib/postgres";
 import type { PoolClient } from "pg";
 import { getWcaEventName, isWcaEventId, WEEKLY_DEFAULT_EVENT_IDS } from "@/lib/wca-events";
-import { getWeeklyAgeGroup } from "@/lib/weekly-age-groups";
+import { getWeeklyAgeGroup, getWeeklyRankingAgeGroup, getWeeklyRankingAgeGroupOrder } from "@/lib/weekly-age-groups";
 import {
   calculateResultByFormat,
   formatResult,
@@ -13,7 +13,7 @@ import {
   type WeeklyResultFormat
 } from "@/lib/weekly-result-utils";
 import { weeklyMeets } from "@/lib/weekly";
-import { ensureWeeklyPlayerLibraryTable, getMofang602SeedWeeklyPlayers, listWeeklyEligiblePlayers } from "@/lib/weekly-player-library";
+import { ensureWeeklyPlayerLibraryTable, getMofang602SeedWeeklyPlayers, listWeeklyEligiblePlayers, type WeeklyPersonalBests } from "@/lib/weekly-player-library";
 import { matchesWeeklyPlayerQuery } from "@/lib/weekly-player-search";
 
 export type WeeklyMeetOption = {
@@ -47,6 +47,8 @@ export type WeeklyEnteredResult = {
   average: ResultValue;
   attempts: ResultValue[];
   detail: string;
+  pbRefreshed: boolean;
+  pbAverageRefreshed: boolean;
 };
 
 export type WeeklyMeetEventConfig = {
@@ -79,6 +81,11 @@ type WeeklyResultRow = {
   player_id: string | null;
   source: string;
   wca_id?: string | null;
+  player_birth_date?: string | null;
+  player_age_group?: string | null;
+  pb_refreshed?: boolean;
+  pb_average_refreshed?: boolean;
+  meet_starts_at?: string | null;
 };
 
 type WeeklyAttemptRow = {
@@ -126,6 +133,7 @@ export function ensureWeeklyEntryTables() {
     await pool.query("ALTER TABLE weekly_results ADD COLUMN IF NOT EXISTS player_id TEXT");
     await pool.query("ALTER TABLE weekly_results ADD COLUMN IF NOT EXISTS source TEXT NOT NULL DEFAULT 'self'");
     await pool.query("ALTER TABLE weekly_results ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ NOT NULL DEFAULT now()");
+    await pool.query("ALTER TABLE weekly_results ADD COLUMN IF NOT EXISTS pb_average_refreshed BOOLEAN NOT NULL DEFAULT FALSE");
     await pool.query("CREATE INDEX IF NOT EXISTS weekly_results_player_id_idx ON weekly_results (player_id)");
     await pool.query(`
       CREATE UNIQUE INDEX IF NOT EXISTS weekly_results_meet_event_player_idx
@@ -367,18 +375,18 @@ export async function listWeeklyResults(meetIdOrSlug: string, eventId: string, f
 
   const eventKey = getWeeklyEventKey(meet.id, eventId, formatConfig.id);
   const { rows } = await pool.query<WeeklyResultRow>(
-    `SELECT wr.*, COALESCE(NULLIF(wpl.wca_id, ''), CASE WHEN wr.player_id LIKE 'wca:%' THEN SUBSTRING(wr.player_id FROM 5) ELSE '' END) AS wca_id
+    `SELECT wr.*, COALESCE(NULLIF(wpl.wca_id, ''), CASE WHEN wr.player_id LIKE 'wca:%' THEN SUBSTRING(wr.player_id FROM 5) ELSE '' END) AS wca_id,
+       COALESCE(wpl.birth_date, '') AS player_birth_date,
+       COALESCE(wpl.age_group_override, '') AS player_age_group,
+       wm.starts_at AS meet_starts_at
      FROM weekly_results wr
      LEFT JOIN weekly_player_library wpl ON wpl.id = wr.player_id
+     LEFT JOIN weekly_meets wm ON wm.id = wr.meet_id
      WHERE wr.meet_id = $1 AND wr.event_id = $2
-     ORDER BY
-       CASE WHEN wr.average < 0 THEN 1 ELSE 0 END,
-       wr.average ASC,
-       CASE WHEN wr.personal_best < 0 THEN 1 ELSE 0 END,
-       wr.personal_best ASC,
-       wr.player_name ASC`,
+     `,
     [meet.id, eventKey]
   );
+  rows.sort(compareWeeklyResultRows);
   const resultIds = rows.map((row) => row.id);
   const attempts =
     resultIds.length > 0
@@ -386,11 +394,15 @@ export async function listWeeklyResults(meetIdOrSlug: string, eventId: string, f
       : { rows: [] };
   const attemptsByResult = groupBy(attempts.rows, (row) => row.result_id);
 
-  return rows.map((row, index) => {
+  const rankByGroup = new Map<string, number>();
+  return rows.map((row) => {
+    const rankingAgeGroup = getWeeklyRankingAgeGroup(row.player_birth_date || "", row.player_age_group || row.age_group || "", row.meet_starts_at ? new Date(row.meet_starts_at) : new Date());
+    const rank = (rankByGroup.get(rankingAgeGroup) || 0) + 1;
+    rankByGroup.set(rankingAgeGroup, rank);
     const attemptValues = (attemptsByResult.get(row.id) || []).map((attempt) => secondsToResultValue(attempt.value));
     return {
       id: row.id,
-      rank: index + 1,
+      rank,
       player: {
         id: row.player_id || (row.player_slug ? `code:${row.player_slug}` : row.player_name),
         name: row.player_name,
@@ -399,14 +411,16 @@ export async function listWeeklyResults(meetIdOrSlug: string, eventId: string, f
         gender: row.gender === "女" ? "女" : "男",
         province: "辽宁",
         city: "",
-        birthDate: "",
-        ageGroup: row.age_group || "",
+        birthDate: row.player_birth_date || "",
+        ageGroup: rankingAgeGroup,
         ageGroupIsFuzzy: false
       },
       best: secondsToResultValue(row.personal_best),
       average: secondsToResultValue(row.average),
       attempts: attemptValues,
-      detail: attemptValues.map(formatResult).join(" / ")
+      detail: attemptValues.map(formatResult).join(" / "),
+      pbRefreshed: Boolean(row.pb_refreshed),
+      pbAverageRefreshed: Boolean(row.pb_average_refreshed)
     };
   });
 }
@@ -420,6 +434,8 @@ export async function saveWeeklyResult(input: {
 }) {
   if (!isWcaEventId(input.eventId)) throw new Error("项目不正确");
   const formatConfig = getWeeklyResultFormat(input.format);
+  if (input.eventId === "individual" && formatConfig.id !== "best1") throw new Error("个人全能只允许录入一次连续计时成绩");
+  if (input.eventId !== "individual" && formatConfig.id === "best1") throw new Error("常规项目必须录满五次成绩");
   if (!input.player?.name?.trim()) throw new Error("请选择选手");
   if (!Array.isArray(input.attempts) || input.attempts.length !== formatConfig.attemptCount) {
     throw new Error(`必须录入 ${formatConfig.attemptCount} 次成绩`);
@@ -437,10 +453,33 @@ export async function saveWeeklyResult(input: {
   const eventName = getWcaEventName(input.eventId);
   const playerName = input.player.name.trim();
   const playerSlug = input.player.slug || (input.player.id.startsWith("code:") ? input.player.id.slice(5) : "");
-  const playerAgeGroup = getWeeklyAgeGroup(input.player.birthDate) || input.player.ageGroup || "";
+  const pbEventId = getPersonalBestEventId(input.eventId);
+  const playerAgeGroup = getWeeklyAgeGroup(input.player.birthDate, meet.startsAt ? new Date(meet.startsAt) : new Date()) || input.player.ageGroup || "";
 
   try {
     await client.query("BEGIN");
+    const playerLibrary = await client.query<{ personal_bests: WeeklyPersonalBests | null; personal_bests_average: WeeklyPersonalBests | null }>(
+      "SELECT personal_bests, personal_bests_average FROM weekly_player_library WHERE id = $1 FOR UPDATE",
+      [input.player.id]
+    );
+    const storedPersonalBests = playerLibrary.rows[0]?.personal_bests || {};
+    const storedAveragePersonalBests = playerLibrary.rows[0]?.personal_bests_average || {};
+    const previousPersonalBest = getStoredPersonalBest(storedPersonalBests, pbEventId);
+    const previousAveragePersonalBest = getStoredPersonalBest(storedAveragePersonalBests, pbEventId);
+    const currentBest = resultValueToSeconds(calculated.best);
+    const currentAverage = resultValueToSeconds(calculated.average);
+    const pbRefreshed = currentBest >= 0 && (previousPersonalBest === null || currentBest < previousPersonalBest);
+    const pbAverageRefreshed = currentAverage >= 0 && (previousAveragePersonalBest === null || currentAverage < previousAveragePersonalBest);
+    if ((pbRefreshed || pbAverageRefreshed) && playerLibrary.rows.length > 0) {
+      await client.query(
+        `UPDATE weekly_player_library
+         SET personal_bests = CASE WHEN $5 THEN COALESCE(personal_bests, '{}'::jsonb) || jsonb_build_object($1, $2) ELSE COALESCE(personal_bests, '{}'::jsonb) END,
+             personal_bests_average = CASE WHEN $6 THEN COALESCE(personal_bests_average, '{}'::jsonb) || jsonb_build_object($1, $3) ELSE COALESCE(personal_bests_average, '{}'::jsonb) END,
+             updated_at = now()
+         WHERE id = $4`,
+        [pbEventId, currentBest, currentAverage, input.player.id, pbRefreshed, pbAverageRefreshed]
+      );
+    }
     await client.query(
       `INSERT INTO weekly_events (id, meet_id, kind, title, event_name, group_name, is_all_around, format, attempt_count, seq)
        VALUES ($1,$2,$3,$4,$5,NULL,FALSE,$6,$7,$8)
@@ -466,8 +505,8 @@ export async function saveWeeklyResult(input: {
       await client.query(
         `UPDATE weekly_results
          SET player_id = $1, player_slug = $2, gender = $3, age_group = $4,
-             average = $5, personal_best = $6, source = 'self', updated_at = now()
-         WHERE id = $7`,
+             average = $5, personal_best = $6, pb_refreshed = $7, pb_average_refreshed = $8, source = 'self', updated_at = now()
+         WHERE id = $9`,
         [
           input.player.id,
           playerSlug,
@@ -475,6 +514,8 @@ export async function saveWeeklyResult(input: {
           playerAgeGroup || null,
           resultValueToSeconds(calculated.average),
           resultValueToSeconds(calculated.best),
+          pbRefreshed,
+          pbAverageRefreshed,
           resultId
         ]
       );
@@ -482,8 +523,8 @@ export async function saveWeeklyResult(input: {
     } else {
       const inserted = await client.query<{ id: number }>(
         `INSERT INTO weekly_results
-          (event_id, meet_id, rank, player_id, player_name, player_slug, gender, age_group, level, grade, average, personal_best, pb_refreshed, source, updated_at)
-         VALUES ($1,$2,0,$3,$4,$5,$6,$7,'','',$8,$9,FALSE,'self',now())
+          (event_id, meet_id, rank, player_id, player_name, player_slug, gender, age_group, level, grade, average, personal_best, pb_refreshed, pb_average_refreshed, source, updated_at)
+         VALUES ($1,$2,0,$3,$4,$5,$6,$7,'','',$8,$9,$10,$11,'self',now())
          RETURNING id`,
         [
           eventKey,
@@ -494,7 +535,9 @@ export async function saveWeeklyResult(input: {
           input.player.gender === "女" ? "女" : "男",
           playerAgeGroup || null,
           resultValueToSeconds(calculated.average),
-          resultValueToSeconds(calculated.best)
+          resultValueToSeconds(calculated.best),
+          pbRefreshed,
+          pbAverageRefreshed
         ]
       );
       resultId = inserted.rows[0].id;
@@ -615,8 +658,8 @@ export async function deleteWeeklyResult(input: { resultId: number; reason: stri
 
 async function resolveWeeklyMeet(idOrSlug: string) {
   const pool = getPostgresPool();
-  const { rows } = await pool.query<{ id: string; slug: string; yearWeek: number }>(
-    `SELECT id, slug, year_week AS "yearWeek"
+  const { rows } = await pool.query<{ id: string; slug: string; yearWeek: number; startsAt: string | null }>(
+    `SELECT id, slug, year_week AS "yearWeek", starts_at AS "startsAt"
      FROM weekly_meets
      WHERE id = $1 OR slug = $1
      LIMIT 1`,
@@ -654,21 +697,59 @@ async function ensureTestWeeklyMeet() {
 }
 
 async function rerankWeeklyEvent(client: PoolClient, meetId: string, eventId: string) {
-  const { rows } = await client.query<{ id: number }>(
-    `SELECT id FROM weekly_results
-     WHERE meet_id = $1 AND event_id = $2
-     ORDER BY
-       CASE WHEN average < 0 THEN 1 ELSE 0 END,
-       average ASC,
-       CASE WHEN personal_best < 0 THEN 1 ELSE 0 END,
-       personal_best ASC,
-       player_name ASC`,
+  const { rows } = await client.query<{ id: number; player_name: string; average: string; personal_best: string; age_group: string; birth_date: string; starts_at: string | null }>(
+    `SELECT wr.id, wr.player_name, wr.average, wr.personal_best, wr.age_group, COALESCE(wpl.birth_date, '') AS birth_date, wm.starts_at
+     FROM weekly_results wr
+     LEFT JOIN weekly_player_library wpl ON wpl.id = wr.player_id
+     LEFT JOIN weekly_meets wm ON wm.id = wr.meet_id
+     WHERE wr.meet_id = $1 AND wr.event_id = $2`,
     [meetId, eventId]
   );
 
-  for (const [index, row] of rows.entries()) {
-    await client.query("UPDATE weekly_results SET rank = $1 WHERE id = $2", [index + 1, row.id]);
+  rows.sort(compareWeeklyResultRows);
+  const rankByGroup = new Map<string, number>();
+  for (const row of rows) {
+    const group = getWeeklyRankingAgeGroup(row.birth_date || "", row.age_group || "", row.starts_at ? new Date(row.starts_at) : new Date());
+    const rank = (rankByGroup.get(group) || 0) + 1;
+    rankByGroup.set(group, rank);
+    await client.query("UPDATE weekly_results SET rank = $1 WHERE id = $2", [rank, row.id]);
   }
+}
+
+function compareWeeklyResultRows(
+  a: { player_name: string; average: string; personal_best: string; age_group: string | null; player_birth_date?: string | null; birth_date?: string | null; player_age_group?: string | null; meet_starts_at?: string | null },
+  b: { player_name: string; average: string; personal_best: string; age_group: string | null; player_birth_date?: string | null; birth_date?: string | null; player_age_group?: string | null; meet_starts_at?: string | null }
+) {
+  const groupA = getWeeklyRankingAgeGroup(a.player_birth_date || a.birth_date || "", a.player_age_group || a.age_group || "", a.meet_starts_at ? new Date(a.meet_starts_at) : new Date());
+  const groupB = getWeeklyRankingAgeGroup(b.player_birth_date || b.birth_date || "", b.player_age_group || b.age_group || "", b.meet_starts_at ? new Date(b.meet_starts_at) : new Date());
+  return getWeeklyRankingAgeGroupOrder(groupA) - getWeeklyRankingAgeGroupOrder(groupB) || compareResultScore(a, b) || a.player_name.localeCompare(b.player_name, "zh-CN");
+}
+
+function compareResultScore(a: { average: string; personal_best: string }, b: { average: string; personal_best: string }) {
+  const averageA = Number(a.average);
+  const averageB = Number(b.average);
+  const averageOrder = (averageA < 0 ? 1 : 0) - (averageB < 0 ? 1 : 0) || averageA - averageB;
+  if (averageOrder !== 0) return averageOrder;
+  const bestA = Number(a.personal_best);
+  const bestB = Number(b.personal_best);
+  return (bestA < 0 ? 1 : 0) - (bestB < 0 ? 1 : 0) || bestA - bestB;
+}
+
+function getPersonalBestEventId(eventId: string): keyof WeeklyPersonalBests {
+  if (eventId === "individual") return "allAround";
+  if (eventId === "maple") return "maple";
+  return eventId as keyof WeeklyPersonalBests;
+}
+
+function getStoredPersonalBest(personalBests: WeeklyPersonalBests, eventId: keyof WeeklyPersonalBests) {
+  const value = Number(personalBests[eventId]);
+  if (Number.isFinite(value) && value > 0) return value;
+  // 兼容早期把枫叶成绩误存为 skewb 的 PB 数据。
+  if (eventId === "maple") {
+    const legacy = Number(personalBests.skewb);
+    if (Number.isFinite(legacy) && legacy > 0) return legacy;
+  }
+  return null;
 }
 
 async function readWeeklyAttempts(client: PoolClient, resultId: number): Promise<ResultValue[]> {

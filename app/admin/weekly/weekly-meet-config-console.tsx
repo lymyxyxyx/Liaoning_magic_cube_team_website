@@ -3,6 +3,7 @@
 import { Plus, Save } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { weeklyResultFormats, type WeeklyResultFormat } from "@/lib/weekly-result-utils";
+import { WEEKLY_DEFAULT_EVENT_IDS } from "@/lib/wca-events";
 import type { WCA_EVENTS } from "@/lib/wca-events";
 
 type Meet = { id: string; title: string; dateLabel: string; status?: string; startsAt?: string | null; endsAt?: string | null };
@@ -90,7 +91,27 @@ export function WeeklyMeetConfigConsole({ initialMeets, events }: { initialMeets
           <label>截止时间<input type="datetime-local" value={endsAt} onChange={(event) => setEndsAt(event.target.value)} /></label>
         </div>
         <div className="weekly-meet-event-configs">
-          {events.map((event) => { const config = configByEvent.get(event.id) || { eventId: event.id, format: "avg5" as const, enabled: false, seq: configs.length }; return <div key={event.id}><label><input type="checkbox" checked={config.enabled} onChange={(input) => updateEvent(event.id, { enabled: input.target.checked })} />{event.name}</label><select value={config.format} onChange={(input) => updateEvent(event.id, { format: input.target.value as WeeklyResultFormat })}>{weeklyResultFormats.map((format) => <option key={format.id} value={format.id}>{format.name}</option>)}</select></div>; })}
+          {(() => {
+            const currentEventIds = new Set<string>(WEEKLY_DEFAULT_EVENT_IDS);
+            const renderEvent = (event: (typeof WCA_EVENTS)[number]) => {
+              const config = configByEvent.get(event.id) || { eventId: event.id, format: "avg5" as const, enabled: false, seq: configs.length };
+              const availableFormats = weeklyResultFormats.filter((format) => event.id === "individual" ? format.id === "best1" : format.id === "avg5" || format.id === "best3");
+              const selectedFormat = availableFormats.some((format) => format.id === config.format) ? config.format : availableFormats[0].id;
+              return <div key={event.id}><label><input type="checkbox" checked={config.enabled} onChange={(input) => updateEvent(event.id, { enabled: input.target.checked })} />{event.name}</label><select value={selectedFormat} onChange={(input) => updateEvent(event.id, { format: input.target.value as WeeklyResultFormat })}>{availableFormats.map((format) => <option key={format.id} value={format.id}>{format.name}</option>)}</select></div>;
+            };
+            return <>
+              <section className="weekly-event-config-group">
+                <h3>当前周赛项目</h3>
+                <p>本周默认开放以下六个项目；个人全能暂不适用段位等级标准。</p>
+                {events.filter((event) => currentEventIds.has(event.id)).map(renderEvent)}
+              </section>
+              <section className="weekly-event-config-group weekly-event-config-group--reserved">
+                <h3>其他项目（预留）</h3>
+                <p>后续增加项目时，在这里勾选并保存即可。</p>
+                {events.filter((event) => !currentEventIds.has(event.id)).map(renderEvent)}
+              </section>
+            </>;
+          })()}
         </div>
         <button className="button primary" type="button" disabled={saving} onClick={save}><Save size={16} />{saving ? "保存中" : "保存周赛配置"}</button>
       </> : null}

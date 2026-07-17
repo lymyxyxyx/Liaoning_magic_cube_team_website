@@ -1,6 +1,7 @@
 "use client";
 
-import { Pencil, RefreshCw, Save, Search, Trash2, X } from "lucide-react";
+import { LogIn, Pencil, RefreshCw, Save, Search, Trash2, X } from "lucide-react";
+import Link from "next/link";
 import type { CSSProperties, KeyboardEvent } from "react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { getWeeklyAgeGroup } from "@/lib/weekly-age-groups";
@@ -15,6 +16,7 @@ import {
 } from "@/lib/weekly-result-utils";
 import type { WCA_EVENTS } from "@/lib/wca-events";
 import { matchesWeeklyPlayerQuery } from "@/lib/weekly-player-search";
+import { getShenyangAssociationGrade } from "@/lib/shenyang-association-grades";
 
 type MeetOption = {
   id: string;
@@ -46,6 +48,8 @@ type EnteredResult = {
   average: ResultValue;
   attempts: ResultValue[];
   detail: string;
+  pbRefreshed: boolean;
+  pbAverageRefreshed: boolean;
 };
 
 type Props = {
@@ -55,6 +59,7 @@ type Props = {
   initialEventConfigs?: Array<{ eventId: string; format: WeeklyResultFormat; enabled: boolean }>;
   variant?: "full" | "workspace";
   mode?: "admin" | "public";
+  initialAdminUnlocked?: boolean;
 };
 
 const emptyAttempts = ["", "", "", "", ""];
@@ -81,13 +86,15 @@ const publicAttemptInputStyle: CSSProperties = {
   boxShadow: "none"
 };
 
-export function WeeklyResultEntryConsole({ initialMeets, initialPlayers = [], events, initialEventConfigs = [], variant = "full", mode = "admin" }: Props) {
+export function WeeklyResultEntryConsole({ initialMeets, initialPlayers = [], events, initialEventConfigs = [], variant = "full", mode = "admin", initialAdminUnlocked = true }: Props) {
   const defaultMeetId = mode === "public" ? initialMeets.find((meet) => meet.id !== testMeetId)?.id || initialMeets[0]?.id || "" : initialMeets[0]?.id || "";
   const [meets, setMeets] = useState(initialMeets);
   const [selectedMeetId, setSelectedMeetId] = useState(defaultMeetId);
   const [selectedEventId, setSelectedEventId] = useState("333");
   const [selectedFormat, setSelectedFormat] = useState<WeeklyResultFormat>("avg5");
   const [results, setResults] = useState<EnteredResult[]>([]);
+  const [resultSearchQuery, setResultSearchQuery] = useState("");
+  const [resultAgeGroup, setResultAgeGroup] = useState("全部");
   const [playerQuery, setPlayerQuery] = useState("");
   const [players, setPlayers] = useState<WeeklyPlayer[]>([]);
   const [knownPlayers, setKnownPlayers] = useState(initialPlayers);
@@ -99,10 +106,17 @@ export function WeeklyResultEntryConsole({ initialMeets, initialPlayers = [], ev
   const [notice, setNotice] = useState("");
   const [isSaving, setIsSaving] = useState(false);
   const [isLoadingResults, setIsLoadingResults] = useState(false);
+  const [adminUnlocked, setAdminUnlocked] = useState(initialAdminUnlocked);
+  const [isLoginOpen, setIsLoginOpen] = useState(false);
+  const [loginPassword, setLoginPassword] = useState("");
+  const [isLoggingIn, setIsLoggingIn] = useState(false);
   const attemptRefs = useRef<Array<HTMLInputElement | null>>([]);
   const playerInputRef = useRef<HTMLInputElement | null>(null);
   const selectedFormatConfig = getWeeklyResultFormat(selectedFormat);
-  const isPublicMode = mode === "public";
+  const isPublicMode = mode === "public" || !adminUnlocked;
+  const availableFormats = selectedEventId === "individual"
+    ? weeklyResultFormats.filter((format) => format.id === "best1")
+    : weeklyResultFormats.filter((format) => format.id === "avg5" || format.id === "best3");
 
   const calculated = useMemo(() => {
     try {
@@ -152,7 +166,7 @@ export function WeeklyResultEntryConsole({ initialMeets, initialPlayers = [], ev
       .then((payload: { results: EnteredResult[] }) => setResults(payload.results || []))
       .catch(() => setNotice("读取成绩列表失败。"))
       .finally(() => setIsLoadingResults(false));
-  }, [selectedEventId, selectedFormat, selectedMeetId]);
+  }, [adminUnlocked, selectedEventId, selectedFormat, selectedMeetId]);
 
   useEffect(() => {
     refreshResults();
@@ -163,12 +177,22 @@ export function WeeklyResultEntryConsole({ initialMeets, initialPlayers = [], ev
   }, [selectedFormatConfig.attemptCount]);
 
   useEffect(() => {
+    if (selectedEventId === "individual") setSelectedFormat("best1");
+    else if (selectedFormat !== "avg5" && selectedFormat !== "best3") setSelectedFormat("avg5");
+  }, [selectedEventId, selectedFormat]);
+
+  useEffect(() => {
     if (!isPublicMode) return;
     const configured = initialEventConfigs.find((config) => config.eventId === selectedEventId && config.enabled);
     if (configured) setSelectedFormat(configured.format);
   }, [initialEventConfigs, isPublicMode, selectedEventId]);
 
   useEffect(() => {
+    if (!adminUnlocked) {
+      setPlayers([]);
+      setIsSearchingPlayers(false);
+      return;
+    }
     const controller = new AbortController();
     const timer = window.setTimeout(() => {
       if (!playerQuery.trim()) {
@@ -185,7 +209,7 @@ export function WeeklyResultEntryConsole({ initialMeets, initialPlayers = [], ev
       window.clearTimeout(timer);
       controller.abort();
     };
-  }, [playerQuery, searchPlayers]);
+  }, [adminUnlocked, playerQuery, searchPlayers]);
 
   function refreshMeets() {
     fetch("/api/weekly-competitions")
@@ -230,6 +254,10 @@ export function WeeklyResultEntryConsole({ initialMeets, initialPlayers = [], ev
 
   function saveResult() {
     setNotice("");
+    if (!adminUnlocked) {
+      setIsLoginOpen(true);
+      return;
+    }
     if (!selectedMeetId) {
       setNotice("请先选择周赛。");
       return;
@@ -315,6 +343,27 @@ export function WeeklyResultEntryConsole({ initialMeets, initialPlayers = [], ev
       .finally(() => setIsSaving(false));
   }
 
+  function submitAdminLogin() {
+    if (!loginPassword.trim()) return;
+    setIsLoggingIn(true);
+    setNotice("");
+    fetch("/api/weekly-access", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ password: loginPassword, next: "/weekly/results" })
+    })
+      .then(async (response) => {
+        const payload = (await response.json().catch(() => null)) as { message?: string } | null;
+        if (!response.ok) throw new Error(payload?.message || "管理员口令不正确");
+        setAdminUnlocked(true);
+        setIsLoginOpen(false);
+        setLoginPassword("");
+        setNotice("管理员登录成功，可以开始录入和维护成绩。");
+      })
+      .catch((error) => setNotice(error instanceof Error ? error.message : "管理员登录失败"))
+      .finally(() => setIsLoggingIn(false));
+  }
+
   function selectPlayer(player: WeeklyPlayer) {
     setSelectedPlayer(player);
     setPlayerQuery(player.name);
@@ -371,6 +420,14 @@ export function WeeklyResultEntryConsole({ initialMeets, initialPlayers = [], ev
   const selectedMeet = meets.find((meet) => meet.id === selectedMeetId);
   const selectedEvent = events.find((event) => event.id === selectedEventId);
   const recordedCount = results.length;
+  const filteredResults = useMemo(() => {
+    const query = resultSearchQuery.trim();
+    return results.filter((result) => {
+      const matchesQuery = !query || matchesWeeklyPlayerQuery(result.player, query);
+      const matchesGroup = resultAgeGroup === "全部" || (result.player.ageGroup || "待补") === resultAgeGroup;
+      return matchesQuery && matchesGroup;
+    });
+  }, [resultAgeGroup, resultSearchQuery, results]);
   const playerCandidates = useMemo(() => {
     const query = playerQuery.trim();
     if (!query || selectedPlayer) return [];
@@ -396,10 +453,13 @@ export function WeeklyResultEntryConsole({ initialMeets, initialPlayers = [], ev
             </p>
           </div>
           {!isPublicMode ? (
-            <button className="button" type="button" onClick={refreshMeets}>
-              <RefreshCw size={16} />
-              刷新周赛
-            </button>
+            <div className="weekly-entry-heading-actions">
+              <Link className="button" href="/weekly/admin/player-library">选手大库</Link>
+              <button className="button" type="button" onClick={refreshMeets}>
+                <RefreshCw size={16} />
+                刷新周赛
+              </button>
+            </div>
           ) : null}
         </div>
 
@@ -429,7 +489,7 @@ export function WeeklyResultEntryConsole({ initialMeets, initialPlayers = [], ev
           <label>
             赛制
             <select value={selectedFormat} disabled={isPublicMode} onChange={(event) => setSelectedFormat(event.target.value as WeeklyResultFormat)}>
-              {weeklyResultFormats.map((format) => (
+              {availableFormats.map((format) => (
                 <option value={format.id} key={format.id}>
                   {format.name}
                 </option>
@@ -453,6 +513,19 @@ export function WeeklyResultEntryConsole({ initialMeets, initialPlayers = [], ev
               刷新
             </button>
           </div>
+          <div className="weekly-result-search-bar" role="search" aria-label="查询周赛成绩">
+            <label>
+              姓名 / WCA ID
+              <input value={resultSearchQuery} onChange={(event) => setResultSearchQuery(event.target.value)} placeholder="输入姓名或 WCA ID" />
+            </label>
+            <label>
+              年龄组
+              <select value={resultAgeGroup} onChange={(event) => setResultAgeGroup(event.target.value)}>
+                {['全部', 'U6', 'U8', 'U12', '成人', '待补'].map((group) => <option value={group} key={group}>{group}</option>)}
+              </select>
+            </label>
+            {(resultSearchQuery || resultAgeGroup !== '全部') ? <button className="button" type="button" onClick={() => { setResultSearchQuery(''); setResultAgeGroup('全部'); }}>清除筛选</button> : null}
+          </div>
           <div className="result-table-wrap">
             <table className="result-table weekly-entry-table">
               <thead>
@@ -460,22 +533,30 @@ export function WeeklyResultEntryConsole({ initialMeets, initialPlayers = [], ev
                   <th>排名</th>
                   <th>WCA ID</th>
                   <th>姓名</th>
+                  <th>组别</th>
                   <th>省市</th>
                   <th>平均</th>
+                  <th>段位/等级</th>
                   <th>最好</th>
                   <th>成绩</th>
                   {!isPublicMode ? <th>操作</th> : null}
                 </tr>
               </thead>
               <tbody>
-                {results.map((result) => (
+                {filteredResults.map((result) => (
                   <tr key={result.id}>
                     <td data-label="排名">{result.rank}</td>
                     <td data-label="WCA ID">{result.player.wcaId}</td>
                     <td data-label="姓名">{result.player.name}</td>
+                    <td data-label="组别">{result.player.ageGroup || "待补"}</td>
                     <td data-label="省市">{formatRegion(result.player)}</td>
-                    <td data-label="平均" className="score-strong">{formatResult(result.average)}</td>
-                    <td data-label="最好">{formatResult(result.best)}</td>
+                    <td data-label="平均" className={result.pbAverageRefreshed ? "score-strong pb-cell pb-refreshed" : "score-strong"}>
+                      {formatResult(result.average)}{result.pbAverageRefreshed ? <span className="weekly-pb-badge">刷新平均 PB</span> : null}
+                    </td>
+                    <td data-label="段位/等级" className="grade-cell">{getShenyangAssociationGrade(selectedEventId, result.average).label}</td>
+                    <td data-label="最好" className={result.pbRefreshed ? "pb-cell pb-refreshed" : "pb-cell"}>
+                      {formatResult(result.best)}{result.pbRefreshed ? <span className="weekly-pb-badge">刷新 PB</span> : null}
+                    </td>
                     <td data-label="成绩">{result.detail}</td>
                     {!isPublicMode ? (
                       <td data-label="操作" className="weekly-result-actions">
@@ -489,9 +570,9 @@ export function WeeklyResultEntryConsole({ initialMeets, initialPlayers = [], ev
                     ) : null}
                   </tr>
                 ))}
-                {results.length === 0 ? (
+                {filteredResults.length === 0 ? (
                   <tr>
-                    <td colSpan={isPublicMode ? 7 : 8}>{isLoadingResults ? "正在读取成绩..." : "当前项目暂无成绩。"}</td>
+                    <td colSpan={isPublicMode ? 9 : 10}>{isLoadingResults ? "正在读取成绩..." : results.length ? "没有符合筛选条件的成绩。" : "当前项目暂无成绩。"}</td>
                   </tr>
                 ) : null}
               </tbody>
@@ -511,6 +592,17 @@ export function WeeklyResultEntryConsole({ initialMeets, initialPlayers = [], ev
           </div>
         </div>
 
+          {isPublicMode ? (
+            <div className="weekly-admin-lock-panel">
+              <strong>当前为只读模式</strong>
+              <span>管理员登录后才能录入、修改和删除成绩。</span>
+              <button className="button primary" type="button" onClick={() => setIsLoginOpen(true)}>
+                <LogIn size={16} />
+                管理员登录
+              </button>
+            </div>
+          ) : null}
+
           {selectedPlayer ? (
             <div className="weekly-selected-player">
               <span>当前选手</span>
@@ -529,6 +621,7 @@ export function WeeklyResultEntryConsole({ initialMeets, initialPlayers = [], ev
                   value={playerQuery}
                   onChange={(event) => updatePlayerQuery(event.currentTarget.value)}
                   placeholder="输入姓名或 WCA ID"
+                  disabled={isPublicMode}
                 />
               </span>
             </label>
@@ -559,6 +652,7 @@ export function WeeklyResultEntryConsole({ initialMeets, initialPlayers = [], ev
                   onChange={(event) => updateAttempt(index, event.target.value)}
                   onKeyDown={(event) => handleAttemptKeyDown(event, index)}
                   placeholder="00:00.00"
+                  disabled={isPublicMode}
                   style={isPublicMode ? publicAttemptInputStyle : undefined}
                 />
               </label>
@@ -583,7 +677,7 @@ export function WeeklyResultEntryConsole({ initialMeets, initialPlayers = [], ev
             </label>
           ) : null}
 
-          <button className="button primary weekly-save-result" type="button" disabled={isSaving || !selectedMeetId} onClick={saveResult}>
+          <button className="button primary weekly-save-result" type="button" disabled={isSaving || isPublicMode || !selectedMeetId} onClick={saveResult}>
             <Save size={17} />
             {isSaving ? "保存中" : editingResult ? "保存纠正" : "保存成绩"}
           </button>
@@ -597,6 +691,42 @@ export function WeeklyResultEntryConsole({ initialMeets, initialPlayers = [], ev
         </div>
 
       </div>
+
+      {isLoginOpen ? (
+        <div className="weekly-admin-login-backdrop" role="presentation">
+          <div className="weekly-admin-login-modal" role="dialog" aria-modal="true" aria-labelledby="weekly-admin-login-title">
+            <div className="admin-card-heading">
+              <div>
+                <span className="eyebrow">周赛管理</span>
+                <h2 id="weekly-admin-login-title">管理员登录</h2>
+                <p>登录后在当前页面解锁成绩录入和维护功能。</p>
+              </div>
+              <button className="icon-button" type="button" aria-label="关闭登录窗口" onClick={() => setIsLoginOpen(false)}>
+                <X size={17} />
+              </button>
+            </div>
+            <label className="field admin-login-password">
+              <span>管理员口令</span>
+              <input
+                autoFocus
+                autoComplete="current-password"
+                type="password"
+                value={loginPassword}
+                onChange={(event) => setLoginPassword(event.target.value)}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter") submitAdminLogin();
+                }}
+              />
+            </label>
+            <div className="weekly-admin-login-actions">
+              <button className="button" type="button" onClick={() => setIsLoginOpen(false)} disabled={isLoggingIn}>取消</button>
+              <button className="button primary" type="button" onClick={submitAdminLogin} disabled={isLoggingIn || !loginPassword.trim()}>
+                {isLoggingIn ? "验证中…" : "登录"}
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </section>
   );
 }
@@ -610,7 +740,9 @@ function buildOptimisticResults(prev: EnteredResult[], player: WeeklyPlayer, att
     best: calculated.best,
     average: calculated.average,
     attempts,
-    detail: attempts.map(formatResult).join(" / ")
+    detail: attempts.map(formatResult).join(" / "),
+    pbRefreshed: false,
+    pbAverageRefreshed: false
   };
   const withoutSamePlayer = prev.filter((result) => result.player.name !== player.name);
   const sorted = [nextResult, ...withoutSamePlayer].sort(compareEnteredResults);

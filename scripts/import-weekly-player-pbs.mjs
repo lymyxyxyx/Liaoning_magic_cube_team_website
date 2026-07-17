@@ -8,7 +8,7 @@ if (!inputPath) {
   throw new Error("Usage: node scripts/import-weekly-player-pbs.mjs <personal-bests.json>");
 }
 
-const supportedEvents = new Set(["333", "222", "pyram", "mirror", "skewb", "allAround"]);
+const supportedEvents = new Set(["333", "222", "pyram", "mirror", "maple", "skewb", "allAround"]);
 const sourceLabel = "个人PB.xlsx（2026-07）";
 
 const rawEntries = JSON.parse(await fs.readFile(inputPath, "utf8"));

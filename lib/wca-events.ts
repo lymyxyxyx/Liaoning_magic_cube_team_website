@@ -25,11 +25,12 @@ export const WCA_EVENTS = [
   { id: "bigstack300", name: "大堆（300个）", englishName: "Big Stack 300" }
 ] as const;
 
-export const WEEKLY_DEFAULT_EVENT_IDS = ["222", "333", "pyram", "skewb", "maple", "mirror", "individual"] as const;
+// 周赛当前开放项目。其它 WCA_EVENTS 保留在后台配置中，后续可直接启用。
+export const WEEKLY_DEFAULT_EVENT_IDS = ["333", "222", "pyram", "maple", "mirror", "individual"] as const;
 
-export const WEEKLY_DEFAULT_EVENTS = WCA_EVENTS.filter((event) =>
-  WEEKLY_DEFAULT_EVENT_IDS.includes(event.id as (typeof WEEKLY_DEFAULT_EVENT_IDS)[number])
-);
+export const WEEKLY_DEFAULT_EVENTS = WEEKLY_DEFAULT_EVENT_IDS
+  .map((eventId) => WCA_EVENTS.find((event) => event.id === eventId))
+  .filter((event): event is (typeof WCA_EVENTS)[number] => Boolean(event));
 
 export type WcaEventId = (typeof WCA_EVENTS)[number]["id"];
 

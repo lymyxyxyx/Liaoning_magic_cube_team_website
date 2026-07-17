@@ -1,6 +1,10 @@
+import { getPostgresPool } from "@/lib/postgres";
+
 export type BigStackRecord = {
+  id?: string;
   name: string;
   count: number;
+  updatedAt?: string;
 };
 
 export const bigStackIntro =
@@ -89,6 +93,85 @@ export const bigStackRecords: BigStackRecord[] = [
   { name: "岳锦之", count: 177 }
 ];
 
-export function getRankedBigStackRecords() {
-  return [...bigStackRecords].sort((a, b) => b.count - a.count || a.name.localeCompare(b.name, "zh-Hans-CN"));
+export function getRankedBigStackRecords(records: BigStackRecord[] = bigStackRecords) {
+  return [...records].sort((a, b) => b.count - a.count || a.name.localeCompare(b.name, "zh-Hans-CN"));
+}
+
+export async function ensureBigStackTable() {
+  const pool = getPostgresPool();
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS big_stack_records (
+      id TEXT PRIMARY KEY,
+      name TEXT NOT NULL UNIQUE,
+      count INTEGER NOT NULL DEFAULT 0 CHECK (count >= 0),
+      updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+    )
+  `);
+  await pool.query("CREATE INDEX IF NOT EXISTS big_stack_records_count_idx ON big_stack_records (count DESC)");
+}
+
+export async function listBigStackRecords() {
+  await ensureBigStackTable();
+  const pool = getPostgresPool();
+  const existing = await pool.query<{ count: string }>("SELECT COUNT(*)::text AS count FROM big_stack_records");
+  if (Number(existing.rows[0]?.count || 0) === 0) await seedBigStackRecords();
+  const { rows } = await pool.query<{ id: string; name: string; count: number; updated_at: string }>(
+    "SELECT id, name, count, updated_at FROM big_stack_records ORDER BY count DESC, name ASC"
+  );
+  return rows.map((row) => ({ id: row.id, name: row.name, count: Number(row.count), updatedAt: row.updated_at }));
+}
+
+export async function saveBigStackRecords(records: BigStackRecord[]) {
+  await ensureBigStackTable();
+  const normalized = normalizeBigStackRecords(records);
+  const pool = getPostgresPool();
+  const client = await pool.connect();
+  try {
+    await client.query("BEGIN");
+    const ids = normalized.map((record) => record.id);
+    await client.query("DELETE FROM big_stack_records WHERE NOT (id = ANY($1::text[]))", [ids]);
+    for (const record of normalized) {
+      await client.query(
+        `INSERT INTO big_stack_records (id, name, count, updated_at)
+         VALUES ($1, $2, $3, now())
+         ON CONFLICT (id) DO UPDATE SET name = EXCLUDED.name, count = EXCLUDED.count, updated_at = now()`,
+        [record.id, record.name, record.count]
+      );
+    }
+    await client.query("COMMIT");
+  } catch (error) {
+    await client.query("ROLLBACK");
+    throw error;
+  } finally {
+    client.release();
+  }
+  return listBigStackRecords();
+}
+
+async function seedBigStackRecords() {
+  const pool = getPostgresPool();
+  for (const record of normalizeBigStackRecords(bigStackRecords)) {
+    await pool.query(
+      `INSERT INTO big_stack_records (id, name, count, updated_at)
+       VALUES ($1, $2, $3, now()) ON CONFLICT (name) DO UPDATE SET count = GREATEST(big_stack_records.count, EXCLUDED.count), updated_at = now()`,
+      [record.id, record.name, record.count]
+    );
+  }
+}
+
+function normalizeBigStackRecords(records: BigStackRecord[]) {
+  const byName = new Map<string, BigStackRecord>();
+  for (const record of records) {
+    const name = record.name.trim();
+    const count = Math.floor(Number(record.count));
+    if (!name || !Number.isFinite(count) || count < 0) continue;
+    const current = byName.get(name);
+    if (!current || count > current.count) byName.set(name, { id: record.id || createBigStackId(name), name, count });
+  }
+  return [...byName.values()];
+}
+
+function createBigStackId(name: string) {
+  const slug = name.trim().toLowerCase().replace(/[^a-z0-9\u4e00-\u9fa5]+/g, "-").replace(/^-+|-+$/g, "");
+  return `big-stack-${slug || Date.now().toString(36)}`;
 }

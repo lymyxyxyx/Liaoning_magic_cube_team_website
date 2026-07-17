@@ -25,11 +25,12 @@ export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
   const host = request.headers.get("host") || "";
 
-  const isWeeklyPage = pathname.startsWith("/weekly") && !pathname.startsWith("/weekly/access") && !pathname.startsWith("/weekly/admin");
+  const isWeeklyPage = pathname.startsWith("/weekly") && pathname !== "/weekly/results" && !pathname.startsWith("/weekly/access") && !pathname.startsWith("/weekly/admin");
   const isWeeklyApi = pathname === "/api/weekly-competitions" || pathname.startsWith("/api/weekly-competitions/");
+  const isWeeklyResultReadApi = request.method === "GET" && pathname.startsWith("/api/weekly-competitions/") && pathname.endsWith("/results");
   const isWeeklyAdminApi = pathname.startsWith("/api/admin/weekly-");
 
-  if ((isWeeklyPage || isWeeklyApi) && !(await hasWeeklyAdminSession(request))) {
+  if ((isWeeklyPage || (isWeeklyApi && !isWeeklyResultReadApi)) && !(await hasWeeklyAdminSession(request))) {
     if (isWeeklyApi) {
       return NextResponse.json({ message: "请先登录周赛管理员账号" }, { status: 401 });
     }

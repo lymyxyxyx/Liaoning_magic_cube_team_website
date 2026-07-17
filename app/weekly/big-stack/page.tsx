@@ -2,19 +2,21 @@ import Link from "next/link";
 import { BarChart3, Medal, Trophy } from "lucide-react";
 import { PageHero } from "@/components/page-hero";
 import { bigStackIntro, getRankedBigStackRecords } from "@/lib/big-stack";
+import { listBigStackRecords } from "@/lib/big-stack";
+import { BigStackCarousel } from "./big-stack-carousel";
 import { people } from "@/lib/data";
 import { isWeeklyCompetitionEnabled } from "@/lib/weekly-feature";
 import { notFound } from "next/navigation";
 
-export default function WeeklyBigStackPage() {
+export default async function WeeklyBigStackPage() {
   if (!isWeeklyCompetitionEnabled()) notFound();
-  const bigStackRanking = getRankedBigStackRecords();
+  const records = await listBigStackRecords().catch(() => getRankedBigStackRecords());
+  const bigStackRanking = getRankedBigStackRecords(records);
   const peopleByName = new Map(people.map((person) => [person.name, person]));
   const topThree = bigStackRanking.slice(0, 3);
   const leader = bigStackRanking[0];
-  const topTenAverage = Math.round(
-    bigStackRanking.slice(0, 10).reduce((total, record) => total + record.count, 0) / 10
-  );
+  const topTen = bigStackRanking.slice(0, 10);
+  const topTenAverage = topTen.length > 0 ? Math.round(topTen.reduce((total, record) => total + record.count, 0) / topTen.length) : 0;
 
   return (
     <>
@@ -74,26 +76,26 @@ export default function WeeklyBigStackPage() {
           ))}
         </div>
 
-        <div className="big-stack-ranking" aria-label="个人单轮大堆纪录排行榜">
-          {bigStackRanking.map((record, index) => {
-            const width = `${Math.max(12, Math.round((record.count / leader.count) * 100))}%`;
-            const person = peopleByName.get(record.name);
+        <BigStackCarousel records={bigStackRanking} />
 
-            return (
-              <div className="big-stack-row" key={`${record.name}-${record.count}`}>
-                <span className="big-stack-rank">{index + 1}</span>
-                <span className="big-stack-name">
-                  {person ? <Link href={`/people/${person.slug}`}>{record.name}</Link> : record.name}
-                </span>
-                <span className={`big-stack-gender ${person ? "" : "pending"}`}>{person?.gender || "待建档"}</span>
-                <div className="big-stack-bar" aria-hidden="true">
-                  <span style={{ width }} />
+        <details className="big-stack-full-list">
+          <summary>展开完整大堆榜单（{bigStackRanking.length} 人）</summary>
+          <div className="big-stack-ranking" aria-label="个人单轮大堆纪录排行榜">
+            {bigStackRanking.map((record, index) => {
+              const width = `${Math.max(12, Math.round((record.count / (leader?.count || 1)) * 100))}%`;
+              const person = peopleByName.get(record.name);
+              return (
+                <div className="big-stack-row" key={`${record.name}-${record.count}`}>
+                  <span className="big-stack-rank">{index + 1}</span>
+                  <span className="big-stack-name">{person ? <Link href={`/people/${person.slug}`}>{record.name}</Link> : record.name}</span>
+                  <span className={`big-stack-gender ${person ? "" : "pending"}`}>{person?.gender || "待建档"}</span>
+                  <div className="big-stack-bar" aria-hidden="true"><span style={{ width }} /></div>
+                  <strong>{record.count}</strong>
                 </div>
-                <strong>{record.count}</strong>
-              </div>
-            );
-          })}
-        </div>
+              );
+            })}
+          </div>
+        </details>
 
         <div className="big-stack-footnote">
           <BarChart3 size={16} />

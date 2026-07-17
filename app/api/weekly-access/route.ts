@@ -17,7 +17,7 @@ function timingSafeStringEqual(a: string, b: string): boolean {
   return diff === 0;
 }
 
-function getSafeNextPath(value: FormDataEntryValue | null) {
+function getSafeNextPath(value: FormDataEntryValue | string | null | undefined) {
   const path = String(value || "");
   if (!path.startsWith("/weekly") || path.startsWith("//") || path.startsWith("/weekly/access") || path.startsWith("/weekly/admin")) {
     return "/weekly/results";
@@ -26,12 +26,17 @@ function getSafeNextPath(value: FormDataEntryValue | null) {
 }
 
 export async function POST(request: NextRequest) {
-  const formData = await request.formData();
-  const password = String(formData.get("password") || "");
+  const contentType = request.headers.get("content-type") || "";
+  const payload = contentType.includes("application/json")
+    ? ((await request.json().catch(() => null)) as { password?: string; next?: string } | null)
+    : null;
+  const formData = payload ? null : await request.formData();
+  const password = String(payload?.password || formData?.get("password") || "");
   const weeklyAdminPassword = process.env.WEEKLY_ADMIN_PASSWORD || judgeEditPassword;
-  const nextPath = getSafeNextPath(formData.get("next"));
+  const nextPath = getSafeNextPath(payload?.next || formData?.get("next"));
 
   if (!timingSafeStringEqual(password, weeklyAdminPassword)) {
+    if (payload) return NextResponse.json({ message: "管理员口令不正确" }, { status: 401 });
     const errorUrl = request.nextUrl.clone();
     errorUrl.pathname = "/weekly/access";
     errorUrl.search = "";
@@ -49,5 +54,6 @@ export async function POST(request: NextRequest) {
     maxAge: 60 * 60 * 24 * 7,
     path: "/"
   });
+  if (payload) return NextResponse.json({ ok: true }, { status: 200, headers: response.headers });
   return response;
 }

@@ -4,7 +4,7 @@ export type WeeklyResultFormat = "avg5" | "best3" | "avg3" | "best1";
 export const weeklyResultFormats = [
   { id: "avg5", name: "五次取平均", attemptCount: 5 },
   { id: "best3", name: "三次取最快", attemptCount: 3 },
-  { id: "avg3", name: "三次取平均", attemptCount: 3 },
+  { id: "avg3", name: "五次取平均（预留）", attemptCount: 5 },
   { id: "best1", name: "单次取最快", attemptCount: 1 }
 ] as const;
 
@@ -86,7 +86,9 @@ export function calculateResultByFormat(attempts: ResultValue[], format: WeeklyR
   const best: ResultValue = valid.length > 0 ? Math.min(...valid) : "DNF";
   let average: ResultValue = best;
 
-  if (format === "avg3") {
+  if (format === "best3") {
+    average = valid.length === attempts.length ? best : "DNF";
+  } else if (format === "avg3") {
     average = valid.length === attempts.length ? Math.round(valid.reduce((sum, value) => sum + value, 0) / valid.length) : "DNF";
   }
 

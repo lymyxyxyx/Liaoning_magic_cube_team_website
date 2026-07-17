@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { Pencil, Plus, Save, Trash2, X } from "lucide-react";
-import { getWeeklyAgeGroup, weeklyAgeGroups } from "@/lib/weekly-age-groups";
+import { getWeeklyRankingAgeGroup, weeklyRankingAgeGroups } from "@/lib/weekly-age-groups";
 import type { WeeklyLibraryGender, WeeklyPlayerLibraryEntry } from "@/lib/weekly-player-library";
 
 type DraftPlayer = WeeklyPlayerLibraryEntry;
@@ -362,7 +362,7 @@ function PlayerFields({
         组别
         <select value={getEditableAgeGroup(player)} disabled={Boolean(player.birthDate)} onChange={(event) => onChange(updateManualAgeGroup(player, event.target.value))}>
           <option value="">未填</option>
-          {weeklyAgeGroups.map((group) => (
+          {weeklyRankingAgeGroups.filter((group) => group !== "待补").map((group) => (
             <option value={group} key={group}>
               {group}
             </option>
@@ -408,7 +408,7 @@ function createLibraryPlayerId(name: string) {
 
 function formatPersonalBests(personalBests: DraftPlayer["personalBests"]) {
   if (!personalBests || Object.keys(personalBests).length === 0) return "";
-  const labels: Record<string, string> = { "333": "三", "222": "二", pyram: "金", mirror: "镜", skewb: "枫", allAround: "全能" };
+  const labels: Record<string, string> = { "333": "三", "222": "二", pyram: "金", mirror: "镜", maple: "枫", skewb: "斜", allAround: "全能" };
   return Object.entries(personalBests)
     .map(([eventId, value]) => `${labels[eventId] || eventId} ${value}`)
     .join(" · ");
@@ -420,11 +420,11 @@ function normalizeGender(gender: string): WeeklyLibraryGender {
 }
 
 function getDisplayAgeGroup(player: Pick<DraftPlayer, "birthDate" | "ageGroup">) {
-  return getWeeklyAgeGroup(player.birthDate) || player.ageGroup || "";
+  return player.birthDate || player.ageGroup ? getWeeklyRankingAgeGroup(player.birthDate, player.ageGroup) : "";
 }
 
 function getEditableAgeGroup(player: Pick<DraftPlayer, "birthDate" | "ageGroup">) {
-  return player.birthDate ? getWeeklyAgeGroup(player.birthDate) : player.ageGroup || "";
+  return player.birthDate ? getWeeklyRankingAgeGroup(player.birthDate, player.ageGroup) : player.ageGroup || "";
 }
 
 function isFuzzyAgeGroup(player: Pick<DraftPlayer, "birthDate" | "ageGroup" | "ageGroupIsFuzzy">) {
@@ -451,5 +451,5 @@ function updateManualAgeGroup<T extends Pick<DraftPlayer, "birthDate" | "ageGrou
 
 function normalizeAgeGroup(value: string) {
   const group = value.trim().toUpperCase();
-  return weeklyAgeGroups.includes(group as (typeof weeklyAgeGroups)[number]) ? group : "";
+  return weeklyRankingAgeGroups.includes(group as (typeof weeklyRankingAgeGroups)[number]) && group !== "待补" ? group : "";
 }
