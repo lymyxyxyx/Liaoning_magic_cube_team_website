@@ -426,7 +426,8 @@ export async function listWeeklyResults(meetIdOrSlug: string, eventId: string, f
   return rows.map((row) => {
     const matchedPlayer = eligiblePlayers.find((player) => player.id === row.player_id) || eligiblePlayers.find((player) => player.name === row.player_name);
     const wcaId = row.wca_id || matchedPlayer?.wcaId || "";
-    const rankingAgeGroup = getWeeklyRankingAgeGroup("", row.player_age_group || row.age_group || "", row.meet_starts_at ? new Date(row.meet_starts_at) : new Date());
+    const playerBirthDate = row.player_birth_date || matchedPlayer?.birthDate || "";
+    const rankingAgeGroup = getWeeklyRankingAgeGroup(playerBirthDate, row.player_age_group || row.age_group || "", row.meet_starts_at ? new Date(row.meet_starts_at) : new Date());
     const rank = (rankByGroup.get(rankingAgeGroup) || 0) + 1;
     rankByGroup.set(rankingAgeGroup, rank);
     const attemptValues = (attemptsByResult.get(row.id) || []).map((attempt) => secondsToResultValue(attempt.value));
@@ -442,7 +443,7 @@ export async function listWeeklyResults(meetIdOrSlug: string, eventId: string, f
         gender: row.gender === "女" ? "女" : "男",
         province: row.player_province || matchedPlayer?.province || "辽宁",
         city: row.player_city || matchedPlayer?.city || "",
-        birthDate: row.player_birth_date || "",
+        birthDate: playerBirthDate,
         ageGroup: rankingAgeGroup,
         ageGroupIsFuzzy: false
       },
