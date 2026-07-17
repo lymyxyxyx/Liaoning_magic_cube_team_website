@@ -195,6 +195,10 @@ async function main() {
     await client.query("ALTER TABLE weekly_player_library ADD COLUMN IF NOT EXISTS wca_id TEXT NOT NULL DEFAULT ''");
     await client.query("ALTER TABLE weekly_player_library ADD COLUMN IF NOT EXISTS age_group_override TEXT NOT NULL DEFAULT ''");
     await client.query("ALTER TABLE weekly_player_library ADD COLUMN IF NOT EXISTS age_group_is_fuzzy BOOLEAN NOT NULL DEFAULT FALSE");
+    await client.query("ALTER TABLE weekly_player_library ADD COLUMN IF NOT EXISTS personal_bests JSONB NOT NULL DEFAULT '{}'::jsonb");
+    await client.query("ALTER TABLE weekly_player_library ADD COLUMN IF NOT EXISTS personal_bests_average JSONB NOT NULL DEFAULT '{}'::jsonb");
+    await client.query("ALTER TABLE weekly_player_library ADD COLUMN IF NOT EXISTS personal_bests_base JSONB NOT NULL DEFAULT '{}'::jsonb");
+    await client.query("ALTER TABLE weekly_player_library ADD COLUMN IF NOT EXISTS personal_bests_average_base JSONB NOT NULL DEFAULT '{}'::jsonb");
     await client.query("CREATE INDEX IF NOT EXISTS weekly_player_library_name_idx ON weekly_player_library (name)");
     await client.query("CREATE INDEX IF NOT EXISTS weekly_player_library_wca_id_idx ON weekly_player_library (wca_id)");
 

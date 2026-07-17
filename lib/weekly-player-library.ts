@@ -134,6 +134,8 @@ export async function ensureWeeklyPlayerLibraryTable() {
       source TEXT NOT NULL DEFAULT '',
       personal_bests JSONB NOT NULL DEFAULT '{}'::jsonb,
       personal_bests_average JSONB NOT NULL DEFAULT '{}'::jsonb,
+      personal_bests_base JSONB NOT NULL DEFAULT '{}'::jsonb,
+      personal_bests_average_base JSONB NOT NULL DEFAULT '{}'::jsonb,
       created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
       updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
     )
@@ -143,6 +145,10 @@ export async function ensureWeeklyPlayerLibraryTable() {
   await pool.query("ALTER TABLE weekly_player_library ADD COLUMN IF NOT EXISTS age_group_is_fuzzy BOOLEAN NOT NULL DEFAULT FALSE");
   await pool.query("ALTER TABLE weekly_player_library ADD COLUMN IF NOT EXISTS personal_bests JSONB NOT NULL DEFAULT '{}'::jsonb");
   await pool.query("ALTER TABLE weekly_player_library ADD COLUMN IF NOT EXISTS personal_bests_average JSONB NOT NULL DEFAULT '{}'::jsonb");
+  await pool.query("ALTER TABLE weekly_player_library ADD COLUMN IF NOT EXISTS personal_bests_base JSONB NOT NULL DEFAULT '{}'::jsonb");
+  await pool.query("ALTER TABLE weekly_player_library ADD COLUMN IF NOT EXISTS personal_bests_average_base JSONB NOT NULL DEFAULT '{}'::jsonb");
+  await pool.query("UPDATE weekly_player_library SET personal_bests_base = personal_bests WHERE personal_bests_base = '{}'::jsonb AND personal_bests <> '{}'::jsonb");
+  await pool.query("UPDATE weekly_player_library SET personal_bests_average_base = personal_bests_average WHERE personal_bests_average_base = '{}'::jsonb AND personal_bests_average <> '{}'::jsonb");
   await pool.query("CREATE INDEX IF NOT EXISTS weekly_player_library_name_idx ON weekly_player_library (name)");
   await pool.query("CREATE INDEX IF NOT EXISTS weekly_player_library_wca_id_idx ON weekly_player_library (wca_id)");
 }

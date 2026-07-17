@@ -183,12 +183,12 @@ export async function listWeeklyMeetOptions(): Promise<WeeklyMeetOption[]> {
        FROM weekly_meets
        ORDER BY CASE status WHEN 'open' THEN 0 WHEN 'draft' THEN 1 ELSE 2 END, week_number DESC, created_at DESC`
     );
-    if (rows.length > 0) return withTestMeet(rows);
+    if (rows.length > 0) return withOptionalTestMeet(rows);
   } catch {
     // Local development can run without DATABASE_URL; keep selectors usable from bundled weekly data.
   }
 
-  return withTestMeet(
+  return withOptionalTestMeet(
     weeklyMeets.map((meet) => ({
       id: meet.id,
       slug: meet.slug,
@@ -373,8 +373,10 @@ export async function listWeeklyResults(meetIdOrSlug: string, eventId: string, f
   const pool = getPostgresPool();
   const meet = await resolveWeeklyMeet(meetIdOrSlug);
   if (!meet) throw new Error("周赛不存在");
+  await assertWeeklyEventConfig(pool, meet.id, eventId, formatConfig.id);
 
-  const eventKey = getWeeklyEventKey(meet.id, eventId, formatConfig.id);
+  const eventKeys = [getWeeklyEventKey(meet.id, eventId, formatConfig.id)];
+  if (eventId === "333" && formatConfig.id === "avg5") eventKeys.push("main");
   const { rows } = await pool.query<WeeklyResultRow>(
     `SELECT wr.*, COALESCE(NULLIF(wpl.wca_id, ''), CASE WHEN wr.player_id LIKE 'wca:%' THEN SUBSTRING(wr.player_id FROM 5) ELSE '' END) AS wca_id,
        COALESCE(wpl.birth_date, '') AS player_birth_date,
@@ -383,9 +385,9 @@ export async function listWeeklyResults(meetIdOrSlug: string, eventId: string, f
      FROM weekly_results wr
      LEFT JOIN weekly_player_library wpl ON wpl.id = wr.player_id
      LEFT JOIN weekly_meets wm ON wm.id = wr.meet_id
-     WHERE wr.meet_id = $1 AND wr.event_id = $2
+       WHERE wr.meet_id = $1 AND wr.event_id = ANY($2::text[])
      `,
-    [meet.id, eventKey]
+    [meet.id, eventKeys]
   );
   rows.sort(compareWeeklyResultRows);
   const resultIds = rows.map((row) => row.id);
@@ -397,7 +399,7 @@ export async function listWeeklyResults(meetIdOrSlug: string, eventId: string, f
 
   const rankByGroup = new Map<string, number>();
   return rows.map((row) => {
-    const rankingAgeGroup = getWeeklyRankingAgeGroup(row.player_birth_date || "", row.player_age_group || row.age_group || "", row.meet_starts_at ? new Date(row.meet_starts_at) : new Date());
+    const rankingAgeGroup = getWeeklyRankingAgeGroup("", row.player_age_group || row.age_group || "", row.meet_starts_at ? new Date(row.meet_starts_at) : new Date());
     const rank = (rankByGroup.get(rankingAgeGroup) || 0) + 1;
     rankByGroup.set(rankingAgeGroup, rank);
     const attemptValues = (attemptsByResult.get(row.id) || []).map((attempt) => secondsToResultValue(attempt.value));
@@ -445,12 +447,12 @@ export async function saveWeeklyResult(input: {
   const parsedAttempts = input.attempts.map(parseResultInput);
   const calculated = calculateResultByFormat(parsedAttempts, formatConfig.id);
   await ensureWeeklyEntryTables();
+  await ensureWeeklyPlayerLibraryTable();
   const meet = input.meetId === testWeeklyMeet.id ? await ensureTestWeeklyMeet() : await resolveWeeklyMeet(input.meetId);
   if (!meet) throw new Error("周赛不存在");
 
   const pool = getPostgresPool();
   const client = await pool.connect();
-  const eventKey = getWeeklyEventKey(meet.id, input.eventId, formatConfig.id);
   const eventName = getWcaEventName(input.eventId);
   const playerName = input.player.name.trim();
   const playerSlug = input.player.slug || (input.player.id.startsWith("code:") ? input.player.id.slice(5) : "");
@@ -459,6 +461,8 @@ export async function saveWeeklyResult(input: {
 
   try {
     await client.query("BEGIN");
+    await assertWeeklyEventConfig(client, meet.id, input.eventId, formatConfig.id);
+    const eventKey = await resolveWeeklyEventKey(client, meet.id, input.eventId, formatConfig.id);
     const playerLibrary = await client.query<{ personal_bests: WeeklyPersonalBests | null; personal_bests_average: WeeklyPersonalBests | null }>(
       "SELECT personal_bests, personal_bests_average FROM weekly_player_library WHERE id = $1 FOR UPDATE",
       [input.player.id]
@@ -471,16 +475,6 @@ export async function saveWeeklyResult(input: {
     const currentAverage = resultValueToSeconds(calculated.average);
     const pbRefreshed = currentBest >= 0 && (previousPersonalBest === null || currentBest < previousPersonalBest);
     const pbAverageRefreshed = currentAverage >= 0 && (previousAveragePersonalBest === null || currentAverage < previousAveragePersonalBest);
-    if ((pbRefreshed || pbAverageRefreshed) && playerLibrary.rows.length > 0) {
-      await client.query(
-        `UPDATE weekly_player_library
-         SET personal_bests = CASE WHEN $5 THEN COALESCE(personal_bests, '{}'::jsonb) || jsonb_build_object($1, $2) ELSE COALESCE(personal_bests, '{}'::jsonb) END,
-             personal_bests_average = CASE WHEN $6 THEN COALESCE(personal_bests_average, '{}'::jsonb) || jsonb_build_object($1, $3) ELSE COALESCE(personal_bests_average, '{}'::jsonb) END,
-             updated_at = now()
-         WHERE id = $4`,
-        [pbEventId, currentBest, currentAverage, input.player.id, pbRefreshed, pbAverageRefreshed]
-      );
-    }
     await client.query(
       `INSERT INTO weekly_events (id, meet_id, kind, title, event_name, group_name, is_all_around, format, attempt_count, seq)
        VALUES ($1,$2,$3,$4,$5,NULL,FALSE,$6,$7,$8)
@@ -552,6 +546,8 @@ export async function saveWeeklyResult(input: {
       ]);
     }
 
+    await refreshWeeklyPlayerPersonalBest(client, input.player.id, input.eventId, pbEventId);
+
     await rerankWeeklyEvent(client, meet.id, eventKey);
     await client.query("COMMIT");
     return calculated;
@@ -580,21 +576,24 @@ export async function correctWeeklyResult(input: {
   const parsedAttempts = input.attempts.map(parseResultInput);
   const calculated = calculateResultByFormat(parsedAttempts, formatConfig.id);
   await ensureWeeklyEntryTables();
+  await ensureWeeklyPlayerLibraryTable();
 
   const pool = getPostgresPool();
   const client = await pool.connect();
   try {
     await client.query("BEGIN");
-    const result = await client.query<{ id: number; meet_id: string; event_id: string; average: string }>(
-      "SELECT id, meet_id, event_id, average FROM weekly_results WHERE id = $1 FOR UPDATE",
+    const result = await client.query<{ id: number; meet_id: string; event_id: string; player_id: string | null; average: string }>(
+      "SELECT id, meet_id, event_id, player_id, average FROM weekly_results WHERE id = $1 FOR UPDATE",
       [input.resultId]
     );
     if (!result.rows[0]) throw new Error("成绩不存在或已被删除");
+    const storedFormat = getStoredFormat(result.rows[0].event_id);
+    if (storedFormat !== formatConfig.id) throw new Error("修改赛制与原成绩不一致");
 
     const previousAttempts = await readWeeklyAttempts(client, input.resultId);
     await client.query(
       `UPDATE weekly_results
-       SET average = $1, personal_best = $2, source = 'admin', updated_at = now()
+       SET average = $1, personal_best = $2, pb_refreshed = FALSE, pb_average_refreshed = FALSE, source = 'admin', updated_at = now()
        WHERE id = $3`,
       [resultValueToSeconds(calculated.average), resultValueToSeconds(calculated.best), input.resultId]
     );
@@ -613,6 +612,10 @@ export async function correctWeeklyResult(input: {
         resultValueToSeconds(calculated.average)
       ]
     );
+    if (result.rows[0].player_id) {
+      const eventId = getEventIdFromStoredKey(result.rows[0].event_id);
+      await refreshWeeklyPlayerPersonalBest(client, result.rows[0].player_id, eventId, getPersonalBestEventId(eventId));
+    }
     await rerankWeeklyEvent(client, result.rows[0].meet_id, result.rows[0].event_id);
     await client.query("COMMIT");
     return calculated;
@@ -629,12 +632,13 @@ export async function deleteWeeklyResult(input: { resultId: number; reason: stri
   if (!reason) throw new Error("请填写删除原因");
 
   await ensureWeeklyEntryTables();
+  await ensureWeeklyPlayerLibraryTable();
   const pool = getPostgresPool();
   const client = await pool.connect();
   try {
     await client.query("BEGIN");
-    const result = await client.query<{ id: number; meet_id: string; event_id: string; average: string }>(
-      "SELECT id, meet_id, event_id, average FROM weekly_results WHERE id = $1 FOR UPDATE",
+    const result = await client.query<{ id: number; meet_id: string; event_id: string; player_id: string | null; average: string }>(
+      "SELECT id, meet_id, event_id, player_id, average FROM weekly_results WHERE id = $1 FOR UPDATE",
       [input.resultId]
     );
     if (!result.rows[0]) throw new Error("成绩不存在或已被删除");
@@ -647,6 +651,10 @@ export async function deleteWeeklyResult(input: { resultId: number; reason: stri
       [input.resultId, reason, JSON.stringify(previousAttempts.map(formatResult)), result.rows[0].average]
     );
     await client.query("DELETE FROM weekly_results WHERE id = $1", [input.resultId]);
+    if (result.rows[0].player_id) {
+      const eventId = getEventIdFromStoredKey(result.rows[0].event_id);
+      await refreshWeeklyPlayerPersonalBest(client, result.rows[0].player_id, eventId, getPersonalBestEventId(eventId));
+    }
     await rerankWeeklyEvent(client, result.rows[0].meet_id, result.rows[0].event_id);
     await client.query("COMMIT");
   } catch (error) {
@@ -712,7 +720,7 @@ async function rerankWeeklyEvent(client: PoolClient, meetId: string, eventId: st
   rows.sort(compareWeeklyResultRows);
   const rankByGroup = new Map<string, number>();
   for (const row of rows) {
-    const group = getWeeklyRankingAgeGroup(row.birth_date || "", row.age_group || "", row.starts_at ? new Date(row.starts_at) : new Date());
+    const group = getWeeklyRankingAgeGroup("", row.age_group || "", row.starts_at ? new Date(row.starts_at) : new Date());
     const rank = (rankByGroup.get(group) || 0) + 1;
     rankByGroup.set(group, rank);
     await client.query("UPDATE weekly_results SET rank = $1 WHERE id = $2", [rank, row.id]);
@@ -723,8 +731,8 @@ function compareWeeklyResultRows(
   a: { player_name: string; average: string; personal_best: string; age_group: string | null; player_birth_date?: string | null; birth_date?: string | null; player_age_group?: string | null; meet_starts_at?: string | null },
   b: { player_name: string; average: string; personal_best: string; age_group: string | null; player_birth_date?: string | null; birth_date?: string | null; player_age_group?: string | null; meet_starts_at?: string | null }
 ) {
-  const groupA = getWeeklyRankingAgeGroup(a.player_birth_date || a.birth_date || "", a.player_age_group || a.age_group || "", a.meet_starts_at ? new Date(a.meet_starts_at) : new Date());
-  const groupB = getWeeklyRankingAgeGroup(b.player_birth_date || b.birth_date || "", b.player_age_group || b.age_group || "", b.meet_starts_at ? new Date(b.meet_starts_at) : new Date());
+  const groupA = getWeeklyRankingAgeGroup("", a.player_age_group || a.age_group || "", a.meet_starts_at ? new Date(a.meet_starts_at) : new Date());
+  const groupB = getWeeklyRankingAgeGroup("", b.player_age_group || b.age_group || "", b.meet_starts_at ? new Date(b.meet_starts_at) : new Date());
   return getWeeklyRankingAgeGroupOrder(groupA) - getWeeklyRankingAgeGroupOrder(groupB) || compareResultScore(a, b) || a.player_name.localeCompare(b.player_name, "zh-CN");
 }
 
@@ -786,10 +794,13 @@ async function saveWeeklyMeetEventConfigs(client: Pick<PoolClient, "query">, mee
   await client.query("DELETE FROM weekly_meet_event_configs WHERE meet_id = $1", [meetId]);
   for (const [index, config] of configs.entries()) {
     if (!isWcaEventId(config.eventId)) throw new Error("项目不正确");
+    const format = getWeeklyResultFormat(config.format).id;
+    if (config.eventId === "individual" && format !== "best1") throw new Error("个人全能只允许使用单次赛制");
+    if (config.eventId !== "individual" && format === "best1") throw new Error("常规项目不能使用单次赛制");
     await client.query(
       `INSERT INTO weekly_meet_event_configs (meet_id, event_id, format, enabled, seq)
        VALUES ($1,$2,$3,$4,$5)`,
-      [meetId, config.eventId, getWeeklyResultFormat(config.format).id, config.enabled, config.seq ?? index]
+      [meetId, config.eventId, format, config.enabled, config.seq ?? index]
     );
   }
 }
@@ -804,6 +815,88 @@ function getIsoWeek(date: Date) {
 
 function getWeeklyEventKey(meetId: string, eventId: string, format: string) {
   return `${meetId}-wca-${eventId}-${format}`;
+}
+
+async function assertWeeklyEventConfig(client: Pick<PoolClient, "query">, meetId: string, eventId: string, format: WeeklyResultFormat) {
+  const configured = await client.query<{ event_id: string; format: string; enabled: boolean }>(
+    "SELECT event_id, format, enabled FROM weekly_meet_event_configs WHERE meet_id = $1",
+    [meetId]
+  );
+  const configRows = configured.rows;
+  const config = configRows.length > 0
+    ? configRows.find((row) => row.event_id === eventId)
+    : defaultWeeklyMeetEventConfigs().find((item) => item.eventId === eventId);
+  if (!config || !config.enabled) throw new Error("本项目未在本场周赛开放");
+  if (getWeeklyResultFormat(config.format).id !== format) throw new Error("本项目赛制与周赛配置不一致");
+}
+
+async function resolveWeeklyEventKey(client: Pick<PoolClient, "query">, meetId: string, eventId: string, format: WeeklyResultFormat) {
+  if (eventId === "333" && format === "avg5") {
+    const legacy = await client.query("SELECT 1 FROM weekly_events WHERE meet_id = $1 AND id = 'main' LIMIT 1", [meetId]);
+    if (legacy.rowCount) return "main";
+  }
+  return getWeeklyEventKey(meetId, eventId, format);
+}
+
+function getEventIdFromStoredKey(eventKey: string) {
+  if (eventKey === "main") return "333";
+  const match = eventKey.match(/-wca-([^-]+)-/);
+  if (!match || !isWcaEventId(match[1])) throw new Error("成绩项目不正确");
+  return match[1];
+}
+
+async function refreshWeeklyPlayerPersonalBest(
+  client: Pick<PoolClient, "query">,
+  playerId: string,
+  eventId: string,
+  pbEventId: keyof WeeklyPersonalBests
+) {
+  const library = await client.query<{
+    personal_bests: WeeklyPersonalBests | null;
+    personal_bests_average: WeeklyPersonalBests | null;
+    personal_bests_base: WeeklyPersonalBests | null;
+    personal_bests_average_base: WeeklyPersonalBests | null;
+  }>(
+    "SELECT personal_bests, personal_bests_average, personal_bests_base, personal_bests_average_base FROM weekly_player_library WHERE id = $1 FOR UPDATE",
+    [playerId]
+  );
+  if (!library.rows[0]) return;
+
+  const row = library.rows[0];
+  const baseBest = row.personal_bests_base && Object.keys(row.personal_bests_base).length > 0 ? row.personal_bests_base : row.personal_bests || {};
+  const baseAverage = row.personal_bests_average_base && Object.keys(row.personal_bests_average_base).length > 0 ? row.personal_bests_average_base : row.personal_bests_average || {};
+  const results = await client.query<{ personal_best: string; average: string }>(
+    `SELECT personal_best, average
+     FROM weekly_results
+     WHERE player_id = $1
+       AND (event_id LIKE $2 OR ($3 AND event_id = 'main'))`,
+    [playerId, `%-wca-${eventId}-%`, eventId === "333"]
+  );
+  const resultBest = results.rows.map((item) => Number(item.personal_best)).filter((value) => Number.isFinite(value) && value >= 0);
+  const resultAverage = results.rows.map((item) => Number(item.average)).filter((value) => Number.isFinite(value) && value >= 0);
+  const bestCandidates = [Number(baseBest[pbEventId]), ...resultBest].filter((value) => Number.isFinite(value) && value > 0);
+  const averageCandidates = [Number(baseAverage[pbEventId]), ...resultAverage].filter((value) => Number.isFinite(value) && value > 0);
+  const nextBest = { ...(row.personal_bests || {}) };
+  const nextAverage = { ...(row.personal_bests_average || {}) };
+  if (bestCandidates.length > 0) nextBest[pbEventId] = Math.min(...bestCandidates);
+  else delete nextBest[pbEventId];
+  if (averageCandidates.length > 0) nextAverage[pbEventId] = Math.min(...averageCandidates);
+  else delete nextAverage[pbEventId];
+  await client.query(
+    `UPDATE weekly_player_library
+     SET personal_bests = $1::jsonb, personal_bests_average = $2::jsonb,
+         personal_bests_base = CASE WHEN personal_bests_base = '{}'::jsonb THEN $4::jsonb ELSE personal_bests_base END,
+         personal_bests_average_base = CASE WHEN personal_bests_average_base = '{}'::jsonb THEN $5::jsonb ELSE personal_bests_average_base END,
+         updated_at = now()
+     WHERE id = $3`,
+    [JSON.stringify(nextBest), JSON.stringify(nextAverage), playerId, JSON.stringify(baseBest), JSON.stringify(baseAverage)]
+  );
+}
+
+function getStoredFormat(eventKey: string): WeeklyResultFormat {
+  if (eventKey === "main") return "avg5";
+  const format = eventKey.split("-").at(-1);
+  return getWeeklyResultFormat(format).id;
 }
 
 function mapPlayerRow(row: WeeklyPlayerRow): WeeklyPlayer {
@@ -835,8 +928,8 @@ function eventOrder(eventId: string) {
   return index >= 0 ? index : 100;
 }
 
-function withTestMeet(meets: WeeklyMeetOption[]) {
-  return [testWeeklyMeet];
+function withOptionalTestMeet(meets: WeeklyMeetOption[]) {
+  return process.env.WEEKLY_TEST_MODE === "true" ? [testWeeklyMeet, ...meets] : meets;
 }
 
 function groupBy<T, K>(items: T[], key: (item: T) => K): Map<K, T[]> {
