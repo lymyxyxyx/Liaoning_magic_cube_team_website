@@ -1,7 +1,7 @@
 "use client";
 
 import { Pencil, RefreshCw, Save, Search, Trash2, X } from "lucide-react";
-import type { KeyboardEvent } from "react";
+import type { CSSProperties, KeyboardEvent } from "react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { getWeeklyAgeGroup } from "@/lib/weekly-age-groups";
 import {
@@ -59,6 +59,27 @@ type Props = {
 
 const emptyAttempts = ["", "", "", "", ""];
 const testMeetId = "weekly-test-entry";
+
+// Keep these critical layout values inline for the public entry page. This makes
+// the score fields resilient when an embedded browser temporarily keeps an old
+// stylesheet after a deployment.
+const publicAttemptRowStyle: CSSProperties = { display: "flex", alignItems: "stretch", minHeight: 36 };
+const publicAttemptNumberStyle: CSSProperties = { flex: "0 0 34px", minHeight: 34 };
+const publicAttemptInputStyle: CSSProperties = {
+  display: "block",
+  flex: "1 1 auto",
+  width: 0,
+  minWidth: 0,
+  minHeight: 34,
+  height: 34,
+  padding: "2px 7px",
+  appearance: "none",
+  WebkitAppearance: "none",
+  border: 0,
+  borderRadius: 0,
+  background: "transparent",
+  boxShadow: "none"
+};
 
 export function WeeklyResultEntryConsole({ initialMeets, initialPlayers = [], events, initialEventConfigs = [], variant = "full", mode = "admin" }: Props) {
   const defaultMeetId = mode === "public" ? initialMeets.find((meet) => meet.id !== testMeetId)?.id || initialMeets[0]?.id || "" : initialMeets[0]?.id || "";
@@ -526,8 +547,8 @@ export function WeeklyResultEntryConsole({ initialMeets, initialPlayers = [], ev
 
           <div className="weekly-attempt-grid">
             {attempts.map((attempt, index) => (
-              <label key={index}>
-                <span>{index + 1}.</span>
+              <label key={index} style={isPublicMode ? publicAttemptRowStyle : undefined}>
+                <span style={isPublicMode ? publicAttemptNumberStyle : undefined}>{index + 1}.</span>
                 <input
                   ref={(node) => {
                     attemptRefs.current[index] = node;
@@ -536,6 +557,7 @@ export function WeeklyResultEntryConsole({ initialMeets, initialPlayers = [], ev
                   onChange={(event) => updateAttempt(index, event.target.value)}
                   onKeyDown={(event) => handleAttemptKeyDown(event, index)}
                   placeholder="00:00.00"
+                  style={isPublicMode ? publicAttemptInputStyle : undefined}
                 />
               </label>
             ))}
