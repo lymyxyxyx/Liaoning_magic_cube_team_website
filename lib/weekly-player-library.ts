@@ -350,12 +350,18 @@ function mergeWeeklyEligiblePlayers(wcaPlayers: WeeklyPlayerLibraryEntry[], libr
     if (existingIndex !== undefined) {
       const existing = merged[existingIndex];
       if (existing.wcaId || !wcaId) {
-        if (existing.wcaId && Object.keys(player.personalBests || {}).length > 0) {
+        if (existing.wcaId) {
           merged[existingIndex] = {
             ...existing,
-            personalBests: player.personalBests,
-            personalBestAverages: player.personalBestAverages,
-            source: existing.source.includes("个人PB.xlsx") ? existing.source : `${existing.source}；个人PB.xlsx`
+            gender: existing.gender || player.gender,
+            birthDate: player.birthDate || existing.birthDate,
+            ageGroup: player.ageGroup || existing.ageGroup,
+            ageGroupIsFuzzy: player.ageGroupIsFuzzy || existing.ageGroupIsFuzzy,
+            province: player.province || existing.province,
+            city: player.city || existing.city,
+            personalBests: Object.keys(player.personalBests || {}).length > 0 ? player.personalBests : existing.personalBests,
+            personalBestAverages: Object.keys(player.personalBestAverages || {}).length > 0 ? player.personalBestAverages : existing.personalBestAverages,
+            source: player.source && !existing.source.includes(player.source) ? `${existing.source}；${player.source}` : existing.source
           };
         }
         continue;
