@@ -38,11 +38,11 @@ export default async function WeeklyResultsEntryPage() {
       <PageHero
         className="page-hero--compact weekly-results-page-hero"
         label="周赛成绩"
-        title="立即参加"
+        title="管理员录入"
       >
-        默认录入当前周赛，选择项目和赛制后输入成绩。
+        周赛暂不开放选手自行录入；管理员可录入、修正和删除本周成绩。
       </PageHero>
-      <WeeklyResultEntryConsole initialMeets={meets} initialPlayers={players} events={events} initialEventConfigs={eventConfigs} mode="public" />
+      <WeeklyResultEntryConsole initialMeets={meets} initialPlayers={players} events={events} initialEventConfigs={eventConfigs} mode="admin" />
     </>
   );
 }

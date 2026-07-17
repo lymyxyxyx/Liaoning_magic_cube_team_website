@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createSessionToken } from "@/lib/auth";
+import { judgeEditPassword } from "@/lib/judge-auth";
 
-const weeklyAccessCookieName = "liaoning_weekly_access";
+const weeklyAdminCookieName = "liaoning_weekly_session";
 
 function isSecureRequest(request: NextRequest) {
   return request.nextUrl.protocol === "https:" || request.headers.get("x-forwarded-proto") === "https";
@@ -26,11 +27,11 @@ function getSafeNextPath(value: FormDataEntryValue | null) {
 
 export async function POST(request: NextRequest) {
   const formData = await request.formData();
-  const inviteCode = String(formData.get("inviteCode") || "");
-  const expectedInviteCode = process.env.WEEKLY_INVITE_CODE || "";
+  const password = String(formData.get("password") || "");
+  const weeklyAdminPassword = process.env.WEEKLY_ADMIN_PASSWORD || judgeEditPassword;
   const nextPath = getSafeNextPath(formData.get("next"));
 
-  if (!timingSafeStringEqual(inviteCode, expectedInviteCode)) {
+  if (!timingSafeStringEqual(password, weeklyAdminPassword)) {
     const errorUrl = request.nextUrl.clone();
     errorUrl.pathname = "/weekly/access";
     errorUrl.search = "";
@@ -39,9 +40,9 @@ export async function POST(request: NextRequest) {
     return NextResponse.redirect(errorUrl, { status: 303 });
   }
 
-  const token = await createSessionToken(expectedInviteCode);
+  const token = await createSessionToken(weeklyAdminPassword);
   const response = new NextResponse(null, { status: 303, headers: { Location: nextPath } });
-  response.cookies.set(weeklyAccessCookieName, token, {
+  response.cookies.set(weeklyAdminCookieName, token, {
     httpOnly: true,
     sameSite: "lax",
     secure: isSecureRequest(request),

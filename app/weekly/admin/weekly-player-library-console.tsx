@@ -172,7 +172,7 @@ export function WeeklyPlayerLibraryConsole({
       <div className="admin-workspace-heading">
         <div>
           <h1>周赛选手库</h1>
-          <p>独立于历史周赛姓名和 WCA 选手库，只在网站后台维护。当前基底来自 mofang123 第334周三阶表姓名识别。</p>
+          <p>整合 WCA 辽宁选手、既有周赛基底与个人 PB 表；同名选手会合并为同一条资料。</p>
         </div>
         <span className="status">{status}</span>
       </div>
@@ -191,6 +191,10 @@ export function WeeklyPlayerLibraryConsole({
           <span>匹配资料</span>
         </div>
         <div className="stat">
+          <strong>{players.filter((player) => Object.keys(player.personalBests || {}).length > 0).length}</strong>
+          <span>已录个人 PB</span>
+        </div>
+        <div className="stat">
           <strong>{players.filter((player) => getDisplayAgeGroup(player)).length}</strong>
           <span>已填组别</span>
         </div>
@@ -205,7 +209,7 @@ export function WeeklyPlayerLibraryConsole({
           <div className="admin-card-heading">
             <div>
               <h2>资料编辑</h2>
-              <p>WCA ID 和城市只匹配后台已录入的辽宁选手，匹配不到留空。</p>
+              <p>WCA ID、城市和个人 PB 会在导入后自动合并；匹配不到的姓名会作为新选手保留。</p>
             </div>
             <div className="weekly-library-toolbar">
               <input className="weekly-library-search" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="搜索姓名 / 省市" />
@@ -227,6 +231,7 @@ export function WeeklyPlayerLibraryConsole({
                   <th>序号</th>
                   <th>姓名</th>
                   <th>WCA ID</th>
+                  <th>个人 PB</th>
                   <th>性别</th>
                   <th>出生日期</th>
                   <th>组别</th>
@@ -245,6 +250,7 @@ export function WeeklyPlayerLibraryConsole({
                       <strong>{player.name}</strong>
                     </td>
                     <td data-label="WCA ID">{player.wcaId || ""}</td>
+                    <td data-label="个人 PB">{formatPersonalBests(player.personalBests)}</td>
                     <td data-label="性别">{player.gender || ""}</td>
                     <td data-label="出生日期">{player.birthDate || ""}</td>
                     <td data-label="组别">
@@ -398,6 +404,14 @@ function createLibraryPlayerId(name: string) {
       .replace(/[^a-z0-9\u4e00-\u9fa5]+/g, "-")
       .replace(/^-+|-+$/g, "") || Date.now().toString(36);
   return `weekly-library-${base}-${Math.random().toString(36).slice(2, 8)}`;
+}
+
+function formatPersonalBests(personalBests: DraftPlayer["personalBests"]) {
+  if (!personalBests || Object.keys(personalBests).length === 0) return "";
+  const labels: Record<string, string> = { "333": "三", "222": "二", pyram: "金", mirror: "镜", skewb: "枫", allAround: "全能" };
+  return Object.entries(personalBests)
+    .map(([eventId, value]) => `${labels[eventId] || eventId} ${value}`)
+    .join(" · ");
 }
 
 function normalizeGender(gender: string): WeeklyLibraryGender {

@@ -4,6 +4,7 @@ import { commercialTeamMembers } from "@/lib/commercial-teams";
 import { getWeeklyAgeGroup, weeklyAgeGroups } from "@/lib/weekly-age-groups";
 
 export type WeeklyLibraryGender = "" | "男" | "女";
+export type WeeklyPersonalBests = Partial<Record<"333" | "222" | "pyram" | "mirror" | "skewb" | "allAround", number>>;
 
 export type WeeklyPlayerLibraryEntry = {
   id: string;
@@ -16,6 +17,7 @@ export type WeeklyPlayerLibraryEntry = {
   province: string;
   city: string;
   source: string;
+  personalBests?: WeeklyPersonalBests;
   updatedAt?: string;
 };
 
@@ -30,6 +32,7 @@ type WeeklyPlayerLibraryRow = {
   province: string;
   city: string;
   source: string;
+  personal_bests: WeeklyPersonalBests | null;
   updated_at: string;
 };
 
@@ -127,6 +130,7 @@ export async function ensureWeeklyPlayerLibraryTable() {
       province TEXT NOT NULL DEFAULT '',
       city TEXT NOT NULL DEFAULT '',
       source TEXT NOT NULL DEFAULT '',
+      personal_bests JSONB NOT NULL DEFAULT '{}'::jsonb,
       created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
       updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
     )
@@ -134,6 +138,7 @@ export async function ensureWeeklyPlayerLibraryTable() {
   await pool.query("ALTER TABLE weekly_player_library ADD COLUMN IF NOT EXISTS wca_id TEXT NOT NULL DEFAULT ''");
   await pool.query("ALTER TABLE weekly_player_library ADD COLUMN IF NOT EXISTS age_group_override TEXT NOT NULL DEFAULT ''");
   await pool.query("ALTER TABLE weekly_player_library ADD COLUMN IF NOT EXISTS age_group_is_fuzzy BOOLEAN NOT NULL DEFAULT FALSE");
+  await pool.query("ALTER TABLE weekly_player_library ADD COLUMN IF NOT EXISTS personal_bests JSONB NOT NULL DEFAULT '{}'::jsonb");
   await pool.query("CREATE INDEX IF NOT EXISTS weekly_player_library_name_idx ON weekly_player_library (name)");
   await pool.query("CREATE INDEX IF NOT EXISTS weekly_player_library_wca_id_idx ON weekly_player_library (wca_id)");
 }
@@ -145,7 +150,7 @@ export async function listWeeklyPlayerLibrary(): Promise<WeeklyPlayerLibraryEntr
 
   const pool = getPostgresPool();
   const { rows } = await pool.query<WeeklyPlayerLibraryRow>(
-    `SELECT id, name, wca_id, gender, birth_date, age_group_override, age_group_is_fuzzy, province, city, source, updated_at
+    `SELECT id, name, wca_id, gender, birth_date, age_group_override, age_group_is_fuzzy, province, city, source, personal_bests, updated_at
      FROM weekly_player_library
      ORDER BY name`
   );
@@ -193,7 +198,7 @@ export async function findWeeklyPlayerLibraryEntry(input: { id?: string; name?: 
 
   const pool = getPostgresPool();
   const { rows } = await pool.query<WeeklyPlayerLibraryRow>(
-    `SELECT id, name, wca_id, gender, birth_date, age_group_override, age_group_is_fuzzy, province, city, source, updated_at
+    `SELECT id, name, wca_id, gender, birth_date, age_group_override, age_group_is_fuzzy, province, city, source, personal_bests, updated_at
      FROM weekly_player_library
      WHERE id = $1 OR name = $2
      LIMIT 1`,
@@ -218,8 +223,8 @@ export async function saveWeeklyPlayerLibrary(players: WeeklyPlayerLibraryEntry[
     for (const player of normalizedPlayers) {
       await client.query(
         `INSERT INTO weekly_player_library
-          (id, name, wca_id, gender, birth_date, age_group_override, age_group_is_fuzzy, province, city, source, updated_at)
-         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,now())
+          (id, name, wca_id, gender, birth_date, age_group_override, age_group_is_fuzzy, province, city, source, personal_bests, updated_at)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11::jsonb,now())
          ON CONFLICT (id) DO UPDATE
            SET name = EXCLUDED.name,
                wca_id = EXCLUDED.wca_id,
@@ -230,6 +235,7 @@ export async function saveWeeklyPlayerLibrary(players: WeeklyPlayerLibraryEntry[
                province = EXCLUDED.province,
                city = EXCLUDED.city,
                source = EXCLUDED.source,
+               personal_bests = EXCLUDED.personal_bests,
                updated_at = now()`,
         [
           player.id,
@@ -241,7 +247,8 @@ export async function saveWeeklyPlayerLibrary(players: WeeklyPlayerLibraryEntry[
           Boolean(player.ageGroupIsFuzzy),
           player.province,
           player.city,
-          player.source
+          player.source,
+          JSON.stringify(player.personalBests || {})
         ]
       );
     }
@@ -273,7 +280,8 @@ function normalizePlayers(players: WeeklyPlayerLibraryEntry[]) {
         ageGroupIsFuzzy: !player.birthDate.trim() && (Boolean(player.ageGroupIsFuzzy) || Boolean(player.ageGroup)),
         province: player.province.trim(),
         city: player.city.trim(),
-        source: player.source.trim()
+        source: player.source.trim(),
+        personalBests: normalizePersonalBests(player.personalBests)
       };
     })
     .filter((player) => player.name)
@@ -334,8 +342,21 @@ function mergeWeeklyEligiblePlayers(wcaPlayers: WeeklyPlayerLibraryEntry[], libr
     const existingIndex = indexByName.get(name);
     if (existingIndex !== undefined) {
       const existing = merged[existingIndex];
-      if (existing.wcaId || !wcaId) continue;
-      merged[existingIndex] = { ...player, wcaId };
+      if (existing.wcaId || !wcaId) {
+        if (existing.wcaId && Object.keys(player.personalBests || {}).length > 0) {
+          merged[existingIndex] = {
+            ...existing,
+            personalBests: player.personalBests,
+            source: existing.source.includes("个人PB.xlsx") ? existing.source : `${existing.source}；个人PB.xlsx`
+          };
+        }
+        continue;
+      }
+      merged[existingIndex] = {
+        ...player,
+        wcaId,
+        personalBests: existing.personalBests || player.personalBests || {}
+      };
       seenWcaIds.add(wcaId);
       continue;
     }
@@ -472,6 +493,7 @@ function mapLibraryRow(row: WeeklyPlayerLibraryRow): WeeklyPlayerLibraryEntry {
     province: row.province || "",
     city: row.city || "",
     source: row.source || "",
+    personalBests: normalizePersonalBests(row.personal_bests || {}),
     updatedAt: row.updated_at
   };
 }
@@ -486,6 +508,17 @@ function normalizeAgeGroup(ageGroup: string, birthDate: string) {
   if (calculated) return "";
   const value = ageGroup.trim().toUpperCase();
   return weeklyAgeGroups.includes(value as (typeof weeklyAgeGroups)[number]) ? value : "";
+}
+
+function normalizePersonalBests(value: unknown): WeeklyPersonalBests {
+  if (!value || typeof value !== "object") return {};
+  const input = value as Record<string, unknown>;
+  const next: WeeklyPersonalBests = {};
+  for (const eventId of ["333", "222", "pyram", "mirror", "skewb", "allAround"] as const) {
+    const score = Number(input[eventId]);
+    if (Number.isFinite(score) && score > 0) next[eventId] = score;
+  }
+  return next;
 }
 
 function createSeedId(name: string) {

@@ -3,7 +3,7 @@ import { verifySessionToken } from "@/lib/auth";
 
 const adminCookieName = "liaoning_admin_session";
 const adminNextCookieName = "liaoning_admin_next";
-const weeklyAccessCookieName = "liaoning_weekly_access";
+const weeklyAdminCookieName = "liaoning_weekly_session";
 
 async function hasAdminSession(request: NextRequest) {
   const token = request.cookies.get(adminCookieName)?.value;
@@ -11,8 +11,8 @@ async function hasAdminSession(request: NextRequest) {
   return verifySessionToken(token);
 }
 
-async function hasWeeklyAccessSession(request: NextRequest) {
-  const token = request.cookies.get(weeklyAccessCookieName)?.value;
+async function hasWeeklyAdminSession(request: NextRequest) {
+  const token = request.cookies.get(weeklyAdminCookieName)?.value;
   if (!token) return false;
   return verifySessionToken(token);
 }
@@ -25,12 +25,13 @@ export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
   const host = request.headers.get("host") || "";
 
-  const isWeeklyPublicPage = pathname.startsWith("/weekly") && !pathname.startsWith("/weekly/access") && !pathname.startsWith("/weekly/admin");
-  const isWeeklyPublicApi = pathname === "/api/weekly-competitions" || pathname.startsWith("/api/weekly-competitions/");
+  const isWeeklyPage = pathname.startsWith("/weekly") && !pathname.startsWith("/weekly/access") && !pathname.startsWith("/weekly/admin");
+  const isWeeklyApi = pathname === "/api/weekly-competitions" || pathname.startsWith("/api/weekly-competitions/");
+  const isWeeklyAdminApi = pathname.startsWith("/api/admin/weekly-");
 
-  if ((isWeeklyPublicPage || isWeeklyPublicApi) && !(await hasWeeklyAccessSession(request))) {
-    if (isWeeklyPublicApi) {
-      return NextResponse.json({ message: "请先输入周赛邀请码" }, { status: 401 });
+  if ((isWeeklyPage || isWeeklyApi) && !(await hasWeeklyAdminSession(request))) {
+    if (isWeeklyApi) {
+      return NextResponse.json({ message: "请先登录周赛管理员账号" }, { status: 401 });
     }
 
     const accessUrl = request.nextUrl.clone();
@@ -38,6 +39,10 @@ export async function proxy(request: NextRequest) {
     accessUrl.search = "";
     accessUrl.searchParams.set("next", `${pathname}${request.nextUrl.search}`);
     return NextResponse.redirect(accessUrl);
+  }
+
+  if (isWeeklyAdminApi && !(await hasWeeklyAdminSession(request))) {
+    return NextResponse.json({ message: "请先登录周赛管理员账号" }, { status: 401 });
   }
 
   if (host === "www.lncubing.com" && pathname.startsWith("/admin")) {
@@ -73,7 +78,7 @@ export async function proxy(request: NextRequest) {
     return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
   }
 
-  if (pathname.startsWith("/api/admin") && !(await hasAdminSession(request))) {
+  if (pathname.startsWith("/api/admin") && !isWeeklyAdminApi && !(await hasAdminSession(request))) {
     return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
   }
 
