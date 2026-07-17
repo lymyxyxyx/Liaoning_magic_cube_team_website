@@ -117,6 +117,9 @@ export function WeeklyResultEntryConsole({ initialMeets, initialPlayers = [], ev
   const [deleteTarget, setDeleteTarget] = useState<EnteredResult | null>(null);
   const [deleteReason, setDeleteReason] = useState<(typeof deleteReasonOptions)[number]>(deleteReasonOptions[0]);
   const [deleteCustomReason, setDeleteCustomReason] = useState("");
+  const [isPlayerEditorOpen, setIsPlayerEditorOpen] = useState(false);
+  const [playerDraft, setPlayerDraft] = useState<WeeklyPlayer | null>(null);
+  const [isSavingPlayer, setIsSavingPlayer] = useState(false);
   const attemptRefs = useRef<Array<HTMLInputElement | null>>([]);
   const playerInputRef = useRef<HTMLInputElement | null>(null);
   const selectedFormatConfig = getWeeklyResultFormat(selectedFormat);
@@ -416,6 +419,56 @@ export function WeeklyResultEntryConsole({ initialMeets, initialPlayers = [], ev
     setPlayers([player]);
   }
 
+  function openPlayerEditor(player: WeeklyPlayer) {
+    setPlayerDraft({ ...player });
+    setIsPlayerEditorOpen(true);
+  }
+
+  function savePlayerDetails() {
+    if (!playerDraft || !playerDraft.name.trim()) return;
+    setIsSavingPlayer(true);
+    fetch("/api/admin/weekly-player-library", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id: playerDraft.id, name: playerDraft.name, patch: playerDraft })
+    })
+      .then(async (response) => {
+        const payload = await response.json().catch(() => null) as { player?: WeeklyPlayer; message?: string } | null;
+        if (!response.ok || !payload?.player) throw new Error(payload?.message || "保存选手信息失败");
+        const updated = toWeeklyPlayer(payload.player);
+        setSelectedPlayer(updated);
+        setPlayerDraft(updated);
+        setPlayerQuery(updated.name);
+        setKnownPlayers((prev) => replacePlayer(prev, updated));
+        setPlayers((prev) => replacePlayer(prev, updated));
+        setResults((prev) => prev.map((result) => result.player.id === updated.id || result.player.name === updated.name ? { ...result, player: updated } : result));
+        setIsPlayerEditorOpen(false);
+        setNotice(`已保存 ${updated.name} 的个人信息，组别已更新为${getPlayerDisplayAgeGroup(updated) || "待补"}。`);
+        refreshResults();
+      })
+      .catch((error) => setNotice(error instanceof Error ? error.message : "保存选手信息失败"))
+      .finally(() => setIsSavingPlayer(false));
+  }
+
+  function confirmWcaMatch(result: EnteredResult) {
+    if (!result.player.wcaId || result.player.wcaIdConfirmed) return;
+    fetch("/api/admin/weekly-player-library", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id: result.player.id, name: result.player.name, patch: { wcaId: result.player.wcaId, wcaIdConfirmed: true } })
+    })
+      .then(async (response) => {
+        const payload = await response.json().catch(() => null) as { player?: WeeklyPlayer; message?: string } | null;
+        if (!response.ok || !payload?.player) throw new Error(payload?.message || "确认 WCA ID 失败");
+        const updated = toWeeklyPlayer(payload.player);
+        setKnownPlayers((prev) => replacePlayer(prev, updated));
+        setPlayers((prev) => replacePlayer(prev, updated));
+        setResults((prev) => prev.map((item) => item.player.name === result.player.name ? { ...item, player: { ...item.player, wcaIdConfirmed: true } } : item));
+        setNotice(`${result.player.name} 的 WCA ID 已确认。`);
+      })
+      .catch((error) => setNotice(error instanceof Error ? error.message : "确认 WCA ID 失败"));
+  }
+
   function beginCorrection(result: EnteredResult) {
     selectPlayer(result.player);
     setAttempts(result.attempts.map(formatResult));
@@ -588,10 +641,10 @@ export function WeeklyResultEntryConsole({ initialMeets, initialPlayers = [], ev
                   <th>姓名</th>
                   <th>组别</th>
                   <th>省市</th>
-                  <th>平均</th>
                   <th>段位/等级</th>
+                  <th>平均</th>
                   <th>最好</th>
-                  <th>成绩</th>
+                  {Array.from({ length: 5 }, (_, index) => <th key={index}>{index + 1}</th>)}
                   {!isPublicMode ? <th>操作</th> : null}
                 </tr>
               </thead>
@@ -603,29 +656,36 @@ export function WeeklyResultEntryConsole({ initialMeets, initialPlayers = [], ev
                       {result.player.wcaId ? (
                         <span className="weekly-wca-status">
                           {result.player.wcaId}
-                          {result.player.wcaIdConfirmed ? <Check size={13} aria-label="管理员已确认" /> : <small>待确认</small>}
+                          {result.player.wcaIdConfirmed ? <Check size={13} aria-label="管理员已确认" /> : (
+                            <button className="weekly-wca-confirm" type="button" onClick={() => confirmWcaMatch(result)} title="确认这个 WCA ID" aria-label={`确认 ${result.player.name} 的 WCA ID`}>
+                              <small>待确认</small>
+                            </button>
+                          )}
                         </span>
                       ) : "-"}
                     </td>
                     <td data-label="姓名">{result.player.name}</td>
                     <td data-label="组别">{result.player.ageGroup || "待补"}</td>
                     <td data-label="省市">{formatRegion(result.player)}</td>
+                    <td data-label="段位/等级" className="grade-cell">{getShenyangAssociationGrade(selectedEventId, result.average).label}</td>
                     <td data-label="平均" className={result.pbAverageRefreshed ? "score-strong pb-cell pb-refreshed" : "score-strong"}>
                       {formatResult(result.average)}{result.pbAverageRefreshed ? <span className="weekly-pb-badge">刷新平均 PB</span> : null}
                     </td>
-                    <td data-label="段位/等级" className="grade-cell">{getShenyangAssociationGrade(selectedEventId, result.average).label}</td>
                     <td data-label="最好" className={result.pbRefreshed ? "pb-cell pb-refreshed" : "pb-cell"}>
                       {formatResult(result.best)}{result.pbRefreshed ? <span className="weekly-pb-badge">刷新 PB</span> : null}
                     </td>
-                    <td data-label="成绩">{result.detail}</td>
+                    {Array.from({ length: 5 }, (_, index) => {
+                      const attempt = result.attempts[index];
+                      return <td data-label={`第${index + 1}次`} className={getAttemptClass(attempt, result.attempts)} key={index}>{formatResult(attempt)}</td>;
+                    })}
                     {!isPublicMode ? (
                       <td data-label="操作" className="weekly-result-actions">
                         <button className="button" type="button" title="修改成绩" aria-label={`修改 ${result.player.name} 的成绩`} onClick={() => beginCorrection(result)}>
                           <Pencil size={15} />
                         </button>
-                        <Link className="button" href={`/admin/weekly#player-library:${encodeURIComponent(result.player.id)}`} title="编辑选手资料" aria-label={`编辑 ${result.player.name} 的资料`}>
+                        <button className="button" type="button" onClick={() => openPlayerEditor(result.player)} title="编辑选手资料" aria-label={`编辑 ${result.player.name} 的资料`}>
                           <UserRoundPen size={15} />
-                        </Link>
+                        </button>
                         <button className="button" type="button" title="删除成绩" aria-label={`删除 ${result.player.name} 的成绩`} onClick={() => openDeleteDialog(result)}>
                           <Trash2 size={15} />
                         </button>
@@ -635,7 +695,7 @@ export function WeeklyResultEntryConsole({ initialMeets, initialPlayers = [], ev
                 ))}
                 {filteredResults.length === 0 ? (
                   <tr>
-                    <td colSpan={isPublicMode ? 9 : 10}>{isLoadingResults ? "正在读取成绩..." : results.length ? "没有符合筛选条件的成绩。" : "当前项目暂无成绩。"}</td>
+                    <td colSpan={isPublicMode ? 14 : 15}>{isLoadingResults ? "正在读取成绩..." : results.length ? "没有符合筛选条件的成绩。" : "当前项目暂无成绩。"}</td>
                   </tr>
                 ) : null}
               </tbody>
@@ -671,6 +731,7 @@ export function WeeklyResultEntryConsole({ initialMeets, initialPlayers = [], ev
               <span>当前选手</span>
               <strong>{selectedPlayer.name}</strong>
               <small>{formatPlayerMeta(selectedPlayer)}</small>
+              {!isPublicMode ? <button className="button" type="button" onClick={() => openPlayerEditor(selectedPlayer)}><UserRoundPen size={15} />编辑个人信息</button> : null}
             </div>
           ) : null}
 
@@ -812,6 +873,26 @@ export function WeeklyResultEntryConsole({ initialMeets, initialPlayers = [], ev
           </div>
         </div>
       ) : null}
+      {isPlayerEditorOpen && playerDraft ? (
+        <div className="weekly-admin-login-backdrop" role="presentation">
+          <div className="weekly-admin-login-modal weekly-player-editor-modal" role="dialog" aria-modal="true" aria-labelledby="weekly-player-editor-title">
+            <div className="admin-card-heading">
+              <div><span className="eyebrow">当前页面编辑</span><h2 id="weekly-player-editor-title">编辑 {playerDraft.name}</h2><p>保存后会同步周赛选手库，并按出生日期重新计算组别。</p></div>
+              <button className="icon-button" type="button" aria-label="关闭编辑窗口" onClick={() => setIsPlayerEditorOpen(false)}><X size={17} /></button>
+            </div>
+            <div className="weekly-player-editor-grid">
+              <label className="field"><span>姓名</span><input value={playerDraft.name} onChange={(event) => setPlayerDraft({ ...playerDraft, name: event.target.value })} /></label>
+              <label className="field"><span>WCA ID</span><input value={playerDraft.wcaId} onChange={(event) => setPlayerDraft({ ...playerDraft, wcaId: event.target.value.toUpperCase(), wcaIdConfirmed: false })} /></label>
+              <label className="field"><span>出生日期</span><input type="date" value={playerDraft.birthDate} onChange={(event) => setPlayerDraft({ ...playerDraft, birthDate: event.target.value, ageGroup: getWeeklyAgeGroup(event.target.value) })} /></label>
+              <label className="field"><span>性别</span><select value={playerDraft.gender} onChange={(event) => setPlayerDraft({ ...playerDraft, gender: event.target.value as WeeklyPlayer["gender"] })}><option value="男">男</option><option value="女">女</option></select></label>
+              <label className="field"><span>省</span><input value={playerDraft.province} onChange={(event) => setPlayerDraft({ ...playerDraft, province: event.target.value })} /></label>
+              <label className="field"><span>市</span><input value={playerDraft.city} onChange={(event) => setPlayerDraft({ ...playerDraft, city: event.target.value })} /></label>
+            </div>
+            <p className="weekly-player-editor-group">当前组别：<strong>{getPlayerDisplayAgeGroup(playerDraft) || "待补"}</strong></p>
+            <div className="weekly-admin-login-actions"><button className="button" type="button" onClick={() => setIsPlayerEditorOpen(false)} disabled={isSavingPlayer}>取消</button><button className="button primary" type="button" onClick={savePlayerDetails} disabled={isSavingPlayer || !playerDraft.name.trim()}><Save size={15} />{isSavingPlayer ? "保存中…" : "保存个人信息"}</button></div>
+          </div>
+        </div>
+      ) : null}
       {isLoginOpen ? (
         <div className="weekly-admin-login-backdrop" role="presentation">
           <div className="weekly-admin-login-modal" role="dialog" aria-modal="true" aria-labelledby="weekly-admin-login-title">
@@ -879,6 +960,35 @@ function findPlayerByWcaId(wcaId: string, players: WeeklyPlayer[]) {
   const normalizedWcaId = wcaId.trim().toUpperCase();
   if (!normalizedWcaId) return null;
   return players.find((player) => player.wcaId.toUpperCase() === normalizedWcaId) || null;
+}
+
+function replacePlayer(players: WeeklyPlayer[], updated: WeeklyPlayer) {
+  return players.map((player) => player.id === updated.id || player.name === updated.name ? updated : player);
+}
+
+function toWeeklyPlayer(player: Partial<WeeklyPlayer> & Pick<WeeklyPlayer, "id" | "name">): WeeklyPlayer {
+  return {
+    id: player.id,
+    name: player.name,
+    slug: player.slug || "",
+    wcaId: player.wcaId || "",
+    wcaIdConfirmed: Boolean(player.wcaIdConfirmed),
+    gender: player.gender === "女" ? "女" : "男",
+    province: player.province || "辽宁",
+    city: player.city || "",
+    birthDate: player.birthDate || "",
+    ageGroup: getWeeklyAgeGroup(player.birthDate || "") || player.ageGroup || "",
+    ageGroupIsFuzzy: Boolean(player.ageGroupIsFuzzy)
+  };
+}
+
+function getAttemptClass(attempt: ResultValue | undefined, attempts: ResultValue[]) {
+  if (typeof attempt !== "number") return "weekly-attempt-cell";
+  const numericAttempts = attempts.filter((value): value is number => typeof value === "number");
+  if (numericAttempts.length === 0) return "weekly-attempt-cell";
+  if (attempt === Math.min(...numericAttempts)) return "weekly-attempt-cell weekly-attempt-cell--fastest";
+  if (attempt === Math.max(...numericAttempts)) return "weekly-attempt-cell weekly-attempt-cell--slowest";
+  return "weekly-attempt-cell";
 }
 
 function mergePlayers(currentPlayers: WeeklyPlayer[], nextPlayers: WeeklyPlayer[]) {

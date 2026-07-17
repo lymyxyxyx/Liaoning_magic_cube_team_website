@@ -282,6 +282,54 @@ export async function saveWeeklyPlayerLibrary(players: WeeklyPlayerLibraryEntry[
   return listWeeklyPlayerLibrary();
 }
 
+export async function updateWeeklyPlayerLibraryEntry(input: {
+  id?: string;
+  name?: string;
+  patch: Partial<WeeklyPlayerLibraryEntry>;
+}) {
+  await ensureWeeklyPlayerLibraryTable();
+  const pool = getPostgresPool();
+  const current = await pool.query<WeeklyPlayerLibraryRow>(
+    `SELECT id, name, wca_id, wca_id_confirmed, gender, birth_date, age_group_override, age_group_is_fuzzy, province, city, source, personal_bests, personal_bests_average, updated_at
+     FROM weekly_player_library
+     WHERE id = $1 OR name = $2
+     ORDER BY CASE WHEN id = $1 THEN 0 ELSE 1 END
+     LIMIT 1`,
+    [input.id?.trim() || "", input.name?.trim() || ""]
+  );
+  const row = current.rows[0];
+  if (!row) throw new Error("周赛选手不存在");
+
+  const patch = input.patch;
+  const name = patch.name?.trim() || row.name;
+  if (!name) throw new Error("请填写选手姓名");
+  const birthDate = patch.birthDate?.trim() ?? row.birth_date;
+  const wcaId = patch.wcaId?.trim().toUpperCase() ?? row.wca_id;
+  const ageGroup = birthDate ? "" : patch.ageGroup?.trim() ?? row.age_group_override;
+  const { rows } = await pool.query<WeeklyPlayerLibraryRow>(
+    `UPDATE weekly_player_library
+     SET name = $2, wca_id = $3, wca_id_confirmed = $4, gender = $5, birth_date = $6,
+         age_group_override = $7, age_group_is_fuzzy = $8, province = $9, city = $10,
+         source = $11, updated_at = now()
+     WHERE id = $1
+     RETURNING id, name, wca_id, wca_id_confirmed, gender, birth_date, age_group_override, age_group_is_fuzzy, province, city, source, personal_bests, personal_bests_average, updated_at`,
+    [
+      row.id,
+      name,
+      wcaId,
+      patch.wcaIdConfirmed ?? row.wca_id_confirmed,
+      patch.gender ?? row.gender,
+      birthDate,
+      ageGroup,
+      birthDate ? false : (patch.ageGroupIsFuzzy ?? row.age_group_is_fuzzy),
+      patch.province?.trim() ?? row.province,
+      patch.city?.trim() ?? row.city,
+      patch.source?.trim() ?? row.source
+    ]
+  );
+  return mapLibraryRow(rows[0]);
+}
+
 function normalizePlayers(players: WeeklyPlayerLibraryEntry[]) {
   const seen = new Set<string>();
   return players
