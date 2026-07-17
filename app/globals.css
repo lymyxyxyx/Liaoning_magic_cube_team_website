@@ -4177,7 +4177,7 @@ textarea {
 }
 
 .result-table.weekly-library-table {
-  min-width: 690px;
+  min-width: 790px;
   table-layout: fixed;
 }
 
@@ -4205,7 +4205,9 @@ textarea {
 }
 
 .weekly-library-table th:nth-child(4) {
-  width: 42px;
+  width: 128px;
+  padding-left: 10px;
+  padding-right: 10px;
 }
 
 .weekly-library-table th:nth-child(5) {
@@ -9965,8 +9967,8 @@ a.commercial-member-link:hover {
 
   .result-table.weekly-library-table {
     display: table;
-    min-width: 620px;
-    width: 620px;
+    min-width: 720px;
+    width: 720px;
   }
 
   .weekly-library-table thead {

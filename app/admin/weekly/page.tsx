@@ -28,6 +28,12 @@ export default async function AdminWeeklyPage() {
         <Link className="button" href="/weekly">
           查看周赛页
         </Link>
+        <Link className="button" href="/weekly/big-stack">
+          查看大堆成绩
+        </Link>
+        <Link className="button" href="/admin/weekly#big-stack-admin">
+          管理大堆成绩
+        </Link>
       </section>
       <section className="container section weekly-admin-workspace">
         <WeeklyMeetConfigConsole initialMeets={meets} events={WCA_EVENTS} />

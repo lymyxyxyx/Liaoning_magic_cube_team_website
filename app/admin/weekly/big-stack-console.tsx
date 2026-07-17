@@ -40,7 +40,7 @@ export function BigStackAdminConsole({ initialRecords }: { initialRecords: BigSt
   }
 
   return (
-    <section className="container section admin-card big-stack-admin-console">
+    <section id="big-stack-admin" className="container section admin-card big-stack-admin-console">
       <div className="admin-card-heading">
         <div>
           <h2>大堆纪录维护</h2>
