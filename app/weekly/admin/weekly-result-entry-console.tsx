@@ -70,6 +70,7 @@ export function WeeklyResultEntryConsole({ initialMeets, initialPlayers = [], ev
   const [playerQuery, setPlayerQuery] = useState("");
   const [players, setPlayers] = useState<WeeklyPlayer[]>([]);
   const [knownPlayers, setKnownPlayers] = useState(initialPlayers);
+  const [isSearchingPlayers, setIsSearchingPlayers] = useState(false);
   const [selectedPlayer, setSelectedPlayer] = useState<WeeklyPlayer | null>(null);
   const [attempts, setAttempts] = useState(emptyAttempts);
   const [editingResult, setEditingResult] = useState<EnteredResult | null>(null);
@@ -151,9 +152,12 @@ export function WeeklyResultEntryConsole({ initialMeets, initialPlayers = [], ev
     const timer = window.setTimeout(() => {
       if (!playerQuery.trim()) {
         setPlayers([]);
+        setIsSearchingPlayers(false);
         return;
       }
-      void searchPlayers(playerQuery, controller.signal);
+      void searchPlayers(playerQuery, controller.signal).finally(() => {
+        if (!controller.signal.aborted) setIsSearchingPlayers(false);
+      });
     }, 180);
 
     return () => {
@@ -184,6 +188,7 @@ export function WeeklyResultEntryConsole({ initialMeets, initialPlayers = [], ev
 
   function updatePlayerQuery(value: string) {
     setPlayerQuery(value);
+    setIsSearchingPlayers(Boolean(value.trim()));
     const exactPlayer = findPlayerByWcaId(value, players) || findPlayerByWcaId(value, knownPlayers) || findPlayerByName(value, players) || findPlayerByName(value, knownPlayers);
     if (exactPlayer) {
       setSelectedPlayer(exactPlayer);
@@ -514,7 +519,8 @@ export function WeeklyResultEntryConsole({ initialMeets, initialPlayers = [], ev
                   <small>{formatPlayerCandidateMeta(player)}</small>
                 </button>
               ))}
-              {playerQuery.trim() && !selectedPlayer && playerCandidates.length === 0 ? <p>没有找到选手，请联系管理员先加入周赛选手库。</p> : null}
+              {playerQuery.trim() && !selectedPlayer && playerCandidates.length === 0 && isSearchingPlayers ? <p>正在检索选手…</p> : null}
+              {playerQuery.trim() && !selectedPlayer && playerCandidates.length === 0 && !isSearchingPlayers ? <p>没有找到选手，请联系管理员先加入周赛选手库。</p> : null}
             </div>
           </div>
 
