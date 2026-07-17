@@ -3,9 +3,16 @@ import { verifySessionToken } from "@/lib/auth";
 
 const adminCookieName = "liaoning_admin_session";
 const adminNextCookieName = "liaoning_admin_next";
+const weeklyAccessCookieName = "liaoning_weekly_access";
 
 async function hasAdminSession(request: NextRequest) {
   const token = request.cookies.get(adminCookieName)?.value;
+  if (!token) return false;
+  return verifySessionToken(token);
+}
+
+async function hasWeeklyAccessSession(request: NextRequest) {
+  const token = request.cookies.get(weeklyAccessCookieName)?.value;
   if (!token) return false;
   return verifySessionToken(token);
 }
@@ -17,6 +24,21 @@ function isSecureRequest(request: NextRequest) {
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
   const host = request.headers.get("host") || "";
+
+  const isWeeklyPublicPage = pathname.startsWith("/weekly") && !pathname.startsWith("/weekly/access") && !pathname.startsWith("/weekly/admin");
+  const isWeeklyPublicApi = pathname === "/api/weekly-competitions" || pathname.startsWith("/api/weekly-competitions/");
+
+  if ((isWeeklyPublicPage || isWeeklyPublicApi) && !(await hasWeeklyAccessSession(request))) {
+    if (isWeeklyPublicApi) {
+      return NextResponse.json({ message: "请先输入周赛邀请码" }, { status: 401 });
+    }
+
+    const accessUrl = request.nextUrl.clone();
+    accessUrl.pathname = "/weekly/access";
+    accessUrl.search = "";
+    accessUrl.searchParams.set("next", `${pathname}${request.nextUrl.search}`);
+    return NextResponse.redirect(accessUrl);
+  }
 
   if (host === "www.lncubing.com" && pathname.startsWith("/admin")) {
     const canonicalUrl = request.nextUrl.clone();
@@ -65,6 +87,8 @@ export const config = {
     "/api/local-profiles",
     "/api/commercial-teams",
     "/api/account-books",
-    "/api/admin/:path*"
+    "/api/admin/:path*",
+    "/weekly/:path*",
+    "/api/weekly-competitions/:path*"
   ]
 };
