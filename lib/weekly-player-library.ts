@@ -339,14 +339,15 @@ async function listWcaLiaoningPlayers(): Promise<WeeklyPlayerLibraryEntry[]> {
 function mergeWeeklyEligiblePlayers(wcaPlayers: WeeklyPlayerLibraryEntry[], libraryPlayers: WeeklyPlayerLibraryEntry[]) {
   const merged: WeeklyPlayerLibraryEntry[] = [];
   const indexByName = new Map<string, number>();
+  const indexByWcaId = new Map<string, number>();
   const seenWcaIds = new Set<string>();
 
   for (const player of [...wcaPlayers, ...libraryPlayers]) {
     const wcaId = player.wcaId?.trim().toUpperCase() || "";
     const name = player.name.trim();
-    if (!name || (wcaId && seenWcaIds.has(wcaId))) continue;
+    if (!name) continue;
 
-    const existingIndex = indexByName.get(name);
+    const existingIndex = (wcaId ? indexByWcaId.get(wcaId) : undefined) ?? indexByName.get(name);
     if (existingIndex !== undefined) {
       const existing = merged[existingIndex];
       if (existing.wcaId || !wcaId) {
@@ -363,6 +364,7 @@ function mergeWeeklyEligiblePlayers(wcaPlayers: WeeklyPlayerLibraryEntry[], libr
             personalBestAverages: Object.keys(player.personalBestAverages || {}).length > 0 ? player.personalBestAverages : existing.personalBestAverages,
             source: player.source && !existing.source.includes(player.source) ? `${existing.source}；${player.source}` : existing.source
           };
+          indexByName.set(name, existingIndex);
         }
         continue;
       }
@@ -372,12 +374,15 @@ function mergeWeeklyEligiblePlayers(wcaPlayers: WeeklyPlayerLibraryEntry[], libr
         personalBests: existing.personalBests || player.personalBests || {},
         personalBestAverages: existing.personalBestAverages || player.personalBestAverages || {}
       };
+      indexByName.set(name, existingIndex);
+      indexByWcaId.set(wcaId, existingIndex);
       seenWcaIds.add(wcaId);
       continue;
     }
 
     merged.push({ ...player, wcaId });
     indexByName.set(name, merged.length - 1);
+    if (wcaId) indexByWcaId.set(wcaId, merged.length - 1);
     if (wcaId) seenWcaIds.add(wcaId);
   }
 
