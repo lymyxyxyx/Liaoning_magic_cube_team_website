@@ -22,7 +22,8 @@ const checks = [
   { path: "/liaoning-competitions", ok: [200], type: "text/html" },
   { path: "/rankings", ok: [200], type: "text/html" },
   { path: "/competitions", ok: [200], type: "text/html" },
-  { path: "/weekly", ok: [200], type: "text/html" },
+  // Public weekly access may redirect to the invite-code screen when the feature is protected.
+  { path: "/weekly", ok: [200, 307], type: "text/html" },
   { path: "/judges", ok: [200], type: "text/html" },
   { path: "/commercial-teams", ok: [200], type: "text/html" },
   { path: "/coaches", ok: [200], type: "text/html" },
@@ -57,7 +58,7 @@ async function run() {
       const res = await fetch(url, { signal: AbortSignal.timeout(15000), redirect: "manual" });
       const contentType = res.headers.get("content-type") || "";
       const statusOk = check.ok.includes(res.status);
-      const typeOk = !check.type || contentType.includes(check.type);
+      const typeOk = !check.type || contentType.includes(check.type) || (res.status >= 300 && res.status < 400);
       if (!statusOk || !typeOk) {
         failures.push(`${check.path} -> HTTP ${res.status} (${contentType || "no content-type"})`);
         console.error(`[smoke] FAIL ${check.path} -> HTTP ${res.status} (${contentType})`);
