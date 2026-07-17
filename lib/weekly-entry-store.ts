@@ -13,7 +13,7 @@ import {
   type WeeklyResultFormat
 } from "@/lib/weekly-result-utils";
 import { weeklyMeets } from "@/lib/weekly";
-import { getMofang602SeedWeeklyPlayers, listWeeklyPlayerLibrary } from "@/lib/weekly-player-library";
+import { ensureWeeklyPlayerLibraryTable, getMofang602SeedWeeklyPlayers, listWeeklyPlayerLibrary } from "@/lib/weekly-player-library";
 
 export type WeeklyMeetOption = {
   id: string;
@@ -77,6 +77,7 @@ type WeeklyResultRow = {
   personal_best: string;
   player_id: string | null;
   source: string;
+  wca_id?: string | null;
 };
 
 type WeeklyAttemptRow = {
@@ -359,20 +360,23 @@ export async function listWeeklyResults(meetIdOrSlug: string, eventId: string, f
   const formatConfig = getWeeklyResultFormat(format);
 
   await ensureWeeklyEntryTables();
+  await ensureWeeklyPlayerLibraryTable();
   const pool = getPostgresPool();
   const meet = await resolveWeeklyMeet(meetIdOrSlug);
   if (!meet) throw new Error("周赛不存在");
 
   const eventKey = getWeeklyEventKey(meet.id, eventId, formatConfig.id);
   const { rows } = await pool.query<WeeklyResultRow>(
-    `SELECT * FROM weekly_results
-     WHERE meet_id = $1 AND event_id = $2
+    `SELECT wr.*, wpl.wca_id
+     FROM weekly_results wr
+     LEFT JOIN weekly_player_library wpl ON wpl.id = wr.player_id
+     WHERE wr.meet_id = $1 AND wr.event_id = $2
      ORDER BY
-       CASE WHEN average < 0 THEN 1 ELSE 0 END,
-       average ASC,
-       CASE WHEN personal_best < 0 THEN 1 ELSE 0 END,
-       personal_best ASC,
-       player_name ASC`,
+       CASE WHEN wr.average < 0 THEN 1 ELSE 0 END,
+       wr.average ASC,
+       CASE WHEN wr.personal_best < 0 THEN 1 ELSE 0 END,
+       wr.personal_best ASC,
+       wr.player_name ASC`,
     [meet.id, eventKey]
   );
   const resultIds = rows.map((row) => row.id);
@@ -391,7 +395,7 @@ export async function listWeeklyResults(meetIdOrSlug: string, eventId: string, f
         id: row.player_id || (row.player_slug ? `code:${row.player_slug}` : row.player_name),
         name: row.player_name,
         slug: row.player_slug,
-        wcaId: "",
+        wcaId: row.wca_id || "",
         gender: row.gender === "女" ? "女" : "男",
         province: "辽宁",
         city: "",

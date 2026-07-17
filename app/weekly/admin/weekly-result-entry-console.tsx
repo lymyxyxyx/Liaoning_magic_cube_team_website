@@ -344,13 +344,12 @@ export function WeeklyResultEntryConsole({ initialMeets, initialPlayers = [], ev
   const recordedCount = results.length;
   const playerCandidates = useMemo(() => {
     const query = playerQuery.trim();
+    if (!query || selectedPlayer) return [];
     const upperQuery = query.toUpperCase();
     const mergedPlayers = mergePlayers(knownPlayers, players);
-    const filteredPlayers = query
-      ? mergedPlayers.filter((player) => player.name.includes(query) || player.wcaId.toUpperCase().includes(upperQuery))
-      : prioritizePlayersForPicker(mergedPlayers);
+    const filteredPlayers = mergedPlayers.filter((player) => player.name.includes(query) || player.wcaId.toUpperCase().includes(upperQuery));
     return filteredPlayers.slice(0, 8);
-  }, [knownPlayers, playerQuery, players]);
+  }, [knownPlayers, playerQuery, players, selectedPlayer]);
 
   return (
     <section
@@ -431,7 +430,7 @@ export function WeeklyResultEntryConsole({ initialMeets, initialPlayers = [], ev
               <thead>
                 <tr>
                   <th>排名</th>
-                  <th>No.</th>
+                  <th>WCA ID</th>
                   <th>姓名</th>
                   <th>省市</th>
                   <th>平均</th>
@@ -444,7 +443,7 @@ export function WeeklyResultEntryConsole({ initialMeets, initialPlayers = [], ev
                 {results.map((result) => (
                   <tr key={result.id}>
                     <td data-label="排名">{result.rank}</td>
-                    <td data-label="No.">{result.id}</td>
+                    <td data-label="WCA ID">{result.player.wcaId}</td>
                     <td data-label="姓名">{result.player.name}</td>
                     <td data-label="省市">{formatRegion(result.player)}</td>
                     <td data-label="平均" className="score-strong">{formatResult(result.average)}</td>
@@ -509,11 +508,11 @@ export function WeeklyResultEntryConsole({ initialMeets, initialPlayers = [], ev
             <div className="weekly-player-results">
               {playerCandidates.map((player) => (
                 <button type="button" key={player.id} onMouseDown={(event) => event.preventDefault()} onClick={() => selectPlayer(player)}>
-                  <strong>{player.name}</strong>
+                  <strong>{player.wcaId ? `${player.wcaId} · ` : ""}{player.name}</strong>
                   <small>{formatPlayerCandidateMeta(player)}</small>
                 </button>
               ))}
-              {playerCandidates.length === 0 ? <p>没有找到选手，请联系管理员先加入周赛选手库。</p> : null}
+              {playerQuery.trim() && !selectedPlayer && playerCandidates.length === 0 ? <p>没有找到选手，请联系管理员先加入周赛选手库。</p> : null}
             </div>
           </div>
 
@@ -597,15 +596,6 @@ function mergePlayers(currentPlayers: WeeklyPlayer[], nextPlayers: WeeklyPlayer[
   for (const player of currentPlayers) merged.set(player.id, player);
   for (const player of nextPlayers) merged.set(player.id, player);
   return Array.from(merged.values());
-}
-
-function prioritizePlayersForPicker(players: WeeklyPlayer[]) {
-  return [...players].sort((a, b) => {
-    const aIsLiu = a.name.startsWith("刘") ? 0 : 1;
-    const bIsLiu = b.name.startsWith("刘") ? 0 : 1;
-    if (aIsLiu !== bIsLiu) return aIsLiu - bIsLiu;
-    return a.name.localeCompare(b.name, "zh-Hans-CN");
-  });
 }
 
 function compareEnteredResults(a: EnteredResult, b: EnteredResult) {

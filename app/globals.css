@@ -10861,3 +10861,56 @@ a.commercial-member-link:hover {
 .row-active td {
   background: color-mix(in srgb, var(--blue) 4%, var(--surface));
 }
+
+/* Keep the weekly entry leaderboard as a compact, horizontally scrollable table on phones. */
+@media (max-width: 900px) {
+  .weekly-entry-results .result-table-wrap {
+    overflow-x: auto;
+  }
+
+  .weekly-entry-table {
+    display: table;
+    width: 100%;
+    min-width: 680px;
+  }
+
+  .weekly-entry-table thead {
+    display: table-header-group;
+  }
+
+  .weekly-entry-table tbody {
+    display: table-row-group;
+    padding: 0;
+    background: transparent;
+  }
+
+  .weekly-entry-table tr {
+    display: table-row;
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
+  }
+
+  .weekly-entry-table th,
+  .weekly-entry-table td {
+    display: table-cell;
+    width: auto;
+    padding: 8px 7px;
+    border-bottom: 1px solid var(--line);
+    text-align: left;
+    white-space: nowrap;
+  }
+
+  .weekly-entry-table td::before {
+    display: none;
+  }
+
+  .weekly-entry-table td:nth-child(1),
+  .weekly-entry-table td:nth-child(2) {
+    grid-column: auto;
+    font-weight: inherit;
+    justify-content: initial;
+  }
+}
