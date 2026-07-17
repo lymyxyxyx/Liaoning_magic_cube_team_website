@@ -184,7 +184,7 @@ export function WeeklyResultEntryConsole({ initialMeets, initialPlayers = [], ev
 
   function updatePlayerQuery(value: string) {
     setPlayerQuery(value);
-    const exactPlayer = findPlayerByName(value, players) || findPlayerByName(value, knownPlayers);
+    const exactPlayer = findPlayerByWcaId(value, players) || findPlayerByWcaId(value, knownPlayers) || findPlayerByName(value, players) || findPlayerByName(value, knownPlayers);
     if (exactPlayer) {
       setSelectedPlayer(exactPlayer);
     } else if (selectedPlayer && value !== selectedPlayer.name) {
@@ -591,6 +591,12 @@ function findPlayerByName(name: string, players: WeeklyPlayer[]) {
   const trimmedName = name.trim();
   if (!trimmedName) return null;
   return players.find((player) => player.name === trimmedName) || null;
+}
+
+function findPlayerByWcaId(wcaId: string, players: WeeklyPlayer[]) {
+  const normalizedWcaId = wcaId.trim().toUpperCase();
+  if (!normalizedWcaId) return null;
+  return players.find((player) => player.wcaId.toUpperCase() === normalizedWcaId) || null;
 }
 
 function mergePlayers(currentPlayers: WeeklyPlayer[], nextPlayers: WeeklyPlayer[]) {
