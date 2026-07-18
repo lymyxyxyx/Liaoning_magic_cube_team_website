@@ -231,8 +231,6 @@ export async function saveWeeklyPlayerLibrary(players: WeeklyPlayerLibraryEntry[
 
   try {
     await client.query("BEGIN");
-    const ids = normalizedPlayers.map((player) => player.id);
-    await client.query("DELETE FROM weekly_player_library WHERE NOT (id = ANY($1::text[]))", [ids]);
 
     for (const player of normalizedPlayers) {
       await client.query(

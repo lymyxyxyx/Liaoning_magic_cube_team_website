@@ -1,9 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { listWeeklyMeetEventConfigs, updateWeeklyMeetConfig, type WeeklyMeetEventConfig } from "@/lib/weekly-entry-store";
+import { hasWeeklyAdminSession } from "@/lib/weekly-admin-auth";
 
 export const dynamic = "force-dynamic";
 
-export async function GET(_request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  if (!(await hasWeeklyAdminSession(request))) return NextResponse.json({ message: "需要管理员登录" }, { status: 401 });
   const { id } = await params;
   try {
     return NextResponse.json({ eventConfigs: await listWeeklyMeetEventConfigs(id) });
@@ -13,6 +15,7 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
 }
 
 export async function PATCH(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  if (!(await hasWeeklyAdminSession(request))) return NextResponse.json({ message: "需要管理员登录" }, { status: 401 });
   const { id } = await params;
   const payload = (await request.json().catch(() => null)) as {
     title?: string;

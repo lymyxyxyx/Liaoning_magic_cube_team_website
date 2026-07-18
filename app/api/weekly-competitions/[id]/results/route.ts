@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getWeeklyMeetEntryAvailability, listWeeklyResults, saveWeeklyResult } from "@/lib/weekly-entry-store";
+import { getWeeklyMeetEntryAvailability, isWeeklyMeetPubliclyVisible, listWeeklyResults, saveWeeklyResult } from "@/lib/weekly-entry-store";
 import { findWeeklyEligiblePlayer } from "@/lib/weekly-player-library";
 import { isWeeklyCompetitionEnabled } from "@/lib/weekly-feature";
 import { verifySessionToken } from "@/lib/auth";
@@ -9,6 +9,7 @@ export const dynamic = "force-dynamic";
 export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   if (!isWeeklyCompetitionEnabled()) return NextResponse.json({ message: "Not found" }, { status: 404 });
+  if (!(await isWeeklyMeetPubliclyVisible(id))) return NextResponse.json({ message: "Not found" }, { status: 404 });
   const eventId = request.nextUrl.searchParams.get("eventId") || "333";
   const format = request.nextUrl.searchParams.get("format") || "avg5";
   try {
@@ -43,6 +44,10 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
 export async function POST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   if (!isWeeklyCompetitionEnabled()) return NextResponse.json({ message: "Not found" }, { status: 404 });
+  const sessionToken = request.cookies.get("liaoning_weekly_session")?.value;
+  if (!sessionToken || !(await verifySessionToken(sessionToken))) {
+    return NextResponse.json({ message: "需要管理员登录" }, { status: 401 });
+  }
   const payload = (await request.json().catch(() => null)) as {
     eventId?: string;
     player?: {

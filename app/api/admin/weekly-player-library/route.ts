@@ -1,9 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { listWeeklyPlayerLibrary, saveWeeklyPlayerLibrary, updateWeeklyPlayerLibraryEntry, type WeeklyPlayerLibraryEntry } from "@/lib/weekly-player-library";
+import { hasWeeklyAdminSession } from "@/lib/weekly-admin-auth";
 
 export const dynamic = "force-dynamic";
 
-export async function GET() {
+export async function GET(request: NextRequest) {
+  if (!(await hasWeeklyAdminSession(request))) return NextResponse.json({ message: "需要管理员登录" }, { status: 401 });
   try {
     const players = await listWeeklyPlayerLibrary();
     return NextResponse.json({ players });
@@ -14,6 +16,7 @@ export async function GET() {
 }
 
 export async function POST(request: NextRequest) {
+  if (!(await hasWeeklyAdminSession(request))) return NextResponse.json({ message: "需要管理员登录" }, { status: 401 });
   const payload = (await request.json().catch(() => null)) as { players?: WeeklyPlayerLibraryEntry[] } | null;
   if (!Array.isArray(payload?.players)) return NextResponse.json({ message: "选手数据不正确" }, { status: 400 });
 
@@ -27,6 +30,7 @@ export async function POST(request: NextRequest) {
 }
 
 export async function PATCH(request: NextRequest) {
+  if (!(await hasWeeklyAdminSession(request))) return NextResponse.json({ message: "需要管理员登录" }, { status: 401 });
   const payload = (await request.json().catch(() => null)) as {
     id?: string;
     name?: string;

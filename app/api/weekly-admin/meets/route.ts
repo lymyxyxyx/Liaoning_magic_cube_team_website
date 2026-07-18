@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getPostgresPool } from "@/lib/postgres";
 import { weeklyPlayerPeople } from "@/lib/weekly-players";
+import { hasWeeklyAdminSession } from "@/lib/weekly-admin-auth";
 
 const playerSlugByPlayerName = new Map(
   weeklyPlayerPeople.map((p) => [p.name, p.slug])
@@ -43,6 +44,9 @@ type WeeklyMeetInput = {
 };
 
 export async function POST(request: NextRequest) {
+  if (!(await hasWeeklyAdminSession(request))) return NextResponse.json({ message: "需要管理员登录" }, { status: 401 });
+  return NextResponse.json({ message: "当前测试阶段仅维护第328周，暂未开放新周赛导入" }, { status: 403 });
+
   const payload = (await request.json().catch(() => null)) as WeeklyMeetInput | null;
   const validationError = validatePayload(payload);
   if (validationError) return NextResponse.json({ message: validationError }, { status: 400 });
@@ -55,7 +59,7 @@ export async function POST(request: NextRequest) {
   const client = await pool.connect();
 
   const allEvents: EventInput[] = meet.events?.length
-    ? meet.events
+    ? meet.events!
     : [{ eventName: meet.event || "三阶", kind: "main", results: meet.results }];
 
   try {
