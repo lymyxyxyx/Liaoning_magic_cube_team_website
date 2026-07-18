@@ -526,13 +526,15 @@ export function WeeklyResultEntryConsole({ initialMeets, initialPlayers = [], ev
   const selectedMeet = meets.find((meet) => meet.id === selectedMeetId);
   const selectedEvent = events.find((event) => event.id === selectedEventId);
   const recordedCount = results.length;
-  const filteredResults = useMemo(() => {
+  const displayedResults = useMemo(() => {
     const query = resultSearchQuery.trim();
-    return results.filter((result) => {
+    const filtered = results.filter((result) => {
       const matchesQuery = !query || matchesWeeklyPlayerQuery(result.player, query);
       const matchesGroup = resultAgeGroup === "全部" || (result.player.ageGroup || "待补") === resultAgeGroup;
       return matchesQuery && matchesGroup;
     });
+    if (resultAgeGroup !== "全部") return filtered;
+    return [...filtered].sort(compareWeeklyOverallResults);
   }, [resultAgeGroup, resultSearchQuery, results]);
   const playerCandidates = useMemo(() => {
     const query = playerQuery.trim();
@@ -582,16 +584,24 @@ export function WeeklyResultEntryConsole({ initialMeets, initialPlayers = [], ev
               </select>
             </label>
           ) : null}
-          <label>
-            项目
-            <select value={selectedEventId} onChange={(event) => setSelectedEventId(event.target.value)}>
+          <div className="weekly-event-tabs-field">
+            <span>项目</span>
+            <div className="weekly-event-tabs" role="tablist" aria-label="周赛项目">
               {events.map((event) => (
-                <option value={event.id} key={event.id}>
-                  {event.name} / {event.englishName}
-                </option>
+                <button
+                  className={`weekly-event-tab ${selectedEventId === event.id ? "is-active" : ""}`.trim()}
+                  key={event.id}
+                  type="button"
+                  role="tab"
+                  aria-selected={selectedEventId === event.id}
+                  onClick={() => setSelectedEventId(event.id)}
+                >
+                  <strong>{event.name}</strong>
+                  <small>{event.englishName}</small>
+                </button>
               ))}
-            </select>
-          </label>
+            </div>
+          </div>
           <label>
             赛制
             <select value={selectedFormat} disabled={isPublicMode} onChange={(event) => setSelectedFormat(event.target.value as WeeklyResultFormat)}>
@@ -624,12 +634,23 @@ export function WeeklyResultEntryConsole({ initialMeets, initialPlayers = [], ev
               姓名 / WCA ID
               <input value={resultSearchQuery} onChange={(event) => setResultSearchQuery(event.target.value)} placeholder="输入姓名或 WCA ID" />
             </label>
-            <label>
-              年龄组
-              <select value={resultAgeGroup} onChange={(event) => setResultAgeGroup(event.target.value)}>
-                {['全部', 'U6', 'U8', 'U12', '成人', '待补'].map((group) => <option value={group} key={group}>{group}</option>)}
-              </select>
-            </label>
+            <div className="weekly-age-tabs-field">
+              <span>年龄组</span>
+              <div className="weekly-age-tabs" role="tablist" aria-label="年龄组筛选">
+                {['全部', 'U6', 'U8', 'U12', '成人', '待补'].map((group) => (
+                  <button
+                    className={`weekly-age-tab ${resultAgeGroup === group ? "is-active" : ""}`.trim()}
+                    key={group}
+                    type="button"
+                    role="tab"
+                    aria-selected={resultAgeGroup === group}
+                    onClick={() => setResultAgeGroup(group)}
+                  >
+                    {group}
+                  </button>
+                ))}
+              </div>
+            </div>
             {(resultSearchQuery || resultAgeGroup !== '全部') ? <button className="button" type="button" onClick={() => { setResultSearchQuery(''); setResultAgeGroup('全部'); }}>清除筛选</button> : null}
           </div>
           <div className="result-table-wrap">
@@ -649,9 +670,9 @@ export function WeeklyResultEntryConsole({ initialMeets, initialPlayers = [], ev
                 </tr>
               </thead>
               <tbody>
-                {filteredResults.map((result) => (
+                {displayedResults.map((result, displayIndex) => (
                   <tr key={result.id}>
-                    <td data-label="排名">{result.rank}</td>
+                    <td data-label="排名">{resultAgeGroup === "全部" ? displayIndex + 1 : result.rank}</td>
                     <td data-label="WCA ID">
                       {result.player.wcaId ? (
                         <span className="weekly-wca-status">
@@ -693,7 +714,7 @@ export function WeeklyResultEntryConsole({ initialMeets, initialPlayers = [], ev
                     ) : null}
                   </tr>
                 ))}
-                {filteredResults.length === 0 ? (
+                {displayedResults.length === 0 ? (
                   <tr>
                     <td colSpan={isPublicMode ? 14 : 15}>{isLoadingResults ? "正在读取成绩..." : results.length ? "没有符合筛选条件的成绩。" : "当前项目暂无成绩。"}</td>
                   </tr>
@@ -1033,6 +1054,16 @@ function formatPlayerCandidateMeta(player: WeeklyPlayer) {
 
 function formatRegion(player: WeeklyPlayer) {
   return [player.province, player.city].filter(Boolean).join(" · ") || "-";
+}
+
+function compareWeeklyOverallResults(a: EnteredResult, b: EnteredResult) {
+  return resultScore(a.average, b.average) || resultScore(a.best, b.best) || a.player.name.localeCompare(b.player.name, "zh-CN");
+}
+
+function resultScore(a: ResultValue, b: ResultValue) {
+  const scoreA = typeof a === "number" ? a : Number.POSITIVE_INFINITY;
+  const scoreB = typeof b === "number" ? b : Number.POSITIVE_INFINITY;
+  return scoreA - scoreB;
 }
 
 function formatOperationAction(action: WeeklyOperationLog["action"]) {

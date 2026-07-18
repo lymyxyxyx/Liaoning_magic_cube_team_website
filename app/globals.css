@@ -3457,7 +3457,7 @@ textarea {
 }
 
 .weekly-entry-shell--full .weekly-entry-grid {
-  grid-template-columns: minmax(0, 1fr) 250px;
+  grid-template-columns: minmax(0, 1fr) 225px;
   gap: 12px;
 }
 
@@ -3492,6 +3492,106 @@ textarea {
 .weekly-entry-shell--full .weekly-entry-table td:nth-child(8) { width: 64px; }
 .weekly-entry-shell--full .weekly-entry-table th:nth-child(n + 9):nth-child(-n + 13),
 .weekly-entry-shell--full .weekly-entry-table td:nth-child(n + 9):nth-child(-n + 13) { width: 52px; }
+
+.weekly-event-tabs-field {
+  display: grid;
+  min-width: 0;
+  gap: 7px;
+  color: var(--text-body);
+  font-size: 13px;
+  font-weight: 850;
+}
+
+.weekly-event-tabs {
+  display: flex;
+  min-width: 0;
+  gap: 6px;
+  overflow-x: auto;
+  padding: 2px 1px 4px;
+  scrollbar-width: thin;
+}
+
+.weekly-event-tab {
+  display: inline-flex;
+  flex: 0 0 auto;
+  min-width: 92px;
+  min-height: 42px;
+  flex-direction: column;
+  justify-content: center;
+  gap: 2px;
+  padding: 6px 12px;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  background: #fff;
+  color: var(--text-body);
+  cursor: pointer;
+  text-align: left;
+}
+
+.weekly-event-tab small {
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 600;
+}
+
+.weekly-event-tab:hover {
+  border-color: #9bb7f4;
+  background: #f8fbff;
+}
+
+.weekly-event-tab.is-active {
+  border-color: var(--blue);
+  background: var(--blue);
+  color: #fff;
+  box-shadow: 0 3px 10px rgb(37 99 235 / 18%);
+}
+
+.weekly-event-tab.is-active small {
+  color: rgb(255 255 255 / 78%);
+}
+
+.weekly-age-tabs-field {
+  display: grid;
+  min-width: 0;
+  gap: 5px;
+  color: #64748b;
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+
+.weekly-age-tabs {
+  display: flex;
+  min-width: 0;
+  gap: 5px;
+  overflow-x: auto;
+  padding: 1px 0 2px;
+  scrollbar-width: thin;
+}
+
+.weekly-age-tab {
+  flex: 0 0 auto;
+  min-height: 38px;
+  min-width: 52px;
+  padding: 6px 11px;
+  border: 1px solid #cbd7e8;
+  border-radius: 8px;
+  background: #fff;
+  color: #334155;
+  cursor: pointer;
+  font: inherit;
+  font-weight: 750;
+}
+
+.weekly-age-tab:hover {
+  border-color: #9bb7f4;
+  background: #f8fbff;
+}
+
+.weekly-age-tab.is-active {
+  border-color: var(--blue);
+  background: var(--blue);
+  color: #fff;
+}
 
 .weekly-entry-shell--public {
   padding-top: 14px;
@@ -4070,7 +4170,7 @@ textarea {
 
 @media (min-width: 901px) and (max-width: 1250px) {
   .weekly-entry-shell--full .weekly-entry-grid {
-    grid-template-columns: minmax(0, 1fr) 220px;
+    grid-template-columns: minmax(0, 1fr) 205px;
   }
 
   .weekly-entry-shell--full .weekly-entry-table th,
