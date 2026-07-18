@@ -584,24 +584,6 @@ export function WeeklyResultEntryConsole({ initialMeets, initialPlayers = [], ev
               </select>
             </label>
           ) : null}
-          <div className="weekly-event-tabs-field">
-            <span>项目</span>
-            <div className="weekly-event-tabs" role="tablist" aria-label="周赛项目">
-              {events.map((event) => (
-                <button
-                  className={`weekly-event-tab ${selectedEventId === event.id ? "is-active" : ""}`.trim()}
-                  key={event.id}
-                  type="button"
-                  role="tab"
-                  aria-selected={selectedEventId === event.id}
-                  onClick={() => setSelectedEventId(event.id)}
-                >
-                  <strong>{event.name}</strong>
-                  <small>{event.englishName}</small>
-                </button>
-              ))}
-            </div>
-          </div>
           <label>
             赛制
             <select value={selectedFormat} disabled={isPublicMode} onChange={(event) => setSelectedFormat(event.target.value as WeeklyResultFormat)}>
@@ -634,6 +616,24 @@ export function WeeklyResultEntryConsole({ initialMeets, initialPlayers = [], ev
               姓名 / WCA ID
               <input value={resultSearchQuery} onChange={(event) => setResultSearchQuery(event.target.value)} placeholder="输入姓名或 WCA ID" />
             </label>
+            <div className="weekly-event-tabs-field">
+              <span>项目</span>
+              <div className="weekly-event-tabs" role="tablist" aria-label="周赛项目">
+                {events.map((event) => (
+                  <button
+                    className={`weekly-event-tab ${selectedEventId === event.id ? "is-active" : ""}`.trim()}
+                    key={event.id}
+                    type="button"
+                    role="tab"
+                    aria-selected={selectedEventId === event.id}
+                    onClick={() => setSelectedEventId(event.id)}
+                  >
+                    <strong>{event.name}</strong>
+                    <small>{event.englishName}</small>
+                  </button>
+                ))}
+              </div>
+            </div>
             <div className="weekly-age-tabs-field">
               <span>年龄组</span>
               <div className="weekly-age-tabs" role="tablist" aria-label="年龄组筛选">

@@ -3453,11 +3453,13 @@ textarea {
  * collapse into a narrow horizontal scroller. Mobile keeps the compact
  * scrollable table rules below. */
 .weekly-entry-shell--full {
-  width: min(1720px, calc(100% - 36px));
+  width: min(1500px, calc(100% - 36px));
+  max-width: 100%;
+  box-sizing: border-box;
 }
 
 .weekly-entry-shell--full .weekly-entry-grid {
-  grid-template-columns: minmax(0, 1fr) 225px;
+  grid-template-columns: minmax(0, 1fr) 190px;
   gap: 12px;
 }
 
@@ -3608,12 +3610,12 @@ textarea {
 }
 
 .weekly-entry-controls--compact {
-  grid-template-columns: minmax(0, 1fr) 180px 180px;
+  grid-template-columns: minmax(0, 1fr) 180px;
 }
 
 .weekly-entry-controls--public {
-  grid-template-columns: minmax(0, 1fr) 150px;
-  max-width: 620px;
+  grid-template-columns: minmax(0, 220px);
+  max-width: 260px;
 }
 
 .weekly-entry-shell--public .weekly-admin-card {
@@ -4170,7 +4172,7 @@ textarea {
 
 @media (min-width: 901px) and (max-width: 1250px) {
   .weekly-entry-shell--full .weekly-entry-grid {
-    grid-template-columns: minmax(0, 1fr) 205px;
+    grid-template-columns: minmax(0, 1fr) 180px;
   }
 
   .weekly-entry-shell--full .weekly-entry-table th,
@@ -9467,7 +9469,7 @@ a.commercial-member-link:hover {
   }
 
   .weekly-entry-controls--public {
-    grid-template-columns: minmax(0, 1fr) minmax(104px, 0.45fr);
+    grid-template-columns: minmax(0, 1fr);
   }
 
   .weekly-entry-shell {
