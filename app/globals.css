@@ -3479,7 +3479,7 @@ textarea {
 .weekly-entry-shell--full .weekly-entry-table th:nth-child(1),
 .weekly-entry-shell--full .weekly-entry-table td:nth-child(1) { width: 38px; }
 .weekly-entry-shell--full .weekly-entry-table th:nth-child(2),
-.weekly-entry-shell--full .weekly-entry-table td:nth-child(2) { width: 88px; }
+.weekly-entry-shell--full .weekly-entry-table td:nth-child(2) { width: 118px; }
 .weekly-entry-shell--full .weekly-entry-table th:nth-child(3),
 .weekly-entry-shell--full .weekly-entry-table td:nth-child(3) { width: 112px; }
 .weekly-entry-shell--full .weekly-entry-table th:nth-child(4),
@@ -3494,6 +3494,8 @@ textarea {
 .weekly-entry-shell--full .weekly-entry-table td:nth-child(8) { width: 64px; }
 .weekly-entry-shell--full .weekly-entry-table th:nth-child(n + 9):nth-child(-n + 13),
 .weekly-entry-shell--full .weekly-entry-table td:nth-child(n + 9):nth-child(-n + 13) { width: 52px; }
+.weekly-entry-shell--full .weekly-entry-table th:last-child,
+.weekly-entry-shell--full .weekly-entry-table td:last-child { width: 116px; }
 
 .weekly-event-tabs-field {
   display: grid;
@@ -3557,7 +3559,7 @@ textarea {
   min-width: 0;
   gap: 5px;
   color: #64748b;
-  font-size: 0.85rem;
+  font-size: 13px;
   font-weight: 700;
 }
 
