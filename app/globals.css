@@ -3491,7 +3491,7 @@ textarea {
 .weekly-entry-shell--full .weekly-entry-table th:nth-child(7),
 .weekly-entry-shell--full .weekly-entry-table td:nth-child(7),
 .weekly-entry-shell--full .weekly-entry-table th:nth-child(8),
-.weekly-entry-shell--full .weekly-entry-table td:nth-child(8) { width: 84px; }
+.weekly-entry-shell--full .weekly-entry-table td:nth-child(8) { width: 96px; min-width: 96px; white-space: nowrap; }
 .weekly-entry-shell--full .weekly-entry-table th:nth-child(n + 9):nth-child(-n + 13),
 .weekly-entry-shell--full .weekly-entry-table td:nth-child(n + 9):nth-child(-n + 13) { width: 52px; }
 .weekly-entry-shell--full .weekly-entry-table th:last-child,
@@ -4163,7 +4163,9 @@ textarea {
 
 .weekly-entry-table th:nth-child(7),
 .weekly-entry-table td:nth-child(7) {
-  width: 64px;
+  width: 88px;
+  min-width: 88px;
+  white-space: nowrap;
 }
 
 .weekly-entry-table th:nth-child(8),

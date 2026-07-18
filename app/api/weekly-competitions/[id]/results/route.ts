@@ -31,8 +31,8 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
             // stay hidden until an administrator approves them.
             wcaId: result.player.wcaIdConfirmed ? result.player.wcaId : "",
             wcaIdConfirmed: Boolean(result.player.wcaIdConfirmed),
-            province: "",
-            city: "",
+            province: result.player.wcaIdConfirmed ? result.player.province : "",
+            city: result.player.wcaIdConfirmed ? result.player.city : "",
             birthDate: ""
           }
         }));
