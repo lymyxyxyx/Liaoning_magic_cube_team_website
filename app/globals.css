@@ -3459,7 +3459,7 @@ textarea {
 }
 
 .weekly-entry-shell--full .weekly-entry-grid {
-  grid-template-columns: minmax(0, 1fr) 190px;
+  grid-template-columns: minmax(0, 1fr) 250px;
   gap: 12px;
 }
 
@@ -3491,11 +3491,17 @@ textarea {
 .weekly-entry-shell--full .weekly-entry-table th:nth-child(7),
 .weekly-entry-shell--full .weekly-entry-table td:nth-child(7),
 .weekly-entry-shell--full .weekly-entry-table th:nth-child(8),
-.weekly-entry-shell--full .weekly-entry-table td:nth-child(8) { width: 64px; }
+.weekly-entry-shell--full .weekly-entry-table td:nth-child(8) { width: 84px; }
 .weekly-entry-shell--full .weekly-entry-table th:nth-child(n + 9):nth-child(-n + 13),
 .weekly-entry-shell--full .weekly-entry-table td:nth-child(n + 9):nth-child(-n + 13) { width: 52px; }
 .weekly-entry-shell--full .weekly-entry-table th:last-child,
 .weekly-entry-shell--full .weekly-entry-table td:last-child { width: 116px; }
+
+.weekly-entry-shell--full .weekly-entry-panel {
+  min-width: 0;
+  width: 100%;
+  box-sizing: border-box;
+}
 
 .weekly-event-tabs-field {
   display: grid;
@@ -3690,6 +3696,9 @@ textarea {
   padding: 12px;
   position: sticky;
   top: 84px;
+  border-color: #cddcf2;
+  background: linear-gradient(180deg, #ffffff 0%, #f8fbff 100%);
+  box-shadow: 0 10px 26px rgb(37 99 235 / 8%);
 }
 
 .weekly-entry-shell--public .weekly-entry-panel {
@@ -3703,10 +3712,13 @@ textarea {
 
 .weekly-entry-panel .admin-card-heading {
   margin-bottom: 0;
+  padding-bottom: 9px;
+  border-bottom: 1px solid #e2ebf8;
 }
 
 .weekly-entry-panel .admin-card-heading h2 {
   font-size: 18px;
+  color: #173b78;
 }
 
 .weekly-entry-shell--public .weekly-entry-panel .admin-card-heading h2 {
@@ -3925,7 +3937,7 @@ textarea {
   gap: 0;
   border: 1px solid var(--line);
   border-bottom: 0;
-  background: #f0f0f0;
+  background: #f4f8ff;
 }
 
 .weekly-entry-shell--public .weekly-attempt-grid {
@@ -4174,7 +4186,7 @@ textarea {
 
 @media (min-width: 901px) and (max-width: 1250px) {
   .weekly-entry-shell--full .weekly-entry-grid {
-    grid-template-columns: minmax(0, 1fr) 180px;
+    grid-template-columns: minmax(0, 1fr) 225px;
   }
 
   .weekly-entry-shell--full .weekly-entry-table th,
@@ -11274,14 +11286,14 @@ a.commercial-member-link:hover {
   gap: 5px;
   margin: 12px 0;
   padding: 12px;
-  border: 1px solid #f1c56a;
+  border: 1px solid #c7daf8;
   border-radius: 12px;
-  background: #fffaf0;
-  color: #72501a;
+  background: linear-gradient(135deg, #f4f8ff 0%, #eef5ff 100%);
+  color: #38527b;
 }
 
 .weekly-admin-lock-panel strong {
-  color: #553807;
+  color: #173b78;
 }
 
 .weekly-admin-lock-panel .button {
