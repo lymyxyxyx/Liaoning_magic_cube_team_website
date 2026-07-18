@@ -475,7 +475,7 @@ export async function listWeeklyResults(meetIdOrSlug: string, eventId: string, f
        COALESCE(wpl.age_group_override, '') AS player_age_group,
        COALESCE(wpl.province, '') AS player_province,
        COALESCE(wpl.city, '') AS player_city,
-       COALESCE(wpl.wca_id_confirmed, FALSE) OR COALESCE(wpm.status = 'confirmed', FALSE) AS wca_id_confirmed,
+       COALESCE(wpl.wca_id_confirmed, FALSE) OR COALESCE(wpm.status = 'confirmed', FALSE) OR wr.player_id LIKE 'wca:%' AS wca_id_confirmed,
        wm.starts_at AS meet_starts_at
      FROM weekly_results wr
      LEFT JOIN weekly_player_library wpl ON wpl.id = wr.player_id
