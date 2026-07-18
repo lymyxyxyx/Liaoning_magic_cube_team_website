@@ -15,6 +15,7 @@ import {
 import { weeklyMeets } from "@/lib/weekly";
 import { ensureWeeklyPlayerLibraryTable, getMofang602SeedWeeklyPlayers, listWeeklyEligiblePlayers, type WeeklyPersonalBests } from "@/lib/weekly-player-library";
 import { matchesWeeklyPlayerQuery } from "@/lib/weekly-player-search";
+import { isWeeklyMeetPubliclyVisible as isPublicMeet } from "@/lib/weekly-feature";
 
 export type WeeklyMeetOption = {
   id: string;
@@ -228,9 +229,7 @@ export async function isWeeklyMeetPubliclyVisible(meetIdOrSlug: string) {
     [meetIdOrSlug],
   );
   const meet = rows[0];
-  if (!meet || meet.status === "draft") return false;
-  if (meet.status === "archived" && !meet.published_at) return false;
-  return !meet.published_at || new Date(meet.published_at).getTime() <= Date.now();
+  return Boolean(meet && isPublicMeet({ status: meet.status, publishedAt: meet.published_at }));
 }
 
 export async function listWeeklyMeetEventConfigs(meetId: string): Promise<WeeklyMeetEventConfig[]> {

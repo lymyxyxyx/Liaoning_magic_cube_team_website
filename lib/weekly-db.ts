@@ -1,7 +1,7 @@
 import { getPostgresPool } from "@/lib/postgres";
 import { weeklyMeets } from "@/lib/weekly";
 import type { WeeklyMeet, WeeklyEvent, WeeklyResult, WeeklyAttempt, Gender } from "@/lib/weekly";
-import { isWeeklyFocusMeet } from "@/lib/weekly-feature";
+import { isWeeklyFocusMeet, isWeeklyMeetPubliclyVisible } from "@/lib/weekly-feature";
 
 type MeetRow = {
   id: string;
@@ -11,6 +11,7 @@ type MeetRow = {
   year: number;
   year_week: number;
   published_at: string | null;
+  status: string;
   event: string;
   date_label: string;
   summary: string;
@@ -55,11 +56,14 @@ export async function getWeeklyMeets(): Promise<WeeklyMeet[]> {
   try {
     const pool = getPostgresPool();
     const meetsResult = await pool.query<MeetRow>(
-      "SELECT * FROM weekly_meets WHERE status = 'open' ORDER BY week_number DESC"
+      "SELECT * FROM weekly_meets WHERE status IN ('open', 'closed', 'archived') ORDER BY week_number DESC"
     );
-    if (meetsResult.rows.length === 0) return [];
+    const visibleMeetRows = meetsResult.rows.filter((row) =>
+      isWeeklyMeetPubliclyVisible({ status: row.status, publishedAt: row.published_at })
+    );
+    if (visibleMeetRows.length === 0) return [];
 
-    const meetIds = meetsResult.rows.map((r) => r.id);
+    const meetIds = visibleMeetRows.map((r) => r.id);
     const introsResult = await pool.query<{ meet_id: string; seq: number; text: string }>(
       "SELECT * FROM weekly_meet_intros WHERE meet_id = ANY($1) ORDER BY meet_id, seq",
       [meetIds]
@@ -76,7 +80,7 @@ export async function getWeeklyMeets(): Promise<WeeklyMeet[]> {
     const mainResultsByMeet = groupBy(mainResultsResult.rows, (r) => r.meet_id);
     const emptyAttempts = new Map<number, AttemptRow[]>();
 
-    return meetsResult.rows.map((meetRow) => {
+    return visibleMeetRows.map((meetRow) => {
       const rawResults = mainResultsByMeet.get(meetRow.id) || [];
       return {
       id: meetRow.id,
@@ -99,7 +103,9 @@ export async function getWeeklyMeets(): Promise<WeeklyMeet[]> {
     });
   } catch (error) {
     console.error("[weekly-db] getWeeklyMeets: database query failed, falling back to static data", error);
-    return weeklyMeets.filter(isWeeklyFocusMeet);
+    return weeklyMeets.filter((meet) =>
+      isWeeklyFocusMeet(meet) && isWeeklyMeetPubliclyVisible({ status: "open", publishedAt: meet.publishedAt })
+    );
   }
 }
 
@@ -107,11 +113,12 @@ export async function getWeeklyMeetBySlug(slug: string): Promise<WeeklyMeet | nu
   try {
     const pool = getPostgresPool();
     const meetResult = await pool.query<MeetRow>(
-      "SELECT * FROM weekly_meets WHERE slug = $1 AND status = 'open'",
+      "SELECT * FROM weekly_meets WHERE slug = $1 AND status IN ('open', 'closed', 'archived')",
       [slug]
     );
     if (meetResult.rows.length === 0) return null;
     const meetRow = meetResult.rows[0];
+    if (!isWeeklyMeetPubliclyVisible({ status: meetRow.status, publishedAt: meetRow.published_at })) return null;
 
   const [introsResult, eventsResult, resultsResult] = await Promise.all([
     pool.query<{ meet_id: string; seq: number; text: string }>(
@@ -176,7 +183,9 @@ export async function getWeeklyMeetBySlug(slug: string): Promise<WeeklyMeet | nu
     };
   } catch (error) {
     console.error("[weekly-db] getWeeklyMeetBySlug: database query failed, falling back to static data", error);
-    return weeklyMeets.find((meet) => meet.slug === slug) || null;
+    return weeklyMeets.find((meet) =>
+      meet.slug === slug && isWeeklyMeetPubliclyVisible({ status: "open", publishedAt: meet.publishedAt })
+    ) || null;
   }
 }
 
