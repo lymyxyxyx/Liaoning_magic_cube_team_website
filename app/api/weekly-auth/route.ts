@@ -62,10 +62,11 @@ export async function POST(request: NextRequest) {
 }
 
 function getSafeNextPath(value: string | null) {
-  if (!value || !value.startsWith("/") || value.startsWith("//")) return "/admin/weekly";
-  if (value.startsWith("/weekly/admin/login")) return "/admin/weekly";
+  if (!value) return "/admin/weekly";
+  if (/[\\\x00-\x1f\x7f]/.test(value)) return "/admin/weekly";
   if (value === "/weekly/admin" || value.startsWith("/weekly/admin/")) return value.replace("/weekly/admin", "/admin/weekly");
-  return value;
+  if (value.startsWith("/admin/weekly")) return value;
+  return "/admin/weekly";
 }
 
 function createRelativeRedirect(path: string) {

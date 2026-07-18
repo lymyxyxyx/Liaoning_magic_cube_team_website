@@ -2,7 +2,7 @@ import { NextRequest } from "next/server";
 
 export function isWeeklySameOrigin(request: NextRequest) {
   const origin = request.headers.get("origin");
-  if (!origin) return true;
+  if (!origin) return false;
   try {
     const requestOrigin = new URL(origin);
     const forwardedProto = request.headers.get("x-forwarded-proto")?.split(",", 1)[0]?.trim();
