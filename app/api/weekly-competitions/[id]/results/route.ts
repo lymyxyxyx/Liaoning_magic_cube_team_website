@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getWeeklyMeetEntryAvailability, listWeeklyResults, saveWeeklyResult } from "@/lib/weekly-entry-store";
 import { findWeeklyEligiblePlayer } from "@/lib/weekly-player-library";
 import { isWeeklyCompetitionEnabled } from "@/lib/weekly-feature";
+import { verifySessionToken } from "@/lib/auth";
 
 export const dynamic = "force-dynamic";
 
@@ -12,7 +13,25 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
   const format = request.nextUrl.searchParams.get("format") || "avg5";
   try {
     const results = await listWeeklyResults(id, eventId, format);
-    return NextResponse.json({ results });
+    const token = request.cookies.get("liaoning_weekly_session")?.value;
+    const isAdmin = Boolean(token && (await verifySessionToken(token)));
+    const visibleResults = isAdmin
+      ? results
+      : results.map((result) => ({
+          ...result,
+          player: {
+            ...result.player,
+            // Scores remain public, but personal identifiers and exact birth
+            // dates are only needed by the authenticated admin console.
+            id: result.player.name,
+            wcaId: "",
+            wcaIdConfirmed: false,
+            province: "",
+            city: "",
+            birthDate: ""
+          }
+        }));
+    return NextResponse.json({ results: visibleResults });
   } catch (error) {
     if (error instanceof Error && error.message === "项目不正确") {
       return NextResponse.json({ message: error.message }, { status: 400 });

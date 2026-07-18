@@ -149,20 +149,24 @@ function validatePayload(payload: WeeklyMeetInput | null) {
   if (!Number.isInteger(payload.yearWeek) || payload.yearWeek <= 0) return "年度周次不正确";
   if (!payload.dateLabel?.trim()) return "请填写周赛周期";
   if (!payload.summary?.trim()) return "请填写摘要";
+  if (payload.summary.length > 10_000 || (payload.intro?.length || 0) > 50) return "周赛文本内容过大";
   const allEvents = payload.events?.length
     ? payload.events
     : [{ eventName: payload.event || "三阶", results: payload.results }];
 
   let totalResults = 0;
+  if (allEvents.length > 50) return "项目数量过多";
   for (const event of allEvents) {
     if (!event.eventName?.trim()) return "存在未填写项目名称的事件";
     if (!Array.isArray(event.results)) return `${event.eventName} 缺少成绩数据`;
+    if (event.results.length > 5_000) return `${event.eventName} 成绩数量过多`;
     totalResults += event.results.length;
     for (const result of event.results) {
       if (!result.playerName?.trim()) return `${event.eventName} 中存在未填写姓名的成绩`;
       if (result.gender !== "男" && result.gender !== "女") return `${event.eventName} 中 ${result.playerName} 的性别不正确`;
       if (!Number.isFinite(result.average)) return `${event.eventName} 中 ${result.playerName} 的平均成绩不正确`;
       if (!Number.isFinite(result.personalBest)) return `${event.eventName} 中 ${result.playerName} 的个人 PB 不正确`;
+      if (!Array.isArray(result.attempts) || result.attempts.length > 5) return `${event.eventName} 中 ${result.playerName} 的成绩次数不正确`;
     }
   }
   if (totalResults === 0) return "请至少录入一条成绩";

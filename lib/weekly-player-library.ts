@@ -366,7 +366,9 @@ async function enrichWeeklyPlayerMatches(players: WeeklyPlayerLibraryEntry[]) {
   const localMatchesByName = await getLocalMatchesByName();
 
   return players.map((player) => {
-    const localMatch = localMatchesByName.get(player.name);
+    const localMatch = getWeeklyNameVariants(player.name)
+      .map((name) => localMatchesByName.get(name))
+      .find(Boolean);
     const ageGroup = getWeeklyAgeGroup(player.birthDate) || normalizeAgeGroup(player.ageGroup || "", "");
     return {
       ...player,
@@ -488,11 +490,11 @@ async function getLocalMatchesByName() {
         city: profile.city || ""
       };
       if (match.wcaId) profilesByWcaId.set(match.wcaId, match);
-      const name = profile.name?.trim();
-      if (!name) continue;
-      const current = profilesByName.get(name) || [];
-      current.push(match);
-      profilesByName.set(name, current);
+      for (const name of getWeeklyNameVariants(profile.name)) {
+        const current = profilesByName.get(name) || [];
+        current.push(match);
+        profilesByName.set(name, current);
+      }
     }
 
     for (const member of commercialTeamMembers) {
@@ -500,10 +502,10 @@ async function getLocalMatchesByName() {
       const wcaId = member.wcaId?.trim().toUpperCase() || "";
       const localProfile = wcaId ? profilesByWcaId.get(wcaId) : undefined;
       if (!name || !localProfile) continue;
-      const current = profilesByName.get(name) || [];
+      const current = profilesByName.get(normalizeWeeklyName(name)) || [];
       if (current.some((match) => match.wcaId === localProfile.wcaId)) continue;
       current.push(localProfile);
-      profilesByName.set(name, current);
+      profilesByName.set(normalizeWeeklyName(name), current);
     }
 
     const matches = new Map<string, { wcaId: string; province: string; city: string }>();
@@ -518,6 +520,19 @@ async function getLocalMatchesByName() {
   } catch {
     return new Map<string, { wcaId: string; province: string; city: string }>();
   }
+}
+
+function normalizeWeeklyName(value: string) {
+  return value.normalize("NFKC").replace(/[\s·•・,，.。()（）\[\]{}<>《》'"“”‘’]/g, "").toLowerCase();
+}
+
+function getWeeklyNameVariants(value: string) {
+  const name = value.trim();
+  if (!name) return [];
+  const variants = new Set<string>([normalizeWeeklyName(name)]);
+  const chineseParts = name.match(/[\u3400-\u9fff]+/g)?.join("") || "";
+  if (chineseParts) variants.add(normalizeWeeklyName(chineseParts));
+  return [...variants].filter(Boolean);
 }
 
 async function seedMofang602Players() {

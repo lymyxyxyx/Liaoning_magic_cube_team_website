@@ -13,31 +13,35 @@ export const dynamic = "force-dynamic";
 
 export default async function WeeklyResultsEntryPage() {
   if (!isWeeklyCompetitionEnabled()) notFound();
+  const sessionToken = (await cookies()).get("liaoning_weekly_session")?.value || "";
+  const initialAdminUnlocked = sessionToken ? await verifySessionToken(sessionToken) : false;
   const meets = (await listWeeklyMeetOptions().catch(() => [])).filter((meet) => meet.status === "open");
   const currentMeet = meets.find((meet) => meet.status === "open") || meets.find((meet) => meet.id !== "weekly-test-entry");
   const eventConfigs = currentMeet ? await listWeeklyMeetEventConfigs(currentMeet.id).catch(() => []) : [];
   const eventConfigIds = new Set(eventConfigs.filter((config) => config.enabled).map((config) => config.eventId));
   const events = eventConfigIds.size > 0 ? WCA_EVENTS.filter((event) => eventConfigIds.has(event.id)) : WEEKLY_DEFAULT_EVENTS;
-  const players = await listWeeklyEligiblePlayers()
-    .catch(() => getMofang602SeedWeeklyPlayers())
-    .then((libraryPlayers) =>
-      libraryPlayers.map((player) => ({
-        id: player.id,
-        name: player.name,
-        slug: "",
-        wcaId: player.wcaId || "",
-        wcaIdConfirmed: Boolean(player.wcaIdConfirmed),
-        gender: player.gender === "女" ? ("女" as const) : ("男" as const),
-        province: player.province,
-        city: player.city,
-        birthDate: player.birthDate,
-        ageGroup: getWeeklyAgeGroup(player.birthDate) || player.ageGroup || "",
-        ageGroupIsFuzzy: Boolean(player.ageGroupIsFuzzy)
-      }))
-    );
-
-  const sessionToken = (await cookies()).get("liaoning_weekly_session")?.value || "";
-  const initialAdminUnlocked = sessionToken ? await verifySessionToken(sessionToken) : false;
+  // Do not serialize the complete player library into the public page. The
+  // admin console loads candidates through the authenticated search endpoint
+  // after the operator logs in.
+  const players = initialAdminUnlocked
+    ? await listWeeklyEligiblePlayers()
+        .catch(() => getMofang602SeedWeeklyPlayers())
+        .then((libraryPlayers) =>
+          libraryPlayers.map((player) => ({
+            id: player.id,
+            name: player.name,
+            slug: "",
+            wcaId: player.wcaId || "",
+            wcaIdConfirmed: Boolean(player.wcaIdConfirmed),
+            gender: player.gender === "女" ? ("女" as const) : ("男" as const),
+            province: player.province,
+            city: player.city,
+            birthDate: player.birthDate,
+            ageGroup: getWeeklyAgeGroup(player.birthDate) || player.ageGroup || "",
+            ageGroupIsFuzzy: Boolean(player.ageGroupIsFuzzy)
+          }))
+        )
+    : [];
 
   return (
     <>

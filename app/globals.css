@@ -3448,6 +3448,51 @@ textarea {
   gap: 18px;
 }
 
+/* The weekly leaderboard has more columns than a normal content table. Give
+ * it the available desktop width so the score columns do not immediately
+ * collapse into a narrow horizontal scroller. Mobile keeps the compact
+ * scrollable table rules below. */
+.weekly-entry-shell--full {
+  width: min(1720px, calc(100% - 36px));
+}
+
+.weekly-entry-shell--full .weekly-entry-grid {
+  grid-template-columns: minmax(0, 1fr) 250px;
+  gap: 12px;
+}
+
+.weekly-entry-shell--full .weekly-entry-table {
+  table-layout: fixed;
+  min-width: 0;
+  font-size: 12px;
+}
+
+.weekly-entry-shell--full .weekly-entry-table th,
+.weekly-entry-shell--full .weekly-entry-table td {
+  padding: 6px 4px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.weekly-entry-shell--full .weekly-entry-table th:nth-child(1),
+.weekly-entry-shell--full .weekly-entry-table td:nth-child(1) { width: 38px; }
+.weekly-entry-shell--full .weekly-entry-table th:nth-child(2),
+.weekly-entry-shell--full .weekly-entry-table td:nth-child(2) { width: 88px; }
+.weekly-entry-shell--full .weekly-entry-table th:nth-child(3),
+.weekly-entry-shell--full .weekly-entry-table td:nth-child(3) { width: 112px; }
+.weekly-entry-shell--full .weekly-entry-table th:nth-child(4),
+.weekly-entry-shell--full .weekly-entry-table td:nth-child(4) { width: 52px; }
+.weekly-entry-shell--full .weekly-entry-table th:nth-child(5),
+.weekly-entry-shell--full .weekly-entry-table td:nth-child(5) { width: 82px; }
+.weekly-entry-shell--full .weekly-entry-table th:nth-child(6),
+.weekly-entry-shell--full .weekly-entry-table td:nth-child(6) { width: 126px; }
+.weekly-entry-shell--full .weekly-entry-table th:nth-child(7),
+.weekly-entry-shell--full .weekly-entry-table td:nth-child(7),
+.weekly-entry-shell--full .weekly-entry-table th:nth-child(8),
+.weekly-entry-shell--full .weekly-entry-table td:nth-child(8) { width: 64px; }
+.weekly-entry-shell--full .weekly-entry-table th:nth-child(n + 9):nth-child(-n + 13),
+.weekly-entry-shell--full .weekly-entry-table td:nth-child(n + 9):nth-child(-n + 13) { width: 52px; }
+
 .weekly-entry-shell--public {
   padding-top: 14px;
 }
@@ -4021,6 +4066,23 @@ textarea {
 
 .weekly-entry-table td:last-child {
   font-size: 11px;
+}
+
+@media (min-width: 901px) and (max-width: 1250px) {
+  .weekly-entry-shell--full .weekly-entry-grid {
+    grid-template-columns: minmax(0, 1fr) 220px;
+  }
+
+  .weekly-entry-shell--full .weekly-entry-table th,
+  .weekly-entry-shell--full .weekly-entry-table td {
+    padding-inline: 3px;
+  }
+}
+
+@media (max-width: 900px) {
+  .weekly-entry-shell--full .weekly-entry-grid {
+    grid-template-columns: 1fr;
+  }
 }
 
 .weekly-library-shell {
