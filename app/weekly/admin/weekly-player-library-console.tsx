@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Pencil, Plus, Save, Trash2, X } from "lucide-react";
 import { getWeeklyRankingAgeGroup, weeklyRankingAgeGroups } from "@/lib/weekly-age-groups";
 import type { WeeklyLibraryGender, WeeklyPersonalBests, WeeklyPlayerLibraryEntry } from "@/lib/weekly-player-library";
+import { matchesWeeklyPlayerQuery } from "@/lib/weekly-player-search";
 
 type DraftPlayer = WeeklyPlayerLibraryEntry;
 
@@ -89,9 +90,10 @@ export function WeeklyPlayerLibraryConsole({
     const q = query.trim();
     if (!q) return players;
     return players.filter((player) => {
-      return [player.name, player.wcaId, player.gender, getDisplayAgeGroup(player), player.birthDate, player.province, player.city].some((value) =>
-        (value || "").includes(q)
-      );
+      return matchesWeeklyPlayerQuery(player, q) ||
+        [player.gender, getDisplayAgeGroup(player), player.birthDate, player.province, player.city].some((value) =>
+          (value || "").toLowerCase().includes(q.toLowerCase())
+        );
     });
   }, [players, query]);
 
@@ -217,7 +219,7 @@ export function WeeklyPlayerLibraryConsole({
               <p>WCA ID、城市和个人 PB 会在导入后自动合并；匹配不到的姓名会作为新选手保留。</p>
             </div>
             <div className="weekly-library-toolbar">
-              <input className="weekly-library-search" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="搜索姓名 / 省市" />
+              <input className="weekly-library-search" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="姓名 / 拼音 / 首字母 / WCA ID" />
               <button className="button" type="button" onClick={openCreator}>
                 <Plus size={15} />
                 新建

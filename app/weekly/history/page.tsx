@@ -18,7 +18,7 @@ export default async function WeeklyHistoryPage() {
         title="历史周赛"
         actions={<Link className="button" href="/weekly/results">返回本周成绩</Link>}
       >
-        已结束的周赛会保留在这里，历史数据可以逐步补充，不影响当前周录入。
+        以下历史周赛数据属于旧系统遗留数据，正在重新适配；历史成绩和选手信息可能暂不完整，不影响当前周录入。
       </PageHero>
       <section className="container section">
         {meets.length === 0 ? <p className="empty-state">暂无已发布的历史周赛。</p> : null}
