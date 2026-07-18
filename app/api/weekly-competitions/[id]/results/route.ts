@@ -27,8 +27,10 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
             // Scores remain public, but personal identifiers and exact birth
             // dates are only needed by the authenticated admin console.
             id: result.player.name,
-            wcaId: "",
-            wcaIdConfirmed: false,
+            // Confirmed WCA matches are public; suggested/unconfirmed matches
+            // stay hidden until an administrator approves them.
+            wcaId: result.player.wcaIdConfirmed ? result.player.wcaId : "",
+            wcaIdConfirmed: Boolean(result.player.wcaIdConfirmed),
             province: "",
             city: "",
             birthDate: ""
