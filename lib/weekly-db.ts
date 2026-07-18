@@ -12,6 +12,8 @@ type MeetRow = {
   year_week: number;
   published_at: string | null;
   status: string;
+  starts_at: string | null;
+  ends_at: string | null;
   event: string;
   date_label: string;
   summary: string;
@@ -59,7 +61,7 @@ export async function getWeeklyMeets(): Promise<WeeklyMeet[]> {
       "SELECT * FROM weekly_meets WHERE status IN ('open', 'closed', 'archived') ORDER BY week_number DESC"
     );
     const visibleMeetRows = meetsResult.rows.filter((row) =>
-      isWeeklyMeetPubliclyVisible({ status: row.status, publishedAt: row.published_at })
+      isWeeklyMeetPubliclyVisible({ status: row.status, publishedAt: row.published_at, startsAt: row.starts_at, endsAt: row.ends_at })
     );
     if (visibleMeetRows.length === 0) return [];
 
@@ -118,7 +120,12 @@ export async function getWeeklyMeetBySlug(slug: string): Promise<WeeklyMeet | nu
     );
     if (meetResult.rows.length === 0) return null;
     const meetRow = meetResult.rows[0];
-    if (!isWeeklyMeetPubliclyVisible({ status: meetRow.status, publishedAt: meetRow.published_at })) return null;
+    if (!isWeeklyMeetPubliclyVisible({
+      status: meetRow.status,
+      publishedAt: meetRow.published_at,
+      startsAt: meetRow.starts_at,
+      endsAt: meetRow.ends_at
+    })) return null;
 
   const [introsResult, eventsResult, resultsResult] = await Promise.all([
     pool.query<{ meet_id: string; seq: number; text: string }>(

@@ -11487,6 +11487,17 @@ a.commercial-member-link:hover {
   font-size: 11px;
 }
 
+.weekly-wca-candidate-list {
+  display: grid;
+  gap: 4px;
+  justify-items: start;
+}
+
+.weekly-wca-candidate-list .weekly-wca-status {
+  flex-wrap: wrap;
+  justify-content: flex-start;
+}
+
 .weekly-wca-status svg {
   color: #16803c;
 }

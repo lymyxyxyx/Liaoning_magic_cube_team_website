@@ -1,6 +1,6 @@
 "use client";
 
-import { Save } from "lucide-react";
+import { CalendarPlus, Save, X } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { weeklyResultFormats, type WeeklyResultFormat } from "@/lib/weekly-result-utils";
 import { WEEKLY_DEFAULT_EVENT_IDS } from "@/lib/wca-events";
@@ -21,6 +21,11 @@ export function WeeklyMeetConfigConsole({ initialMeets, events }: { initialMeets
   const [configs, setConfigs] = useState<Config[]>([]);
   const [notice, setNotice] = useState("");
   const [saving, setSaving] = useState(false);
+  const [isCreating, setIsCreating] = useState(false);
+  const [newStartDate, setNewStartDate] = useState(getNextMondayDate());
+  const [newEndDate, setNewEndDate] = useState(getDateAfter(newStartDate, 6));
+  const [templateMeetId, setTemplateMeetId] = useState(initialMeets[0]?.id || "");
+  const [newStatus, setNewStatus] = useState<"draft" | "open">("draft");
 
   useEffect(() => {
     if (!selected) return;
@@ -62,18 +67,50 @@ export function WeeklyMeetConfigConsole({ initialMeets, events }: { initialMeets
       .finally(() => setSaving(false));
   }
 
+  function openCreator() {
+    const start = getNextMondayDate();
+    setNewStartDate(start);
+    setNewEndDate(getDateAfter(start, 6));
+    setTemplateMeetId(selectedId || initialMeets[0]?.id || "");
+    setNewStatus("draft");
+    setNotice("");
+    setIsCreating(true);
+  }
+
+  function createMeet() {
+    setSaving(true);
+    fetch("/api/admin/weekly-competitions", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ startDate: newStartDate, endDate: newEndDate, templateMeetId: templateMeetId || null, status: newStatus })
+    })
+      .then(async (response) => {
+        const payload = await response.json().catch(() => null) as { meet?: Meet; message?: string } | null;
+        if (!response.ok || !payload?.meet) throw new Error(payload?.message || "创建周赛失败");
+        return payload.meet;
+      })
+      .then((meet) => {
+        setMeets((current) => [meet, ...current]);
+        setSelectedId(meet.id);
+        setIsCreating(false);
+        setNotice("新周赛已生成，项目配置已沿用模板；成绩表为空，可以继续设置开放时间。");
+      })
+      .catch((error) => setNotice(error instanceof Error ? error.message : "创建周赛失败。"))
+      .finally(() => setSaving(false));
+  }
+
   return (
     <details className="admin-card weekly-meet-config">
       <summary className="weekly-admin-fold-summary">
         <span>
           <strong>当前周赛配置</strong>
-          <small>当前测试锁定第 328 周，项目和开放时间在这里维护</small>
+          <small>选择周赛并维护日期、项目和开放时间</small>
         </span>
         <span className="weekly-fold-hint">展开配置</span>
       </summary>
       <div className="weekly-meet-config-toolbar">
         <select value={selectedId} onChange={(event) => setSelectedId(event.target.value)}>{meets.map((meet) => <option key={meet.id} value={meet.id}>{meet.title}</option>)}</select>
-        <span className="weekly-test-mode-note">当前仅维护第 328 周</span>
+        <button className="button primary" type="button" onClick={openCreator}><CalendarPlus size={16} />新建一周</button>
       </div>
       {selected ? <>
         <div className="weekly-meet-config-fields">
@@ -109,6 +146,23 @@ export function WeeklyMeetConfigConsole({ initialMeets, events }: { initialMeets
         <button className="button primary" type="button" disabled={saving} onClick={save}><Save size={16} />{saving ? "保存中" : "保存周赛配置"}</button>
       </> : null}
       {notice ? <p className="admin-inline-notice">{notice}</p> : null}
+      {isCreating ? (
+        <div className="weekly-library-dialog-backdrop" role="presentation">
+          <div className="weekly-library-dialog" role="dialog" aria-modal="true" aria-labelledby="weekly-create-meet-title">
+            <div className="admin-card-heading">
+              <div><span className="eyebrow">生成新周期</span><h2 id="weekly-create-meet-title">新建一周周赛</h2><p>只创建周赛和项目配置，不复制任何成绩。</p></div>
+              <button className="icon-button" type="button" onClick={() => setIsCreating(false)} aria-label="关闭新建周赛"><X size={17} /></button>
+            </div>
+            <div className="weekly-library-form">
+              <label>开始日期<input type="date" value={newStartDate} onChange={(event) => setNewStartDate(event.target.value)} /></label>
+              <label>结束日期<input type="date" value={newEndDate} onChange={(event) => setNewEndDate(event.target.value)} /></label>
+              <label>项目模板<select value={templateMeetId} onChange={(event) => setTemplateMeetId(event.target.value)}>{meets.map((meet) => <option key={meet.id} value={meet.id}>{meet.title}</option>)}</select></label>
+              <label>创建后状态<select value={newStatus} onChange={(event) => setNewStatus(event.target.value as "draft" | "open")}><option value="draft">草稿</option><option value="open">立即开放</option></select></label>
+            </div>
+            <div className="weekly-admin-actions"><button className="button" type="button" onClick={() => setIsCreating(false)} disabled={saving}>取消</button><button className="button primary" type="button" onClick={createMeet} disabled={saving || !newStartDate || !newEndDate}><CalendarPlus size={16} />{saving ? "生成中" : "生成周赛"}</button></div>
+          </div>
+        </div>
+      ) : null}
     </details>
   );
 }
@@ -119,4 +173,22 @@ function toLocalValue(value?: string | null) {
   if (Number.isNaN(date.getTime())) return "";
   const offset = date.getTimezoneOffset() * 60000;
   return new Date(date.getTime() - offset).toISOString().slice(0, 16);
+}
+
+function getNextMondayDate() {
+  const date = new Date();
+  const daysUntilMonday = (8 - (date.getDay() || 7)) % 7 || 7;
+  date.setDate(date.getDate() + daysUntilMonday);
+  return formatDateInput(date);
+}
+
+function getDateAfter(dateValue: string, days: number) {
+  const date = new Date(`${dateValue}T00:00:00`);
+  if (Number.isNaN(date.getTime())) return dateValue;
+  date.setDate(date.getDate() + days);
+  return formatDateInput(date);
+}
+
+function formatDateInput(date: Date) {
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
 }

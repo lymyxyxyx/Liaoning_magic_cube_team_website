@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createSessionToken } from "@/lib/auth";
+import { clearWeeklyLoginFailures, getWeeklyLoginRateLimit, recordWeeklyLoginFailure } from "@/lib/weekly-login-rate-limit";
 
 const weeklyAdminCookieName = "liaoning_weekly_session";
 
@@ -38,7 +39,16 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ message: "周赛管理员密码未配置" }, { status: 503 });
   }
 
+  const rateLimit = getWeeklyLoginRateLimit(request);
+  if (!rateLimit.allowed) {
+    return NextResponse.json({ message: "登录尝试过于频繁，请稍后再试" }, { status: 429, headers: { "Retry-After": String(rateLimit.retryAfterSeconds) } });
+  }
+
   if (!timingSafeStringEqual(password, weeklyAdminPassword)) {
+    const retryAfterSeconds = recordWeeklyLoginFailure(rateLimit.key);
+    if (payload && retryAfterSeconds > 0) {
+      return NextResponse.json({ message: "登录尝试过于频繁，请稍后再试" }, { status: 429, headers: { "Retry-After": String(retryAfterSeconds) } });
+    }
     if (payload) return NextResponse.json({ message: "管理员口令不正确" }, { status: 401 });
     const errorUrl = request.nextUrl.clone();
     errorUrl.pathname = "/weekly/access";
@@ -48,6 +58,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.redirect(errorUrl, { status: 303 });
   }
 
+  clearWeeklyLoginFailures(rateLimit.key);
   const token = await createSessionToken(weeklyAdminPassword);
   const response = new NextResponse(null, { status: 303, headers: { Location: nextPath } });
   response.cookies.set(weeklyAdminCookieName, token, {

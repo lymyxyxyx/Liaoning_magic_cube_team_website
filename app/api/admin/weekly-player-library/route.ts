@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { listWeeklyPlayerLibrary, saveWeeklyPlayerLibrary, updateWeeklyPlayerLibraryEntry, type WeeklyPlayerLibraryEntry } from "@/lib/weekly-player-library";
 import { hasWeeklyAdminSession } from "@/lib/weekly-admin-auth";
+import { isWeeklySameOrigin } from "@/lib/weekly-request-security";
 
 export const dynamic = "force-dynamic";
 
@@ -17,6 +18,7 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   if (!(await hasWeeklyAdminSession(request))) return NextResponse.json({ message: "需要管理员登录" }, { status: 401 });
+  if (!isWeeklySameOrigin(request)) return NextResponse.json({ message: "请求来源不受信任" }, { status: 403 });
   const payload = (await request.json().catch(() => null)) as { players?: WeeklyPlayerLibraryEntry[] } | null;
   if (!Array.isArray(payload?.players)) return NextResponse.json({ message: "选手数据不正确" }, { status: 400 });
 
@@ -31,6 +33,7 @@ export async function POST(request: NextRequest) {
 
 export async function PATCH(request: NextRequest) {
   if (!(await hasWeeklyAdminSession(request))) return NextResponse.json({ message: "需要管理员登录" }, { status: 401 });
+  if (!isWeeklySameOrigin(request)) return NextResponse.json({ message: "请求来源不受信任" }, { status: 403 });
   const payload = (await request.json().catch(() => null)) as {
     id?: string;
     name?: string;

@@ -18,6 +18,7 @@ import type { WCA_EVENTS } from "@/lib/wca-events";
 import { matchesWeeklyPlayerQuery } from "@/lib/weekly-player-search";
 import { getShenyangAssociationGrade } from "@/lib/shenyang-association-grades";
 import type { WeeklyOperationLog } from "@/lib/weekly-entry-store";
+import type { WeeklyWcaMatchCandidate } from "@/lib/weekly-player-library";
 
 type MeetOption = {
   id: string;
@@ -97,6 +98,7 @@ export function WeeklyResultEntryConsole({ initialMeets, initialPlayers = [], ev
   const [selectedFormat, setSelectedFormat] = useState<WeeklyResultFormat>("avg5");
   const [results, setResults] = useState<EnteredResult[]>([]);
   const [operationLogs, setOperationLogs] = useState<WeeklyOperationLog[]>([]);
+  const [wcaCandidates, setWcaCandidates] = useState<Record<string, WeeklyWcaMatchCandidate[]>>({});
   const [resultSearchQuery, setResultSearchQuery] = useState("");
   const [resultAgeGroup, setResultAgeGroup] = useState("全部");
   const [playerQuery, setPlayerQuery] = useState("");
@@ -196,6 +198,20 @@ export function WeeklyResultEntryConsole({ initialMeets, initialPlayers = [], ev
       .catch(() => setOperationLogs([]));
   }, [selectedEventId, selectedFormat, selectedMeetId]);
 
+  const refreshWcaCandidates = useCallback(() => {
+    if (isPublicMode) return;
+    fetch("/api/admin/weekly-player-wca-matches")
+      .then((response) => response.ok ? response.json() : Promise.reject(new Error("candidates")))
+      .then((payload: { candidates: WeeklyWcaMatchCandidate[] }) => {
+        const grouped: Record<string, WeeklyWcaMatchCandidate[]> = {};
+        for (const candidate of payload.candidates || []) {
+          (grouped[candidate.weeklyPlayerId] ||= []).push(candidate);
+        }
+        setWcaCandidates(grouped);
+      })
+      .catch(() => setWcaCandidates({}));
+  }, [isPublicMode]);
+
   useEffect(() => {
     refreshResults();
   }, [refreshResults]);
@@ -203,6 +219,10 @@ export function WeeklyResultEntryConsole({ initialMeets, initialPlayers = [], ev
   useEffect(() => {
     if (!isPublicMode) refreshOperationLogs();
   }, [isPublicMode, refreshOperationLogs]);
+
+  useEffect(() => {
+    refreshWcaCandidates();
+  }, [refreshWcaCandidates]);
 
   useEffect(() => {
     setAttempts(Array.from({ length: selectedFormatConfig.attemptCount }, () => ""));
@@ -450,12 +470,12 @@ export function WeeklyResultEntryConsole({ initialMeets, initialPlayers = [], ev
       .finally(() => setIsSavingPlayer(false));
   }
 
-  function confirmWcaMatch(result: EnteredResult) {
-    if (!result.player.wcaId || result.player.wcaIdConfirmed) return;
-    fetch("/api/admin/weekly-player-library", {
-      method: "PATCH",
+  function confirmWcaMatch(result: EnteredResult, wcaId: string) {
+    if (!wcaId || result.player.wcaIdConfirmed) return;
+    fetch("/api/admin/weekly-player-wca-matches", {
+      method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ id: result.player.id, name: result.player.name, patch: { wcaId: result.player.wcaId, wcaIdConfirmed: true } })
+      body: JSON.stringify({ action: "confirm", weeklyPlayerId: result.player.id, wcaId })
     })
       .then(async (response) => {
         const payload = await response.json().catch(() => null) as { player?: WeeklyPlayer; message?: string } | null;
@@ -465,6 +485,8 @@ export function WeeklyResultEntryConsole({ initialMeets, initialPlayers = [], ev
         setPlayers((prev) => replacePlayer(prev, updated));
         setResults((prev) => prev.map((item) => item.player.name === result.player.name ? { ...item, player: { ...item.player, wcaIdConfirmed: true } } : item));
         setNotice(`${result.player.name} 的 WCA ID 已确认。`);
+        refreshWcaCandidates();
+        refreshResults();
       })
       .catch((error) => setNotice(error instanceof Error ? error.message : "确认 WCA ID 失败"));
   }
@@ -674,16 +696,25 @@ export function WeeklyResultEntryConsole({ initialMeets, initialPlayers = [], ev
                   <tr key={result.id}>
                     <td data-label="排名">{resultAgeGroup === "全部" ? displayIndex + 1 : result.rank}</td>
                     <td data-label="WCA ID">
-                      {result.player.wcaId ? (
-                        <span className="weekly-wca-status">
-                          {result.player.wcaId}
-                          {result.player.wcaIdConfirmed ? <Check size={13} aria-label="管理员已确认" /> : (
-                            <button className="weekly-wca-confirm" type="button" onClick={() => confirmWcaMatch(result)} title="确认这个 WCA ID" aria-label={`确认 ${result.player.name} 的 WCA ID`}>
-                              <small>待确认</small>
-                            </button>
-                          )}
-                        </span>
-                      ) : "-"}
+                      {result.player.wcaIdConfirmed ? (
+                        <span className="weekly-wca-status">{result.player.wcaId}<Check size={13} aria-label="管理员已确认" /></span>
+                      ) : (
+                        <div className="weekly-wca-candidate-list">
+                          {result.player.wcaId ? (
+                            <span className="weekly-wca-status">
+                              {result.player.wcaId}
+                              <button className="weekly-wca-confirm" type="button" onClick={() => confirmWcaMatch(result, result.player.wcaId)} title="确认这个 WCA ID" aria-label={`确认 ${result.player.name} 的 WCA ID`}><small>待确认</small></button>
+                            </span>
+                          ) : null}
+                          {getWcaCandidatesForResult(result, wcaCandidates).map((candidate) => (
+                            <span className="weekly-wca-status" title={`${candidate.evidence.join("、")}；匹配度 ${candidate.score}`} key={candidate.wcaId}>
+                              {candidate.wcaId}<small>{candidate.city || "辽宁"} · {candidate.score}分</small>
+                              <button className="weekly-wca-confirm" type="button" onClick={() => confirmWcaMatch(result, candidate.wcaId)} title="确认这个候选 WCA ID" aria-label={`确认 ${result.player.name} 的候选 WCA ID ${candidate.wcaId}`}><Check size={13} /></button>
+                            </span>
+                          ))}
+                          {!result.player.wcaId && getWcaCandidatesForResult(result, wcaCandidates).length === 0 ? "-" : null}
+                        </div>
+                      )}
                     </td>
                     <td data-label="姓名">{result.player.name}</td>
                     <td data-label="组别">{result.player.ageGroup || "待补"}</td>
@@ -1078,4 +1109,8 @@ function formatOperationTime(value: string) {
 
 function getPlayerDisplayAgeGroup(player: Pick<WeeklyPlayer, "birthDate" | "ageGroup">) {
   return getWeeklyAgeGroup(player.birthDate) || player.ageGroup || "";
+}
+
+function getWcaCandidatesForResult(result: EnteredResult, candidates: Record<string, WeeklyWcaMatchCandidate[]>) {
+  return candidates[result.player.id]?.filter((candidate) => candidate.status !== "rejected" && candidate.wcaId !== result.player.wcaId) || [];
 }

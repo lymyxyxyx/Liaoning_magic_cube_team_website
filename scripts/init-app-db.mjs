@@ -206,6 +206,28 @@ async function main() {
     await client.query("ALTER TABLE weekly_player_library ADD COLUMN IF NOT EXISTS personal_bests_average_base JSONB NOT NULL DEFAULT '{}'::jsonb");
     await client.query("CREATE INDEX IF NOT EXISTS weekly_player_library_name_idx ON weekly_player_library (name)");
     await client.query("CREATE INDEX IF NOT EXISTS weekly_player_library_wca_id_idx ON weekly_player_library (wca_id)");
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS weekly_player_wca_matches (
+        id BIGSERIAL PRIMARY KEY,
+        weekly_player_id TEXT NOT NULL,
+        wca_id TEXT NOT NULL,
+        wca_name TEXT NOT NULL DEFAULT '',
+        gender TEXT NOT NULL DEFAULT '',
+        province TEXT NOT NULL DEFAULT '',
+        city TEXT NOT NULL DEFAULT '',
+        score INTEGER NOT NULL DEFAULT 0,
+        method TEXT NOT NULL DEFAULT 'exact_name',
+        evidence JSONB NOT NULL DEFAULT '[]'::jsonb,
+        status TEXT NOT NULL DEFAULT 'suggested',
+        confirmed_at TIMESTAMPTZ,
+        created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+        updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+        UNIQUE (weekly_player_id, wca_id)
+      )
+    `);
+    await client.query("CREATE INDEX IF NOT EXISTS weekly_player_wca_matches_player_idx ON weekly_player_wca_matches (weekly_player_id, status, score DESC)");
+    await client.query("CREATE INDEX IF NOT EXISTS weekly_player_wca_matches_wca_idx ON weekly_player_wca_matches (wca_id, status)");
+    await client.query("CREATE UNIQUE INDEX IF NOT EXISTS weekly_player_wca_matches_confirmed_wca_idx ON weekly_player_wca_matches (wca_id) WHERE status = 'confirmed'");
 
     await client.query(`
       CREATE TABLE IF NOT EXISTS feedback_messages (

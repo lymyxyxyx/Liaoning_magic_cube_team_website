@@ -3,6 +3,8 @@ import { getWeeklyMeetEntryAvailability, isWeeklyMeetPubliclyVisible, listWeekly
 import { findWeeklyEligiblePlayer } from "@/lib/weekly-player-library";
 import { isWeeklyCompetitionEnabled } from "@/lib/weekly-feature";
 import { verifySessionToken } from "@/lib/auth";
+import { isWeeklySameOrigin } from "@/lib/weekly-request-security";
+import { isBoundedString, isWeeklyAttempts, isWeeklyResultFormat } from "@/lib/weekly-request-validation";
 
 export const dynamic = "force-dynamic";
 
@@ -44,6 +46,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
 export async function POST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   if (!isWeeklyCompetitionEnabled()) return NextResponse.json({ message: "Not found" }, { status: 404 });
+  if (!isWeeklySameOrigin(request)) return NextResponse.json({ message: "请求来源不受信任" }, { status: 403 });
   const sessionToken = request.cookies.get("liaoning_weekly_session")?.value;
   if (!sessionToken || !(await verifySessionToken(sessionToken))) {
     return NextResponse.json({ message: "需要管理员登录" }, { status: 401 });
@@ -67,7 +70,9 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   } | null;
 
   try {
-    if (!payload?.eventId || !payload.player || !payload.attempts) {
+    if (!isBoundedString(payload?.eventId, 20, true) || !payload.player ||
+        !isWeeklyResultFormat(payload.format) || !isWeeklyAttempts(payload.attempts, payload.format) ||
+        !isBoundedString(payload.player.id, 200, true) || !isBoundedString(payload.player.name, 100, true)) {
       return NextResponse.json({ message: "缺少成绩录入信息" }, { status: 400 });
     }
     const availability = await getWeeklyMeetEntryAvailability(id);
@@ -91,7 +96,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
         ageGroup: libraryPlayer.ageGroup || "",
         ageGroupIsFuzzy: Boolean(libraryPlayer.ageGroupIsFuzzy)
       },
-      attempts: payload.attempts
+      attempts: payload.attempts as string[]
     });
     const results = await listWeeklyResults(id, payload.eventId, payload.format || "avg5");
     return NextResponse.json({ calculated, results });

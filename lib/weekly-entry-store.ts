@@ -99,6 +99,8 @@ type WeeklyResultRow = {
   player_age_group?: string | null;
   player_province?: string | null;
   player_city?: string | null;
+  matched_wca_id?: string | null;
+  matched_wca_id_confirmed?: boolean;
   pb_refreshed?: boolean;
   pb_average_refreshed?: boolean;
   meet_starts_at?: string | null;
@@ -221,15 +223,20 @@ export async function listWeeklyMeetOptions(): Promise<WeeklyMeetOption[]> {
 
 export async function isWeeklyMeetPubliclyVisible(meetIdOrSlug: string) {
   const pool = getPostgresPool();
-  const { rows } = await pool.query<{ status: string; published_at: string | null }>(
-    `SELECT status, published_at
+  const { rows } = await pool.query<{ status: string; published_at: string | null; starts_at: string | null; ends_at: string | null }>(
+    `SELECT status, published_at, starts_at, ends_at
        FROM weekly_meets
       WHERE id = $1 OR slug = $1
       LIMIT 1`,
     [meetIdOrSlug],
   );
   const meet = rows[0];
-  return Boolean(meet && isPublicMeet({ status: meet.status, publishedAt: meet.published_at }));
+  return Boolean(meet && isPublicMeet({
+    status: meet.status,
+    publishedAt: meet.published_at,
+    startsAt: meet.starts_at,
+    endsAt: meet.ends_at
+  }));
 }
 
 export async function listWeeklyMeetEventConfigs(meetId: string): Promise<WeeklyMeetEventConfig[]> {
@@ -269,26 +276,75 @@ export async function getWeeklyMeetEntryAvailability(meetIdOrSlug: string) {
   return { canEnter: true, message: "" };
 }
 
-export async function createWeeklyMeet() {
+export async function createWeeklyMeet(input: {
+  startDate: string;
+  endDate: string;
+  templateMeetId?: string | null;
+  status?: "draft" | "open";
+}) {
+  const startDate = parseWeeklyDate(input.startDate);
+  const endDate = parseWeeklyDate(input.endDate);
+  if (!startDate || !endDate) throw new Error("周赛日期格式不正确");
+  if (endDate.getTime() < startDate.getTime()) throw new Error("结束日期不能早于开始日期");
+  if (endDate.getTime() - startDate.getTime() > 14 * 86400000) throw new Error("周赛周期不能超过 15 天");
+
   await ensureWeeklyEntryTables();
   const pool = getPostgresPool();
-  const { rows } = await pool.query<{ week_number: number }>("SELECT week_number FROM weekly_meets ORDER BY week_number DESC LIMIT 1");
-  const weekNumber = (rows[0]?.week_number || 0) + 1;
-  const now = new Date();
-  const year = now.getFullYear();
-  const yearWeek = getIsoWeek(now);
-  const id = `weekly-${weekNumber}`;
-  const title = `辽宁魔方线上周赛第${weekNumber}周`;
-  const dateLabel = `${year}年第${yearWeek}周`;
+  const client = await pool.connect();
+  try {
+    await client.query("BEGIN");
+    // Serialize allocation so two administrators cannot receive the same week number.
+    await client.query("LOCK TABLE weekly_meets IN SHARE ROW EXCLUSIVE MODE");
+    const sequence = await client.query<{ week_number: number }>("SELECT COALESCE(MAX(week_number), 0) + 1 AS week_number FROM weekly_meets");
+    const weekNumber = Number(sequence.rows[0]?.week_number || 1);
+    const startDateValue = formatWeeklyDate(startDate);
+    const endDateValue = formatWeeklyDate(endDate);
+    const baseId = `weekly-${startDateValue}`;
+    const duplicate = await client.query<{ id: string }>("SELECT id FROM weekly_meets WHERE id = $1 OR slug = $2 LIMIT 1", [baseId, baseId]);
+    const id = duplicate.rows[0] ? `${baseId}-${Date.now()}` : baseId;
+    const slug = id;
+    const dateLabel = formatWeeklyDateRange(startDate, endDate);
+    const title = `辽宁魔方线上周赛 · ${dateLabel}`;
+    const status = input.status || "draft";
+    const templateConfigs = input.templateMeetId
+      ? await client.query<{ event_id: string; format: string; enabled: boolean; seq: number }>(
+          "SELECT event_id, format, enabled, seq FROM weekly_meet_event_configs WHERE meet_id = $1 ORDER BY seq, event_id",
+          [input.templateMeetId]
+        )
+      : { rows: [] };
+    const eventConfigs = templateConfigs.rows.length > 0
+      ? templateConfigs.rows.map((row) => ({ eventId: row.event_id, format: getWeeklyResultFormat(row.format).id, enabled: row.enabled, seq: row.seq }))
+      : defaultWeeklyMeetEventConfigs();
 
-  await pool.query(
-    `INSERT INTO weekly_meets
-      (id, slug, title, week_number, year, year_week, event, date_label, summary, pb_note, three_age_intro, status)
-     VALUES ($1,$2,$3,$4,$5,$6,'三阶',$7,'','','','draft')`,
-    [id, String(weekNumber), title, weekNumber, year, yearWeek, dateLabel]
-  );
-  await saveWeeklyMeetEventConfigs(pool, id, defaultWeeklyMeetEventConfigs());
-  return { id, slug: String(weekNumber), title, dateLabel, status: "draft" } satisfies WeeklyMeetOption;
+    await client.query(
+      `INSERT INTO weekly_meets
+        (id, slug, title, week_number, year, year_week, event, date_label, summary, pb_note, three_age_intro, status, starts_at, ends_at)
+       VALUES ($1,$2,$3,$4,$5,$6,'三阶',$7,$8,$9,$10,$11,$12,$13)`,
+      [
+        id,
+        slug,
+        title,
+        weekNumber,
+        startDate.getFullYear(),
+        getIsoWeek(startDate),
+        dateLabel,
+        "本周周赛成绩与排名。",
+        "下表中个人 PB 部分标红的为本周刷新的成绩。",
+        "三阶为周赛主要项目，项目配置沿用模板周赛。",
+        status,
+        `${startDateValue}T00:00:00+08:00`,
+        `${endDateValue}T23:59:59+08:00`
+      ]
+    );
+    await saveWeeklyMeetEventConfigs(client, id, eventConfigs);
+    await client.query("COMMIT");
+    return { id, slug, title, dateLabel, status, startsAt: `${startDateValue}T00:00:00+08:00`, endsAt: `${endDateValue}T23:59:59+08:00` } satisfies WeeklyMeetOption;
+  } catch (error) {
+    await client.query("ROLLBACK");
+    throw error;
+  } finally {
+    client.release();
+  }
 }
 
 export async function updateWeeklyMeetConfig(input: {
@@ -403,9 +459,9 @@ export async function listWeeklyResults(meetIdOrSlug: string, eventId: string, f
   if (!isWcaEventId(eventId)) throw new Error("项目不正确");
   const formatConfig = getWeeklyResultFormat(format);
 
-  await ensureWeeklyEntryTables();
-  await ensureWeeklyPlayerLibraryTable();
-  const eligiblePlayers = await listWeeklyEligiblePlayers().catch(() => []);
+  // Public result reads must stay read-only. Schema changes and seed/backfill work
+  // are handled by scripts/init-app-db.mjs or admin-only maintenance paths.
+  const eligiblePlayers = await listWeeklyEligiblePlayers({ initialize: false }).catch(() => []);
   const pool = getPostgresPool();
   const meet = await resolveWeeklyMeet(meetIdOrSlug);
   if (!meet) throw new Error("周赛不存在");
@@ -414,15 +470,16 @@ export async function listWeeklyResults(meetIdOrSlug: string, eventId: string, f
   const eventKeys = [getWeeklyEventKey(meet.id, eventId, formatConfig.id)];
   if (eventId === "333" && formatConfig.id === "avg5") eventKeys.push("main");
   const { rows } = await pool.query<WeeklyResultRow>(
-    `SELECT wr.*, COALESCE(NULLIF(wpl.wca_id, ''), CASE WHEN wr.player_id LIKE 'wca:%' THEN SUBSTRING(wr.player_id FROM 5) ELSE '' END) AS wca_id,
+    `SELECT wr.*, COALESCE(NULLIF(wpm.wca_id, ''), NULLIF(wpl.wca_id, ''), CASE WHEN wr.player_id LIKE 'wca:%' THEN SUBSTRING(wr.player_id FROM 5) ELSE '' END) AS wca_id,
        COALESCE(wpl.birth_date, '') AS player_birth_date,
        COALESCE(wpl.age_group_override, '') AS player_age_group,
        COALESCE(wpl.province, '') AS player_province,
        COALESCE(wpl.city, '') AS player_city,
-       COALESCE(wpl.wca_id_confirmed, FALSE) AS wca_id_confirmed,
+       COALESCE(wpl.wca_id_confirmed, FALSE) OR COALESCE(wpm.status = 'confirmed', FALSE) AS wca_id_confirmed,
        wm.starts_at AS meet_starts_at
      FROM weekly_results wr
      LEFT JOIN weekly_player_library wpl ON wpl.id = wr.player_id
+     LEFT JOIN weekly_player_wca_matches wpm ON wpm.weekly_player_id = wr.player_id AND wpm.status = 'confirmed'
      LEFT JOIN weekly_meets wm ON wm.id = wr.meet_id
        WHERE wr.meet_id = $1 AND wr.event_id = ANY($2::text[])
      `,
@@ -438,7 +495,7 @@ export async function listWeeklyResults(meetIdOrSlug: string, eventId: string, f
 
   const rankByGroup = new Map<string, number>();
   return rows.map((row) => {
-    const matchedPlayer = eligiblePlayers.find((player) => player.id === row.player_id) || eligiblePlayers.find((player) => player.name === row.player_name);
+    const matchedPlayer = eligiblePlayers.find((player) => player.id === row.player_id);
     const wcaId = row.wca_id || matchedPlayer?.wcaId || "";
     const playerBirthDate = row.player_birth_date || matchedPlayer?.birthDate || "";
     const rankingAgeGroup = getWeeklyRankingAgeGroup(playerBirthDate, row.player_age_group || row.age_group || "", row.meet_starts_at ? new Date(row.meet_starts_at) : new Date());
@@ -916,6 +973,25 @@ function getIsoWeek(date: Date) {
   target.setUTCDate(target.getUTCDate() + 4 - day);
   const yearStart = new Date(Date.UTC(target.getUTCFullYear(), 0, 1));
   return Math.ceil(((target.getTime() - yearStart.getTime()) / 86400000 + 1) / 7);
+}
+
+function parseWeeklyDate(value: string) {
+  const match = value.trim().match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (!match) return null;
+  const year = Number(match[1]);
+  const month = Number(match[2]);
+  const day = Number(match[3]);
+  const date = new Date(year, month - 1, day);
+  if (date.getFullYear() !== year || date.getMonth() !== month - 1 || date.getDate() !== day) return null;
+  return date;
+}
+
+function formatWeeklyDate(date: Date) {
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+}
+
+function formatWeeklyDateRange(startDate: Date, endDate: Date) {
+  return `${formatWeeklyDate(startDate)} 至 ${formatWeeklyDate(endDate)}`;
 }
 
 function getWeeklyEventKey(meetId: string, eventId: string, format: string) {
