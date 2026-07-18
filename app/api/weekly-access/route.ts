@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createSessionToken } from "@/lib/auth";
-import { judgeEditPassword } from "@/lib/judge-auth";
 
 const weeklyAdminCookieName = "liaoning_weekly_session";
 
@@ -32,8 +31,12 @@ export async function POST(request: NextRequest) {
     : null;
   const formData = payload ? null : await request.formData();
   const password = String(payload?.password || formData?.get("password") || "");
-  const weeklyAdminPassword = process.env.WEEKLY_ADMIN_PASSWORD || judgeEditPassword;
+  const weeklyAdminPassword = process.env.WEEKLY_ADMIN_PASSWORD?.trim() || "";
   const nextPath = getSafeNextPath(payload?.next || formData?.get("next"));
+
+  if (!weeklyAdminPassword) {
+    return NextResponse.json({ message: "周赛管理员密码未配置" }, { status: 503 });
+  }
 
   if (!timingSafeStringEqual(password, weeklyAdminPassword)) {
     if (payload) return NextResponse.json({ message: "管理员口令不正确" }, { status: 401 });
