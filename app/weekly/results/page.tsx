@@ -21,7 +21,9 @@ export default async function WeeklyResultsEntryPage() {
   const currentMeet = meets
     .filter(isWeeklyMeetCurrent)
     .sort((a, b) => (b.startsAt || "").localeCompare(a.startsAt || ""))[0]
-    || meets.find((meet) => meet.id !== "weekly-test-entry");
+    || meets
+      .filter((meet) => meet.id !== "weekly-test-entry" && (!meet.startsAt || new Date(meet.startsAt).getTime() <= Date.now()))
+      .sort((a, b) => (b.startsAt || "").localeCompare(a.startsAt || ""))[0];
   const eventConfigs = currentMeet ? await listWeeklyMeetEventConfigs(currentMeet.id).catch(() => []) : [];
   const eventConfigIds = new Set(eventConfigs.filter((config) => config.enabled).map((config) => config.eventId));
   const events = eventConfigIds.size > 0 ? WCA_EVENTS.filter((event) => eventConfigIds.has(event.id)) : WEEKLY_DEFAULT_EVENTS;

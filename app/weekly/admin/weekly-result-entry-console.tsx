@@ -27,6 +27,7 @@ type MeetOption = {
   dateLabel: string;
   startsAt?: string | null;
   endsAt?: string | null;
+  status?: string;
 };
 
 type WeeklyPlayer = {
@@ -91,7 +92,8 @@ const publicAttemptInputStyle: CSSProperties = {
 };
 
 export function WeeklyResultEntryConsole({ initialMeets, initialPlayers = [], events, initialEventConfigs = [], variant = "full", mode = "admin", initialAdminUnlocked = true }: Props) {
-  const defaultMeetId = mode === "public" ? initialMeets.find((meet) => meet.id !== testMeetId)?.id || initialMeets[0]?.id || "" : initialMeets[0]?.id || "";
+  const defaultPublicMeet = initialMeets.find(isMeetEntryWindowOpen) || initialMeets.find((meet) => meet.id !== testMeetId && (!meet.startsAt || new Date(meet.startsAt).getTime() <= Date.now()));
+  const defaultMeetId = mode === "public" ? defaultPublicMeet?.id || "" : initialMeets[0]?.id || "";
   const [meets, setMeets] = useState(initialMeets);
   const [selectedMeetId, setSelectedMeetId] = useState(defaultMeetId);
   const [selectedEventId, setSelectedEventId] = useState("333");
@@ -546,6 +548,7 @@ export function WeeklyResultEntryConsole({ initialMeets, initialPlayers = [], ev
   }
 
   const selectedMeet = meets.find((meet) => meet.id === selectedMeetId);
+  const selectedMeetCanEnter = selectedMeet ? isMeetEntryWindowOpen(selectedMeet) : false;
   const selectedEvent = events.find((event) => event.id === selectedEventId);
   const recordedCount = results.length;
   const displayedResults = useMemo(() => {
@@ -579,7 +582,9 @@ export function WeeklyResultEntryConsole({ initialMeets, initialPlayers = [], ev
                 ? selectedMeet
                   ? `${selectedMeet.dateLabel || selectedMeet.title} · ${formatMeetPeriod(selectedMeet)} · 选择项目和赛制`
                   : "默认录入当前周赛，请选择项目和赛制。"
-                : "选择周赛和项目，检索选手后录入五次成绩，保存后右侧榜单立即刷新。"}
+                : selectedMeet
+                  ? `${selectedMeet.dateLabel || selectedMeet.title} · ${formatMeetPeriod(selectedMeet)} · ${getMeetEntryLabel(selectedMeet)}`
+                  : "选择周赛和项目，检索选手后录入五次成绩，保存后右侧榜单立即刷新。"}
             </p>
           </div>
           {!isPublicMode ? (
@@ -721,10 +726,10 @@ export function WeeklyResultEntryConsole({ initialMeets, initialPlayers = [], ev
                     <td data-label="省市">{formatRegion(result.player)}</td>
                     <td data-label="段位/等级" className="grade-cell">{getShenyangAssociationGrade(selectedEventId, result.average).label}</td>
                     <td data-label="平均" className={result.pbAverageRefreshed ? "score-strong pb-cell pb-refreshed" : "score-strong"}>
-                      {formatResult(result.average)}{result.pbAverageRefreshed ? <span className="weekly-pb-badge">刷新平均 PB</span> : null}
+                      {formatResult(result.average)}{result.pbAverageRefreshed ? <span className="weekly-pb-badge">PB</span> : null}
                     </td>
                     <td data-label="最好" className={result.pbRefreshed ? "pb-cell pb-refreshed" : "pb-cell"}>
-                      {formatResult(result.best)}{result.pbRefreshed ? <span className="weekly-pb-badge">刷新 PB</span> : null}
+                      {formatResult(result.best)}{result.pbRefreshed ? <span className="weekly-pb-badge">PB</span> : null}
                     </td>
                     {Array.from({ length: 5 }, (_, index) => {
                       const attempt = result.attempts[index];
@@ -853,9 +858,9 @@ export function WeeklyResultEntryConsole({ initialMeets, initialPlayers = [], ev
             </label>
           ) : null}
 
-          <button className="button primary weekly-save-result" type="button" disabled={isSaving || isPublicMode || !selectedMeetId} onClick={saveResult}>
+          <button className="button primary weekly-save-result" type="button" disabled={isSaving || isPublicMode || !selectedMeetId || !selectedMeetCanEnter} onClick={saveResult}>
             <Save size={17} />
-            {isSaving ? "保存中" : editingResult ? "保存纠正" : "保存成绩"}
+            {isSaving ? "保存中" : !selectedMeetCanEnter ? getMeetEntryLabel(selectedMeet) : editingResult ? "保存纠正" : "保存成绩"}
           </button>
           {editingResult ? (
             <button className="button weekly-cancel-correction" type="button" disabled={isSaving} onClick={cancelCorrection}>
@@ -1069,7 +1074,8 @@ function formatPlayerMeta(player: WeeklyPlayer) {
 
 function formatMeetPeriod(meet: Pick<MeetOption, "startsAt" | "endsAt">) {
   const format = (value: Date) => `${value.getFullYear()}年${value.getMonth() + 1}月${value.getDate()}日`;
-  if (meet.startsAt && meet.endsAt) return `${format(new Date(meet.startsAt))} 至 ${format(new Date(meet.endsAt))}`;
+  const formatDateTime = (value: Date) => `${format(value)} ${String(value.getHours()).padStart(2, "0")}:${String(value.getMinutes()).padStart(2, "0")}`;
+  if (meet.startsAt && meet.endsAt) return `北京时间 ${formatDateTime(new Date(meet.startsAt))} 开放 · ${formatDateTime(new Date(meet.endsAt))} 截止`;
 
   const now = new Date();
   const monday = new Date(now);
@@ -1077,6 +1083,22 @@ function formatMeetPeriod(meet: Pick<MeetOption, "startsAt" | "endsAt">) {
   const sunday = new Date(monday);
   sunday.setDate(monday.getDate() + 6);
   return `${format(monday)} 至 ${format(sunday)}`;
+}
+
+function isMeetEntryWindowOpen(meet: Pick<MeetOption, "status" | "startsAt" | "endsAt">) {
+  if (meet.status !== "open") return false;
+  const now = Date.now();
+  const startsAt = meet.startsAt ? new Date(meet.startsAt).getTime() : null;
+  const endsAt = meet.endsAt ? new Date(meet.endsAt).getTime() : null;
+  return (startsAt === null || startsAt <= now) && (endsAt === null || endsAt >= now);
+}
+
+function getMeetEntryLabel(meet?: Pick<MeetOption, "status" | "startsAt" | "endsAt">) {
+  if (!meet || meet.status !== "open") return "暂未开放录入";
+  const now = Date.now();
+  if (meet.startsAt && new Date(meet.startsAt).getTime() > now) return "等待开始时间";
+  if (meet.endsAt && new Date(meet.endsAt).getTime() < now) return "录入已截止";
+  return "可以录入";
 }
 
 function formatPlayerCandidateMeta(player: WeeklyPlayer) {

@@ -25,7 +25,7 @@ export function WeeklyMeetConfigConsole({ initialMeets, events }: { initialMeets
   const [newStartDate, setNewStartDate] = useState(getNextMondayDate());
   const [newEndDate, setNewEndDate] = useState(getDateAfter(newStartDate, 6));
   const [templateMeetId, setTemplateMeetId] = useState(initialMeets[0]?.id || "");
-  const [newStatus, setNewStatus] = useState<"draft" | "open">("draft");
+  const [newStatus] = useState<"open">("open");
 
   useEffect(() => {
     if (!selected) return;
@@ -72,7 +72,6 @@ export function WeeklyMeetConfigConsole({ initialMeets, events }: { initialMeets
     setNewStartDate(start);
     setNewEndDate(getDateAfter(start, 6));
     setTemplateMeetId(selectedId || initialMeets[0]?.id || "");
-    setNewStatus("draft");
     setNotice("");
     setIsCreating(true);
   }
@@ -117,8 +116,8 @@ export function WeeklyMeetConfigConsole({ initialMeets, events }: { initialMeets
           <label>标题<input value={title} onChange={(event) => setTitle(event.target.value)} /></label>
           <label>周期<input value={dateLabel} onChange={(event) => setDateLabel(event.target.value)} /></label>
           <label>状态<select value={status} onChange={(event) => setStatus(event.target.value)}><option value="draft">草稿</option><option value="open">开放</option><option value="closed">已截止</option><option value="archived">已归档</option></select></label>
-          <label>开始时间<input type="datetime-local" value={startsAt} onChange={(event) => setStartsAt(event.target.value)} /></label>
-          <label>截止时间<input type="datetime-local" value={endsAt} onChange={(event) => setEndsAt(event.target.value)} /></label>
+          <label>开始时间（北京时间）<input type="datetime-local" value={startsAt} onChange={(event) => setStartsAt(event.target.value)} /></label>
+          <label>截止时间（北京时间）<input type="datetime-local" value={endsAt} onChange={(event) => setEndsAt(event.target.value)} /></label>
         </div>
         <div className="weekly-meet-event-configs">
           {(() => {
@@ -157,7 +156,7 @@ export function WeeklyMeetConfigConsole({ initialMeets, events }: { initialMeets
               <label>开始日期<input type="date" value={newStartDate} onChange={(event) => setNewStartDate(event.target.value)} /></label>
               <label>结束日期<input type="date" value={newEndDate} onChange={(event) => setNewEndDate(event.target.value)} /></label>
               <label>项目模板<select value={templateMeetId} onChange={(event) => setTemplateMeetId(event.target.value)}>{meets.map((meet) => <option key={meet.id} value={meet.id}>{meet.title}</option>)}</select></label>
-              <label>创建后状态<select value={newStatus} onChange={(event) => setNewStatus(event.target.value as "draft" | "open")}><option value="draft">草稿</option><option value="open">立即开放</option></select></label>
+              <label>开放方式<select value={newStatus} disabled><option value="open">到开始时间自动开放</option></select></label>
             </div>
             <div className="weekly-admin-actions"><button className="button" type="button" onClick={() => setIsCreating(false)} disabled={saving}>取消</button><button className="button primary" type="button" onClick={createMeet} disabled={saving || !newStartDate || !newEndDate}><CalendarPlus size={16} />{saving ? "生成中" : "生成周赛"}</button></div>
           </div>
