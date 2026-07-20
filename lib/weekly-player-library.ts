@@ -697,27 +697,6 @@ function mapWcaMatchRow(row: WeeklyWcaMatchRow): WeeklyWcaMatchCandidate {
   };
 }
 
-function getWeeklyPlayerNameKey(name: string) {
-  const chineseName = name.match(/[\u3400-\u9fff]/g)?.join("");
-  return (chineseName || name).trim().toLowerCase();
-}
-
-async function persistWeeklyPlayerMatches(players: WeeklyPlayerLibraryEntry[]) {
-  const matchedPlayers = players.filter((player) => player.wcaId || player.province || player.city);
-  if (matchedPlayers.length === 0) return;
-  const pool = getPostgresPool();
-  for (const player of matchedPlayers) {
-    await pool.query(
-      `UPDATE weekly_player_library
-       SET wca_id = CASE WHEN $2 <> '' THEN $2 ELSE wca_id END,
-           province = CASE WHEN $3 <> '' THEN $3 ELSE province END,
-           city = CASE WHEN $4 <> '' THEN $4 ELSE city END
-       WHERE id = $1`,
-      [player.id, player.wcaId || "", player.province || "", player.city || ""]
-    );
-  }
-}
-
 async function getLocalMatchesByName() {
   try {
     const profiles = await enrichLocalProfiles(await readLocalProfiles());

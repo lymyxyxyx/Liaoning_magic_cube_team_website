@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { listWeeklyMeetEventConfigs, updateWeeklyMeetConfig, type WeeklyMeetEventConfig } from "@/lib/weekly-entry-store";
 import { hasWeeklyAdminSession } from "@/lib/weekly-admin-auth";
 import { isWeeklySameOrigin } from "@/lib/weekly-request-security";
-import { isBoundedString, isWeeklyDate } from "@/lib/weekly-request-validation";
+import { isBoundedString } from "@/lib/weekly-request-validation";
 
 export const dynamic = "force-dynamic";
 
