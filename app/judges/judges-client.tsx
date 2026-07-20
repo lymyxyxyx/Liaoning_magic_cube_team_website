@@ -71,25 +71,6 @@ export function JudgesClient({ initialJudges }: Props) {
   const nextSerialNumber = useMemo(() => getNextSerialNumber(judges), [judges]);
   const canEdit = editPassword !== null;
 
-  async function enterEditMode() {
-    const password = window.prompt("请输入裁判员编辑口令");
-    if (password === null) return;
-
-    try {
-      const response = await fetch("/api/judges/auth", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ password })
-      });
-      if (!response.ok) throw new Error("auth");
-      setEditPassword(password);
-      setNotice("已进入编辑模式。");
-    } catch {
-      setEditPassword(null);
-      setNotice("无法编辑。");
-    }
-  }
-
   function exitEditMode() {
     setEditPassword(null);
     setIsCreating(false);
@@ -136,16 +117,6 @@ export function JudgesClient({ initialJudges }: Props) {
       setDraft(emptyDraft);
       setIsCreating(false);
     }
-  }
-
-  async function updateJudgeCity(judgeId: string, city: string) {
-    if (!canEdit) {
-      setNotice("无法编辑。");
-      return;
-    }
-
-    const nextJudges = judges.map((judge) => (judge.id === judgeId ? { ...judge, province: "辽宁", city } : judge));
-    await saveJudges(nextJudges, "城市已更新。");
   }
 
   function startEdit(judge: Judge) {

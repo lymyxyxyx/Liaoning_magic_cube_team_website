@@ -29,6 +29,10 @@ const checks = [
   { path: "/coaches", ok: [200], type: "text/html" },
   { path: "/athletes", ok: [200], type: "text/html" },
   { path: "/api/judges", ok: [200], type: "application/json" },
+  // Weekly results are administrator-entered for now. Keep the public surface
+  // read-only until a separately reviewed self-entry workflow is launched.
+  { path: "/api/admin/weekly-competitions", ok: [401], type: "application/json" },
+  { path: "/api/weekly-competitions/weekly-test-entry/results", method: "POST", body: "{}", ok: [401], type: "application/json" },
   { path: "/sitemap.xml", ok: [200], type: "xml" },
   { path: "/robots.txt", ok: [200], type: "text" }
 ];
@@ -55,7 +59,13 @@ async function run() {
   for (const check of checks) {
     const url = `${baseUrl}${check.path}`;
     try {
-      const res = await fetch(url, { signal: AbortSignal.timeout(15000), redirect: "manual" });
+      const res = await fetch(url, {
+        method: check.method || "GET",
+        body: check.body,
+        headers: check.body ? { "Content-Type": "application/json" } : undefined,
+        signal: AbortSignal.timeout(15000),
+        redirect: "manual"
+      });
       const contentType = res.headers.get("content-type") || "";
       const statusOk = check.ok.includes(res.status);
       const typeOk = !check.type || contentType.includes(check.type) || (res.status >= 300 && res.status < 400);

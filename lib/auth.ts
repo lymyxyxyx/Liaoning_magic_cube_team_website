@@ -46,6 +46,7 @@ function timingSafeEqual(a: Uint8Array, b: Uint8Array): boolean {
 }
 
 export async function createSessionToken(password: string): Promise<string> {
+  void password;
   const secret = process.env.AUTH_SECRET;
   if (!secret) throw new Error("AUTH_SECRET is required");
 

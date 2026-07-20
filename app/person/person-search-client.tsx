@@ -1,8 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { Search, Loader2, ExternalLink, User, MapPin } from "lucide-react";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Search, Loader2 } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
 
 type PersonSearchResult = {
   wcaId: string;

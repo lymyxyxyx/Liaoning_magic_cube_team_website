@@ -5,8 +5,7 @@ import {
   judgeTrainingSessions,
   type Judge,
   type JudgeGender,
-  type JudgeLevelType,
-  type JudgeTrainingSessionId
+  type JudgeLevelType
 } from "@/lib/judge-types";
 
 const dataPath = `${process.cwd()}/data/judges.json`;

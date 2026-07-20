@@ -23,7 +23,9 @@ done
 
 ts=$(date +%Y%m%d%H%M%S)
 backup_dir="${BACKUP_ROOT}/runtime-${ts}"
-mkdir -p "$backup_dir"
+if ! $DRY_RUN; then
+  mkdir -p "$backup_dir"
+fi
 
 echo "[backup] Starting backup at $(date -Iseconds)"
 echo "[backup] Backup directory: ${backup_dir}"
@@ -76,30 +78,26 @@ else
   rm -rf "$backup_dir"
 fi
 
-# 5. Prune old backups
+# 5. Prune old backups. Runtime directories and compressed archives share one
+# retention budget; otherwise a mix of both kinds can grow past KEEP_COUNT.
 echo "[backup] Pruning old backups (keeping last ${KEEP_COUNT})..."
-backup_list=($(ls -1d "${BACKUP_ROOT}"/runtime-* 2>/dev/null | sort -r))
-archive_list=($(ls -1 "${BACKUP_ROOT}"/runtime-*.tar.gz 2>/dev/null | sort -r))
-total=$((${#backup_list[@]} + ${#archive_list[@]}))
+mapfile -t backup_items < <(
+  find "$BACKUP_ROOT" -maxdepth 1 -mindepth 1 -name 'runtime-*' -printf '%T@ %p\n' \
+    | sort -nr \
+    | cut -d' ' -f2-
+)
+total=${#backup_items[@]}
 
 if (( total > KEEP_COUNT )); then
-  remove_count=$((total - KEEP_COUNT))
-  # Remove old directories first
-  for dir in "${backup_list[@]:${KEEP_COUNT}}"; do
+  for item in "${backup_items[@]:${KEEP_COUNT}}"; do
     if $DRY_RUN; then
-      echo "[backup]   Would remove directory $(basename "$dir")"
+      echo "[backup]   Would remove $(basename "$item")"
+    elif [[ -d "$item" ]]; then
+      rm -rf "$item"
+      echo "[backup]   Removed $(basename "$item")"
     else
-      rm -rf "$dir"
-      echo "[backup]   Removed $(basename "$dir")"
-    fi
-  done
-  # Remove old archives
-  for archive in "${archive_list[@]:${KEEP_COUNT}}"; do
-    if $DRY_RUN; then
-      echo "[backup]   Would remove archive $(basename "$archive")"
-    else
-      rm -f "$archive"
-      echo "[backup]   Removed $(basename "$archive")"
+      rm -f "$item"
+      echo "[backup]   Removed $(basename "$item")"
     fi
   done
 else

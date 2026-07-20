@@ -150,6 +150,7 @@ function roundRect(context: CanvasRenderingContext2D, x: number, y: number, widt
 }
 
 function drawText(context: CanvasRenderingContext2D, text: string, x: number, y: number, maxWidth: number, lineHeight: number) {
+  void lineHeight;
   if (context.measureText(text).width <= maxWidth) {
     context.fillText(text, x, y);
     return;

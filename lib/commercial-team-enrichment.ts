@@ -6,15 +6,6 @@ export type EnrichmentOutput = {
   bio: string;
 };
 
-type FemaleRanks = {
-  f_s_wr: number;
-  f_s_ar: number;
-  f_s_cr: number;
-  f_a_wr: number;
-  f_a_ar: number;
-  f_a_cr: number;
-};
-
 const EVENT_NAMES: Record<string, string> = {
   "333": "三阶速拧",
   "222": "二阶",

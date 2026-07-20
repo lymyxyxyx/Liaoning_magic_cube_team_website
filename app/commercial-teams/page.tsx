@@ -34,7 +34,11 @@ async function getWcaNames(wcaIds: string[]): Promise<Map<string, string>> {
 
 export default async function CommercialTeamsPage() {
   const teams = await readCommercialTeams();
-  const publicTeams = teams.map(({ brandUrl, ...team }) => team);
+  const publicTeams = teams.map((team) => {
+    const publicTeam = { ...team };
+    delete publicTeam.brandUrl;
+    return publicTeam;
+  });
   const allWcaIds = teams
     .flatMap((t) => t.members)
     .map((m) => m.wcaId)

@@ -187,7 +187,7 @@ export function WeeklyResultEntryConsole({ initialMeets, initialPlayers = [], ev
       .then((payload: { results: EnteredResult[] }) => setResults(payload.results || []))
       .catch(() => setNotice("读取成绩列表失败。"))
       .finally(() => setIsLoadingResults(false));
-  }, [adminUnlocked, selectedEventId, selectedFormat, selectedMeetId]);
+  }, [selectedEventId, selectedFormat, selectedMeetId]);
 
   const refreshOperationLogs = useCallback(() => {
     if (!selectedMeetId || !selectedEventId) {
@@ -240,7 +240,7 @@ export function WeeklyResultEntryConsole({ initialMeets, initialPlayers = [], ev
     setAttempts(Array.from({ length: selectedFormatConfig.attemptCount }, () => ""));
     setEditingResult(null);
     setCorrectionReason("");
-  }, [selectedEventId]);
+  }, [selectedEventId, selectedFormatConfig.attemptCount]);
 
   useEffect(() => {
     if (!isPublicMode) return;
@@ -1039,7 +1039,9 @@ function toWeeklyPlayer(player: Partial<WeeklyPlayer> & Pick<WeeklyPlayer, "id" 
   };
 }
 
-function getAttemptClass(_attempt: ResultValue | undefined, _attempts: ResultValue[]) {
+function getAttemptClass(attempt: ResultValue | undefined, attempts: ResultValue[]) {
+  void attempt;
+  void attempts;
   return "weekly-attempt-cell";
 }
 

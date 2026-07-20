@@ -36,14 +36,6 @@ function parseCompetitionAnchors(html) {
   return anchors;
 }
 
-function getYearOptionsFromEnglishPage(html) {
-  const years = new Set();
-  const re = /<option value="(\d{4})">/g;
-  let match;
-  while ((match = re.exec(html))) years.add(match[1]);
-  return Array.from(years).sort();
-}
-
 function mergeInto(target, source) {
   for (const [key, value] of source.entries()) {
     if (!target.has(key)) target.set(key, value);

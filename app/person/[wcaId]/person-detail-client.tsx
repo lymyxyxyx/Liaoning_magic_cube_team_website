@@ -1,7 +1,6 @@
 "use client";
 
-import Link from "next/link";
-import { ExternalLink, Medal, Loader2, User, MapPin, Globe, Calendar } from "lucide-react";
+import { ExternalLink, Medal, Loader2, MapPin, Globe, Calendar } from "lucide-react";
 import { useEffect, useState } from "react";
 import { formatWcaResult, formatWcaAttempt } from "@/lib/wca-result-format";
 
@@ -413,6 +412,7 @@ function EventResultsTable({ eventId, results }: { eventId: string; results: Com
 }
 
 function CompetitionResultsTable({ results, allEventIds }: { results: CompetitionResult[]; allEventIds: string[] }) {
+  void allEventIds;
   const byCompetition = new Map<string, CompetitionResult[]>();
   for (const r of results) {
     const list = byCompetition.get(r.competitionId) || [];

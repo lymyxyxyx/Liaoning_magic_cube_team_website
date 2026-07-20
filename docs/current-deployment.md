@@ -106,7 +106,9 @@ creates the table on fresh environments.
 Server-entered runtime data should be backed up regularly, but should not be blindly committed to GitHub.
 
 `scripts/backup.sh` now auto-discovers and copies every `data/*.json` file (so newly
-added datasets are never missed), in addition to dumping PostgreSQL.
+added datasets are never missed), in addition to dumping PostgreSQL. Runtime
+directories and compressed archives count together: `--keep 7` always retains
+only the seven most recent `runtime-*` backups.
 
 Back up these server-local paths before risky deploys, data imports, migrations, or manual cleanup:
 
@@ -130,6 +132,19 @@ Recommended local copy pattern:
 ```bash
 scp -r admin@39.106.199.195:/opt/ln-cubing/backups/runtime-YYYYMMDDHHMMSS /path/to/local/backups/
 ```
+
+### Restore Verification
+
+At least once per quarter, restore the latest archive into a temporary database
+and validate it without touching the live `ln_cubing` database:
+
+```bash
+ssh admin@39.106.199.195 'sudo /opt/ln-cubing/app/scripts/verify-backup-restore.sh'
+```
+
+The verification script creates a database named `ln_cubing_restore_verify_*`,
+restores the archive, checks that application tables and WCA data exist, then
+drops the temporary database even if validation fails.
 
 Only commit runtime data to GitHub after reviewing that it is public, stable, and intentionally versioned. Public list data such as judges or commercial teams may be committed if that is the chosen source of truth. Account books, feedback, credentials, WCA raw exports, generated databases, and private local profile working files should stay out of GitHub.
 
