@@ -34,18 +34,22 @@ origin  https://github.com/lymyxyxyx/Liaoning_magic_cube_team_website.git
 aliyun  admin@39.106.199.195:/opt/ln-cubing/app/.git
 ```
 
-Aliyun's `/opt/ln-cubing/app` is now a Git worktree. Because outbound GitHub access from the Aliyun server has been unreliable, deploy from local by pushing the same commit to both remotes:
+Aliyun's `/opt/ln-cubing/app` is now a Git worktree. Because outbound GitHub access from the Aliyun server has been unreliable, deploy from local with the checked-in deployment script:
 
 ```bash
-git push origin main
-git push aliyun main
-ssh admin@39.106.199.195 'cd /opt/ln-cubing/app && sudo docker compose exec -T web npm run build && sudo docker compose restart web'
+scripts/deploy_aliyun.sh main
 ```
 
-Or run:
+The script refuses a dirty local or server worktree; pushes to both remotes;
+verifies that the server received the exact commit; creates a pre-deploy runtime
+backup; checks out that commit; builds and restarts the web container; runs the
+health check and smoke test; then records the deployed commit in
+`/opt/ln-cubing/logs/deployments.log`.
+
+To deploy another local branch explicitly:
 
 ```bash
-scripts/deploy_aliyun.sh
+scripts/deploy_aliyun.sh branch-name
 ```
 
 ## Server-Local Files

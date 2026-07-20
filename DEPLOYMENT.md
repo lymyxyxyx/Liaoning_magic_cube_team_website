@@ -116,15 +116,12 @@ npm run dev
 scripts/deploy_aliyun.sh
 ```
 
-该脚本等价于：
+该脚本会依次：检查本地工作区并锁定待部署提交、推送到 GitHub 和阿里云 Git 接收端、确认服务器分支已收到完全相同的提交（不一致时停止且不重启服务）、生成运行数据备份、检出目标提交、构建并重启 Web 容器、检查 `/api/health` 和完整烟测，最后将提交号写入服务器部署日志。
+
+部署完成后可查看最近记录：
 
 ```bash
-git push origin main
-git push aliyun main
-ssh admin@<SERVER_IP> \
-  'cd /opt/ln-cubing/app && \
-   sudo docker compose exec -T web npm run build && \
-   sudo docker compose restart web'
+ssh admin@39.106.199.195 'tail -n 20 /opt/ln-cubing/logs/deployments.log'
 ```
 
 > **注意**：从服务器直接推送到 GitHub 可能不稳定，建议始终从本地推送。
