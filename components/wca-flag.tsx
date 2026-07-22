@@ -17,7 +17,7 @@ export function WcaFlag({ country, iso2 }: { country: string; iso2?: string | nu
   if (normalizedIso2 === "tw" || countryKey === "chinese-taipei") {
     return (
       <span className="wca-flag flag-svg" aria-hidden="true">
-        <Image src="/flags/tw.svg" width={28} height={20} alt="" unoptimized />
+        <Image src="/flags/chinese-taipei.jpg" width={28} height={20} alt="" unoptimized />
       </span>
     );
   }

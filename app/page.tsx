@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { LiaoningAdminMap } from "@/components/liaoning-admin-map";
 import { NewsCard } from "@/components/news-card";
 import { getHomeStats } from "@/lib/home-stats";
 import { liaoningCityMapPaths } from "@/lib/liaoning-map";
@@ -43,36 +44,7 @@ export default async function HomePage() {
 
           <div className="liaoning-unity-card" aria-label="辽宁省各城市行政边界图">
             <div className="liaoning-map-wrap">
-              <svg className="liaoning-map liaoning-admin-map" viewBox="0 0 520 360" role="img">
-                <title>辽宁省各城市行政边界示意图</title>
-                <g className="liaoning-map-confetti" aria-hidden="true">
-                  <rect x="72" y="56" width="13" height="13" rx="3" />
-                  <rect x="438" y="212" width="15" height="15" rx="4" />
-                  <rect x="168" y="286" width="11" height="11" rx="3" />
-                  <circle cx="115" cy="257" r="5" />
-                  <circle cx="452" cy="89" r="6" />
-                  <circle cx="252" cy="63" r="4" />
-                </g>
-                <g className="liaoning-map-cities">
-                  {liaoningCityMapPaths.map((city, index) => (
-                    <path
-                      className={`liaoning-map-city liaoning-map-city-${(index % 5) + 1}`}
-                      d={city.d}
-                      key={city.name}
-                    />
-                  ))}
-                </g>
-                <g className="liaoning-map-labels">
-                  {liaoningCityMapPaths.map((city) => (
-                    <g key={city.name}>
-                      <circle cx={city.label[0]} cy={city.label[1]} r="4.5" />
-                      <text x={city.label[0]} y={city.label[1] + 18}>
-                        {city.name}
-                      </text>
-                    </g>
-                  ))}
-                </g>
-              </svg>
+              <LiaoningAdminMap />
               <div className="home-city-markers" aria-label={`已收录 ${homeStats.playerCount} 名有 WCA ID 的辽宁选手`}>
                 {liaoningCityMapPaths.map((city) => {
                   const stats = cityStatsByName.get(city.name);

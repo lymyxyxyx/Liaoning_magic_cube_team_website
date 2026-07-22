@@ -56,7 +56,7 @@ const genderLabels: Record<Gender, string> = {
 const scopeLabels: Record<RegionScope, string> = {
   world: "世界",
   continent: "大洲",
-  country: "国家"
+  country: "国家/地区"
 };
 
 const isDevelopmentPreview = process.env.NODE_ENV === "development";
@@ -218,7 +218,7 @@ export function RankingsClient() {
           setLastExportDate("2026-06-03");
           return;
         }
-        setError("无法读取 WCA 项目和国家列表。");
+        setError("无法读取 WCA 项目和国家/地区列表。");
       });
     return () => {
       cancelled = true;
@@ -377,7 +377,7 @@ export function RankingsClient() {
               <select value={scope} onChange={(changeEvent) => updateFilter({ scope: changeEvent.target.value as RegionScope })}>
                 <option value="world">世界</option>
                 <option value="continent">大洲</option>
-                <option value="country">国家</option>
+                <option value="country">国家/地区</option>
               </select>
             </label>
 
@@ -396,7 +396,7 @@ export function RankingsClient() {
 
             {scope === "country" ? (
               <label className="ranking-field">
-                <span>地区</span>
+                <span>国家/地区</span>
                 <select value={country} onChange={(changeEvent) => updateFilter({ country: changeEvent.target.value })}>
                   {countries.map((item) => (
                     <option value={item.id} key={item.id}>
@@ -467,7 +467,7 @@ export function RankingsClient() {
                   <th>姓名</th>
                   <th>性别</th>
                   <th>成绩</th>
-                  <th>地区</th>
+                  <th>国家/地区</th>
                   <th>WR</th>
                   <th>比赛</th>
                   <th>成绩明细</th>
@@ -506,7 +506,7 @@ export function RankingsClient() {
                           <td data-label="成绩" className="score-strong">
                             {row.result}
                           </td>
-                          <td data-label="地区">
+                          <td data-label="国家/地区">
                             <span className="flag-label">
                               <WcaFlag country={row.country} iso2={row.countryIso2} />
                               <span className="ranking-region-full">{formatCountryLabel(row.countryName, row.countryIso2)}</span>

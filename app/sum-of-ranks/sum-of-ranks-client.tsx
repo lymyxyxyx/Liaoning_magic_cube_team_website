@@ -232,7 +232,7 @@ export function SumOfRanksClient() {
               <tr>
                 <th>排名</th>
                 <th>姓名</th>
-                <th>地区</th>
+                <th>国家/地区</th>
                 <th>总和</th>
                 {events.map((event) => (
                   <th title={formatWcaEventName(event.id, event.name)} key={event.id}>
@@ -267,7 +267,7 @@ export function SumOfRanksClient() {
                           {row.name}
                         </Link>
                       </td>
-                      <td data-label="地区">
+                      <td data-label="国家/地区">
                         <span className="flag-label">
                           <WcaFlag country={row.country} iso2={row.countryIso2} />
                           <span className="sum-ranks-country-name">{row.countryName || row.country}</span>

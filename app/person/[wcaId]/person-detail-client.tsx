@@ -230,13 +230,13 @@ export function PersonDetailClient({ wcaId }: { wcaId: string }) {
                 <th></th>
                 <th>城市</th>
                 <th>省份</th>
-                <th>国家</th>
+                <th>国家/地区</th>
                 <th>洲际</th>
                 <th>世界</th>
                 <th></th>
                 <th>城市</th>
                 <th>省份</th>
-                <th>国家</th>
+                <th>国家/地区</th>
                 <th>洲际</th>
                 <th>世界</th>
                 <th></th>

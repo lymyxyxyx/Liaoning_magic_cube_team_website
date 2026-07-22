@@ -543,32 +543,12 @@ main {
   filter: none;
 }
 
-.liaoning-map-confetti rect,
-.liaoning-map-confetti circle {
-  opacity: 0.92;
-  stroke: rgba(255, 255, 255, 0.92);
-  stroke-width: 2;
-}
-
-.liaoning-map-confetti rect:nth-child(1),
-.liaoning-map-confetti circle:nth-child(4) {
-  fill: #ffd45a;
-}
-
-.liaoning-map-confetti rect:nth-child(2),
-.liaoning-map-confetti circle:nth-child(5) {
-  fill: #ff8aa0;
-}
-
-.liaoning-map-confetti rect:nth-child(3),
-.liaoning-map-confetti circle:nth-child(6) {
-  fill: #66e0c4;
-}
-
 .liaoning-map-city {
-  stroke: rgba(255, 255, 255, 0.95);
-  stroke-width: 3.3;
+  fill: #4a9ab8;
+  stroke: rgba(233, 250, 255, 0.96);
+  stroke-width: 1.7;
   stroke-linejoin: round;
+  vector-effect: non-scaling-stroke;
   paint-order: stroke;
   transition:
     fill 0.2s ease,
@@ -577,48 +557,8 @@ main {
 }
 
 .liaoning-map-city:hover {
-  fill: #fff2a8;
+  fill: #75d9cf;
   stroke: #ffffff;
-}
-
-.liaoning-map-city-1 {
-  fill: #7edcff;
-}
-
-.liaoning-map-city-2 {
-  fill: #84efc8;
-}
-
-.liaoning-map-city-3 {
-  fill: #ffd66e;
-}
-
-.liaoning-map-city-4 {
-  fill: #b9c6ff;
-}
-
-.liaoning-map-city-5 {
-  fill: #ff9db1;
-}
-
-.liaoning-map-labels circle {
-  display: none;
-  fill: #173f7a;
-  stroke: #ffffff;
-  stroke-width: 2.4;
-}
-
-.liaoning-map-labels text {
-  display: none;
-  fill: #173154;
-  font-size: 11.5px;
-  font-weight: 800;
-  text-anchor: middle;
-  paint-order: stroke;
-  pointer-events: none;
-  stroke: rgba(255, 255, 255, 0.92);
-  stroke-linejoin: round;
-  stroke-width: 4.2px;
 }
 
 .home-city-markers {
@@ -7442,6 +7382,11 @@ textarea {
   width: 100%;
   height: 100%;
   object-fit: cover;
+}
+
+.wca-flag.flag-svg img[src*="chinese-taipei"] {
+  object-fit: contain;
+  background: #fff;
 }
 
 .wca-flag.flag-emoji {
