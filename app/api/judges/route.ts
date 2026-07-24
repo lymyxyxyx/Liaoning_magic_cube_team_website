@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { canEditJudges } from "@/lib/judge-auth";
+import { verifySessionToken } from "@/lib/auth";
 import { readJudges, writeJudges, type Judge } from "@/lib/judge-store";
 
 export const dynamic = "force-dynamic";
@@ -10,12 +10,14 @@ export async function GET() {
 }
 
 export async function POST(request: NextRequest) {
-  const payload = (await request.json()) as { judges?: Judge[]; editPassword?: string };
-  if (!canEditJudges(payload.editPassword)) {
+  const token = request.cookies.get("liaoning_judge_session")?.value;
+  if (!token || !(await verifySessionToken(token))) {
     return NextResponse.json({ message: "无法编辑。" }, { status: 401 });
   }
 
-  if (!Array.isArray(payload.judges)) {
+  const payload = (await request.json().catch(() => null)) as { judges?: Judge[] } | null;
+
+  if (!payload || !Array.isArray(payload.judges)) {
     return NextResponse.json({ message: "judges must be an array" }, { status: 400 });
   }
 

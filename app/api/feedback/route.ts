@@ -1,9 +1,18 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createFeedbackMessage } from "@/lib/feedback-store";
+import { getPublicWriteRateLimit } from "@/lib/public-write-rate-limit";
 
 const allowedTypes = new Set(["名单反馈", "信息更正", "成绩问题", "删除/隐藏请求", "页面问题", "合作咨询", "其他"]);
 
 export async function POST(request: NextRequest) {
+  const rateLimit = getPublicWriteRateLimit(request, "feedback", 5, 15 * 60 * 1000);
+  if (!rateLimit.allowed) {
+    return NextResponse.json(
+      { message: "提交过于频繁，请稍后再试" },
+      { status: 429, headers: { "Retry-After": String(rateLimit.retryAfterSeconds) } }
+    );
+  }
+
   const payload = (await request.json().catch(() => null)) as
     | {
         type?: string;

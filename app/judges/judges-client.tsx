@@ -1,7 +1,7 @@
 "use client";
 
 import { GripVertical, Plus, Save, Trash2, X } from "lucide-react";
-import { type DragEvent, useMemo, useState } from "react";
+import { type DragEvent, useEffect, useMemo, useState } from "react";
 import {
   judgeGenders,
   judgeLevelTypes,
@@ -44,7 +44,7 @@ export function JudgesClient({ initialJudges }: Props) {
   const [isCreating, setIsCreating] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [notice, setNotice] = useState("");
-  const [editPassword, setEditPassword] = useState<string | null>(null);
+  const [canEdit, setCanEdit] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editDraft, setEditDraft] = useState<Judge | null>(null);
   const [draggedJudgeId, setDraggedJudgeId] = useState<string | null>(null);
@@ -69,10 +69,32 @@ export function JudgesClient({ initialJudges }: Props) {
   );
 
   const nextSerialNumber = useMemo(() => getNextSerialNumber(judges), [judges]);
-  const canEdit = editPassword !== null;
 
-  function exitEditMode() {
-    setEditPassword(null);
+  useEffect(() => {
+    fetch("/api/judges/auth")
+      .then((response) => response.json() as Promise<{ authenticated?: boolean }>)
+      .then((payload) => setCanEdit(Boolean(payload.authenticated)))
+      .catch(() => undefined);
+  }, []);
+  async function enterEditMode() {
+    const password = window.prompt("请输入裁判编辑密码");
+    if (!password) return;
+    const response = await fetch("/api/judges/auth", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ password })
+    });
+    if (!response.ok) {
+      setNotice("密码错误，无法进入编辑模式。");
+      return;
+    }
+    setCanEdit(true);
+    setNotice("已进入编辑模式。");
+  }
+
+  async function exitEditMode() {
+    await fetch("/api/judges/auth", { method: "DELETE" });
+    setCanEdit(false);
     setIsCreating(false);
     cancelEdit();
     setNotice("已退出编辑模式。");
@@ -240,7 +262,7 @@ export function JudgesClient({ initialJudges }: Props) {
       const response = await fetch("/api/judges", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ judges: nextJudges, editPassword })
+        body: JSON.stringify({ judges: nextJudges })
       });
       if (!response.ok) throw new Error("save");
       const payload = (await response.json()) as { judges: Judge[] };
@@ -276,7 +298,11 @@ export function JudgesClient({ initialJudges }: Props) {
               </button>
             </>
           </div>
-        ) : null}
+        ) : (
+          <button className="button button--ghost" type="button" onClick={enterEditMode}>
+            进入编辑
+          </button>
+        )}
       </div>
 
       {notice ? <p className="judges-notice">{notice}</p> : null}

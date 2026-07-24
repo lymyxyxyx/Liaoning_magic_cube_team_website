@@ -1,7 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { recordPageView } from "@/lib/analytics-store";
+import { getPublicWriteRateLimit } from "@/lib/public-write-rate-limit";
 
 export async function POST(request: NextRequest) {
+  const rateLimit = getPublicWriteRateLimit(request, "analytics", 120, 60 * 1000);
+  if (!rateLimit.allowed) {
+    return new NextResponse(null, { status: 429, headers: { "Retry-After": String(rateLimit.retryAfterSeconds) } });
+  }
+
   const payload = (await request.json().catch(() => null)) as { path?: string; referrer?: string } | null;
   if (!payload?.path) return new NextResponse(null, { status: 204 });
 

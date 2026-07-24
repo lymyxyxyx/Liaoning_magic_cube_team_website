@@ -8,13 +8,14 @@ export const dynamic = "force-dynamic";
 // Only callable when authenticated (protected by middleware).
 // Safe to call multiple times — uses INSERT ... ON CONFLICT DO NOTHING.
 export async function POST() {
-  const pool = getPostgresPool();
-  const client = await pool.connect();
+  let client: import("pg").PoolClient | undefined;
 
   let meetsInserted = 0;
   let resultsInserted = 0;
 
   try {
+    const pool = getPostgresPool();
+    client = await pool.connect();
     await client.query("BEGIN");
 
     for (const meet of weeklyMeets) {
@@ -84,10 +85,11 @@ export async function POST() {
 
     await client.query("COMMIT");
   } catch (err) {
-    await client.query("ROLLBACK");
-    throw err;
+    if (client) await client.query("ROLLBACK").catch(() => undefined);
+    console.error("Failed to seed weekly competition data", err);
+    return NextResponse.json({ message: "初始化周赛数据失败，请稍后重试。" }, { status: 500 });
   } finally {
-    client.release();
+    client?.release();
   }
 
   return NextResponse.json({ ok: true, meetsInserted, resultsInserted });
