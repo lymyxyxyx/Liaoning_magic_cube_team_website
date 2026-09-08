@@ -24,8 +24,8 @@ const adminCards = [
   },
   {
     title: "周赛选手库",
-    href: "/admin/weekly-player-library",
-    description: "维护周赛录入使用的选手资料、生日和自动组别。"
+    href: "/admin/weekly/players",
+    description: "维护周赛选手档案、稳定 player_id、生日、地区和停用状态。"
   },
   {
     title: "周赛管理",

@@ -8,7 +8,7 @@ export const dynamic = "force-dynamic";
 export async function GET() {
   if (!isWeeklyCompetitionEnabled()) return NextResponse.json({ message: "Not found" }, { status: 404 });
   try {
-    const meets = (await listWeeklyMeetOptions()).filter((meet) => meet.status === "open");
+    const meets = (await listWeeklyMeetOptions()).filter((meet) => meet.status === "open" && meet.isPublic);
     return NextResponse.json({ meets, events: WCA_EVENTS });
   } catch {
     return NextResponse.json({ message: "读取周赛失败" }, { status: 500 });

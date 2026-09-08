@@ -46,7 +46,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ message: "Invalid password" }, { status: 401 });
   }
 
-  const token = await createSessionToken(adminPassword);
+  const token = await createSessionToken(adminPassword, "site-admin");
 
   const response =
     payload.source === "form"

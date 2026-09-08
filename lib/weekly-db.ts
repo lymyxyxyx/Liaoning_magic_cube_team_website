@@ -1,7 +1,5 @@
 import { getPostgresPool } from "@/lib/postgres";
-import { weeklyMeets } from "@/lib/weekly";
 import type { WeeklyMeet, WeeklyEvent, WeeklyResult, WeeklyAttempt, Gender } from "@/lib/weekly";
-import { isWeeklyFocusMeet, isWeeklyMeetPubliclyVisible } from "@/lib/weekly-feature";
 
 type MeetRow = {
   id: string;
@@ -14,6 +12,8 @@ type MeetRow = {
   status: string;
   starts_at: string | null;
   ends_at: string | null;
+  is_public: boolean;
+  data_version: number;
   event: string;
   date_label: string;
   summary: string;
@@ -30,6 +30,8 @@ type EventRow = {
   group_name: string | null;
   is_all_around: boolean;
   seq: number;
+  event_code: string | null;
+  enabled: boolean;
 };
 
 type ResultRow = {
@@ -52,17 +54,17 @@ type AttemptRow = {
   result_id: number;
   seq: number;
   value: string | null;
+  value_centiseconds: number | null;
+  status: string;
 };
 
 export async function getWeeklyMeets(): Promise<WeeklyMeet[]> {
   try {
     const pool = getPostgresPool();
     const meetsResult = await pool.query<MeetRow>(
-      "SELECT * FROM weekly_meets WHERE status IN ('open', 'closed', 'archived') ORDER BY week_number DESC"
+      "SELECT * FROM weekly_meets WHERE is_public = TRUE ORDER BY week_number DESC"
     );
-    const visibleMeetRows = meetsResult.rows.filter((row) =>
-      isWeeklyMeetPubliclyVisible({ status: row.status, publishedAt: row.published_at, startsAt: row.starts_at, endsAt: row.ends_at })
-    );
+    const visibleMeetRows = meetsResult.rows;
     if (visibleMeetRows.length === 0) return [];
 
     const meetIds = visibleMeetRows.map((r) => r.id);
@@ -73,7 +75,7 @@ export async function getWeeklyMeets(): Promise<WeeklyMeet[]> {
     const mainResultsResult = await pool.query<ResultRow>(
       `SELECT wr.* FROM weekly_results wr
      JOIN weekly_events we ON we.id = wr.event_id AND we.meet_id = wr.meet_id
-     WHERE wr.meet_id = ANY($1) AND we.kind = 'main'
+     WHERE wr.meet_id = ANY($1) AND we.event_code = '333' AND we.enabled = TRUE
      ORDER BY wr.meet_id, wr.rank`,
       [meetIds]
     );
@@ -104,10 +106,8 @@ export async function getWeeklyMeets(): Promise<WeeklyMeet[]> {
       };
     });
   } catch (error) {
-    console.error("[weekly-db] getWeeklyMeets: database query failed, falling back to static data", error);
-    return weeklyMeets.filter((meet) =>
-      isWeeklyFocusMeet(meet) && isWeeklyMeetPubliclyVisible({ status: "open", publishedAt: meet.publishedAt })
-    );
+    console.error("[weekly-db] getWeeklyMeets: database query failed", error);
+    throw new Error("周赛数据库暂时不可用", { cause: error });
   }
 }
 
@@ -115,17 +115,11 @@ export async function getWeeklyMeetBySlug(slug: string): Promise<WeeklyMeet | nu
   try {
     const pool = getPostgresPool();
     const meetResult = await pool.query<MeetRow>(
-      "SELECT * FROM weekly_meets WHERE slug = $1 AND status IN ('open', 'closed', 'archived')",
+      "SELECT * FROM weekly_meets WHERE slug = $1 AND is_public = TRUE",
       [slug]
     );
     if (meetResult.rows.length === 0) return null;
     const meetRow = meetResult.rows[0];
-    if (!isWeeklyMeetPubliclyVisible({
-      status: meetRow.status,
-      publishedAt: meetRow.published_at,
-      startsAt: meetRow.starts_at,
-      endsAt: meetRow.ends_at
-    })) return null;
 
   const [introsResult, eventsResult, resultsResult] = await Promise.all([
     pool.query<{ meet_id: string; seq: number; text: string }>(
@@ -133,7 +127,7 @@ export async function getWeeklyMeetBySlug(slug: string): Promise<WeeklyMeet | nu
       [meetRow.id]
     ),
     pool.query<EventRow>(
-      "SELECT * FROM weekly_events WHERE meet_id = $1 ORDER BY kind, seq",
+      "SELECT * FROM weekly_events WHERE meet_id = $1 AND enabled = TRUE ORDER BY seq, event_code, id",
       [meetRow.id]
     ),
     pool.query<ResultRow>(
@@ -166,9 +160,10 @@ export async function getWeeklyMeetBySlug(slug: string): Promise<WeeklyMeet | nu
     };
   }
 
-  const mainEvent = eventsResult.rows.find((e) => e.kind === "main");
-  const ageGroupEvents = eventsResult.rows.filter((e) => e.kind === "age_group");
-  const otherEvents = eventsResult.rows.filter((e) => e.kind === "other");
+  // v2 uses weekly_events.event_code as the presentation model. `kind` is
+  // legacy metadata and must not manufacture an empty 333 main event.
+  const mainEvent = eventsResult.rows.find((e) => e.event_code === "333");
+  const otherEvents = eventsResult.rows.filter((e) => e.event_code !== "333");
 
     return {
     id: meetRow.id,
@@ -185,22 +180,17 @@ export async function getWeeklyMeetBySlug(slug: string): Promise<WeeklyMeet | nu
     threeAgeIntro: meetRow.three_age_intro,
     intro: introsResult.rows.map((r) => r.text),
     results: mainEvent ? (resultsByEvent.get(mainEvent.id) || []).map((r) => buildResult(r, attemptsByResult)) : [],
-    threeAgeGroups: ageGroupEvents.map(buildEvent),
+    threeAgeGroups: [],
     events: otherEvents.map(buildEvent)
     };
   } catch (error) {
-    console.error("[weekly-db] getWeeklyMeetBySlug: database query failed, falling back to static data", error);
-    return weeklyMeets.find((meet) =>
-      meet.slug === slug && isWeeklyMeetPubliclyVisible({ status: "open", publishedAt: meet.publishedAt })
-    ) || null;
+    console.error("[weekly-db] getWeeklyMeetBySlug: database query failed", error);
+    throw new Error("周赛数据库暂时不可用", { cause: error });
   }
 }
 
 function buildResult(row: ResultRow, attemptsByResult: Map<number, AttemptRow[]>): WeeklyResult {
-  const attempts: WeeklyAttempt[] = (attemptsByResult.get(row.id) || []).map((a) => {
-    const value = a.value === null ? -1 : Number(a.value);
-    return value < 0 ? "DNF" : value;
-  });
+  const attempts: WeeklyAttempt[] = (attemptsByResult.get(row.id) || []).map(readAttemptValue);
   return {
     rank: row.rank,
     playerName: row.player_name,
@@ -214,6 +204,16 @@ function buildResult(row: ResultRow, attemptsByResult: Map<number, AttemptRow[]>
     pbRefreshed: row.pb_refreshed,
     attempts
   };
+}
+
+function readAttemptValue(attempt: AttemptRow): WeeklyAttempt {
+  if (attempt.status === "ok" && Number.isInteger(attempt.value_centiseconds)) {
+    return Number(attempt.value_centiseconds) / 100;
+  }
+  if (attempt.status === "dns") return "DNS";
+  if (attempt.status === "dnf") return "DNF";
+  const legacyValue = attempt.value === null ? -1 : Number(attempt.value);
+  return legacyValue < 0 ? "DNF" : legacyValue;
 }
 
 function groupBy<T, K>(items: T[], key: (item: T) => K): Map<K, T[]> {

@@ -8,7 +8,7 @@ const maxCoaches = 500;
 
 async function hasAdminSession() {
   const token = (await cookies()).get(adminCookieName)?.value;
-  return Boolean(token && (await verifySessionToken(token)));
+  return Boolean(token && (await verifySessionToken(token, "site-admin")));
 }
 
 function isValidCoach(value: unknown): value is Coach {

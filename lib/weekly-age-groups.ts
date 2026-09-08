@@ -1,5 +1,5 @@
 export const weeklyAgeGroups = ["U6", "U8", "U10", "U12", "U18", "O18", "O30", "O40"] as const;
-export const weeklyRankingAgeGroups = ["U6", "U8", "U12", "成人", "待补"] as const;
+export const weeklyRankingAgeGroups = ["U6", "U8", "U10", "U12", "成人", "待补"] as const;
 
 export function getWeeklyAgeGroup(birthDate: string, today = new Date()) {
   const age = getWeeklyAge(birthDate, today);
@@ -15,15 +15,13 @@ export function getWeeklyAgeGroup(birthDate: string, today = new Date()) {
 }
 
 export function getWeeklyRankingAgeGroup(birthDate: string, configuredAgeGroup = "", today = new Date()) {
-  const age = getWeeklyAge(birthDate, today);
-  if (age !== null) {
-    if (age < 6) return "U6";
-    if (age < 8) return "U8";
-    if (age < 12) return "U12";
+  const calculated = getWeeklyAgeGroup(birthDate, today);
+  if (calculated) {
+    if (["U6", "U8", "U10", "U12"].includes(calculated)) return calculated;
     return "成人";
   }
-  if (["U6", "U8", "U12"].includes(configuredAgeGroup)) return configuredAgeGroup;
-  if (["U10", "U18", "O18", "O30", "O40"].includes(configuredAgeGroup)) return "成人";
+  if (["U6", "U8", "U10", "U12"].includes(configuredAgeGroup)) return configuredAgeGroup;
+  if (["成人", "U18", "O18", "O30", "O40"].includes(configuredAgeGroup)) return "成人";
   return "待补";
 }
 

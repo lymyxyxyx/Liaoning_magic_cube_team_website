@@ -28,7 +28,6 @@ await client.connect();
 
 try {
   await client.query("BEGIN");
-  await client.query("ALTER TABLE weekly_player_library ADD COLUMN IF NOT EXISTS personal_bests JSONB NOT NULL DEFAULT '{}'::jsonb");
 
   const { rows } = await client.query("SELECT id, name FROM weekly_player_library");
   const existingIdByName = new Map(rows.map((row) => [row.name, row.id]));

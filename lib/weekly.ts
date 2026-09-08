@@ -1,4 +1,4 @@
-export type WeeklyAttempt = number | "DNF";
+export type WeeklyAttempt = number | "DNF" | "DNS";
 export type Gender = "男" | "女";
 
 export type WeeklyResult = {

@@ -9,7 +9,7 @@ import { isWeeklyCompetitionEnabled } from "@/lib/weekly-feature";
 
 export const dynamic = "force-dynamic";
 
-function formatAttempt(value: number | "DNF" | null) {
+function formatAttempt(value: number | "DNF" | "DNS" | null) {
   if (value === null) {
     return "-";
   }
@@ -21,21 +21,22 @@ function formatAttempt(value: number | "DNF" | null) {
   return value;
 }
 
-export default async function WeeklyDetailPage({ params }: { params: { slug: string } }) {
+export default async function WeeklyDetailPage({ params }: { params: Promise<{ slug: string }> }) {
   if (!isWeeklyCompetitionEnabled()) notFound();
-  const meet = await getWeeklyMeetBySlug(params.slug);
+  const { slug } = await params;
+  const meet = await getWeeklyMeetBySlug(slug);
 
   if (!meet) {
     notFound();
   }
 
   const eventSections: WeeklyEvent[] = [
-    {
-      id: "three",
+    ...(meet.results.length > 0 ? [{
+      id: "333",
       title: `三阶比赛第${meet.yearWeek}周`,
       eventName: "三阶",
       results: meet.results
-    },
+    }] : []),
     ...meet.events
   ];
 

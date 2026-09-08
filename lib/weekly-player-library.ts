@@ -1,7 +1,8 @@
 import { getPostgresPool } from "@/lib/postgres";
 import { enrichLocalProfiles, readLocalProfiles } from "@/lib/local-profile-store";
-import { commercialTeamMembers } from "@/lib/commercial-teams";
 import { getWeeklyAgeGroup, weeklyAgeGroups } from "@/lib/weekly-age-groups";
+import { randomUUID } from "node:crypto";
+import { isWeeklyV2ActivePlayer, weeklyV2ActivePlayerSql, weeklyV2PlayerSourceSql } from "@/lib/weekly-player-scope";
 
 export type WeeklyLibraryGender = "" | "男" | "女";
 export type WeeklyPersonalBests = Partial<Record<"333" | "222" | "pyram" | "mirror" | "maple" | "skewb" | "allAround", number>>;
@@ -18,8 +19,13 @@ export type WeeklyPlayerLibraryEntry = {
   province: string;
   city: string;
   source: string;
+  notes?: string;
+  status?: "active" | "inactive";
+  deactivatedAt?: string | null;
+  deactivationReason?: string;
   personalBests?: WeeklyPersonalBests;
   personalBestAverages?: WeeklyPersonalBests;
+  createdAt?: string;
   updatedAt?: string;
 };
 
@@ -51,6 +57,10 @@ type WeeklyPlayerLibraryRow = {
   province: string;
   city: string;
   source: string;
+  notes: string;
+  status: string;
+  deactivated_at: string | null;
+  deactivation_reason: string;
   personal_bests: WeeklyPersonalBests | null;
   personal_bests_average: WeeklyPersonalBests | null;
   updated_at: string;
@@ -72,172 +82,26 @@ type WeeklyWcaMatchRow = {
   updated_at: string;
 };
 
-const mofang602Names = [
-  "韩沐遥",
-  "高云淼",
-  "蒋茗朗",
-  "张皓博",
-  "王亦龙",
-  "王晋宁",
-  "黄梓墨",
-  "王芮茜",
-  "王一帆",
-  "田泽云",
-  "刘乙辰",
-  "丁俊森",
-  "全梓铭",
-  "李恒恺",
-  "韩迦南",
-  "王羿程",
-  "单禹桥",
-  "王洛柠",
-  "邹滨瑞",
-  "王曦",
-  "徐安儿",
-  "李轩伊",
-  "吴秋铜",
-  "姜博文",
-  "王路喻",
-  "李沐远",
-  "杨雯博",
-  "钟欣妍",
-  "张俊熙",
-  "李梓源",
-  "傅梓毓",
-  "陈梦依",
-  "姜凯超",
-  "由子墨",
-  "王梦伊",
-  "李禹诺",
-  "李姜宁",
-  "王子睿",
-  "杨意可",
-  "柳一依",
-  "张彦烁",
-  "张成贤"
-];
-
-const mofang602FemaleNames = new Set([
-  "韩沐遥",
-  "高云淼",
-  "王芮茜",
-  "全梓铭",
-  "王洛柠",
-  "王曦",
-  "徐安儿",
-  "李轩伊",
-  "吴秋铜",
-  "王路喻",
-  "钟欣妍",
-  "陈梦依",
-  "由子墨",
-  "王梦伊",
-  "李姜宁",
-  "杨意可",
-  "柳一依"
-]);
-
-const weeklyTestPlayers: WeeklyPlayerLibraryEntry[] = [
-  {
-    id: "weekly-test-liu-yiming",
-    name: "刘一鸣",
-    wcaId: "2009LIUY03",
-    gender: "男",
-    birthDate: "",
-    ageGroup: "",
-    ageGroupIsFuzzy: false,
-    province: "辽宁",
-    city: "沈阳",
-    source: "本地测试数据"
-  }
-];
-
-export async function ensureWeeklyPlayerLibraryTable() {
-  const pool = getPostgresPool();
-  await pool.query(`
-    CREATE TABLE IF NOT EXISTS weekly_player_library (
-      id TEXT PRIMARY KEY,
-      name TEXT NOT NULL,
-      gender TEXT NOT NULL DEFAULT '',
-      wca_id TEXT NOT NULL DEFAULT '',
-      wca_id_confirmed BOOLEAN NOT NULL DEFAULT FALSE,
-      birth_date TEXT NOT NULL DEFAULT '',
-      age_group_override TEXT NOT NULL DEFAULT '',
-      age_group_is_fuzzy BOOLEAN NOT NULL DEFAULT FALSE,
-      province TEXT NOT NULL DEFAULT '',
-      city TEXT NOT NULL DEFAULT '',
-      source TEXT NOT NULL DEFAULT '',
-      personal_bests JSONB NOT NULL DEFAULT '{}'::jsonb,
-      personal_bests_average JSONB NOT NULL DEFAULT '{}'::jsonb,
-      personal_bests_base JSONB NOT NULL DEFAULT '{}'::jsonb,
-      personal_bests_average_base JSONB NOT NULL DEFAULT '{}'::jsonb,
-      created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-      updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
-    )
-  `);
-  await pool.query("ALTER TABLE weekly_player_library ADD COLUMN IF NOT EXISTS wca_id TEXT NOT NULL DEFAULT ''");
-  await pool.query("ALTER TABLE weekly_player_library ADD COLUMN IF NOT EXISTS wca_id_confirmed BOOLEAN NOT NULL DEFAULT FALSE");
-  await pool.query("ALTER TABLE weekly_player_library ADD COLUMN IF NOT EXISTS age_group_override TEXT NOT NULL DEFAULT ''");
-  await pool.query("ALTER TABLE weekly_player_library ADD COLUMN IF NOT EXISTS age_group_is_fuzzy BOOLEAN NOT NULL DEFAULT FALSE");
-  await pool.query("ALTER TABLE weekly_player_library ADD COLUMN IF NOT EXISTS personal_bests JSONB NOT NULL DEFAULT '{}'::jsonb");
-  await pool.query("ALTER TABLE weekly_player_library ADD COLUMN IF NOT EXISTS personal_bests_average JSONB NOT NULL DEFAULT '{}'::jsonb");
-  await pool.query("ALTER TABLE weekly_player_library ADD COLUMN IF NOT EXISTS personal_bests_base JSONB NOT NULL DEFAULT '{}'::jsonb");
-  await pool.query("ALTER TABLE weekly_player_library ADD COLUMN IF NOT EXISTS personal_bests_average_base JSONB NOT NULL DEFAULT '{}'::jsonb");
-  await pool.query("UPDATE weekly_player_library SET personal_bests_base = personal_bests WHERE personal_bests_base = '{}'::jsonb AND personal_bests <> '{}'::jsonb");
-  await pool.query("UPDATE weekly_player_library SET personal_bests_average_base = personal_bests_average WHERE personal_bests_average_base = '{}'::jsonb AND personal_bests_average <> '{}'::jsonb");
-  await pool.query("CREATE INDEX IF NOT EXISTS weekly_player_library_name_idx ON weekly_player_library (name)");
-  await pool.query("CREATE INDEX IF NOT EXISTS weekly_player_library_wca_id_idx ON weekly_player_library (wca_id)");
-  await pool.query(`
-    CREATE TABLE IF NOT EXISTS weekly_player_wca_matches (
-      id BIGSERIAL PRIMARY KEY,
-      weekly_player_id TEXT NOT NULL,
-      wca_id TEXT NOT NULL,
-      wca_name TEXT NOT NULL DEFAULT '',
-      gender TEXT NOT NULL DEFAULT '',
-      province TEXT NOT NULL DEFAULT '',
-      city TEXT NOT NULL DEFAULT '',
-      score INTEGER NOT NULL DEFAULT 0,
-      method TEXT NOT NULL DEFAULT 'exact_name',
-      evidence JSONB NOT NULL DEFAULT '[]'::jsonb,
-      status TEXT NOT NULL DEFAULT 'suggested',
-      confirmed_at TIMESTAMPTZ,
-      created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-      updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-      UNIQUE (weekly_player_id, wca_id)
-    )
-  `);
-  await pool.query("CREATE INDEX IF NOT EXISTS weekly_player_wca_matches_player_idx ON weekly_player_wca_matches (weekly_player_id, status, score DESC)");
-  await pool.query("CREATE INDEX IF NOT EXISTS weekly_player_wca_matches_wca_idx ON weekly_player_wca_matches (wca_id, status)");
-  await pool.query("CREATE UNIQUE INDEX IF NOT EXISTS weekly_player_wca_matches_confirmed_wca_idx ON weekly_player_wca_matches (wca_id) WHERE status = 'confirmed'");
-}
-
-export async function listWeeklyPlayerLibrary(options: { initialize?: boolean } = {}): Promise<WeeklyPlayerLibraryEntry[]> {
-  if (options.initialize !== false) {
-    await ensureWeeklyPlayerLibraryTable();
-    await seedMofang602Players();
-    await backfillMofang602Genders();
-  }
-
+export async function listWeeklyPlayerLibrary(): Promise<WeeklyPlayerLibraryEntry[]> {
   const pool = getPostgresPool();
   const { rows } = await pool.query<WeeklyPlayerLibraryRow>(
-    `SELECT id, name, wca_id, wca_id_confirmed, gender, birth_date, age_group_override, age_group_is_fuzzy, province, city, source, personal_bests, personal_bests_average, updated_at
+    `SELECT id, name, wca_id, wca_id_confirmed, gender, birth_date, age_group_override, age_group_is_fuzzy,
+            province, city, source, notes, status, deactivated_at, deactivation_reason,
+            personal_bests, personal_bests_average, updated_at
      FROM weekly_player_library
+     WHERE ${weeklyV2PlayerSourceSql()}
      ORDER BY name`
   );
   return rows.map(mapLibraryRow);
 }
 
-export async function listWeeklyEligiblePlayers(options: { initialize?: boolean } = {}): Promise<WeeklyPlayerLibraryEntry[]> {
-  const [wcaPlayers, libraryPlayers] = await Promise.all([
-    listWcaLiaoningPlayers(),
-    listWeeklyPlayerLibrary(options)
-  ]);
-  return mergeWeeklyEligiblePlayers(wcaPlayers, libraryPlayers);
+export async function listWeeklyEligiblePlayers(): Promise<WeeklyPlayerLibraryEntry[]> {
+  const players = await listWeeklyPlayerLibrary();
+  return players.filter((player) => isWeeklyV2ActivePlayer({ status: player.status || "inactive", source: player.source }));
 }
 
 export async function listWeeklyWcaMatchCandidates(playerId?: string): Promise<WeeklyWcaMatchCandidate[]> {
-  await ensureWeeklyPlayerLibraryTable();
-  const players = await listWeeklyPlayerLibrary();
+  const players = await listWeeklyEligiblePlayers();
   const sourceProfiles = await getWcaMatchingProfiles();
   const targetPlayers = playerId ? players.filter((player) => player.id === playerId) : players;
   const pool = getPostgresPool();
@@ -275,17 +139,17 @@ export async function listWeeklyWcaMatchCandidates(playerId?: string): Promise<W
 
   const values = playerId ? [playerId] : [];
   const result = await pool.query<WeeklyWcaMatchRow>(
-    `SELECT id, weekly_player_id, wca_id, wca_name, gender, province, city, score, method, evidence, status, confirmed_at, updated_at
-       FROM weekly_player_wca_matches
-      ${playerId ? "WHERE weekly_player_id = $1" : ""}
-      ORDER BY score DESC, updated_at DESC`,
+    `SELECT wpm.id, wpm.weekly_player_id, wpm.wca_id, wpm.wca_name, wpm.gender, wpm.province, wpm.city, wpm.score, wpm.method, wpm.evidence, wpm.status, wpm.confirmed_at, wpm.updated_at
+       FROM weekly_player_wca_matches wpm
+       JOIN weekly_player_library wpl ON wpl.id = wpm.weekly_player_id
+      WHERE ${weeklyV2ActivePlayerSql("wpl")}${playerId ? " AND wpm.weekly_player_id = $1" : ""}
+      ORDER BY wpm.score DESC, wpm.updated_at DESC`,
     values
   );
   return result.rows.map(mapWcaMatchRow);
 }
 
 export async function confirmWeeklyWcaMatch(input: { weeklyPlayerId: string; wcaId: string }) {
-  await ensureWeeklyPlayerLibraryTable();
   const wcaId = input.wcaId.trim().toUpperCase();
   const pool = getPostgresPool();
   const existingCandidate = await pool.query("SELECT 1 FROM weekly_player_wca_matches WHERE weekly_player_id = $1 AND wca_id = $2 LIMIT 1", [input.weeklyPlayerId, wcaId]);
@@ -313,7 +177,7 @@ export async function confirmWeeklyWcaMatch(input: { weeklyPlayerId: string; wca
     if (conflict.rows[0]) throw new Error("这个 WCA ID 已确认给另一名周赛选手");
 
     const player = await client.query<{ wca_id: string; wca_id_confirmed: boolean }>(
-      "SELECT wca_id, wca_id_confirmed FROM weekly_player_library WHERE id = $1 FOR UPDATE",
+      `SELECT wca_id, wca_id_confirmed FROM weekly_player_library WHERE id = $1 AND ${weeklyV2ActivePlayerSql()} FOR UPDATE`,
       [input.weeklyPlayerId]
     );
     if (!player.rows[0]) throw new Error("周赛选手不存在");
@@ -330,7 +194,7 @@ export async function confirmWeeklyWcaMatch(input: { weeklyPlayerId: string; wca
           SET wca_id = CASE WHEN wca_id = '' OR wca_id = $1 THEN $1 ELSE wca_id END,
               wca_id_confirmed = CASE WHEN wca_id = '' OR wca_id = $1 THEN TRUE ELSE wca_id_confirmed END,
               updated_at = now()
-        WHERE id = $2`,
+        WHERE id = $2 AND ${weeklyV2ActivePlayerSql()}`,
       [wcaId, input.weeklyPlayerId]
     );
     await client.query("COMMIT");
@@ -344,12 +208,12 @@ export async function confirmWeeklyWcaMatch(input: { weeklyPlayerId: string; wca
 }
 
 export async function rejectWeeklyWcaMatch(input: { weeklyPlayerId: string; wcaId: string }) {
-  await ensureWeeklyPlayerLibraryTable();
   const pool = getPostgresPool();
   const { rowCount } = await pool.query(
     `UPDATE weekly_player_wca_matches
         SET status = 'rejected', updated_at = now()
-      WHERE weekly_player_id = $1 AND wca_id = $2 AND status <> 'confirmed'`,
+      WHERE weekly_player_id = $1 AND wca_id = $2 AND status <> 'confirmed'
+        AND EXISTS (SELECT 1 FROM weekly_player_library wpl WHERE wpl.id = weekly_player_wca_matches.weekly_player_id AND ${weeklyV2ActivePlayerSql("wpl")})`,
     [input.weeklyPlayerId, input.wcaId.trim().toUpperCase()]
   );
   if (!rowCount) throw new Error("WCA 匹配候选不存在或已经确认");
@@ -357,51 +221,35 @@ export async function rejectWeeklyWcaMatch(input: { weeklyPlayerId: string; wcaI
 
 export async function findWeeklyEligiblePlayer(input: { id?: string; name?: string }) {
   const id = input.id?.trim() || "";
-  const name = input.name?.trim() || "";
-  if (!id && !name) return null;
+  if (!id) return null;
 
-  const players = await listWeeklyEligiblePlayers();
-  return players.find((player) => player.id === id) || players.find((player) => player.wcaId === id.toUpperCase()) || players.find((player) => player.name === name) || null;
-}
-
-export function getMofang602SeedWeeklyPlayers(): WeeklyPlayerLibraryEntry[] {
-  return [
-    ...mofang602Names.map((name) => ({
-      id: createSeedId(name),
-      name,
-      gender: mofang602FemaleNames.has(name) ? ("女" as const) : ("男" as const),
-      birthDate: "",
-      ageGroup: "",
-      ageGroupIsFuzzy: false,
-      province: "辽宁",
-      city: "",
-      source: "mofang123 第334周三阶表"
-    })),
-    ...weeklyTestPlayers
-  ];
+  const player = await findWeeklyPlayerLibraryEntry({ id });
+  return player && isWeeklyV2ActivePlayer({ status: player.status || "inactive", source: player.source }) ? player : null;
 }
 
 export async function findWeeklyPlayerLibraryEntry(input: { id?: string; name?: string }) {
-  await ensureWeeklyPlayerLibraryTable();
   const id = input.id?.trim() || "";
   const name = input.name?.trim() || "";
   if (!id && !name) return null;
 
   const pool = getPostgresPool();
   const { rows } = await pool.query<WeeklyPlayerLibraryRow>(
-    `SELECT id, name, wca_id, wca_id_confirmed, gender, birth_date, age_group_override, age_group_is_fuzzy, province, city, source, personal_bests, updated_at
+    `SELECT id, name, wca_id, wca_id_confirmed, gender, birth_date, age_group_override, age_group_is_fuzzy,
+            province, city, source, notes, status, deactivated_at, deactivation_reason,
+            personal_bests, personal_bests_average, updated_at
      FROM weekly_player_library
-     WHERE id = $1 OR name = $2
-     LIMIT 1`,
+     WHERE (($1 <> '' AND id = $1) OR ($1 = '' AND name = $2))
+       AND ${weeklyV2PlayerSourceSql()}
+     ORDER BY id
+     LIMIT 2`,
     [id, name]
   );
+  if (!id && rows.length > 1) throw new Error("存在同名周赛选手，请使用 player_id 指定选手");
   if (!rows[0]) return null;
-  const [player] = await enrichWeeklyPlayerMatches([mapLibraryRow(rows[0])]);
-  return player || null;
+  return mapLibraryRow(rows[0]);
 }
 
 export async function saveWeeklyPlayerLibrary(players: WeeklyPlayerLibraryEntry[]) {
-  await ensureWeeklyPlayerLibraryTable();
   const normalizedPlayers = normalizePlayers(players);
   const pool = getPostgresPool();
   const client = await pool.connect();
@@ -410,10 +258,19 @@ export async function saveWeeklyPlayerLibrary(players: WeeklyPlayerLibraryEntry[
     await client.query("BEGIN");
 
     for (const player of normalizedPlayers) {
+      if (player.wcaId) {
+        const duplicate = await client.query<{ id: string }>(
+          `SELECT id FROM weekly_player_library WHERE upper(wca_id) = $1 AND id <> $2 AND ${weeklyV2PlayerSourceSql()} LIMIT 1`,
+          [player.wcaId.toUpperCase(), player.id]
+        );
+        if (duplicate.rows[0]) throw new Error("该 WCA ID 已存在或历史数据中存在重复，不能重复绑定");
+      }
       await client.query(
         `INSERT INTO weekly_player_library
-          (id, name, wca_id, wca_id_confirmed, gender, birth_date, age_group_override, age_group_is_fuzzy, province, city, source, personal_bests, personal_bests_average, updated_at)
-         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12::jsonb,$13::jsonb,now())
+          (id, name, wca_id, wca_id_confirmed, gender, birth_date, age_group_override, age_group_is_fuzzy,
+           province, city, source, notes, status, deactivated_at, deactivation_reason,
+           personal_bests, personal_bests_average, updated_at)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16::jsonb,$17::jsonb,now())
          ON CONFLICT (id) DO UPDATE
            SET name = EXCLUDED.name,
                wca_id = EXCLUDED.wca_id,
@@ -425,9 +282,14 @@ export async function saveWeeklyPlayerLibrary(players: WeeklyPlayerLibraryEntry[
                province = EXCLUDED.province,
                city = EXCLUDED.city,
                source = EXCLUDED.source,
+               notes = EXCLUDED.notes,
+               status = EXCLUDED.status,
+               deactivated_at = EXCLUDED.deactivated_at,
+               deactivation_reason = EXCLUDED.deactivation_reason,
                personal_bests = EXCLUDED.personal_bests,
                personal_bests_average = EXCLUDED.personal_bests_average,
-               updated_at = now()`,
+               updated_at = now()
+         WHERE ${weeklyV2PlayerSourceSql("weekly_player_library")}`,
         [
           player.id,
           player.name,
@@ -440,6 +302,10 @@ export async function saveWeeklyPlayerLibrary(players: WeeklyPlayerLibraryEntry[
           player.province,
           player.city,
           player.source,
+          player.notes || "",
+          player.status || "active",
+          player.status === "inactive" ? player.deactivatedAt || new Date().toISOString() : null,
+          player.status === "inactive" ? player.deactivationReason || "" : "",
           JSON.stringify(player.personalBests || {}),
           JSON.stringify(player.personalBestAverages || {})
         ]
@@ -462,16 +328,21 @@ export async function updateWeeklyPlayerLibraryEntry(input: {
   name?: string;
   patch: Partial<WeeklyPlayerLibraryEntry>;
 }) {
-  await ensureWeeklyPlayerLibraryTable();
   const pool = getPostgresPool();
   const current = await pool.query<WeeklyPlayerLibraryRow>(
-    `SELECT id, name, wca_id, wca_id_confirmed, gender, birth_date, age_group_override, age_group_is_fuzzy, province, city, source, personal_bests, personal_bests_average, updated_at
+    `SELECT id, name, wca_id, wca_id_confirmed, gender, birth_date, age_group_override, age_group_is_fuzzy,
+            province, city, source, notes, status, deactivated_at, deactivation_reason,
+            personal_bests, personal_bests_average, updated_at
      FROM weekly_player_library
-     WHERE id = $1 OR name = $2
-     ORDER BY CASE WHEN id = $1 THEN 0 ELSE 1 END
-     LIMIT 1`,
+     WHERE (($1 <> '' AND id = $1) OR ($1 = '' AND name = $2))
+       AND ${weeklyV2PlayerSourceSql()}
+     ORDER BY id
+     LIMIT 2`,
     [input.id?.trim() || "", input.name?.trim() || ""]
   );
+  if (!input.id?.trim() && current.rows.length > 1) {
+    throw new Error("存在同名周赛选手，请使用 player_id 指定要编辑的档案");
+  }
   const row = current.rows[0];
   if (!row) throw new Error("周赛选手不存在");
 
@@ -480,14 +351,27 @@ export async function updateWeeklyPlayerLibraryEntry(input: {
   if (!name) throw new Error("请填写选手姓名");
   const birthDate = patch.birthDate?.trim() ?? row.birth_date;
   const wcaId = patch.wcaId?.trim().toUpperCase() ?? row.wca_id;
+  if (wcaId) {
+    const duplicate = await pool.query<{ id: string }>(
+      `SELECT id FROM weekly_player_library WHERE upper(wca_id) = $1 AND id <> $2 AND ${weeklyV2PlayerSourceSql()} LIMIT 1`,
+      [wcaId, row.id]
+    );
+    if (duplicate.rows[0]) throw new Error("该 WCA ID 已存在或历史数据中存在重复，不能重复绑定");
+  }
   const ageGroup = birthDate ? "" : patch.ageGroup?.trim() ?? row.age_group_override;
+  const status = patch.status === "inactive" ? "inactive" : patch.status === "active" ? "active" : row.status;
+  const deactivatedAt = status === "inactive" ? patch.deactivatedAt ?? row.deactivated_at ?? new Date().toISOString() : null;
+  const deactivationReason = status === "inactive" ? patch.deactivationReason?.trim() ?? row.deactivation_reason : "";
   const { rows } = await pool.query<WeeklyPlayerLibraryRow>(
     `UPDATE weekly_player_library
      SET name = $2, wca_id = $3, wca_id_confirmed = $4, gender = $5, birth_date = $6,
          age_group_override = $7, age_group_is_fuzzy = $8, province = $9, city = $10,
-         source = $11, updated_at = now()
-     WHERE id = $1
-     RETURNING id, name, wca_id, wca_id_confirmed, gender, birth_date, age_group_override, age_group_is_fuzzy, province, city, source, personal_bests, personal_bests_average, updated_at`,
+         source = $11, notes = $12, status = $13, deactivated_at = $14,
+         deactivation_reason = $15, updated_at = now()
+     WHERE id = $1 AND ${weeklyV2PlayerSourceSql()}
+     RETURNING id, name, wca_id, wca_id_confirmed, gender, birth_date, age_group_override, age_group_is_fuzzy,
+               province, city, source, notes, status, deactivated_at, deactivation_reason,
+               personal_bests, personal_bests_average, updated_at`,
     [
       row.id,
       name,
@@ -499,7 +383,11 @@ export async function updateWeeklyPlayerLibraryEntry(input: {
       birthDate ? false : (patch.ageGroupIsFuzzy ?? row.age_group_is_fuzzy),
       patch.province?.trim() ?? row.province,
       patch.city?.trim() ?? row.city,
-      patch.source?.trim() ?? row.source
+      patch.source?.trim() ?? row.source,
+      patch.notes?.trim() ?? row.notes,
+      status,
+      deactivatedAt,
+      deactivationReason
     ]
   );
   return mapLibraryRow(rows[0]);
@@ -510,19 +398,23 @@ function normalizePlayers(players: WeeklyPlayerLibraryEntry[]) {
   return players
     .map((player) => {
       const name = player.name.trim();
-      const id = player.id?.trim() || createLibraryPlayerId(name);
+      const id = player.id?.trim() || createLibraryPlayerId();
       return {
         id,
         name,
-    wcaId: player.wcaId?.trim().toUpperCase() || "",
-    wcaIdConfirmed: Boolean(player.wcaIdConfirmed),
+        wcaId: player.wcaId?.trim().toUpperCase() || "",
+        wcaIdConfirmed: Boolean(player.wcaIdConfirmed),
         gender: normalizeGender(player.gender),
         birthDate: player.birthDate.trim(),
         ageGroup: normalizeAgeGroup(player.ageGroup || "", player.birthDate),
         ageGroupIsFuzzy: !player.birthDate.trim() && (Boolean(player.ageGroupIsFuzzy) || Boolean(player.ageGroup)),
         province: player.province.trim(),
         city: player.city.trim(),
-        source: player.source.trim(),
+        source: player.source === "players_excel_import" ? "players_excel_import" : "admin_manual",
+        notes: player.notes?.trim() || "",
+        status: player.status === "inactive" ? ("inactive" as const) : ("active" as const),
+        deactivatedAt: player.status === "inactive" ? player.deactivatedAt || null : null,
+        deactivationReason: player.status === "inactive" ? player.deactivationReason?.trim() || "" : "",
         personalBests: normalizePersonalBests(player.personalBests),
         personalBestAverages: normalizePersonalBests(player.personalBestAverages)
       };
@@ -533,84 +425,6 @@ function normalizePlayers(players: WeeklyPlayerLibraryEntry[]) {
       seen.add(player.id);
       return true;
     });
-}
-
-async function enrichWeeklyPlayerMatches(players: WeeklyPlayerLibraryEntry[]) {
-  if (players.length === 0) return players;
-
-  const localMatchesByName = await getLocalMatchesByName();
-
-  return players.map((player) => {
-    const localMatch = getWeeklyNameVariants(player.name)
-      .map((name) => localMatchesByName.get(name))
-      .find(Boolean);
-    const ageGroup = getWeeklyAgeGroup(player.birthDate) || normalizeAgeGroup(player.ageGroup || "", "");
-    return {
-      ...player,
-      wcaId: localMatch?.wcaId || player.wcaId || "",
-      ageGroup,
-      ageGroupIsFuzzy: !player.birthDate && Boolean(ageGroup),
-      province: localMatch?.province || player.province || "",
-      city: localMatch?.city || player.city || ""
-    };
-  });
-}
-
-async function listWcaLiaoningPlayers(): Promise<WeeklyPlayerLibraryEntry[]> {
-  const profiles = await enrichLocalProfiles(await readLocalProfiles());
-  return profiles
-    .filter((profile) => profile.visible && profile.province === "辽宁" && profile.wcaId && profile.name)
-    .map((profile) => ({
-      id: `wca:${profile.wcaId}`,
-      name: profile.name,
-        wcaId: profile.wcaId,
-        wcaIdConfirmed: false,
-      gender: profile.gender === "女" ? "女" : profile.gender === "男" ? "男" : "",
-      birthDate: "",
-      ageGroup: "",
-      ageGroupIsFuzzy: false,
-      province: profile.province,
-      city: profile.city,
-      source: "WCA 辽宁选手库"
-    }));
-}
-
-function mergeWeeklyEligiblePlayers(wcaPlayers: WeeklyPlayerLibraryEntry[], libraryPlayers: WeeklyPlayerLibraryEntry[]) {
-  const merged: WeeklyPlayerLibraryEntry[] = [];
-  const indexByWcaId = new Map<string, number>();
-
-  for (const player of [...wcaPlayers, ...libraryPlayers]) {
-    const wcaId = player.wcaId?.trim().toUpperCase() || "";
-    const name = player.name.trim();
-    if (!name) continue;
-
-    // A name is only evidence for a candidate, never an identity key. Merge
-    // records only when the WCA ID itself is identical.
-    const existingIndex = wcaId ? indexByWcaId.get(wcaId) : undefined;
-    if (existingIndex !== undefined) {
-      const existing = merged[existingIndex];
-      merged[existingIndex] = {
-        ...existing,
-        name: existing.name || player.name,
-        gender: existing.gender || player.gender,
-        wcaIdConfirmed: existing.wcaIdConfirmed || player.wcaIdConfirmed,
-        birthDate: existing.birthDate || player.birthDate,
-        ageGroup: existing.ageGroup || player.ageGroup,
-        ageGroupIsFuzzy: existing.ageGroupIsFuzzy || player.ageGroupIsFuzzy,
-        province: existing.province || player.province,
-        city: existing.city || player.city,
-        personalBests: Object.keys(existing.personalBests || {}).length > 0 ? existing.personalBests : player.personalBests,
-        personalBestAverages: Object.keys(existing.personalBestAverages || {}).length > 0 ? existing.personalBestAverages : player.personalBestAverages,
-        source: existing.source && player.source && !existing.source.includes(player.source) ? `${existing.source}；${player.source}` : existing.source || player.source
-      };
-      continue;
-    }
-
-    merged.push({ ...player, wcaId });
-    if (wcaId) indexByWcaId.set(wcaId, merged.length - 1);
-  }
-
-  return merged;
 }
 
 type WcaMatchingProfile = {
@@ -697,51 +511,6 @@ function mapWcaMatchRow(row: WeeklyWcaMatchRow): WeeklyWcaMatchCandidate {
   };
 }
 
-async function getLocalMatchesByName() {
-  try {
-    const profiles = await enrichLocalProfiles(await readLocalProfiles());
-    const profilesByName = new Map<string, { wcaId: string; province: string; city: string }[]>();
-    const profilesByWcaId = new Map<string, { wcaId: string; province: string; city: string }>();
-    for (const profile of profiles) {
-      if (profile.province !== "辽宁") continue;
-      const match = {
-        wcaId: profile.wcaId || "",
-        province: profile.province || "",
-        city: profile.city || ""
-      };
-      if (match.wcaId) profilesByWcaId.set(match.wcaId, match);
-      for (const name of getWeeklyNameVariants(profile.name)) {
-        const current = profilesByName.get(name) || [];
-        current.push(match);
-        profilesByName.set(name, current);
-      }
-    }
-
-    for (const member of commercialTeamMembers) {
-      const name = member.name.trim();
-      const wcaId = member.wcaId?.trim().toUpperCase() || "";
-      const localProfile = wcaId ? profilesByWcaId.get(wcaId) : undefined;
-      if (!name || !localProfile) continue;
-      const current = profilesByName.get(normalizeWeeklyName(name)) || [];
-      if (current.some((match) => match.wcaId === localProfile.wcaId)) continue;
-      current.push(localProfile);
-      profilesByName.set(normalizeWeeklyName(name), current);
-    }
-
-    const matches = new Map<string, { wcaId: string; province: string; city: string }>();
-    for (const [name, sameNameProfiles] of profilesByName) {
-      const uniqueProfiles = Array.from(
-        new Map(sameNameProfiles.map((profile) => [`${profile.wcaId}:${profile.city}`, profile])).values()
-      );
-      if (uniqueProfiles.length !== 1) continue;
-      matches.set(name, uniqueProfiles[0]);
-    }
-    return matches;
-  } catch {
-    return new Map<string, { wcaId: string; province: string; city: string }>();
-  }
-}
-
 function normalizeWeeklyName(value: string) {
   return value.normalize("NFKC").replace(/[\s·•・,，.。()（）\[\]{}<>《》'"“”‘’]/g, "").toLowerCase();
 }
@@ -753,57 +522,6 @@ function getWeeklyNameVariants(value: string) {
   const chineseParts = name.match(/[\u3400-\u9fff]+/g)?.join("") || "";
   if (chineseParts) variants.add(normalizeWeeklyName(chineseParts));
   return [...variants].filter(Boolean);
-}
-
-async function seedMofang602Players() {
-  const pool = getPostgresPool();
-  const existing = await pool.query<{ count: string }>("SELECT COUNT(*)::text AS count FROM weekly_player_library");
-
-  if (Number(existing.rows[0]?.count || 0) === 0) {
-    for (const name of mofang602Names) {
-      await pool.query(
-        `INSERT INTO weekly_player_library (id, name, source)
-         VALUES ($1,$2,$3)
-         ON CONFLICT (id) DO NOTHING`,
-        [createSeedId(name), name, "mofang123 第334周三阶表"]
-      );
-    }
-  }
-
-  for (const player of weeklyTestPlayers) {
-    await pool.query(
-      `INSERT INTO weekly_player_library (id, name, wca_id, gender, birth_date, age_group_override, age_group_is_fuzzy, province, city, source)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)
-       ON CONFLICT (id) DO UPDATE
-         SET wca_id = CASE WHEN weekly_player_library.wca_id = '' THEN EXCLUDED.wca_id ELSE weekly_player_library.wca_id END,
-             gender = CASE WHEN weekly_player_library.gender = '' THEN EXCLUDED.gender ELSE weekly_player_library.gender END,
-             province = CASE WHEN weekly_player_library.province = '' THEN EXCLUDED.province ELSE weekly_player_library.province END,
-             city = CASE WHEN weekly_player_library.city = '' THEN EXCLUDED.city ELSE weekly_player_library.city END,
-             source = CASE WHEN weekly_player_library.source = '' THEN EXCLUDED.source ELSE weekly_player_library.source END`,
-      [
-        player.id,
-        player.name,
-        player.wcaId || "",
-        player.gender,
-        player.birthDate,
-        player.ageGroup || "",
-        Boolean(player.ageGroupIsFuzzy),
-        player.province,
-        player.city,
-        player.source
-      ]
-    );
-  }
-}
-
-async function backfillMofang602Genders() {
-  const pool = getPostgresPool();
-  for (const name of mofang602Names) {
-    await pool.query("UPDATE weekly_player_library SET gender = $1 WHERE id = $2 AND gender = ''", [
-      mofang602FemaleNames.has(name) ? "女" : "男",
-      createSeedId(name)
-    ]);
-  }
 }
 
 function mapLibraryRow(row: WeeklyPlayerLibraryRow): WeeklyPlayerLibraryEntry {
@@ -819,6 +537,10 @@ function mapLibraryRow(row: WeeklyPlayerLibraryRow): WeeklyPlayerLibraryEntry {
     province: row.province || "",
     city: row.city || "",
     source: row.source || "",
+    notes: row.notes || "",
+    status: row.status === "inactive" ? "inactive" : "active",
+    deactivatedAt: row.deactivated_at,
+    deactivationReason: row.deactivation_reason || "",
     personalBests: normalizePersonalBests(row.personal_bests || {}),
     personalBestAverages: normalizePersonalBests(row.personal_bests_average || {}),
     updatedAt: row.updated_at
@@ -848,19 +570,6 @@ function normalizePersonalBests(value: unknown): WeeklyPersonalBests {
   return next;
 }
 
-function createSeedId(name: string) {
-  return `mofang602-${slugifyName(name)}`;
-}
-
-export function createLibraryPlayerId(name: string) {
-  const base = slugifyName(name) || Date.now().toString(36);
-  return `weekly-library-${base}-${Math.random().toString(36).slice(2, 8)}`;
-}
-
-function slugifyName(name: string) {
-  return name
-    .trim()
-    .toLowerCase()
-    .replace(/[^a-z0-9\u4e00-\u9fa5]+/g, "-")
-    .replace(/^-+|-+$/g, "");
+export function createLibraryPlayerId() {
+  return `weekly-player-${randomUUID()}`;
 }

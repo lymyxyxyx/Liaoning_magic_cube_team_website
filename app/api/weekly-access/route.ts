@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createSessionToken } from "@/lib/auth";
 import { clearWeeklyLoginFailures, getWeeklyLoginRateLimit, recordWeeklyLoginFailure } from "@/lib/weekly-login-rate-limit";
 
-const weeklyAdminCookieName = "liaoning_weekly_session";
+const weeklyAccessCookieName = "liaoning_weekly_access_session";
 
 function isSecureRequest(request: NextRequest) {
   return request.nextUrl.protocol === "https:" || request.headers.get("x-forwarded-proto") === "https";
@@ -32,11 +32,11 @@ export async function POST(request: NextRequest) {
     : null;
   const formData = payload ? null : await request.formData();
   const password = String(payload?.password || formData?.get("password") || "");
-  const weeklyAdminPassword = process.env.WEEKLY_ADMIN_PASSWORD?.trim() || "";
+  const weeklyInviteCode = process.env.WEEKLY_INVITE_CODE?.trim() || "";
   const nextPath = getSafeNextPath(payload?.next || formData?.get("next"));
 
-  if (!weeklyAdminPassword) {
-    return NextResponse.json({ message: "周赛管理员密码未配置" }, { status: 503 });
+  if (!weeklyInviteCode) {
+    return NextResponse.json({ message: "周赛邀请码未配置" }, { status: 503 });
   }
 
   const rateLimit = getWeeklyLoginRateLimit(request);
@@ -44,12 +44,12 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ message: "登录尝试过于频繁，请稍后再试" }, { status: 429, headers: { "Retry-After": String(rateLimit.retryAfterSeconds) } });
   }
 
-  if (!timingSafeStringEqual(password, weeklyAdminPassword)) {
+  if (!timingSafeStringEqual(password, weeklyInviteCode)) {
     const retryAfterSeconds = recordWeeklyLoginFailure(rateLimit.key);
     if (payload && retryAfterSeconds > 0) {
       return NextResponse.json({ message: "登录尝试过于频繁，请稍后再试" }, { status: 429, headers: { "Retry-After": String(retryAfterSeconds) } });
     }
-    if (payload) return NextResponse.json({ message: "管理员口令不正确" }, { status: 401 });
+    if (payload) return NextResponse.json({ message: "周赛邀请码不正确" }, { status: 401 });
     const errorUrl = request.nextUrl.clone();
     errorUrl.pathname = "/weekly/access";
     errorUrl.search = "";
@@ -59,9 +59,9 @@ export async function POST(request: NextRequest) {
   }
 
   clearWeeklyLoginFailures(rateLimit.key);
-  const token = await createSessionToken(weeklyAdminPassword);
+  const token = await createSessionToken(weeklyInviteCode, "weekly-access");
   const response = new NextResponse(null, { status: 303, headers: { Location: nextPath } });
-  response.cookies.set(weeklyAdminCookieName, token, {
+  response.cookies.set(weeklyAccessCookieName, token, {
     httpOnly: true,
     sameSite: "lax",
     secure: isSecureRequest(request),

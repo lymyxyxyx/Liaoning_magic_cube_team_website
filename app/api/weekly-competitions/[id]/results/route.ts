@@ -16,8 +16,8 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
   const format = request.nextUrl.searchParams.get("format") || "avg5";
   try {
     const results = await listWeeklyResults(id, eventId, format);
-    const token = request.cookies.get("liaoning_weekly_session")?.value;
-    const isAdmin = Boolean(token && (await verifySessionToken(token)));
+    const token = request.cookies.get("liaoning_weekly_admin_session")?.value;
+    const isAdmin = Boolean(token && (await verifySessionToken(token, "weekly-admin")));
     const visibleResults = isAdmin
       ? results
       : results.map((result) => ({
@@ -49,8 +49,8 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   const { id } = await params;
   if (!isWeeklyCompetitionEnabled()) return NextResponse.json({ message: "Not found" }, { status: 404 });
   if (!isWeeklySameOrigin(request)) return NextResponse.json({ message: "请求来源不受信任" }, { status: 403 });
-  const sessionToken = request.cookies.get("liaoning_weekly_session")?.value;
-  if (!sessionToken || !(await verifySessionToken(sessionToken))) {
+  const sessionToken = request.cookies.get("liaoning_weekly_admin_session")?.value;
+  if (!sessionToken || !(await verifySessionToken(sessionToken, "weekly-admin"))) {
     return NextResponse.json({ message: "需要管理员登录" }, { status: 401 });
   }
   const payload = (await request.json().catch(() => null)) as {

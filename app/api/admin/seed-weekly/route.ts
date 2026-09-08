@@ -22,8 +22,8 @@ export async function POST() {
       const { rowCount } = await client.query(
         `INSERT INTO weekly_meets
           (id, slug, title, week_number, year, year_week, published_at,
-           event, date_label, summary, pb_note, three_age_intro)
-         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)
+           event, date_label, summary, pb_note, three_age_intro, is_public, data_version, updated_at)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,FALSE,1,now())
          ON CONFLICT (id) DO NOTHING`,
         [
           meet.id,
@@ -106,8 +106,8 @@ async function insertResults(
     const { rows } = await client.query<{ id: number }>(
       `INSERT INTO weekly_results
         (event_id, meet_id, rank, player_name, player_slug, gender, age_group,
-         level, grade, average, personal_best, pb_refreshed)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)
+         level, grade, average, personal_best, pb_refreshed, source)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,'legacy')
        RETURNING id`,
       [
         eventId,

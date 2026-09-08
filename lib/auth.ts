@@ -45,13 +45,17 @@ function timingSafeEqual(a: Uint8Array, b: Uint8Array): boolean {
   return diff === 0;
 }
 
-export async function createSessionToken(password: string): Promise<string> {
+export type SessionAudience = "site-admin" | "weekly-admin" | "weekly-access" | "judge";
+
+/** Tokens carry an explicit audience.  Cookie names are deliberately not a
+ * security boundary: a token copied into a different cookie must still fail. */
+export async function createSessionToken(password: string, audience: SessionAudience = "site-admin"): Promise<string> {
   void password;
   const secret = process.env.AUTH_SECRET;
   if (!secret) throw new Error("AUTH_SECRET is required");
 
   const expiry = Math.floor(Date.now() / 1000) + SESSION_MAX_AGE;
-  const payload = String(expiry);
+  const payload = JSON.stringify({ exp: expiry, aud: audience, role: audience });
 
   const key = await getAuthKey(secret);
   const signature = await hmacSign(key, payload);
@@ -60,7 +64,7 @@ export async function createSessionToken(password: string): Promise<string> {
   return `${base64urlEncode(new TextEncoder().encode(payload))}.${sigB64}`;
 }
 
-export async function verifySessionToken(token: string): Promise<boolean> {
+export async function verifySessionToken(token: string, audience?: SessionAudience): Promise<boolean> {
   const secret = process.env.AUTH_SECRET;
   if (!secret) return false;
 
@@ -70,8 +74,10 @@ export async function verifySessionToken(token: string): Promise<boolean> {
   try {
     const payloadBytes = base64urlDecode(token.slice(0, dotIndex));
     const payload = new TextDecoder().decode(payloadBytes);
-    const expiry = parseInt(payload, 10);
-    if (Number.isNaN(expiry)) return false;
+    const claims = JSON.parse(payload) as { exp?: unknown; aud?: unknown; role?: unknown };
+    const expiry = typeof claims.exp === "number" ? claims.exp : NaN;
+    if (Number.isNaN(expiry) || typeof claims.aud !== "string" || claims.role !== claims.aud) return false;
+    if (audience && claims.aud !== audience) return false;
 
     const now = Math.floor(Date.now() / 1000);
     if (now > expiry) return false;

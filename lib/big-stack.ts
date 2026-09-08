@@ -97,21 +97,7 @@ export function getRankedBigStackRecords(records: BigStackRecord[] = bigStackRec
   return [...records].sort((a, b) => b.count - a.count || a.name.localeCompare(b.name, "zh-Hans-CN"));
 }
 
-export async function ensureBigStackTable() {
-  const pool = getPostgresPool();
-  await pool.query(`
-    CREATE TABLE IF NOT EXISTS big_stack_records (
-      id TEXT PRIMARY KEY,
-      name TEXT NOT NULL UNIQUE,
-      count INTEGER NOT NULL DEFAULT 0 CHECK (count >= 0),
-      updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
-    )
-  `);
-  await pool.query("CREATE INDEX IF NOT EXISTS big_stack_records_count_idx ON big_stack_records (count DESC)");
-}
-
 export async function listBigStackRecords() {
-  await ensureBigStackTable();
   const pool = getPostgresPool();
   const existing = await pool.query<{ count: string }>("SELECT COUNT(*)::text AS count FROM big_stack_records");
   if (Number(existing.rows[0]?.count || 0) === 0) await seedBigStackRecords();
@@ -122,7 +108,6 @@ export async function listBigStackRecords() {
 }
 
 export async function saveBigStackRecords(records: BigStackRecord[]) {
-  await ensureBigStackTable();
   const normalized = normalizeBigStackRecords(records);
   const pool = getPostgresPool();
   const client = await pool.connect();

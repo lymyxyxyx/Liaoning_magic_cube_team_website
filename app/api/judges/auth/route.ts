@@ -18,7 +18,7 @@ export async function POST(request: NextRequest) {
   const password = typeof payload?.password === "string" ? payload.password : "";
 
   const response = NextResponse.json({ ok: true });
-  response.cookies.set(judgeCookieName, await createSessionToken(password), {
+  response.cookies.set(judgeCookieName, await createSessionToken(password, "judge"), {
     httpOnly: true,
     sameSite: "lax",
     secure: isSecureRequest(request),
@@ -30,7 +30,7 @@ export async function POST(request: NextRequest) {
 
 export async function GET(request: NextRequest) {
   const token = request.cookies.get(judgeCookieName)?.value;
-  return NextResponse.json({ authenticated: Boolean(token && (await verifySessionToken(token))) });
+  return NextResponse.json({ authenticated: Boolean(token && (await verifySessionToken(token, "judge"))) });
 }
 
 export async function DELETE() {

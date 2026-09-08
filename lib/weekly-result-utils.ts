@@ -87,7 +87,9 @@ export function calculateResultByFormat(attempts: ResultValue[], format: WeeklyR
   let average: ResultValue = best;
 
   if (format === "best3") {
-    average = valid.length === attempts.length ? best : "DNF";
+    // best3 means the fastest valid attempt, not an average. DNF/DNS only
+    // determine the final state when no valid attempt exists.
+    average = best;
   } else if (format === "avg3") {
     average = valid.length === attempts.length ? Math.round(valid.reduce((sum, value) => sum + value, 0) / valid.length) : "DNF";
   }

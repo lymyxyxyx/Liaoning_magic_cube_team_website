@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createSessionToken } from "@/lib/auth";
 import { clearWeeklyLoginFailures, getWeeklyLoginRateLimit, recordWeeklyLoginFailure } from "@/lib/weekly-login-rate-limit";
 
-const weeklyCookieName = "liaoning_weekly_session";
+const weeklyCookieName = "liaoning_weekly_admin_session";
 const weeklyNextCookieName = "liaoning_weekly_next";
 
 function isSecureRequest(request: NextRequest) {
@@ -40,13 +40,13 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ message: "登录尝试过于频繁，请稍后再试" }, { status: 429, headers: { "Retry-After": String(retryAfterSeconds) } });
     }
     const loginUrl = request.nextUrl.clone();
-    loginUrl.pathname = "/admin/login/error";
-    loginUrl.search = "";
+    loginUrl.pathname = "/admin/weekly/login";
+    loginUrl.search = "?error=1";
     return NextResponse.redirect(loginUrl, { status: 303 });
   }
 
   clearWeeklyLoginFailures(rateLimit.key);
-  const token = await createSessionToken(weeklyPassword);
+  const token = await createSessionToken(weeklyPassword, "weekly-admin");
 
   const response = createRelativeRedirect(nextPath);
   response.cookies.set(weeklyCookieName, token, {

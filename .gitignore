@@ -1,4 +1,5 @@
 node_modules
+.pnpm-store/
 .next
 out
 .vercel
@@ -8,6 +9,7 @@ out
 *.tsbuildinfo
 npm-debug.log*
 *.sql
+!scripts/migrations/*.sql
 WCA_export*/
 data/*.sqlite
 data/*.json

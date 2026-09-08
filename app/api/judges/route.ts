@@ -11,7 +11,7 @@ export async function GET() {
 
 export async function POST(request: NextRequest) {
   const token = request.cookies.get("liaoning_judge_session")?.value;
-  if (!token || !(await verifySessionToken(token))) {
+  if (!token || !(await verifySessionToken(token, "judge"))) {
     return NextResponse.json({ message: "无法编辑。" }, { status: 401 });
   }
 

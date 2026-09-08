@@ -23,11 +23,17 @@ export async function POST(request: NextRequest) {
     startDate?: string;
     endDate?: string;
     templateMeetId?: string | null;
-    status?: "draft" | "open";
+    status?: "draft" | "open" | "closed" | "archived";
+    title?: string;
+    slug?: string;
+    weekNumber?: number;
   } | null;
   if (!isWeeklyDate(payload?.startDate) || !isWeeklyDate(payload?.endDate) ||
       (payload.templateMeetId !== undefined && payload.templateMeetId !== null && !isBoundedString(payload.templateMeetId, 160)) ||
-      (payload.status !== undefined && payload.status !== "draft" && payload.status !== "open")) {
+      (payload.status !== undefined && !["draft", "open", "closed", "archived"].includes(payload.status)) ||
+      (payload.title !== undefined && !isBoundedString(payload.title, 200, true)) ||
+      (payload.slug !== undefined && !/^[a-z0-9][a-z0-9-]{0,99}$/.test(payload.slug)) ||
+      (payload.weekNumber !== undefined && (!Number.isInteger(payload.weekNumber) || payload.weekNumber < 1))) {
     return NextResponse.json({ message: "周赛参数不正确" }, { status: 400 });
   }
 
@@ -36,7 +42,10 @@ export async function POST(request: NextRequest) {
       startDate: payload.startDate,
       endDate: payload.endDate,
       templateMeetId: payload.templateMeetId,
-      status: payload.status
+      status: payload.status,
+      title: payload.title,
+      slug: payload.slug,
+      weekNumber: payload.weekNumber
     });
     return NextResponse.json({ meet }, { status: 201 });
   } catch (error) {

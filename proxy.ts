@@ -3,18 +3,25 @@ import { verifySessionToken } from "@/lib/auth";
 
 const adminCookieName = "liaoning_admin_session";
 const adminNextCookieName = "liaoning_admin_next";
-const weeklyAdminCookieName = "liaoning_weekly_session";
+const weeklyAdminCookieName = "liaoning_weekly_admin_session";
+const weeklyAdminNextCookieName = "liaoning_weekly_next";
+const weeklyAccessCookieName = "liaoning_weekly_access_session";
 
 async function hasAdminSession(request: NextRequest) {
   const token = request.cookies.get(adminCookieName)?.value;
   if (!token) return false;
-  return verifySessionToken(token);
+  return verifySessionToken(token, "site-admin");
 }
 
 async function hasWeeklyAdminSession(request: NextRequest) {
   const token = request.cookies.get(weeklyAdminCookieName)?.value;
   if (!token) return false;
-  return verifySessionToken(token);
+  return verifySessionToken(token, "weekly-admin");
+}
+
+async function hasWeeklyAccessSession(request: NextRequest) {
+  const token = request.cookies.get(weeklyAccessCookieName)?.value;
+  return Boolean(token && await verifySessionToken(token, "weekly-access"));
 }
 
 function isSecureRequest(request: NextRequest) {
@@ -30,9 +37,13 @@ export async function proxy(request: NextRequest) {
   const isWeeklyResultReadApi = request.method === "GET" && pathname.startsWith("/api/weekly-competitions/") && pathname.endsWith("/results");
   const isWeeklyAdminApi = pathname.startsWith("/api/admin/weekly-");
 
-  if ((isWeeklyPage || (isWeeklyApi && !isWeeklyResultReadApi)) && !(await hasWeeklyAdminSession(request))) {
+  const hasWeeklyAccess = await hasWeeklyAccessSession(request);
+  const hasWeeklyAdmin = await hasWeeklyAdminSession(request);
+  // A weekly administrator may enter the same protected weekly route, but
+  // write handlers still require the administrator audience explicitly.
+  if ((isWeeklyPage || (isWeeklyApi && !isWeeklyResultReadApi)) && !(hasWeeklyAccess || hasWeeklyAdmin)) {
     if (isWeeklyApi) {
-      return NextResponse.json({ message: "请先登录周赛管理员账号" }, { status: 401 });
+      return NextResponse.json({ message: "请先输入周赛邀请码" }, { status: 401 });
     }
 
     const accessUrl = request.nextUrl.clone();
@@ -52,7 +63,24 @@ export async function proxy(request: NextRequest) {
     return NextResponse.redirect(canonicalUrl);
   }
 
-  if (pathname.startsWith("/admin") && !pathname.startsWith("/admin/login") && !(await hasAdminSession(request))) {
+  const isWeeklyAdminPage = pathname === "/admin/weekly" || pathname.startsWith("/admin/weekly/");
+  const isWeeklyAdminLoginPage = pathname === "/admin/weekly/login";
+  if (isWeeklyAdminPage && !isWeeklyAdminLoginPage && !hasWeeklyAdmin) {
+    const loginUrl = request.nextUrl.clone();
+    loginUrl.pathname = "/admin/weekly/login";
+    loginUrl.search = "";
+    const response = NextResponse.redirect(loginUrl);
+    response.cookies.set(weeklyAdminNextCookieName, `${pathname}${request.nextUrl.search}`, {
+      httpOnly: true,
+      sameSite: "lax",
+      secure: isSecureRequest(request),
+      maxAge: 60 * 5,
+      path: "/"
+    });
+    return response;
+  }
+
+  if (pathname.startsWith("/admin") && !pathname.startsWith("/admin/login") && !isWeeklyAdminPage && !(await hasAdminSession(request))) {
     const loginUrl = request.nextUrl.clone();
     loginUrl.pathname = "/admin/login";
     loginUrl.search = "";
