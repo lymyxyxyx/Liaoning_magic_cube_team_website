@@ -1,0 +1,43 @@
+{
+  "schema_version": "weekly-history-2026-w27-w34-v1",
+  "source_root": "../local-data/weekly-history-2026-w27-w34",
+  "roster_file": "辽宁魔方少儿战队长期卡学员信息.xlsx",
+  "output_dir": "../outputs/weekly-history-2026-w27-w34",
+  "weeks": [
+    { "week_number": 27, "meet_slug": "2026-week-27", "title": "2026年第27周周赛", "start_date": "2026-06-29", "end_date": "2026-07-05", "source_file": "2026第27周周赛统计表.xlsx", "output_file": "2026-week-27-standard.xlsx", "expected_results": 55, "expected_attempts": 263 },
+    { "week_number": 28, "meet_slug": "2026-week-28", "title": "2026年第28周周赛", "start_date": "2026-07-06", "end_date": "2026-07-12", "source_file": "2026第28周周赛统计表(1).xlsx", "output_file": "2026-week-28-standard.xlsx", "expected_results": 46, "expected_attempts": 218 },
+    { "week_number": 29, "meet_slug": "2026-week-29", "title": "2026年第29周周赛", "start_date": "2026-07-13", "end_date": "2026-07-19", "source_file": "2026第29周周赛统计表(1).xlsx", "output_file": "2026-week-29-standard.xlsx", "expected_results": 58, "expected_attempts": 278 },
+    { "week_number": 30, "meet_slug": "2026-week-30", "title": "2026年第30周周赛", "start_date": "2026-07-20", "end_date": "2026-07-26", "source_file": "2026第30周周赛统计表(1).xlsx", "output_file": "2026-week-30-standard.xlsx", "expected_results": 47, "expected_attempts": 227 },
+    { "week_number": 31, "meet_slug": "2026-week-31", "title": "2026年第31周周赛", "start_date": "2026-07-27", "end_date": "2026-08-02", "source_file": "2026第31周周赛统计表.xlsx", "output_file": "2026-week-31-standard.xlsx", "expected_results": 25, "expected_attempts": 121 },
+    { "week_number": 32, "meet_slug": "2026-week-32", "title": "2026年第32周周赛", "start_date": "2026-08-03", "end_date": "2026-08-09", "source_file": "2026第32周周赛统计表(1).xlsx", "output_file": "2026-week-32-standard.xlsx", "expected_results": 49, "expected_attempts": 233 },
+    { "week_number": 33, "meet_slug": "2026-week-33", "title": "2026年第33周周赛", "start_date": "2026-08-10", "end_date": "2026-08-16", "source_file": "2026第33周周赛统计表(1).xlsx", "output_file": "2026-week-33-standard.xlsx", "expected_results": 53, "expected_attempts": 249 },
+    { "week_number": 34, "meet_slug": "2026-week-34", "title": "2026年第34周周赛", "start_date": "2026-08-17", "end_date": "2026-08-23", "source_file": "2026第34周周赛统计表(1).xlsx", "output_file": "2026-week-34-standard.xlsx", "expected_results": 43, "expected_attempts": 203 }
+  ],
+  "resolutions": {
+    "explicit_create": [
+      { "source_name": "丁俊森", "canonical_name": "丁俊森", "gender": "男" },
+      { "source_name": "王一帆", "canonical_name": "王一帆", "gender": "男" },
+      { "source_name": "陈祉行", "canonical_name": "陈祉行", "gender": "男" },
+      { "source_name": "吴一凡", "canonical_name": "吴一凡", "gender": "男" },
+      { "source_name": "孔子赫", "canonical_name": "孔子赫", "gender": "男" },
+      { "source_name": "杨雯博", "canonical_name": "杨雯博", "gender": "男" },
+      { "source_name": "蒋茗朗", "canonical_name": "蒋茗朗", "gender": "男" }
+    ],
+    "explicit_existing": [
+      {
+        "source_name": "李柏bo霖",
+        "roster_row": 497,
+        "canonical_name": "李柏霖（白塔小学）",
+        "forbidden_roster_rows": [419],
+        "identity_note": "bo pronunciation; W33 competitor; never auto-select normalized 李柏霖; roster row 419 is a different person who has not competed recently"
+      }
+    ]
+  },
+  "ignored_sheets": ["三", "二", "金", "镜面   枫叶  ", "全能", "年龄组", "个人PB", "大堆", "Sheet1", "Sheet2"],
+  "controls": {
+    "roster_rows": 549,
+    "expected_final_library_size": 556,
+    "resolution": { "total": 67, "unique_exact_match": 59, "explicit_existing": 1, "explicit_create": 7 },
+    "batch": { "results": 376, "attempts": 1792, "avg5_results": 354, "avg5_matches": 354, "individual_best1_results": 22, "individual_best1_matches": 22, "dnf": 5, "dns": 0, "unique_players": 67, "unresolved_players": 0 }
+  }
+}
