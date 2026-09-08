@@ -281,36 +281,26 @@ function assertWeekControls(config, actual) {
   if (actual.results !== Number(config.expected_results) || actual.attempts !== Number(config.expected_attempts)) throw new Error(`W${config.week_number} control failed: ${actual.results}/${actual.attempts}; expected ${config.expected_results}/${config.expected_attempts}`);
 }
 
-async function createStandardWorkbook({ Workbook, SpreadsheetFile, outputPath, metadata, rows }) {
-  const workbook = Workbook.create();
-  const info = workbook.worksheets.add("比赛信息");
-  const results = workbook.worksheets.add("成绩");
-  info.getRange("A1:E2").values = [standardInfoHeaders, [metadata.meet_slug, String(metadata.week_number), metadata.title, metadata.start_date, metadata.end_date]];
-  const resultValues = [standardResultHeaders, ...rows.map((row) => [row.eventCode, "", "", row.playerName, ...row.attempts, ...Array.from({ length: 5 - row.attempts.length }, () => ""), row.notes])];
-  results.getRangeByIndexes(0, 0, resultValues.length, standardResultHeaders.length).values = resultValues;
-  for (const sheet of [info, results]) {
-    sheet.showGridLines = false;
-    sheet.getUsedRange().format.font = { name: "Arial", size: 10 };
-    sheet.getUsedRange().format.verticalAlignment = "center";
-  }
-  info.getRange("A1:E1").format = { fill: "#1F4E78", font: { name: "Arial", size: 10, bold: true, color: "#FFFFFF" }, horizontalAlignment: "center", verticalAlignment: "center" };
-  results.getRange("A1:J1").format = { fill: "#1F4E78", font: { name: "Arial", size: 10, bold: true, color: "#FFFFFF" }, horizontalAlignment: "center", verticalAlignment: "center" };
-  info.getRange("A1:E2").format.columnWidth = 22;
-  results.getRange(`A1:A${resultValues.length}`).format.columnWidth = 14;
-  results.getRange(`B1:D${resultValues.length}`).format.columnWidth = 20;
-  results.getRange(`E1:I${resultValues.length}`).format.columnWidth = 12;
-  results.getRange(`J1:J${resultValues.length}`).format.columnWidth = 72;
-  results.getRange("A1:J1").format.wrapText = true;
-  results.freezePanes.freezeRows(1);
-  workbook.recalculate();
-  await workbook.inspect({ kind: "table", range: "比赛信息!A1:E2", include: "values,formulas", tableMaxRows: 2, tableMaxCols: 5 });
-  await workbook.inspect({ kind: "table", range: `成绩!A1:J${Math.min(resultValues.length, 12)}`, include: "values,formulas", tableMaxRows: 12, tableMaxCols: 10 });
-  await workbook.render({ sheetName: "比赛信息", range: "A1:E2", scale: 1, format: "png" });
-  await workbook.render({ sheetName: "成绩", range: `A1:J${Math.min(resultValues.length, 12)}`, scale: 1, format: "png" });
-  const output = await SpreadsheetFile.exportXlsx(workbook);
-  await output.save(outputPath);
-  await fs.rm(`${outputPath}.inspect.ndjson`, { force: true });
+async function createStandardWorkbook({ outputPath, metadata, rows }) {
+  const info = [standardInfoHeaders, [metadata.meet_slug, String(metadata.week_number), metadata.title, metadata.start_date, metadata.end_date]];
+  const results = [standardResultHeaders, ...rows.map((row) => [row.eventCode, "", "", row.playerName, ...row.attempts, ...Array.from({ length: 5 - row.attempts.length }, () => ""), row.notes])];
+  const entries = [
+    ["[Content_Types].xml", `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/><Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/><Override PartName="/xl/worksheets/sheet2.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/><Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/></Types>`],
+    ["_rels/.rels", `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships" Target="xl/workbook.xml"/></Relationships>`],
+    ["xl/workbook.xml", `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheets><sheet name="比赛信息" sheetId="1" r:id="rId1"/><sheet name="成绩" sheetId="2" r:id="rId2"/></sheets></workbook>`],
+    ["xl/_rels/workbook.xml.rels", `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/><Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet2.xml"/><Relationship Id="rId3" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/></Relationships>`],
+    ["xl/styles.xml", `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><fonts count="1"><font><sz val="11"/><name val="Arial"/></font></fonts><fills count="1"><fill><patternFill patternType="none"/></fill></fills><borders count="1"><border><left/><right/><top/><bottom/><diagonal/></border></borders><cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs><cellXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/></cellXfs></styleSheet>`],
+    ["xl/worksheets/sheet1.xml", worksheetXml(info)],
+    ["xl/worksheets/sheet2.xml", worksheetXml(results)]
+  ];
+  await fs.writeFile(outputPath, createStoredZip(entries.map(([name, content]) => ({ name, data: Buffer.from(content, "utf8") }))));
 }
+
+function worksheetXml(rows) { return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><sheetData>${rows.map((row, rowIndex) => `<row r="${rowIndex + 1}">${row.map((value, columnIndex) => `<c r="${columnName(columnIndex + 1)}${rowIndex + 1}" t="inlineStr"><is><t>${escapeXml(value)}</t></is></c>`).join("")}</row>`).join("")}</sheetData></worksheet>`; }
+function columnName(column) { let value = column, name = ""; while (value > 0) { const remainder = (value - 1) % 26; name = String.fromCharCode(65 + remainder) + name; value = Math.floor((value - 1) / 26); } return name; }
+function escapeXml(value) { return String(value).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;"); }
+function createStoredZip(entries) { const local = [], central = []; let offset = 0; for (const entry of entries) { const name = Buffer.from(entry.name), crc = crc32(entry.data), localHeader = Buffer.alloc(30), centralHeader = Buffer.alloc(46); localHeader.writeUInt32LE(0x04034b50, 0); localHeader.writeUInt16LE(20, 4); localHeader.writeUInt32LE(crc, 14); localHeader.writeUInt32LE(entry.data.length, 18); localHeader.writeUInt32LE(entry.data.length, 22); localHeader.writeUInt16LE(name.length, 26); local.push(localHeader, name, entry.data); centralHeader.writeUInt32LE(0x02014b50, 0); centralHeader.writeUInt16LE(20, 4); centralHeader.writeUInt16LE(20, 6); centralHeader.writeUInt32LE(crc, 16); centralHeader.writeUInt32LE(entry.data.length, 20); centralHeader.writeUInt32LE(entry.data.length, 24); centralHeader.writeUInt16LE(name.length, 28); centralHeader.writeUInt32LE(offset, 42); central.push(centralHeader, name); offset += localHeader.length + name.length + entry.data.length; } const centralBuffer = Buffer.concat(central), end = Buffer.alloc(22); end.writeUInt32LE(0x06054b50, 0); end.writeUInt16LE(entries.length, 8); end.writeUInt16LE(entries.length, 10); end.writeUInt32LE(centralBuffer.length, 12); end.writeUInt32LE(offset, 16); return Buffer.concat([...local, centralBuffer, end]); }
+function crc32(data) { let crc = 0xffffffff; for (const byte of data) { crc ^= byte; for (let i = 0; i < 8; i += 1) crc = (crc >>> 1) ^ (crc & 1 ? 0xedb88320 : 0); } return (crc ^ 0xffffffff) >>> 0; }
 
 function validateStandardWorkbook(workbook, metadata, expected) {
   const info = workbook.sheets.get("比赛信息");
