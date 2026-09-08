@@ -7,6 +7,7 @@ import { createWeeklyResultsTemplate, parseWeeklyResultsWorkbook, type ParsedWee
 import { refreshWeeklyPlayerPersonalBestForEvent, rerankWeeklyEvent } from "@/lib/weekly-entry-store";
 import { weeklyV2ActivePlayerSql } from "@/lib/weekly-player-scope";
 import { getWeeklyAgeGroup } from "@/lib/weekly-age-groups";
+import { weeklyBusinessDate, weeklyImportDateWarnings } from "@/lib/weekly-results-import-dates";
 import type { PoolClient } from "pg";
 
 export type WeeklyResultsImportPreviewRow = NormalizedWeeklyResultRow & {
@@ -370,7 +371,7 @@ async function buildPreview(input: { context: ImportMeetContext; source: WeeklyR
     if (input.metadata.meet_slug !== context.slug) globalErrors.push("比赛信息的 meet_slug 与当前周赛不一致，不能继续提交");
     if (String(input.metadata.week_number) !== String(context.weekNumber)) globalErrors.push("比赛信息的 week_number 与当前周赛不一致，不能继续提交");
     if (input.metadata.title !== context.title) globalWarnings.push("比赛信息 title 与当前周赛不同");
-    if (input.metadata.start_date !== context.startDate || input.metadata.end_date !== context.endDate) globalWarnings.push("比赛信息日期与当前周赛不同");
+    globalWarnings.push(...weeklyImportDateWarnings(input.metadata, context));
   }
   const byId = new Map(context.players.map((player) => [player.id, player]));
   const byWcaId = groupBy(context.players.filter((player) => player.wcaId), (player) => player.wcaId.toUpperCase());
@@ -427,7 +428,7 @@ async function getImportContext(meetId: string): Promise<ImportMeetContext> {
   ]);
   const meet = meetResult.rows[0]; if (!meet) throw new Error("周赛不存在");
   if (meet.data_version !== 2) throw new Error("历史数据 / 只读");
-  return { id: meet.id, slug: meet.slug, weekNumber: meet.week_number, title: meet.title, startDate: toIsoDate(meet.starts_at), endDate: toIsoDate(meet.ends_at), events: eventResult.rows.map((row) => ({ id: row.id, eventCode: row.event_code, format: getWeeklyResultFormat(row.format).id, attemptCount: row.attempt_count, enabled: row.enabled })), players: playerResult.rows.map((row) => ({ id: row.id, name: row.name, wcaId: row.wca_id || "", gender: row.gender === "女" ? "女" : row.gender === "男" ? "男" : "", birthDate: row.birth_date || "", province: row.province || "", city: row.city || "", status: row.status === "inactive" ? "inactive" : "active" })) };
+  return { id: meet.id, slug: meet.slug, weekNumber: meet.week_number, title: meet.title, startDate: weeklyBusinessDate(meet.starts_at), endDate: weeklyBusinessDate(meet.ends_at), events: eventResult.rows.map((row) => ({ id: row.id, eventCode: row.event_code, format: getWeeklyResultFormat(row.format).id, attemptCount: row.attempt_count, enabled: row.enabled })), players: playerResult.rows.map((row) => ({ id: row.id, name: row.name, wcaId: row.wca_id || "", gender: row.gender === "女" ? "女" : row.gender === "男" ? "男" : "", birthDate: row.birth_date || "", province: row.province || "", city: row.city || "", status: row.status === "inactive" ? "inactive" : "active" })) };
 }
 async function listExistingResults(meetId: string) { const pool = getPostgresPool(); const { rows } = await pool.query<{ event_code: string; player_id: string }>(`SELECT we.event_code, wr.player_id FROM weekly_results wr JOIN weekly_events we ON we.id = wr.event_id WHERE wr.meet_id = $1 AND wr.player_id IS NOT NULL`, [meetId]); return new Set(rows.map((row) => `${row.event_code}:${row.player_id}`)); }
 function parsePreview(value: unknown) { if (!value || typeof value !== "object") throw new Error("导入批次预览数据不正确"); return value as WeeklyResultsImportPreview; }
@@ -477,4 +478,3 @@ function storedPositiveValue(value: unknown) { const numeric = Number(value); re
 function groupBy<T>(items: T[], key: (item: T) => string) { const result = new Map<string, T[]>(); for (const item of items) { const group = result.get(key(item)) || []; group.push(item); result.set(key(item), group); } return result; }
 function normalizeName(value: string) { return value.normalize("NFKC").replace(/\s+/g, "").trim(); }
 function sanitizeFilename(value: string) { return value.replace(/[\\/\0]/g, "_").slice(0, 180) || "weekly-results.xlsx"; }
-function toIsoDate(value: string | Date | null) { return value ? (typeof value === "string" ? value : value.toISOString()).slice(0, 10) : ""; }
