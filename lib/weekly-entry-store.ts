@@ -2,6 +2,8 @@ import { getPostgresPool } from "@/lib/postgres";
 import type { PoolClient } from "pg";
 import { getWcaEventName, isWcaEventId, WEEKLY_DEFAULT_EVENT_IDS } from "@/lib/wca-events";
 import { getWeeklyAgeGroup, getWeeklyRankingAgeGroup, getWeeklyRankingAgeGroupOrder } from "@/lib/weekly-age-groups";
+import { buildWeeklyRankAssignments } from "@/lib/weekly-ranking";
+import { weeklyBusinessDate } from "@/lib/weekly-results-import-dates";
 import {
   calculateResultByFormat,
   formatResult,
@@ -774,13 +776,13 @@ export async function rerankWeeklyEvent(client: PoolClient, meetId: string, even
     [meetId, eventId]
   );
 
-  rows.sort(compareWeeklyResultRows);
-  const rankByGroup = new Map<string, number>();
-  for (const row of rows) {
-    const group = getWeeklyRankingAgeGroup(row.birth_date || "", row.age_group || "", row.starts_at ? new Date(row.starts_at) : new Date());
-    const rank = (rankByGroup.get(group) || 0) + 1;
-    rankByGroup.set(group, rank);
-    await client.query("UPDATE weekly_results SET rank = $1 WHERE id = $2", [rank, row.id]);
+  const assignments = buildWeeklyRankAssignments(
+    rows,
+    (row) => getWeeklyRankingAgeGroup(row.birth_date || "", row.age_group || "", row.starts_at ? new Date(`${weeklyBusinessDate(row.starts_at)}T00:00:00`) : new Date()),
+    getWeeklyRankingAgeGroupOrder
+  );
+  for (const assignment of assignments) {
+    await client.query("UPDATE weekly_results SET rank = $1 WHERE id = $2", [assignment.rank, assignment.id]);
   }
 }
 
