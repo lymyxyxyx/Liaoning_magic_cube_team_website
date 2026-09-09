@@ -1074,6 +1074,34 @@ main {
   color: var(--blue);
 }
 
+.weekly-phone-toggle {
+  border: 0;
+  padding: 0;
+  color: var(--blue-deep);
+  font: inherit;
+  font-weight: 700;
+  text-decoration: underline;
+  cursor: pointer;
+  background: transparent;
+}
+
+.weekly-long-card-records {
+  margin-top: 18px;
+  padding: 14px;
+}
+
+.weekly-long-card-records > summary {
+  cursor: pointer;
+  color: var(--blue-deep);
+  font-weight: 800;
+}
+
+.weekly-long-card-records > p {
+  margin: 10px 0;
+  color: var(--muted);
+  font-size: 13px;
+}
+
 .weekly-detail-content .weekly-intro {
   gap: 6px;
   margin-bottom: 12px;

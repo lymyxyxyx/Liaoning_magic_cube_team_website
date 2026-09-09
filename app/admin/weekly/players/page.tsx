@@ -1,12 +1,12 @@
 import Link from "next/link";
 import { PageHero } from "@/components/page-hero";
-import { listWeeklyPlayersForAdmin } from "@/lib/weekly-player-admin-store";
+import { listWeeklyLongCardProfilesForAdmin, listWeeklyPlayersForAdmin } from "@/lib/weekly-player-admin-store";
 import { WeeklyPlayersAdminConsole } from "../weekly-players-admin-console";
 
 export const dynamic = "force-dynamic";
 
 export default async function AdminWeeklyPlayersPage() {
-  const initial = await listWeeklyPlayersForAdmin();
+  const [initial, longCardProfiles] = await Promise.all([listWeeklyPlayersForAdmin(), listWeeklyLongCardProfilesForAdmin()]);
   return (
     <>
       <PageHero label="后台管理 / 周赛" title="周赛选手档案">
@@ -16,7 +16,7 @@ export default async function AdminWeeklyPlayersPage() {
         <Link className="button primary" href="/admin/weekly/players/import">导入选手 Excel</Link>
         <Link className="button" href="/admin/weekly">返回周赛管理</Link>
       </section>
-      <WeeklyPlayersAdminConsole initial={initial} />
+      <WeeklyPlayersAdminConsole initial={initial} longCardProfiles={longCardProfiles} />
     </>
   );
 }

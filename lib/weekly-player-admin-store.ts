@@ -18,6 +18,20 @@ export type WeeklyPlayerAdminListItem = WeeklyPlayerLibraryEntry & {
   resultCount: number;
   lastCompetedAt: string | null;
   createdAt: string;
+  longCardProfile: WeeklyLongCardProfile | null;
+};
+
+export type WeeklyLongCardProfile = {
+  sourceRowNumber: number;
+  submittedAt: string;
+  name: string;
+  gender: string;
+  birthDate: string;
+  phone: string;
+  contactRelationship: string;
+  channel: string;
+  notes: string;
+  matchedPlayerId: string | null;
 };
 
 export type WeeklyPlayerAdminList = {
@@ -97,6 +111,16 @@ type PlayerRow = {
   updated_at: string;
   result_count?: string;
   last_competed_at?: string | null;
+  long_card_source_row_number?: number | null;
+  long_card_submitted_at?: string | null;
+  long_card_name?: string | null;
+  long_card_gender?: string | null;
+  long_card_birth_date?: string | null;
+  long_card_phone?: string | null;
+  long_card_contact_relationship?: string | null;
+  long_card_channel?: string | null;
+  long_card_notes?: string | null;
+  long_card_matched_player_id?: string | null;
 };
 
 const pageSize = 50;
@@ -135,8 +159,18 @@ export async function listWeeklyPlayersForAdmin(input: {
        FROM weekly_player_library wpl
        LEFT JOIN weekly_results wr ON wr.player_id = wpl.id
        LEFT JOIN weekly_meets wm ON wm.id = wr.meet_id
+       LEFT JOIN LATERAL (
+         SELECT source_row_number, submitted_at, student_name, gender, birth_date, phone,
+                contact_relationship, channel, source_notes, matched_player_id
+           FROM weekly_long_card_profiles
+          WHERE matched_player_id = wpl.id
+          ORDER BY submitted_at DESC, source_row_number DESC
+          LIMIT 1
+       ) long_card ON TRUE
        ${where}
-      GROUP BY wpl.id
+      GROUP BY wpl.id, long_card.source_row_number, long_card.submitted_at, long_card.student_name,
+               long_card.gender, long_card.birth_date, long_card.phone, long_card.contact_relationship,
+               long_card.channel, long_card.source_notes, long_card.matched_player_id
       ORDER BY wpl.status, wpl.name, wpl.id
       LIMIT $${params.length - 1} OFFSET $${params.length}`,
     params
@@ -147,6 +181,29 @@ export async function listWeeklyPlayersForAdmin(input: {
     page,
     pageSize
   };
+}
+
+export async function listWeeklyLongCardProfilesForAdmin(): Promise<WeeklyLongCardProfile[]> {
+  const pool = getPostgresPool();
+  const { rows } = await pool.query<{
+    source_row_number: number; submitted_at: string; student_name: string; gender: string; birth_date: string;
+    phone: string; contact_relationship: string; channel: string; source_notes: string; matched_player_id: string | null;
+  }>(`SELECT source_row_number, submitted_at, student_name, gender, birth_date, phone,
+             contact_relationship, channel, source_notes, matched_player_id
+        FROM weekly_long_card_profiles
+       ORDER BY source_row_number`);
+  return rows.map((row) => ({
+    sourceRowNumber: row.source_row_number,
+    submittedAt: row.submitted_at || "",
+    name: row.student_name,
+    gender: row.gender || "",
+    birthDate: row.birth_date || "",
+    phone: row.phone || "",
+    contactRelationship: row.contact_relationship || "",
+    channel: row.channel || "",
+    notes: row.source_notes || "",
+    matchedPlayerId: row.matched_player_id
+  }));
 }
 
 export async function createWeeklyPlayerProfile(input: Partial<WeeklyPlayerLibraryEntry> & { confirmSameName?: boolean }) {
@@ -409,7 +466,19 @@ function mapAdminPlayer(row: PlayerRow): WeeklyPlayerAdminListItem {
     createdAt: row.created_at,
     updatedAt: row.updated_at,
     resultCount: Number(row.result_count || 0),
-    lastCompetedAt: row.last_competed_at || null
+    lastCompetedAt: row.last_competed_at || null,
+    longCardProfile: row.long_card_source_row_number ? {
+      sourceRowNumber: row.long_card_source_row_number,
+      submittedAt: row.long_card_submitted_at || "",
+      name: row.long_card_name || "",
+      gender: row.long_card_gender || "",
+      birthDate: row.long_card_birth_date || "",
+      phone: row.long_card_phone || "",
+      contactRelationship: row.long_card_contact_relationship || "",
+      channel: row.long_card_channel || "",
+      notes: row.long_card_notes || "",
+      matchedPlayerId: row.long_card_matched_player_id || null
+    } : null
   };
 }
 

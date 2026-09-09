@@ -2,7 +2,7 @@
 
 import { FormEvent, useMemo, useState } from "react";
 import { Pencil, Plus, Search, UserRoundPlus } from "lucide-react";
-import type { WeeklyPlayerAdminList, WeeklyPlayerAdminListItem } from "@/lib/weekly-player-admin-store";
+import type { WeeklyLongCardProfile, WeeklyPlayerAdminList, WeeklyPlayerAdminListItem } from "@/lib/weekly-player-admin-store";
 
 type PlayerForm = {
   name: string;
@@ -20,7 +20,7 @@ const emptyForm: PlayerForm = {
   name: "", gender: "", birthDate: "", wcaId: "", province: "", city: "", notes: "", status: "active", deactivationReason: ""
 };
 
-export function WeeklyPlayersAdminConsole({ initial }: { initial: WeeklyPlayerAdminList }) {
+export function WeeklyPlayersAdminConsole({ initial, longCardProfiles }: { initial: WeeklyPlayerAdminList; longCardProfiles: WeeklyLongCardProfile[] }) {
   const [data, setData] = useState(initial);
   const [query, setQuery] = useState("");
   const [status, setStatus] = useState<"all" | "active" | "inactive">("all");
@@ -28,6 +28,7 @@ export function WeeklyPlayersAdminConsole({ initial }: { initial: WeeklyPlayerAd
   const [notice, setNotice] = useState("");
   const [editor, setEditor] = useState<{ mode: "create" | "edit"; player?: WeeklyPlayerAdminListItem; form: PlayerForm; confirmSameName: boolean } | null>(null);
   const [saving, setSaving] = useState(false);
+  const [visiblePhones, setVisiblePhones] = useState<Set<number>>(() => new Set());
 
   const pageCount = Math.max(1, Math.ceil(data.total / data.pageSize));
   const title = useMemo(() => editor?.mode === "create" ? "新建选手" : `编辑选手：${editor?.player?.name || ""}`, [editor]);
@@ -67,6 +68,17 @@ export function WeeklyPlayersAdminConsole({ initial }: { initial: WeeklyPlayerAd
 
   function setField<K extends keyof PlayerForm>(field: K, value: PlayerForm[K]) {
     setEditor((current) => current ? { ...current, form: { ...current.form, [field]: value } } : null);
+  }
+
+  function phoneValue(profile: WeeklyLongCardProfile | null) {
+    if (!profile?.phone) return "—";
+    const visible = visiblePhones.has(profile.sourceRowNumber);
+    return <button className="weekly-phone-toggle" type="button" onClick={() => setVisiblePhones((current) => {
+      const next = new Set(current);
+      if (visible) next.delete(profile.sourceRowNumber);
+      else next.add(profile.sourceRowNumber);
+      return next;
+    })}>{visible ? profile.phone : "点击显示电话"}</button>;
   }
 
   async function save(event: FormEvent) {
@@ -124,11 +136,12 @@ export function WeeklyPlayersAdminConsole({ initial }: { initial: WeeklyPlayerAd
         {notice ? <p className="admin-inline-notice">{notice}</p> : null}
         <div className="table-scroll">
           <table className="result-table">
-            <thead><tr><th>姓名</th><th>性别 / 出生日期</th><th>WCA ID</th><th>地区</th><th>状态</th><th>成绩</th><th>最近参赛</th><th>操作</th></tr></thead>
+            <thead><tr><th>姓名</th><th>性别 / 出生日期</th><th>WCA ID</th><th>地区</th><th>长期卡资料</th><th>状态</th><th>成绩</th><th>最近参赛</th><th>操作</th></tr></thead>
             <tbody>{data.players.map((player) => <tr key={player.id}>
-              <td><strong>{player.name}</strong><br /><small>{player.id}</small></td>
+              <td><strong>{player.name}</strong></td>
               <td>{player.gender || "未知"}<br /><small>{player.birthDate || "未登记"}</small></td>
               <td>{player.wcaId || "—"}</td><td>{[player.province, player.city].filter(Boolean).join(" ") || "—"}</td>
+              <td>{player.longCardProfile ? <small>提交：{player.longCardProfile.submittedAt || "—"}<br />电话：{phoneValue(player.longCardProfile)}<br />联系人：{player.longCardProfile.contactRelationship || "—"}<br />渠道：{player.longCardProfile.channel || "—"}<br />备注：{player.longCardProfile.notes || "—"}</small> : "—"}</td>
               <td>{player.status || "active"}</td><td>{player.resultCount}</td><td>{player.lastCompetedAt ? new Date(player.lastCompetedAt).toLocaleDateString("zh-CN") : "—"}</td>
               <td><button className="button compact" type="button" onClick={() => openEdit(player)}><Pencil size={14} />编辑</button></td>
             </tr>)}</tbody>
@@ -137,6 +150,18 @@ export function WeeklyPlayersAdminConsole({ initial }: { initial: WeeklyPlayerAd
         {data.players.length === 0 ? <p className="empty-state">没有符合条件的选手。</p> : null}
         <div className="weekly-admin-actions"><span>共 {data.total} 名，第 {data.page}/{pageCount} 页</span><button className="button" type="button" disabled={data.page <= 1} onClick={() => load(data.page - 1)}>上一页</button><button className="button" type="button" disabled={data.page >= pageCount} onClick={() => load(data.page + 1)}>下一页</button></div>
       </div>
+      <details className="admin-card weekly-long-card-records">
+        <summary>长期卡原始资料（{longCardProfiles.length} 条）</summary>
+        <p>仅管理员可见。所有原表字段均保留；电话默认隐藏。</p>
+        <div className="table-scroll">
+          <table className="result-table">
+            <thead><tr><th>提交时间</th><th>姓名</th><th>性别</th><th>出生日期</th><th>电话</th><th>联系人关系</th><th>渠道</th><th>备注</th><th>关联选手</th></tr></thead>
+            <tbody>{longCardProfiles.map((profile) => <tr key={profile.sourceRowNumber}>
+              <td>{profile.submittedAt || "—"}</td><td>{profile.name}</td><td>{profile.gender || "—"}</td><td>{profile.birthDate || "—"}</td><td>{phoneValue(profile)}</td><td>{profile.contactRelationship || "—"}</td><td>{profile.channel || "—"}</td><td>{profile.notes || "—"}</td><td>{profile.matchedPlayerId ? "已关联" : "待人工关联"}</td>
+            </tr>)}</tbody>
+          </table>
+        </div>
+      </details>
       {editor ? <div className="weekly-admin-login-backdrop" role="presentation"><form className="weekly-admin-login-modal" onSubmit={save}>
         <div className="admin-card-heading"><h2>{title}</h2><button className="button compact" type="button" onClick={() => setEditor(null)}>取消</button></div>
         <div className="weekly-admin-grid">
