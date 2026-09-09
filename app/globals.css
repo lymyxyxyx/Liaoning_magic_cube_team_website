@@ -1063,6 +1063,17 @@ main {
   font-weight: 800;
 }
 
+.weekly-admin-library-link {
+  color: var(--blue-deep);
+  font-size: 14px;
+  font-weight: 750;
+  white-space: nowrap;
+}
+
+.weekly-admin-library-link:hover {
+  color: var(--blue);
+}
+
 .weekly-detail-content .weekly-intro {
   gap: 6px;
   margin-bottom: 12px;
