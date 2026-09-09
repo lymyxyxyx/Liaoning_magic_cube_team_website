@@ -111,12 +111,15 @@ export async function getWeeklyMeets(): Promise<WeeklyMeet[]> {
   }
 }
 
-export async function getWeeklyMeetBySlug(slug: string): Promise<WeeklyMeet | null> {
+export async function getWeeklyMeetBySlug(
+  slug: string,
+  options: { includePrivate?: boolean } = {},
+): Promise<WeeklyMeet | null> {
   try {
     const pool = getPostgresPool();
     const meetResult = await pool.query<MeetRow>(
-      "SELECT * FROM weekly_meets WHERE slug = $1 AND is_public = TRUE",
-      [slug]
+      "SELECT * FROM weekly_meets WHERE slug = $1 AND (is_public = TRUE OR $2::boolean = TRUE)",
+      [slug, options.includePrivate === true]
     );
     if (meetResult.rows.length === 0) return null;
     const meetRow = meetResult.rows[0];

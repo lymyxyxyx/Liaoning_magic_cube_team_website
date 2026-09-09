@@ -129,6 +129,10 @@ export async function listWeeklyMeetOptions(): Promise<WeeklyMeetOption[]> {
 }
 
 export async function isWeeklyMeetPubliclyVisible(meetIdOrSlug: string) {
+  return Boolean((await getWeeklyMeetVisibility(meetIdOrSlug))?.isPublic);
+}
+
+export async function getWeeklyMeetVisibility(meetIdOrSlug: string) {
   const pool = getPostgresPool();
   const { rows } = await pool.query<{ is_public: boolean }>(
     `SELECT is_public
@@ -137,7 +141,8 @@ export async function isWeeklyMeetPubliclyVisible(meetIdOrSlug: string) {
       LIMIT 1`,
     [meetIdOrSlug],
   );
-  return Boolean(rows[0]?.is_public);
+  if (!rows[0]) return null;
+  return { isPublic: rows[0].is_public };
 }
 
 export async function listWeeklyMeetEventConfigs(meetId: string): Promise<WeeklyMeetEventConfig[]> {

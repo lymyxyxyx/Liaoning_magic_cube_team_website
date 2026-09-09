@@ -1,23 +1,27 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getWeeklyMeetEntryAvailability, isWeeklyMeetPubliclyVisible, listWeeklyResults, saveWeeklyResult } from "@/lib/weekly-entry-store";
+import { getWeeklyMeetEntryAvailability, getWeeklyMeetVisibility, listWeeklyResults, saveWeeklyResult } from "@/lib/weekly-entry-store";
 import { findWeeklyEligiblePlayer } from "@/lib/weekly-player-library";
 import { isWeeklyCompetitionEnabled } from "@/lib/weekly-feature";
 import { verifySessionToken } from "@/lib/auth";
 import { isWeeklySameOrigin } from "@/lib/weekly-request-security";
 import { isBoundedString, isWeeklyAttempts, isWeeklyResultFormat } from "@/lib/weekly-request-validation";
+import { hasWeeklyAdminSession } from "@/lib/weekly-admin-auth";
+import { canReadWeeklyMeet } from "@/lib/weekly-read-access";
 
 export const dynamic = "force-dynamic";
 
 export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   if (!isWeeklyCompetitionEnabled()) return NextResponse.json({ message: "Not found" }, { status: 404 });
-  if (!(await isWeeklyMeetPubliclyVisible(id))) return NextResponse.json({ message: "Not found" }, { status: 404 });
+  const visibility = await getWeeklyMeetVisibility(id);
+  const isAdmin = await hasWeeklyAdminSession(request);
+  if (!canReadWeeklyMeet({ exists: Boolean(visibility), isPublic: Boolean(visibility?.isPublic), isWeeklyAdmin: isAdmin })) {
+    return NextResponse.json({ message: "Not found" }, { status: 404 });
+  }
   const eventId = request.nextUrl.searchParams.get("eventId") || "333";
   const format = request.nextUrl.searchParams.get("format") || "avg5";
   try {
     const results = await listWeeklyResults(id, eventId, format);
-    const token = request.cookies.get("liaoning_weekly_admin_session")?.value;
-    const isAdmin = Boolean(token && (await verifySessionToken(token, "weekly-admin")));
     const visibleResults = isAdmin
       ? results
       : results.map((result) => ({

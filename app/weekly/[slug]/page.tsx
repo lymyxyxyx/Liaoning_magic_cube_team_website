@@ -1,11 +1,13 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { cookies } from "next/headers";
 import { ArrowLeft } from "lucide-react";
 import { PageHero } from "@/components/page-hero";
 import { getSingleBest, type WeeklyEvent } from "@/lib/weekly";
 import { getWeeklyMeetBySlug } from "@/lib/weekly-db";
 import { WeeklyImageExportButton } from "./weekly-image-export-button";
 import { isWeeklyCompetitionEnabled } from "@/lib/weekly-feature";
+import { hasWeeklyAdminCookie } from "@/lib/weekly-admin-auth";
 
 export const dynamic = "force-dynamic";
 
@@ -24,7 +26,8 @@ function formatAttempt(value: number | "DNF" | "DNS" | null) {
 export default async function WeeklyDetailPage({ params }: { params: Promise<{ slug: string }> }) {
   if (!isWeeklyCompetitionEnabled()) notFound();
   const { slug } = await params;
-  const meet = await getWeeklyMeetBySlug(slug);
+  const includePrivate = await hasWeeklyAdminCookie(await cookies());
+  const meet = await getWeeklyMeetBySlug(slug, { includePrivate });
 
   if (!meet) {
     notFound();
