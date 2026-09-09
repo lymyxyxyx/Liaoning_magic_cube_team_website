@@ -13,6 +13,11 @@ import { isWeeklyMeetCurrent } from "@/lib/weekly-feature";
 
 export const dynamic = "force-dynamic";
 
+function meetStartsAtTimestamp(value: string | null | undefined) {
+  const timestamp = new Date(value || 0).getTime();
+  return Number.isFinite(timestamp) ? timestamp : 0;
+}
+
 export default async function WeeklyResultsEntryPage() {
   if (!isWeeklyCompetitionEnabled()) notFound();
   const sessionToken = (await cookies()).get("liaoning_weekly_admin_session")?.value || "";
@@ -23,13 +28,13 @@ export default async function WeeklyResultsEntryPage() {
   // weekly-admin session. Public visitors continue to see public meets only.
   const historyMeets = allMeets
     .filter((meet) => meet.id !== "weekly-test-entry" && meet.dataVersion === 2 && (meet.isPublic || initialAdminUnlocked))
-    .sort((a, b) => (b.startsAt || "").localeCompare(a.startsAt || ""));
+    .sort((a, b) => meetStartsAtTimestamp(b.startsAt) - meetStartsAtTimestamp(a.startsAt));
   const currentMeet = meets
     .filter(isWeeklyMeetCurrent)
-    .sort((a, b) => (b.startsAt || "").localeCompare(a.startsAt || ""))[0]
+    .sort((a, b) => meetStartsAtTimestamp(b.startsAt) - meetStartsAtTimestamp(a.startsAt))[0]
     || meets
       .filter((meet) => meet.id !== "weekly-test-entry" && (!meet.startsAt || new Date(meet.startsAt).getTime() <= Date.now()))
-      .sort((a, b) => (b.startsAt || "").localeCompare(a.startsAt || ""))[0];
+      .sort((a, b) => meetStartsAtTimestamp(b.startsAt) - meetStartsAtTimestamp(a.startsAt))[0];
   const eventConfigs = currentMeet ? await listWeeklyMeetEventConfigs(currentMeet.id) : [];
   const eventConfigIds = new Set(eventConfigs.filter((config) => config.enabled).map((config) => config.eventId));
   const events = currentMeet ? WCA_EVENTS.filter((event) => eventConfigIds.has(event.id)) : WEEKLY_DEFAULT_EVENTS;

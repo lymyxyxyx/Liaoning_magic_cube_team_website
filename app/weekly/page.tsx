@@ -30,11 +30,16 @@ function getShanghaiWeekLabel() {
   return `${format(monday)}-${format(sunday)}`;
 }
 
+function meetStartsAtTimestamp(value: string | null | undefined) {
+  const timestamp = new Date(value || 0).getTime();
+  return Number.isFinite(timestamp) ? timestamp : 0;
+}
+
 export default async function WeeklyPage() {
   const weekLabel = getShanghaiWeekLabel();
   const historyMeets = (await listWeeklyMeetOptions())
     .filter((meet) => isGuestWeeklyHistorySlug(meet.slug))
-    .sort((a, b) => (b.startsAt || "").localeCompare(a.startsAt || ""));
+    .sort((a, b) => meetStartsAtTimestamp(b.startsAt) - meetStartsAtTimestamp(a.startsAt));
 
   return (
     <>
