@@ -9,6 +9,7 @@ import { WeeklyImageExportButton } from "./weekly-image-export-button";
 import { isWeeklyCompetitionEnabled } from "@/lib/weekly-feature";
 import { hasWeeklyAdminCookie } from "@/lib/weekly-admin-auth";
 import { sortWeeklyResultsByAverage } from "@/lib/weekly-result-display";
+import { isGuestWeeklyHistorySlug } from "@/lib/weekly-guest-history";
 
 export const dynamic = "force-dynamic";
 
@@ -44,7 +45,7 @@ function eventAnchorId(event: WeeklyEvent) {
 export default async function WeeklyDetailPage({ params }: { params: Promise<{ slug: string }> }) {
   if (!isWeeklyCompetitionEnabled()) notFound();
   const { slug } = await params;
-  const includePrivate = await hasWeeklyAdminCookie(await cookies());
+  const includePrivate = isGuestWeeklyHistorySlug(slug) || await hasWeeklyAdminCookie(await cookies());
   const meet = await getWeeklyMeetBySlug(slug, { includePrivate });
 
   if (!meet) {

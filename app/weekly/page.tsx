@@ -1,4 +1,7 @@
 import { PageHero } from "@/components/page-hero";
+import Link from "next/link";
+import { listWeeklyMeetOptions } from "@/lib/weekly-entry-store";
+import { isGuestWeeklyHistorySlug } from "@/lib/weekly-guest-history";
 
 export const dynamic = "force-dynamic";
 
@@ -27,12 +30,30 @@ function getShanghaiWeekLabel() {
   return `${format(monday)}-${format(sunday)}`;
 }
 
-export default function WeeklyPage() {
+export default async function WeeklyPage() {
   const weekLabel = getShanghaiWeekLabel();
+  const historyMeets = (await listWeeklyMeetOptions())
+    .filter((meet) => isGuestWeeklyHistorySlug(meet.slug))
+    .sort((a, b) => (b.startsAt || "").localeCompare(a.startsAt || ""));
 
   return (
     <>
-      <PageHero label="辽宁线上周赛" title="本周周赛成绩">
+      <PageHero
+        actions={
+          <details className="weekly-history-menu">
+            <summary>历史周赛</summary>
+            <div>
+              {historyMeets.map((meet) => (
+                <Link href={`/weekly/${meet.slug}`} key={meet.id}>
+                  {meet.slug.replace(/^(.+)-week-(\d+)$/, "$1 W$2")}
+                </Link>
+              ))}
+            </div>
+          </details>
+        }
+        label="辽宁线上周赛"
+        title="本周周赛成绩"
+      >
         本周成绩将在管理员录入后显示；当前游客可直接查看，不需要邀请码。
       </PageHero>
 

@@ -935,6 +935,58 @@ main {
   color: var(--blue);
 }
 
+.weekly-history-menu {
+  position: relative;
+  min-width: 120px;
+}
+
+.weekly-history-menu summary {
+  cursor: pointer;
+  list-style: none;
+  color: var(--blue-deep);
+  font-size: 14px;
+  font-weight: 750;
+}
+
+.weekly-history-menu summary::-webkit-details-marker {
+  display: none;
+}
+
+.weekly-history-menu summary::after {
+  content: "⌄";
+  margin-left: 6px;
+}
+
+.weekly-history-menu > div {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  z-index: 20;
+  display: grid;
+  min-width: 130px;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface);
+  box-shadow: var(--shadow);
+}
+
+.weekly-history-menu a {
+  padding: 9px 12px;
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.weekly-history-menu a + a {
+  border-top: 1px solid var(--line);
+}
+
+.weekly-history-menu a:hover {
+  color: var(--blue);
+  background: var(--soft);
+}
+
 .hero-panel {
   overflow: hidden;
   border: 1px solid var(--line);
