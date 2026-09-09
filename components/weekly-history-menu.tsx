@@ -1,0 +1,17 @@
+import Link from "next/link";
+import type { WeeklyMeetOption } from "@/lib/weekly-entry-store";
+
+export function WeeklyHistoryMenu({ meets }: { meets: WeeklyMeetOption[] }) {
+  return (
+    <details className="weekly-history-menu">
+      <summary>历史周赛</summary>
+      <div>
+        {meets.map((meet) => (
+          <Link href={`/weekly/${meet.slug}`} key={meet.id}>
+            {meet.slug.replace(/^(.+)-week-(\d+)$/, "$1 W$2")}
+          </Link>
+        ))}
+      </div>
+    </details>
+  );
+}

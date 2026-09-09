@@ -1,7 +1,12 @@
 import { PageHero } from "@/components/page-hero";
-import Link from "next/link";
+import { cookies } from "next/headers";
 import { listWeeklyMeetOptions } from "@/lib/weekly-entry-store";
 import { isGuestWeeklyHistorySlug } from "@/lib/weekly-guest-history";
+import { hasWeeklyAdminCookie } from "@/lib/weekly-admin-auth";
+import { WEEKLY_DEFAULT_EVENTS } from "@/lib/wca-events";
+import { WeeklyResultEntryConsole } from "./admin/weekly-result-entry-console";
+import { WeeklyHistoryMenu } from "@/components/weekly-history-menu";
+import { WeeklyInlineAdminLogin } from "@/components/weekly-inline-admin-login";
 
 export const dynamic = "force-dynamic";
 
@@ -37,24 +42,24 @@ function meetStartsAtTimestamp(value: string | null | undefined) {
 
 export default async function WeeklyPage() {
   const weekLabel = getShanghaiWeekLabel();
-  const historyMeets = (await listWeeklyMeetOptions())
+  const [allMeets, isAdmin] = await Promise.all([
+    listWeeklyMeetOptions(),
+    hasWeeklyAdminCookie(await cookies())
+  ]);
+  const historyMeets = allMeets
     .filter((meet) => isGuestWeeklyHistorySlug(meet.slug))
     .sort((a, b) => meetStartsAtTimestamp(b.startsAt) - meetStartsAtTimestamp(a.startsAt));
+  const adminMeets = allMeets.filter((meet) => meet.id !== "weekly-test-entry" && meet.dataVersion === 2);
 
   return (
     <>
       <PageHero
+        className="weekly-current-page-hero"
         actions={
-          <details className="weekly-history-menu">
-            <summary>历史周赛</summary>
-            <div>
-              {historyMeets.map((meet) => (
-                <Link href={`/weekly/${meet.slug}`} key={meet.id}>
-                  {meet.slug.replace(/^(.+)-week-(\d+)$/, "$1 W$2")}
-                </Link>
-              ))}
-            </div>
-          </details>
+          <div className="weekly-page-actions">
+            <WeeklyHistoryMenu meets={historyMeets} />
+            <WeeklyInlineAdminLogin isAdmin={isAdmin} />
+          </div>
         }
         label="辽宁线上周赛"
         title="本周周赛成绩"
@@ -121,6 +126,15 @@ export default async function WeeklyPage() {
           })}
         </div>
       </section>
+      {isAdmin ? (
+        <WeeklyResultEntryConsole
+          initialAdminUnlocked
+          initialMeets={adminMeets}
+          events={WEEKLY_DEFAULT_EVENTS}
+          mode="admin"
+          variant="full"
+        />
+      ) : null}
     </>
   );
 }

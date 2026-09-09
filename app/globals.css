@@ -938,6 +938,7 @@ main {
 .weekly-history-menu {
   position: relative;
   min-width: 120px;
+  z-index: 30;
 }
 
 .weekly-history-menu summary {
@@ -985,6 +986,113 @@ main {
 .weekly-history-menu a:hover {
   color: var(--blue);
   background: var(--soft);
+}
+
+.weekly-current-page-hero,
+.weekly-detail-page-hero {
+  overflow: visible;
+}
+
+.weekly-page-actions {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.weekly-inline-admin-login {
+  position: relative;
+  z-index: 30;
+}
+
+.weekly-inline-admin-login summary {
+  cursor: pointer;
+  list-style: none;
+  color: var(--blue-deep);
+  font-size: 14px;
+  font-weight: 750;
+}
+
+.weekly-inline-admin-login summary::-webkit-details-marker {
+  display: none;
+}
+
+.weekly-inline-admin-login summary::after {
+  content: "⌄";
+  margin-left: 6px;
+}
+
+.weekly-inline-admin-login form {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  z-index: 31;
+  display: grid;
+  gap: 8px;
+  width: 220px;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface);
+  box-shadow: var(--shadow);
+}
+
+.weekly-inline-admin-login input {
+  width: 100%;
+  min-height: 34px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 6px 8px;
+  font: inherit;
+}
+
+.weekly-inline-admin-login .button {
+  justify-content: center;
+  min-height: 34px;
+  padding: 6px 10px;
+}
+
+.weekly-inline-admin-login p {
+  margin: 0;
+  color: var(--red);
+  font-size: 12px;
+}
+
+.weekly-admin-mode {
+  color: var(--green);
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.weekly-detail-content .weekly-intro {
+  gap: 6px;
+  margin-bottom: 12px;
+  padding: 12px;
+}
+
+.weekly-detail-content .weekly-intro p {
+  font-size: 13px;
+  line-height: 1.55;
+}
+
+.weekly-detail-content .weekly-intro strong {
+  font-size: 12px;
+}
+
+.weekly-detail-content .weekly-summary-grid {
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.weekly-detail-content .stat {
+  padding: 11px 12px;
+}
+
+.weekly-detail-content .stat strong {
+  font-size: 20px;
+}
+
+.weekly-detail-content .stat span {
+  font-size: 12px;
 }
 
 .hero-panel {

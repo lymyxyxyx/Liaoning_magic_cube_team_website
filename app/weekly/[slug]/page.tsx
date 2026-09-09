@@ -5,11 +5,12 @@ import { ArrowLeft } from "lucide-react";
 import { PageHero } from "@/components/page-hero";
 import { getSingleBest, type WeeklyEvent } from "@/lib/weekly";
 import { getWeeklyMeetBySlug } from "@/lib/weekly-db";
-import { WeeklyImageExportButton } from "./weekly-image-export-button";
 import { isWeeklyCompetitionEnabled } from "@/lib/weekly-feature";
 import { hasWeeklyAdminCookie } from "@/lib/weekly-admin-auth";
 import { sortWeeklyResultsByAverage } from "@/lib/weekly-result-display";
 import { isGuestWeeklyHistorySlug } from "@/lib/weekly-guest-history";
+import { listWeeklyMeetOptions } from "@/lib/weekly-entry-store";
+import { WeeklyHistoryMenu } from "@/components/weekly-history-menu";
 
 export const dynamic = "force-dynamic";
 
@@ -51,6 +52,9 @@ export default async function WeeklyDetailPage({ params }: { params: Promise<{ s
   if (!meet) {
     notFound();
   }
+  const historyMeets = (await listWeeklyMeetOptions())
+    .filter((candidate) => isGuestWeeklyHistorySlug(candidate.slug))
+    .sort((a, b) => new Date(b.startsAt || 0).getTime() - new Date(a.startsAt || 0).getTime());
 
   const mainResults = sortWeeklyResultsByAverage(meet.results);
   const eventSections: WeeklyEvent[] = [
@@ -70,22 +74,15 @@ export default async function WeeklyDetailPage({ params }: { params: Promise<{ s
   return (
     <>
       <PageHero
+        className="weekly-detail-page-hero"
         actions={
-          <>
-            <WeeklyImageExportButton
-              meet={{
-                title: meet.title,
-                dateLabel: meet.dateLabel,
-                weekNumber: meet.weekNumber,
-                yearWeek: meet.yearWeek,
-                results: meet.results
-              }}
-            />
+          <div className="weekly-page-actions">
+            <WeeklyHistoryMenu meets={historyMeets} />
             <Link className="button" href="/weekly">
               <ArrowLeft size={16} />
-              返回周赛
+              返回本周周赛
             </Link>
-          </>
+          </div>
         }
         label={`${meet.event} · 第${meet.weekNumber}周`}
         title={meet.title}
@@ -93,7 +90,7 @@ export default async function WeeklyDetailPage({ params }: { params: Promise<{ s
         选手姓名可进入个人主页，原始截图中的成绩先转成可视化数据；个人 PB 标红代表本周刷新成绩。
       </PageHero>
 
-      <section className="container section">
+      <section className="container section weekly-detail-content">
         <div className="weekly-intro">
           {meet.intro.map((paragraph) => (
             <p key={paragraph}>{paragraph}</p>
