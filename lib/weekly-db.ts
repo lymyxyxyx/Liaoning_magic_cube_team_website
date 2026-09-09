@@ -155,6 +155,7 @@ export async function getWeeklyMeetBySlug(
     const rawResults = resultsByEvent.get(row.id) || [];
     return {
       id: row.id,
+      eventCode: row.event_code ?? undefined,
       title: row.title,
       eventName: row.event_name,
       groupName: row.group_name ?? undefined,

@@ -3270,6 +3270,43 @@ textarea {
   gap: 28px;
 }
 
+.weekly-event-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 0 0 20px;
+  padding: 8px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--surface);
+}
+
+.weekly-event-tabs a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 34px;
+  padding: 6px 11px;
+  border: 1px solid #bdd3ed;
+  border-radius: 7px;
+  background: #f4f8fd;
+  color: var(--blue);
+  font-size: 13px;
+  font-weight: 800;
+  line-height: 1.25;
+  text-decoration: none;
+}
+
+.weekly-event-tabs a:hover,
+.weekly-event-tabs a:focus-visible {
+  border-color: var(--blue);
+  background: #e8f1fb;
+  outline: none;
+}
+
+.weekly-event-section {
+  scroll-margin-top: 20px;
+}
+
 .weekly-age-note {
   margin: 24px 0 18px;
   padding: 18px;
@@ -9437,6 +9474,18 @@ a.commercial-member-link:hover {
 
   .weekly-event-stack {
     gap: 18px;
+  }
+
+  .weekly-event-tabs {
+    flex-wrap: nowrap;
+    margin-bottom: 14px;
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .weekly-event-tabs a {
+    flex: 0 0 auto;
   }
 
   .weekly-age-note {

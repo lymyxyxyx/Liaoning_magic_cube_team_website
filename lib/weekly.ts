@@ -17,6 +17,7 @@ export type WeeklyResult = {
 
 export type WeeklyEvent = {
   id: string;
+  eventCode?: string;
   title: string;
   eventName: string;
   groupName?: string;

@@ -8,6 +8,7 @@ import { getWeeklyMeetBySlug } from "@/lib/weekly-db";
 import { WeeklyImageExportButton } from "./weekly-image-export-button";
 import { isWeeklyCompetitionEnabled } from "@/lib/weekly-feature";
 import { hasWeeklyAdminCookie } from "@/lib/weekly-admin-auth";
+import { sortWeeklyResultsByAverage } from "@/lib/weekly-result-display";
 
 export const dynamic = "force-dynamic";
 
@@ -23,6 +24,23 @@ function formatAttempt(value: number | "DNF" | "DNS" | null) {
   return value;
 }
 
+const eventTabLabels: Record<string, string> = {
+  "333": "333 三阶",
+  "222": "222 二阶",
+  pyram: "pyram 金字塔",
+  maple: "maple 枫叶",
+  mirror: "mirror 镜面",
+  individual: "individual 全能"
+};
+
+function eventTabLabel(event: WeeklyEvent) {
+  return eventTabLabels[event.eventCode || ""] || event.eventName;
+}
+
+function eventAnchorId(event: WeeklyEvent) {
+  return `weekly-event-${event.eventCode || event.id}`;
+}
+
 export default async function WeeklyDetailPage({ params }: { params: Promise<{ slug: string }> }) {
   if (!isWeeklyCompetitionEnabled()) notFound();
   const { slug } = await params;
@@ -33,15 +51,20 @@ export default async function WeeklyDetailPage({ params }: { params: Promise<{ s
     notFound();
   }
 
+  const mainResults = sortWeeklyResultsByAverage(meet.results);
   const eventSections: WeeklyEvent[] = [
     ...(meet.results.length > 0 ? [{
       id: "333",
+      eventCode: "333",
       title: `三阶比赛第${meet.yearWeek}周`,
       eventName: "三阶",
-      results: meet.results
+      results: mainResults
     }] : []),
-    ...meet.events
-  ];
+    ...meet.events.map((event) => ({ ...event, results: sortWeeklyResultsByAverage(event.results) }))
+  ].map((event) => ({
+    ...event,
+    results: sortWeeklyResultsByAverage(event.results)
+  }));
 
   return (
     <>
@@ -79,15 +102,15 @@ export default async function WeeklyDetailPage({ params }: { params: Promise<{ s
 
         <div className="weekly-summary-grid">
           <div className="stat">
-            <strong>{meet.results.length}</strong>
+            <strong>{mainResults.length}</strong>
             <span>参赛选手</span>
           </div>
           <div className="stat">
-            <strong>{formatAttempt(meet.results[0] ? getSingleBest(meet.results[0].attempts) : null)}</strong>
+            <strong>{formatAttempt(mainResults[0] ? getSingleBest(mainResults[0].attempts) : null)}</strong>
             <span>冠军本周最快</span>
           </div>
           <div className="stat">
-            <strong>{meet.results[0] ? meet.results[0].average.toFixed(2) : "-"}</strong>
+            <strong>{mainResults[0] ? mainResults[0].average.toFixed(2) : "-"}</strong>
             <span>冠军平均</span>
           </div>
           <div className="stat">
@@ -96,13 +119,19 @@ export default async function WeeklyDetailPage({ params }: { params: Promise<{ s
           </div>
         </div>
 
+        <nav className="weekly-event-tabs" aria-label="周赛项目导航">
+          {eventSections.map((event) => (
+            <a href={`#${eventAnchorId(event)}`} key={event.id}>{eventTabLabel(event)}</a>
+          ))}
+        </nav>
+
         <div className="weekly-event-stack">
           {eventSections.map((event) => {
             const hasAgeGroup = event.results.some((result) => result.ageGroup);
             const hasAttempts = !event.isAllAround;
 
             const table = (
-              <section className="weekly-event-section">
+              <section className="weekly-event-section" id={eventAnchorId(event)}>
                 <div className="section-header">
                   <div>
                     <span className="eyebrow">{event.groupName || event.eventName}</span>
@@ -190,6 +219,7 @@ export default async function WeeklyDetailPage({ params }: { params: Promise<{ s
                 </div>
                 <div className="weekly-age-stack">
                   {meet.threeAgeGroups.map((ageEvent) => {
+                    const sortedAgeResults = sortWeeklyResultsByAverage(ageEvent.results);
                     const ageBest = !ageEvent.isAllAround;
                     return (
                       <section className="weekly-event-section" key={ageEvent.id}>
@@ -219,7 +249,7 @@ export default async function WeeklyDetailPage({ params }: { params: Promise<{ s
                               </tr>
                             </thead>
                             <tbody>
-                              {ageEvent.results.map((result) => {
+                              {sortedAgeResults.map((result) => {
                                 const singleBest = getSingleBest(result.attempts);
 
                                 return (
