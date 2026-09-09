@@ -17,7 +17,13 @@ export default async function WeeklyResultsEntryPage() {
   if (!isWeeklyCompetitionEnabled()) notFound();
   const sessionToken = (await cookies()).get("liaoning_weekly_admin_session")?.value || "";
   const initialAdminUnlocked = sessionToken ? await verifySessionToken(sessionToken, "weekly-admin") : false;
-  const meets = (await listWeeklyMeetOptions()).filter((meet) => meet.status === "open" && meet.isPublic);
+  const allMeets = await listWeeklyMeetOptions();
+  const meets = allMeets.filter((meet) => meet.status === "open" && meet.isPublic);
+  // Private weekly history is only listed after the server has verified the
+  // weekly-admin session. Public visitors continue to see public meets only.
+  const historyMeets = allMeets
+    .filter((meet) => meet.id !== "weekly-test-entry" && meet.dataVersion === 2 && (meet.isPublic || initialAdminUnlocked))
+    .sort((a, b) => (b.startsAt || "").localeCompare(a.startsAt || ""));
   const currentMeet = meets
     .filter(isWeeklyMeetCurrent)
     .sort((a, b) => (b.startsAt || "").localeCompare(a.startsAt || ""))[0]
@@ -55,7 +61,18 @@ export default async function WeeklyResultsEntryPage() {
         className="page-hero--compact weekly-results-page-hero"
         label="周赛成绩"
         title="周赛成绩"
-        actions={<Link className="button" href="/weekly/history">历史周赛</Link>}
+        actions={
+          historyMeets.length > 0 ? (
+            <nav className="weekly-history-links" aria-label="历史周赛">
+              <span>历史周赛</span>
+              {historyMeets.map((meet) => (
+                <Link href={`/weekly/${meet.slug}`} key={meet.id}>
+                  {meet.slug.replace(/^(.+)-week-(\d+)$/, "$1 W$2")}
+                </Link>
+              ))}
+            </nav>
+          ) : null
+        }
       >
         管理员登录后可录入、修正和删除本周成绩。
       </PageHero>

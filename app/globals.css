@@ -912,6 +912,29 @@ main {
   line-height: 1.35;
 }
 
+.weekly-history-links {
+  display: grid;
+  gap: 5px;
+  min-width: 112px;
+}
+
+.weekly-history-links > span {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.weekly-history-links a {
+  color: var(--blue-deep);
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.25;
+}
+
+.weekly-history-links a:hover {
+  color: var(--blue);
+}
+
 .hero-panel {
   overflow: hidden;
   border: 1px solid var(--line);

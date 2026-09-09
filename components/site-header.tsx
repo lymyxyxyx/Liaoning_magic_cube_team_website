@@ -12,6 +12,7 @@ type NavItem = {
 
 const navItems: NavItem[] = [
   { href: "/", label: "首页" },
+  { href: "/weekly", label: "周赛" },
   { href: "/liaoning-rankings", label: "辽宁排名" },
   { href: "/liaoning-records", label: "辽宁纪录" },
   { href: "/person", label: "辽宁选手" },
