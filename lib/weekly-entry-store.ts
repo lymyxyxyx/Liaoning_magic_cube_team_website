@@ -194,6 +194,19 @@ export async function listWeeklyMeetEventConfigs(meetId: string): Promise<Weekly
   }));
 }
 
+export async function listWeeklyMeetResultEventIds(meetId: string): Promise<string[]> {
+  const pool = getPostgresPool();
+  const { rows } = await pool.query<{ event_id: string }>(
+    `SELECT DISTINCT event.event_code AS event_id
+       FROM weekly_results result
+       JOIN weekly_events event ON event.id = result.event_id AND event.meet_id = result.meet_id
+      WHERE result.meet_id = $1
+      ORDER BY event_id`,
+    [meetId]
+  );
+  return rows.map((row) => row.event_id).filter(Boolean);
+}
+
 export async function getWeeklyMeetEntryAvailability(meetIdOrSlug: string) {
   const pool = getPostgresPool();
   const { rows } = await pool.query<{ status: string; starts_at: string | null; ends_at: string | null; data_version: number }>(
