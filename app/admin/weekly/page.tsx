@@ -14,8 +14,8 @@ export default async function AdminWeeklyPage({ searchParams }: { searchParams: 
     <WeeklyAdminToolbar active="management" />
     <section className="container section weekly-admin-workspace">
       <div className="admin-card">
-        <div className="admin-card-heading"><div><h2>已录入周赛数据（{history.length} 周）</h2><p>第 27–34 周历史成绩，点击周次可查看该周成绩。</p></div></div>
-        <div className="table-scroll weekly-admin-table-scroll"><table className="result-table weekly-admin-desktop-table"><thead><tr><th>周次</th><th>周期</th><th>状态</th><th>成绩条数</th><th>参赛选手</th></tr></thead><tbody>{history.map((meet) => <tr key={meet.id}><td><Link href={`/admin/weekly/${meet.id}/results`}>第 {meet.weekNumber} 周</Link></td><td>{meet.dateLabel}</td><td>{meet.status}</td><td>{meet.resultCount}</td><td>{meet.competitorCount}</td></tr>)}</tbody></table></div>
+        <div className="admin-card-heading"><div><h2>已录入周赛数据（{history.length} 周）</h2><p>2026 年第 27–34 周历史成绩，点击周次可查看该周成绩。</p></div></div>
+        <div className="table-scroll weekly-admin-table-scroll"><table className="result-table weekly-admin-desktop-table"><thead><tr><th>周次</th><th>周期</th><th>状态</th><th>成绩条数</th><th>参赛选手</th></tr></thead><tbody>{history.map((meet) => <tr key={meet.id}><td><Link href={`/admin/weekly/${meet.id}/results`}>{meet.title}</Link></td><td>{meet.dateLabel}</td><td>{meet.status}</td><td>{meet.resultCount}</td><td>{meet.competitorCount}</td></tr>)}</tbody></table></div>
       </div>
     </section>
   </>;
