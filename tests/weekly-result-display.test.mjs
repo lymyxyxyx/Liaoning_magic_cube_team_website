@@ -17,3 +17,12 @@ test("weekly detail display sorts faster averages first and places DNF averages 
 
   assert.deepEqual(sorted.map((item) => item.playerName), ["快", "同平均更快单次", "同平均较慢单次", "慢", "DNF"]);
 });
+
+test("weekly detail display preserves an original source ranking", () => {
+  const sorted = sortWeeklyResultsByAverage([
+    { ...result("第二名", 10, 8), sourceRank: 2 },
+    { ...result("第一名", 10, 9), sourceRank: 1 }
+  ]);
+
+  assert.deepEqual(sorted.map((item) => item.playerName), ["第一名", "第二名"]);
+});

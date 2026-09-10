@@ -131,6 +131,9 @@ async function main() {
         personal_best NUMERIC(10, 3) NOT NULL,
         pb_refreshed BOOLEAN NOT NULL DEFAULT FALSE,
         pb_average_refreshed BOOLEAN NOT NULL DEFAULT FALSE,
+        source_rank INTEGER,
+        source_age_group TEXT,
+        source_personal_best NUMERIC(10, 3),
         player_id TEXT,
         source TEXT NOT NULL DEFAULT 'legacy',
         import_batch_id TEXT,
@@ -143,6 +146,9 @@ async function main() {
     await client.query("ALTER TABLE weekly_results ALTER COLUMN source SET DEFAULT 'legacy'");
     await client.query("ALTER TABLE weekly_results ADD COLUMN IF NOT EXISTS import_batch_id TEXT");
     await client.query("ALTER TABLE weekly_results ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ NOT NULL DEFAULT now()");
+    await client.query("ALTER TABLE weekly_results ADD COLUMN IF NOT EXISTS source_rank INTEGER");
+    await client.query("ALTER TABLE weekly_results ADD COLUMN IF NOT EXISTS source_age_group TEXT");
+    await client.query("ALTER TABLE weekly_results ADD COLUMN IF NOT EXISTS source_personal_best NUMERIC(10, 3)");
     await client.query("CREATE INDEX IF NOT EXISTS weekly_results_player_id_idx ON weekly_results (player_id)");
     await client.query(`
       CREATE UNIQUE INDEX IF NOT EXISTS weekly_results_meet_event_player_idx

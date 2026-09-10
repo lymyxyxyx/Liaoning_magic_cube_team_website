@@ -43,10 +43,13 @@ type ResultRow = {
   player_slug: string;
   gender: string;
   age_group: string | null;
+  source_rank: number | null;
+  source_age_group: string | null;
   level: string;
   grade: string;
   average: string;
   personal_best: string;
+  source_personal_best: string | null;
   pb_refreshed: boolean;
 };
 
@@ -196,15 +199,16 @@ export async function getWeeklyMeetBySlug(
 function buildResult(row: ResultRow, attemptsByResult: Map<number, AttemptRow[]>): WeeklyResult {
   const attempts: WeeklyAttempt[] = (attemptsByResult.get(row.id) || []).map(readAttemptValue);
   return {
-    rank: row.rank,
+    rank: row.source_rank ?? row.rank,
+    sourceRank: row.source_rank ?? undefined,
     playerName: row.player_name,
     playerSlug: row.player_slug,
     gender: row.gender as Gender,
-    ageGroup: row.age_group ?? undefined,
+    ageGroup: row.source_age_group ?? row.age_group ?? undefined,
     level: row.level,
     grade: row.grade,
     average: Number(row.average),
-    personalBest: Number(row.personal_best),
+    personalBest: Number(row.source_personal_best ?? row.personal_best),
     pbRefreshed: row.pb_refreshed,
     attempts
   };

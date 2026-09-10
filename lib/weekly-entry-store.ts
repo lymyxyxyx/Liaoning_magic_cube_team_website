@@ -57,7 +57,11 @@ export type WeeklyPlayer = {
 export type WeeklyEnteredResult = {
   id: number;
   rank: number;
+  sourceRank: number | null;
   player: WeeklyPlayer;
+  level: string;
+  grade: string;
+  sourcePersonalBest: ResultValue | null;
   best: ResultValue;
   average: ResultValue;
   attempts: ResultValue[];
@@ -91,6 +95,11 @@ type WeeklyResultRow = {
   player_slug: string;
   gender: string;
   age_group: string | null;
+  source_rank: number | null;
+  source_age_group: string | null;
+  level: string;
+  grade: string;
+  source_personal_best: string | null;
   average: string;
   personal_best: string;
   player_id: string | null;
@@ -472,13 +481,14 @@ export async function listWeeklyResults(meetIdOrSlug: string, eventId: string, f
     const matchedPlayer = eligiblePlayers.find((player) => player.id === row.player_id);
     const wcaId = row.wca_id || matchedPlayer?.wcaId || "";
     const playerBirthDate = row.player_birth_date || matchedPlayer?.birthDate || "";
-    const rankingAgeGroup = getWeeklyRankingAgeGroup(playerBirthDate, row.age_group || row.player_age_group || "", row.meet_starts_at ? new Date(row.meet_starts_at) : new Date());
+    const rankingAgeGroup = row.source_age_group || getWeeklyRankingAgeGroup(playerBirthDate, row.age_group || row.player_age_group || "", row.meet_starts_at ? new Date(row.meet_starts_at) : new Date());
     const rank = (rankByGroup.get(rankingAgeGroup) || 0) + 1;
     rankByGroup.set(rankingAgeGroup, rank);
     const attemptValues = (attemptsByResult.get(row.id) || []).map(attemptRowToResultValue);
     return {
       id: row.id,
-      rank,
+      rank: row.source_rank ?? rank,
+      sourceRank: row.source_rank,
       player: {
         id: row.player_id || (row.player_slug ? `code:${row.player_slug}` : row.player_name),
         name: row.player_name,
@@ -492,6 +502,9 @@ export async function listWeeklyResults(meetIdOrSlug: string, eventId: string, f
         ageGroup: rankingAgeGroup,
         ageGroupIsFuzzy: false
       },
+      level: row.level || "",
+      grade: row.grade || "",
+      sourcePersonalBest: row.source_personal_best === null ? null : secondsToResultValue(row.source_personal_best),
       best: secondsToResultValue(row.personal_best),
       average: secondsToResultValue(row.average),
       attempts: attemptValues,

@@ -7,7 +7,7 @@ const expectedColumns = {
   weekly_meets: ["is_public", "data_version", "updated_at"],
   weekly_events: ["event_code", "enabled", "updated_at"],
   weekly_player_library: ["notes", "status", "deactivated_at", "deactivation_reason", "updated_at"],
-  weekly_results: ["player_id", "player_name", "source", "import_batch_id", "age_group", "pb_average_refreshed", "updated_at"],
+  weekly_results: ["player_id", "player_name", "source", "import_batch_id", "age_group", "source_rank", "source_age_group", "source_personal_best", "pb_average_refreshed", "updated_at"],
   weekly_attempts: ["value", "value_centiseconds", "status"],
   weekly_import_batches: ["id", "kind", "filename", "file_sha256", "status", "preview_jsonb", "commit_manifest_jsonb"]
 };

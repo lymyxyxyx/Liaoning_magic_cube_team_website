@@ -6,6 +6,10 @@ function compareScore(value: number) {
 
 export function sortWeeklyResultsByAverage(results: WeeklyResult[]) {
   return [...results].sort((a, b) => {
+    if (a.sourceRank !== undefined && b.sourceRank !== undefined) {
+      return a.sourceRank - b.sourceRank;
+    }
+
     const averageOrder = compareScore(a.average) - compareScore(b.average);
     if (averageOrder !== 0) return averageOrder;
 

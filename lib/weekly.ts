@@ -3,6 +3,7 @@ export type Gender = "男" | "女";
 
 export type WeeklyResult = {
   rank: number;
+  sourceRank?: number;
   playerName: string;
   playerSlug: string;
   gender: Gender;

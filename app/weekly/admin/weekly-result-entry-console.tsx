@@ -48,7 +48,11 @@ type WeeklyPlayer = {
 type EnteredResult = {
   id: number;
   rank: number;
+  sourceRank: number | null;
   player: WeeklyPlayer;
+  level: string;
+  grade: string;
+  sourcePersonalBest: ResultValue | null;
   best: ResultValue;
   average: ResultValue;
   attempts: ResultValue[];
@@ -667,7 +671,7 @@ export function WeeklyResultEntryConsole({ initialMeets, initialPlayers = [], ev
             <div className="weekly-age-tabs-field">
               <span>年龄组</span>
               <div className="weekly-age-tabs" role="tablist" aria-label="年龄组筛选">
-                {['全部', 'U6', 'U8', 'U12', '成人', '待补'].map((group) => (
+                {['全部', 'U6', 'U8', 'U10', 'U12', 'U18', '成人', '待补'].map((group) => (
                   <button
                     className={`weekly-age-tab ${resultAgeGroup === group ? "is-active" : ""}`.trim()}
                     key={group}
@@ -693,17 +697,19 @@ export function WeeklyResultEntryConsole({ initialMeets, initialPlayers = [], ev
                   <th>姓名</th>
                   <th>组别</th>
                   <th>省市</th>
-                  <th>段位/等级</th>
+                  <th>段位</th>
+                  <th>等级</th>
                   <th>平均</th>
-                  <th>最好</th>
+                  <th>个人 PB</th>
+                  <th>本周最好</th>
                   {Array.from({ length: 5 }, (_, index) => <th key={index}>{index + 1}</th>)}
                   {!isPublicMode ? <th>操作</th> : null}
                 </tr>
               </thead>
               <tbody>
-                {displayedResults.map((result, displayIndex) => (
+                {displayedResults.map((result) => (
                   <tr key={result.id}>
-                    <td data-label="排名">{resultAgeGroup === "全部" ? displayIndex + 1 : result.rank}</td>
+                    <td data-label="排名">{result.rank}</td>
                     <td data-label="周赛编号">{getWeeklyNumber(result.player, knownPlayers) || "—"}</td>
                     <td data-label="WCA ID">
                       {result.player.wcaIdConfirmed ? (
@@ -729,11 +735,19 @@ export function WeeklyResultEntryConsole({ initialMeets, initialPlayers = [], ev
                     <td data-label="姓名">{result.player.name}</td>
                     <td data-label="组别">{result.player.ageGroup || "待补"}</td>
                     <td data-label="省市">{formatRegion(result.player)}</td>
-                    <td data-label="段位/等级" className="grade-cell">{getShenyangAssociationGrade(selectedEventId, result.average).label}</td>
+                    <td data-label="段位">
+                      {result.level || getShenyangAssociationGrade(selectedEventId, result.average).level || "-"}
+                    </td>
+                    <td data-label="等级" className="grade-cell">
+                      {result.grade || getShenyangAssociationGrade(selectedEventId, result.average).grade || "-"}
+                    </td>
                     <td data-label="平均" className={result.pbAverageRefreshed ? "score-strong pb-cell pb-refreshed" : "score-strong"}>
                       {formatResult(result.average)}{result.pbAverageRefreshed ? <span className="weekly-pb-badge">PB</span> : null}
                     </td>
-                    <td data-label="最好" className={result.pbRefreshed ? "pb-cell pb-refreshed" : "pb-cell"}>
+                    <td data-label="个人 PB" className="pb-cell">
+                      {formatResult(result.sourcePersonalBest ?? result.best)}
+                    </td>
+                    <td data-label="本周最好" className={result.pbRefreshed ? "pb-cell pb-refreshed" : "pb-cell"}>
                       {formatResult(result.best)}{result.pbRefreshed ? <span className="weekly-pb-badge">PB</span> : null}
                     </td>
                     {Array.from({ length: 5 }, (_, index) => {
@@ -757,7 +771,7 @@ export function WeeklyResultEntryConsole({ initialMeets, initialPlayers = [], ev
                 ))}
                 {displayedResults.length === 0 ? (
                   <tr>
-                    <td colSpan={isPublicMode ? 14 : 15}>{isLoadingResults ? "正在读取成绩..." : results.length ? "没有符合筛选条件的成绩。" : "当前项目暂无成绩。"}</td>
+                    <td colSpan={isPublicMode ? 16 : 17}>{isLoadingResults ? "正在读取成绩..." : results.length ? "没有符合筛选条件的成绩。" : "当前项目暂无成绩。"}</td>
                   </tr>
                 ) : null}
               </tbody>
@@ -999,7 +1013,11 @@ function buildOptimisticResults(prev: EnteredResult[], player: WeeklyPlayer, att
   const nextResult: EnteredResult = {
     id: Math.max(0, ...prev.map((result) => result.id)) + 1,
     rank: 0,
+    sourceRank: null,
     player,
+    level: "",
+    grade: "",
+    sourcePersonalBest: null,
     best: calculated.best,
     average: calculated.average,
     attempts,
@@ -1121,6 +1139,7 @@ function getWeeklyNumber(player: WeeklyPlayer, knownPlayers: WeeklyPlayer[]) {
 }
 
 function compareWeeklyOverallResults(a: EnteredResult, b: EnteredResult) {
+  if (a.sourceRank !== null && b.sourceRank !== null) return a.sourceRank - b.sourceRank;
   return resultScore(a.average, b.average) || resultScore(a.best, b.best) || a.player.name.localeCompare(b.player.name, "zh-CN");
 }
 
