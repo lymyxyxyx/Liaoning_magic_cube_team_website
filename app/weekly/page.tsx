@@ -60,9 +60,6 @@ export default async function WeeklyPage() {
             <WeeklyHistoryMenu meets={historyMeets} />
             <WeeklyInlineAdminLogin isAdmin={isAdmin} />
             {isAdmin ? <>
-              {/* Force a document navigation across the weekly admin auth boundary. */}
-              {/* eslint-disable-next-line @next/next/no-html-link-for-pages */}
-              <a className="weekly-admin-library-link" href="/admin/weekly/players">周赛选手库</a>
               {/* eslint-disable-next-line @next/next/no-html-link-for-pages */}
               <a className="weekly-admin-library-link" href="/admin/weekly">后台管理</a>
             </> : null}

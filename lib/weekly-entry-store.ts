@@ -30,6 +30,16 @@ export type WeeklyMeetOption = {
   dataVersion: number;
 };
 
+export type WeeklyHistoryAdminRow = {
+  id: string;
+  title: string;
+  weekNumber: number;
+  dateLabel: string;
+  status: string;
+  resultCount: number;
+  competitorCount: number;
+};
+
 export type WeeklyPlayer = {
   id: string;
   name: string;
@@ -126,6 +136,28 @@ export async function listWeeklyMeetOptions(): Promise<WeeklyMeetOption[]> {
      ORDER BY CASE status WHEN 'open' THEN 0 WHEN 'draft' THEN 1 ELSE 2 END, week_number DESC, created_at DESC`
   );
   return withOptionalTestMeet(rows);
+}
+
+export async function listWeeklyHistoryForAdmin(): Promise<WeeklyHistoryAdminRow[]> {
+  const pool = getPostgresPool();
+  const { rows } = await pool.query<{
+    id: string; title: string; week_number: number; date_label: string; status: string;
+    result_count: string; competitor_count: string;
+  }>(
+    `SELECT meet.id, meet.title, meet.week_number, meet.date_label, meet.status,
+            count(result.id)::text AS result_count,
+            count(DISTINCT result.player_id)::text AS competitor_count
+       FROM weekly_meets meet
+       LEFT JOIN weekly_results result ON result.meet_id = meet.id
+      WHERE meet.data_version = 2
+      GROUP BY meet.id, meet.title, meet.week_number, meet.date_label, meet.status, meet.starts_at
+      ORDER BY meet.starts_at DESC NULLS LAST, meet.week_number DESC
+      LIMIT 8`
+  );
+  return rows.map((row) => ({
+    id: row.id, title: row.title, weekNumber: row.week_number, dateLabel: row.date_label,
+    status: row.status, resultCount: Number(row.result_count), competitorCount: Number(row.competitor_count)
+  }));
 }
 
 export async function isWeeklyMeetPubliclyVisible(meetIdOrSlug: string) {
