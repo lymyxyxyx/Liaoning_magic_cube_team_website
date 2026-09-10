@@ -11,6 +11,7 @@ CREATE TABLE IF NOT EXISTS weekly_long_card_profiles (
   contact_relationship TEXT NOT NULL DEFAULT '',
   channel TEXT NOT NULL DEFAULT '',
   source_notes TEXT NOT NULL DEFAULT '',
+  wca_id TEXT NOT NULL DEFAULT '',
   matched_player_id TEXT REFERENCES weekly_player_library(id) ON UPDATE CASCADE ON DELETE SET NULL,
   imported_at TIMESTAMPTZ NOT NULL DEFAULT now(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT now()

@@ -25,6 +25,7 @@ type LongCardForm = {
   contactRelationship: string;
   channel: string;
   notes: string;
+  wcaId: string;
 };
 
 const emptyForm: PlayerForm = {
@@ -86,7 +87,7 @@ export function WeeklyPlayersAdminConsole({ initial, longCardProfiles, openCreat
       form: {
         submittedAt: dateOnly(profile.submittedAt), name: profile.name, gender: profile.gender === "男" || profile.gender === "女" ? profile.gender : "",
         birthDate: dateOnly(profile.birthDate), phone: profile.phone, contactRelationship: profile.contactRelationship,
-        channel: profile.channel, notes: profile.notes
+        channel: profile.channel, notes: profile.notes, wcaId: profile.wcaId
       }
     });
   }
@@ -172,9 +173,9 @@ export function WeeklyPlayersAdminConsole({ initial, longCardProfiles, openCreat
         </div>
         <div className="table-scroll weekly-admin-table-scroll">
           <table className="result-table weekly-admin-desktop-table">
-            <thead><tr><th>提交日期</th><th>姓名</th><th>性别</th><th>出生日期</th><th>联系电话（点击显示）</th><th>联系人所属关系</th><th>渠道</th><th>备注</th><th>操作</th></tr></thead>
+            <thead><tr><th>提交日期</th><th>姓名</th><th>性别</th><th>出生日期</th><th>组别</th><th>WCA ID</th><th>联系电话（点击显示）</th><th>联系人所属关系</th><th>渠道</th><th>备注</th><th>操作</th></tr></thead>
             <tbody>{longCardData.map((profile) => <tr key={profile.sourceRowNumber}>
-              <td>{dateOnly(profile.submittedAt) || "—"}</td><td>{profile.name}</td><td>{profile.gender || "—"}</td><td>{profile.birthDate || "—"}</td><td>{phoneValue(profile)}</td><td>{profile.contactRelationship || "—"}</td><td>{profile.channel || "—"}</td><td>{profile.notes || "—"}</td><td><button className="button compact" type="button" onClick={() => openLongCardEdit(profile)}><Pencil size={14} />编辑</button></td>
+              <td>{dateOnly(profile.submittedAt) || "—"}</td><td>{profile.name}</td><td>{profile.gender || "—"}</td><td>{profile.birthDate || "—"}</td><td>{ageGroup(profile.birthDate)}</td><td>{profile.wcaId || "—"}</td><td>{phoneValue(profile)}</td><td>{profile.contactRelationship || "—"}</td><td>{profile.channel || "—"}</td><td>{profile.notes || "—"}</td><td><button className="button compact" type="button" onClick={() => openLongCardEdit(profile)}><Pencil size={14} />编辑</button></td>
             </tr>)}</tbody>
           </table>
         </div>
@@ -242,6 +243,7 @@ export function WeeklyPlayersAdminConsole({ initial, longCardProfiles, openCreat
           <label>联系电话<input type="tel" value={longCardEditor.form.phone} onChange={(event) => setLongCardField("phone", event.target.value)} /></label>
           <label>联系人所属关系<input value={longCardEditor.form.contactRelationship} onChange={(event) => setLongCardField("contactRelationship", event.target.value)} /></label>
           <label>渠道<input value={longCardEditor.form.channel} onChange={(event) => setLongCardField("channel", event.target.value)} /></label>
+          <label>WCA ID<input value={longCardEditor.form.wcaId} onChange={(event) => setLongCardField("wcaId", event.target.value)} /></label>
           <label className="full">备注<textarea rows={3} value={longCardEditor.form.notes} onChange={(event) => setLongCardField("notes", event.target.value)} /></label>
         </div>
         <div className="weekly-admin-login-actions"><button className="button primary" disabled={saving} type="submit"><Pencil size={16} />{saving ? "保存中" : "保存"}</button></div>
@@ -254,4 +256,20 @@ function dateOnly(value: string) {
   const match = value.trim().match(/^(\d{4})[-/.](\d{1,2})[-/.](\d{1,2})/);
   if (!match) return "";
   return `${match[1]}-${match[2].padStart(2, "0")}-${match[3].padStart(2, "0")}`;
+}
+
+function ageGroup(birthDate: string) {
+  const normalized = dateOnly(birthDate);
+  if (!normalized) return "—";
+  const [year, month, day] = normalized.split("-").map(Number);
+  const today = new Date();
+  let age = today.getFullYear() - year;
+  if (today.getMonth() + 1 < month || (today.getMonth() + 1 === month && today.getDate() < day)) age -= 1;
+  if (age < 0) return "—";
+  if (age < 6) return "U6";
+  if (age < 8) return "U8";
+  if (age < 10) return "U10";
+  if (age < 12) return "U12";
+  if (age < 18) return "U18";
+  return "成人组";
 }

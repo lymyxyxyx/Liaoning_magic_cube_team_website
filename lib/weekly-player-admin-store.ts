@@ -31,6 +31,7 @@ export type WeeklyLongCardProfile = {
   contactRelationship: string;
   channel: string;
   notes: string;
+  wcaId: string;
   matchedPlayerId: string | null;
 };
 
@@ -208,9 +209,9 @@ export async function listWeeklyLongCardProfilesForAdmin(): Promise<WeeklyLongCa
   const pool = getPostgresPool();
   const { rows } = await pool.query<{
     source_row_number: number; submitted_at: string; student_name: string; gender: string; birth_date: string;
-    phone: string; contact_relationship: string; channel: string; source_notes: string; matched_player_id: string | null;
+    phone: string; contact_relationship: string; channel: string; source_notes: string; wca_id: string; matched_player_id: string | null;
   }>(`SELECT source_row_number, submitted_at, student_name, gender, birth_date, phone,
-             contact_relationship, channel, source_notes, matched_player_id
+             contact_relationship, channel, source_notes, wca_id, matched_player_id
         FROM weekly_long_card_profiles
        ORDER BY source_row_number`);
   return rows.map((row) => ({
@@ -223,6 +224,7 @@ export async function listWeeklyLongCardProfilesForAdmin(): Promise<WeeklyLongCa
     contactRelationship: row.contact_relationship || "",
     channel: row.channel || "",
     notes: row.source_notes || "",
+    wcaId: row.wca_id || "",
     matchedPlayerId: row.matched_player_id
   }));
 }
@@ -232,9 +234,9 @@ export async function updateWeeklyLongCardProfile(sourceRowNumber: number, input
   const pool = getPostgresPool();
   const current = await pool.query<{
     source_row_number: number; submitted_at: string; student_name: string; gender: string; birth_date: string;
-    phone: string; contact_relationship: string; channel: string; source_notes: string; matched_player_id: string | null;
+    phone: string; contact_relationship: string; channel: string; source_notes: string; wca_id: string; matched_player_id: string | null;
   }>(`SELECT source_row_number, submitted_at, student_name, gender, birth_date, phone,
-             contact_relationship, channel, source_notes, matched_player_id
+             contact_relationship, channel, source_notes, wca_id, matched_player_id
         FROM weekly_long_card_profiles
        WHERE source_row_number = $1`, [sourceRowNumber]);
   const profile = current.rows[0];
@@ -244,10 +246,10 @@ export async function updateWeeklyLongCardProfile(sourceRowNumber: number, input
   const { rows } = await pool.query<typeof profile>(
     `UPDATE weekly_long_card_profiles
         SET submitted_at = $2, student_name = $3, gender = $4, birth_date = $5, phone = $6,
-            contact_relationship = $7, channel = $8, source_notes = $9, updated_at = now()
+            contact_relationship = $7, channel = $8, source_notes = $9, wca_id = $10, updated_at = now()
       WHERE source_row_number = $1
       RETURNING source_row_number, submitted_at, student_name, gender, birth_date, phone,
-                contact_relationship, channel, source_notes, matched_player_id`,
+                contact_relationship, channel, source_notes, wca_id, matched_player_id`,
     [
       sourceRowNumber,
       submittedAt,
@@ -257,7 +259,8 @@ export async function updateWeeklyLongCardProfile(sourceRowNumber: number, input
       input.phone === undefined ? profile.phone : input.phone.trim(),
       input.contactRelationship === undefined ? profile.contact_relationship : input.contactRelationship.trim(),
       input.channel === undefined ? profile.channel : input.channel.trim(),
-      input.notes === undefined ? profile.source_notes : input.notes.trim()
+      input.notes === undefined ? profile.source_notes : input.notes.trim(),
+      input.wcaId === undefined ? profile.wca_id : input.wcaId.trim().toUpperCase()
     ]
   );
   const row = rows[0];
@@ -265,7 +268,7 @@ export async function updateWeeklyLongCardProfile(sourceRowNumber: number, input
     sourceRowNumber: row.source_row_number, submittedAt: row.submitted_at || "", name: row.student_name,
     gender: row.gender || "", birthDate: row.birth_date || "", phone: row.phone || "",
     contactRelationship: row.contact_relationship || "", channel: row.channel || "",
-    notes: row.source_notes || "", matchedPlayerId: row.matched_player_id
+    notes: row.source_notes || "", wcaId: row.wca_id || "", matchedPlayerId: row.matched_player_id
   } satisfies WeeklyLongCardProfile;
 }
 
@@ -540,6 +543,7 @@ function mapAdminPlayer(row: PlayerRow): WeeklyPlayerAdminListItem {
       contactRelationship: row.long_card_contact_relationship || "",
       channel: row.long_card_channel || "",
       notes: row.long_card_notes || "",
+      wcaId: "",
       matchedPlayerId: row.long_card_matched_player_id || null
     } : null
   };
