@@ -43,7 +43,7 @@ function meetStartsAtTimestamp(value: string | null | undefined) {
 export default async function WeeklyPage() {
   const weekLabel = getShanghaiWeekLabel();
   const [allMeets, isAdmin] = await Promise.all([
-    listWeeklyMeetOptions(),
+    listWeeklyMeetOptions().catch(() => []),
     hasWeeklyAdminCookie(await cookies())
   ]);
   const historyMeets = allMeets
