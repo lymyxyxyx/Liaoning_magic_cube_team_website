@@ -1,9 +1,29 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-branch="${1:-main}"
+branch="main"
+backup_mode="full"
+for argument in "$@"; do
+  case "$argument" in
+    --fast)
+      backup_mode="skip"
+      ;;
+    --full)
+      backup_mode="full"
+      ;;
+    *)
+      branch="$argument"
+      ;;
+  esac
+done
 server="admin@39.106.199.195"
 app_dir="/opt/ln-cubing/app"
+
+ssh_args=()
+if [[ -n "${DEPLOY_SSH_KEY:-}" ]]; then
+  ssh_args=(-i "$DEPLOY_SSH_KEY" -o IdentitiesOnly=yes)
+  export GIT_SSH_COMMAND="ssh -i $DEPLOY_SSH_KEY -o IdentitiesOnly=yes"
+fi
 
 if [[ -n "$(git status --porcelain)" ]]; then
   echo "[deploy] Refusing to deploy with an uncommitted local worktree." >&2
@@ -15,6 +35,7 @@ target_short="${target_commit:0:12}"
 
 echo "[deploy] Branch: ${branch}"
 echo "[deploy] Target: ${target_short}"
+echo "[deploy] Backup: ${backup_mode}"
 
 # Both remotes must accept the exact local commit before the production
 # worktree is changed. The server-side check below catches a stale or
@@ -22,12 +43,13 @@ echo "[deploy] Target: ${target_short}"
 git push origin "${branch}"
 git push aliyun "${branch}"
 
-ssh "$server" bash -s -- "$app_dir" "$branch" "$target_commit" <<'REMOTE'
+ssh "${ssh_args[@]}" "$server" bash -s -- "$app_dir" "$branch" "$target_commit" "$backup_mode" <<'REMOTE'
 set -euo pipefail
 
 app_dir="$1"
 branch="$2"
 target_commit="$3"
+backup_mode="$4"
 target_short="${target_commit:0:12}"
 
 cd "$app_dir"
@@ -45,8 +67,12 @@ if [[ "$server_ref" != "$target_commit" ]]; then
   exit 1
 fi
 
-echo "[deploy] Creating a pre-deploy runtime backup."
-sudo "$app_dir/scripts/backup.sh" --keep 7
+if [[ "$backup_mode" == "full" ]]; then
+  echo "[deploy] Creating a pre-deploy runtime backup."
+  sudo "$app_dir/scripts/backup.sh" --keep 7
+else
+  echo "[deploy] Fast mode: skipping the pre-deploy runtime backup."
+fi
 
 echo "[deploy] Checking out ${target_short}."
 git checkout -B "$branch" "$target_commit"

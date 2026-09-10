@@ -40,10 +40,21 @@ Aliyun's `/opt/ln-cubing/app` is now a Git worktree. Because outbound GitHub acc
 scripts/deploy_aliyun.sh main
 ```
 
+For a small code or stylesheet-only update that does not change database
+schemas or runtime data, use fast mode to skip the multi-gigabyte pre-deploy
+backup while retaining the build, restart, health check, and smoke test:
+
+```bash
+DEPLOY_SSH_KEY=/path/to/deploy-key scripts/deploy_aliyun.sh main --fast
+```
+
+Use the default full mode for database migrations, imports, dependency/runtime
+changes, or any update where rollback may require restoring runtime data.
+
 The script refuses a dirty local or server worktree; pushes to both remotes;
 verifies that the server received the exact commit; creates a pre-deploy runtime
-backup; checks out that commit; builds and restarts the web container; runs the
-health check and smoke test; then records the deployed commit in
+backup unless `--fast` is selected; checks out that commit; builds and restarts
+the web container; runs the health check and smoke test; then records the deployed commit in
 `/opt/ln-cubing/logs/deployments.log`.
 
 To deploy another local branch explicitly:
