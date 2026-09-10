@@ -3756,7 +3756,7 @@ textarea {
  * collapse into a narrow horizontal scroller. Mobile keeps the compact
  * scrollable table rules below. */
 .weekly-entry-shell--full {
-  width: min(1500px, calc(100% - 36px));
+  width: min(1720px, calc(100% - 36px));
   max-width: 100%;
   box-sizing: border-box;
 }
@@ -3767,36 +3767,37 @@ textarea {
 }
 
 .weekly-entry-shell--full .weekly-entry-table {
-  table-layout: fixed;
-  min-width: 0;
-  font-size: 12px;
+  table-layout: auto;
+  min-width: 1480px;
+  font-size: 12.5px;
 }
 
 .weekly-entry-shell--full .weekly-entry-table th,
 .weekly-entry-shell--full .weekly-entry-table td {
-  padding: 6px 4px;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  padding: 8px 9px;
+  overflow: visible;
 }
 
 .weekly-entry-shell--full .weekly-entry-table th:nth-child(1),
-.weekly-entry-shell--full .weekly-entry-table td:nth-child(1) { width: 38px; }
+.weekly-entry-shell--full .weekly-entry-table td:nth-child(1) { width: 52px; }
 .weekly-entry-shell--full .weekly-entry-table th:nth-child(2),
-.weekly-entry-shell--full .weekly-entry-table td:nth-child(2) { width: 118px; }
+.weekly-entry-shell--full .weekly-entry-table td:nth-child(2) { width: 76px; }
 .weekly-entry-shell--full .weekly-entry-table th:nth-child(3),
 .weekly-entry-shell--full .weekly-entry-table td:nth-child(3) { width: 112px; }
 .weekly-entry-shell--full .weekly-entry-table th:nth-child(4),
-.weekly-entry-shell--full .weekly-entry-table td:nth-child(4) { width: 52px; }
+.weekly-entry-shell--full .weekly-entry-table td:nth-child(4) { width: 86px; }
 .weekly-entry-shell--full .weekly-entry-table th:nth-child(5),
-.weekly-entry-shell--full .weekly-entry-table td:nth-child(5) { width: 82px; }
+.weekly-entry-shell--full .weekly-entry-table td:nth-child(5) { width: 70px; }
 .weekly-entry-shell--full .weekly-entry-table th:nth-child(6),
-.weekly-entry-shell--full .weekly-entry-table td:nth-child(6) { width: 126px; }
+.weekly-entry-shell--full .weekly-entry-table td:nth-child(6) { width: 112px; }
 .weekly-entry-shell--full .weekly-entry-table th:nth-child(7),
-.weekly-entry-shell--full .weekly-entry-table td:nth-child(7),
+.weekly-entry-shell--full .weekly-entry-table td:nth-child(7) { width: 96px; min-width: 96px; }
 .weekly-entry-shell--full .weekly-entry-table th:nth-child(8),
-.weekly-entry-shell--full .weekly-entry-table td:nth-child(8) { width: 96px; min-width: 96px; white-space: nowrap; }
-.weekly-entry-shell--full .weekly-entry-table th:nth-child(n + 9):nth-child(-n + 13),
-.weekly-entry-shell--full .weekly-entry-table td:nth-child(n + 9):nth-child(-n + 13) { width: 52px; }
+.weekly-entry-shell--full .weekly-entry-table td:nth-child(8) { width: 72px; min-width: 72px; }
+.weekly-entry-shell--full .weekly-entry-table th:nth-child(n + 9):nth-child(-n + 11),
+.weekly-entry-shell--full .weekly-entry-table td:nth-child(n + 9):nth-child(-n + 11) { width: 82px; min-width: 82px; }
+.weekly-entry-shell--full .weekly-entry-table th:nth-child(n + 12):nth-child(-n + 16),
+.weekly-entry-shell--full .weekly-entry-table td:nth-child(n + 12):nth-child(-n + 16) { width: 62px; min-width: 62px; }
 .weekly-entry-shell--full .weekly-entry-table th:last-child,
 .weekly-entry-shell--full .weekly-entry-table td:last-child { width: 116px; }
 
