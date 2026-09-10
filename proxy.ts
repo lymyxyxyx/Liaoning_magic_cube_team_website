@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { verifySessionToken } from "@/lib/auth";
 import { isGuestWeeklyHistorySlug } from "@/lib/weekly-guest-history";
+import { getCanonicalAdminUrl } from "@/lib/site-origin";
 
 const adminCookieName = "liaoning_admin_session";
 const adminNextCookieName = "liaoning_admin_next";
@@ -61,9 +62,8 @@ export async function proxy(request: NextRequest) {
     return NextResponse.json({ message: "请先登录周赛管理员账号" }, { status: 401 });
   }
 
-  if (host === "www.lncubing.com" && pathname.startsWith("/admin")) {
-    const canonicalUrl = request.nextUrl.clone();
-    canonicalUrl.hostname = "lncubing.com";
+  if (host.split(":", 1)[0] === "www.lncubing.com" && pathname.startsWith("/admin")) {
+    const canonicalUrl = getCanonicalAdminUrl(request.url);
     return NextResponse.redirect(canonicalUrl);
   }
 
