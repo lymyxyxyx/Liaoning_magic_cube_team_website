@@ -12,7 +12,7 @@ WITH rows_to_add (student_name, matched_player_id) AS (
     ('吴一凡', 'weekly-player-7a43d57d-2da6-4378-bfe0-b300cc70d872'),
     ('孔子赫', 'weekly-player-c7643b6d-bccf-41c8-b549-652b98610766'),
     ('杨雯博', 'weekly-player-19cb6dac-2a6f-4b57-af33-f16317e80ae7'),
-    ('蒋茗朗', 'weekly-player-a3af5db8-56af-4156-82c2-97c0677566f6'),
+    ('蒋茗朗', 'weekly-player-a3af5db8-56af-4156-82f2-97c0677566f6'),
     ('李柏bo霖', 'weekly-player-f4c60479-f9a0-482c-a35c-f0fe8d2ceeb7')
 ), base AS (
   SELECT COALESCE(MAX(source_row_number), 0) AS source_row_number FROM weekly_long_card_profiles
