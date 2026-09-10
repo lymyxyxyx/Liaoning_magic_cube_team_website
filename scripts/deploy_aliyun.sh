@@ -88,6 +88,9 @@ fi
 echo "[deploy] Checking out ${target_short}."
 git checkout -B "$branch" "$target_commit"
 
+echo "[deploy] Applying database migrations."
+sudo docker compose exec -T web npm run db:migrate
+
 echo "[deploy] Building application."
 sudo docker compose exec -T web npm run build
 
