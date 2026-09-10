@@ -23,9 +23,10 @@ export default async function AdminWeeklyPage() {
         <a className="button primary" href="/admin/weekly/players">
           周赛选手库
         </a>
-        <Link className="button" href="/admin/weekly/players/import">
-          导入选手 Excel
-        </Link>
+        {/* eslint-disable-next-line @next/next/no-html-link-for-pages */}
+        <a className="button" href="/admin/weekly/players?new=1">
+          新建选手
+        </a>
         <Link className="button" href="/weekly/results">
           前台录入入口
         </Link>

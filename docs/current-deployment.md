@@ -42,7 +42,7 @@ scripts/deploy_aliyun.sh main
 
 For a small code or stylesheet-only update that does not change database
 schemas or runtime data, use fast mode to skip the multi-gigabyte pre-deploy
-backup while retaining the build, restart, health check, and smoke test:
+backup and the 18-route smoke test while retaining the production build, restart, and health check:
 
 ```bash
 DEPLOY_SSH_KEY=/path/to/deploy-key scripts/deploy_aliyun.sh main --fast
@@ -54,7 +54,7 @@ changes, or any update where rollback may require restoring runtime data.
 The script refuses a dirty local or server worktree; pushes to both remotes;
 verifies that the server received the exact commit; creates a pre-deploy runtime
 backup unless `--fast` is selected; checks out that commit; builds and restarts
-the web container; runs the health check and smoke test; then records the deployed commit in
+the web container; runs the health check and (unless `--fast` is selected) the smoke test; then records the deployed commit in
 `/opt/ln-cubing/logs/deployments.log`.
 
 To deploy another local branch explicitly:

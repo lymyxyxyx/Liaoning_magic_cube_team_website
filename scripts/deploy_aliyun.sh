@@ -3,13 +3,22 @@ set -euo pipefail
 
 branch="main"
 backup_mode="full"
+smoke_mode="full"
 for argument in "$@"; do
   case "$argument" in
     --fast)
       backup_mode="skip"
+      smoke_mode="skip"
       ;;
     --full)
       backup_mode="full"
+      smoke_mode="full"
+      ;;
+    --skip-smoke)
+      smoke_mode="skip"
+      ;;
+    --smoke)
+      smoke_mode="full"
       ;;
     *)
       branch="$argument"
@@ -36,6 +45,7 @@ target_short="${target_commit:0:12}"
 echo "[deploy] Branch: ${branch}"
 echo "[deploy] Target: ${target_short}"
 echo "[deploy] Backup: ${backup_mode}"
+echo "[deploy] Smoke test: ${smoke_mode}"
 
 # Both remotes must accept the exact local commit before the production
 # worktree is changed. The server-side check below catches a stale or
@@ -43,13 +53,14 @@ echo "[deploy] Backup: ${backup_mode}"
 git push origin "${branch}"
 git push aliyun "${branch}"
 
-ssh "${ssh_args[@]}" "$server" bash -s -- "$app_dir" "$branch" "$target_commit" "$backup_mode" <<'REMOTE'
+ssh "${ssh_args[@]}" "$server" bash -s -- "$app_dir" "$branch" "$target_commit" "$backup_mode" "$smoke_mode" <<'REMOTE'
 set -euo pipefail
 
 app_dir="$1"
 branch="$2"
 target_commit="$3"
 backup_mode="$4"
+smoke_mode="$5"
 target_short="${target_commit:0:12}"
 
 cd "$app_dir"
@@ -104,8 +115,12 @@ for attempt in 1 2 3 4 5 6 7 8 9 10; do
   sleep 2
 done
 
-echo "[deploy] Running production smoke test."
-sudo docker compose exec -T -e BASE_URL=http://127.0.0.1:3000 web npm run test:smoke
+if [[ "$smoke_mode" == "full" ]]; then
+  echo "[deploy] Running production smoke test."
+  sudo docker compose exec -T -e BASE_URL=http://127.0.0.1:3000 web npm run test:smoke
+else
+  echo "[deploy] Fast mode: skipping the production smoke test."
+fi
 
 deployed_commit="$(git rev-parse HEAD)"
 if [[ "$deployed_commit" != "$target_commit" ]]; then
@@ -115,7 +130,7 @@ fi
 
 timestamp="$(date -Iseconds)"
 sudo mkdir -p /opt/ln-cubing/logs
-printf '%s branch=%s commit=%s health=ok smoke=ok\n' "$timestamp" "$branch" "$target_commit" \
+printf '%s branch=%s commit=%s health=ok smoke=%s\n' "$timestamp" "$branch" "$target_commit" "$smoke_mode" \
   | sudo tee -a /opt/ln-cubing/logs/deployments.log >/dev/null
 
 echo "[deploy] Completed: ${target_short}"

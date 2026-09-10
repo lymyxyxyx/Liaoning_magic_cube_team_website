@@ -227,6 +227,48 @@ export async function listWeeklyLongCardProfilesForAdmin(): Promise<WeeklyLongCa
   }));
 }
 
+export async function updateWeeklyLongCardProfile(sourceRowNumber: number, input: Partial<WeeklyLongCardProfile>) {
+  if (!Number.isInteger(sourceRowNumber) || sourceRowNumber < 1) throw new Error("长期卡资料不存在");
+  const pool = getPostgresPool();
+  const current = await pool.query<{
+    source_row_number: number; submitted_at: string; student_name: string; gender: string; birth_date: string;
+    phone: string; contact_relationship: string; channel: string; source_notes: string; matched_player_id: string | null;
+  }>(`SELECT source_row_number, submitted_at, student_name, gender, birth_date, phone,
+             contact_relationship, channel, source_notes, matched_player_id
+        FROM weekly_long_card_profiles
+       WHERE source_row_number = $1`, [sourceRowNumber]);
+  const profile = current.rows[0];
+  if (!profile) throw new Error("长期卡资料不存在");
+  const submittedAt = input.submittedAt === undefined ? profile.submitted_at : normalizeOptionalDate(input.submittedAt, "提交日期");
+  const birthDate = input.birthDate === undefined ? profile.birth_date : normalizeOptionalDate(input.birthDate, "出生日期");
+  const { rows } = await pool.query<typeof profile>(
+    `UPDATE weekly_long_card_profiles
+        SET submitted_at = $2, student_name = $3, gender = $4, birth_date = $5, phone = $6,
+            contact_relationship = $7, channel = $8, source_notes = $9, updated_at = now()
+      WHERE source_row_number = $1
+      RETURNING source_row_number, submitted_at, student_name, gender, birth_date, phone,
+                contact_relationship, channel, source_notes, matched_player_id`,
+    [
+      sourceRowNumber,
+      submittedAt,
+      input.name === undefined ? profile.student_name : input.name.trim(),
+      input.gender === undefined ? profile.gender : normalizeGender(input.gender),
+      birthDate,
+      input.phone === undefined ? profile.phone : input.phone.trim(),
+      input.contactRelationship === undefined ? profile.contact_relationship : input.contactRelationship.trim(),
+      input.channel === undefined ? profile.channel : input.channel.trim(),
+      input.notes === undefined ? profile.source_notes : input.notes.trim()
+    ]
+  );
+  const row = rows[0];
+  return {
+    sourceRowNumber: row.source_row_number, submittedAt: row.submitted_at || "", name: row.student_name,
+    gender: row.gender || "", birthDate: row.birth_date || "", phone: row.phone || "",
+    contactRelationship: row.contact_relationship || "", channel: row.channel || "",
+    notes: row.source_notes || "", matchedPlayerId: row.matched_player_id
+  } satisfies WeeklyLongCardProfile;
+}
+
 export async function createWeeklyPlayerProfile(input: Partial<WeeklyPlayerLibraryEntry> & { confirmSameName?: boolean }) {
   const name = input.name?.trim() || "";
   if (!name) throw new Error("姓名必填");
@@ -632,6 +674,15 @@ function normalizeDate(value: string | undefined) {
   const [year, month, day] = value.split("-").map(Number);
   const date = new Date(Date.UTC(year, month - 1, day));
   if (date.getUTCFullYear() !== year || date.getUTCMonth() !== month - 1 || date.getUTCDate() !== day) throw new Error("出生日期无效");
+  return value;
+}
+
+function normalizeOptionalDate(value: string, label: string) {
+  if (!value) return "";
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) throw new Error(`${label}必须是完整有效日期`);
+  const [year, month, day] = value.split("-").map(Number);
+  const date = new Date(Date.UTC(year, month - 1, day));
+  if (date.getUTCFullYear() !== year || date.getUTCMonth() !== month - 1 || date.getUTCDate() !== day) throw new Error(`${label}无效`);
   return value;
 }
 

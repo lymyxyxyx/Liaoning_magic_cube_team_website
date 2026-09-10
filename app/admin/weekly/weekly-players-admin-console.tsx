@@ -16,17 +16,30 @@ type PlayerForm = {
   deactivationReason: string;
 };
 
+type LongCardForm = {
+  submittedAt: string;
+  name: string;
+  gender: "" | "男" | "女";
+  birthDate: string;
+  phone: string;
+  contactRelationship: string;
+  channel: string;
+  notes: string;
+};
+
 const emptyForm: PlayerForm = {
   name: "", gender: "", birthDate: "", wcaId: "", province: "", city: "", notes: "", status: "active", deactivationReason: ""
 };
 
-export function WeeklyPlayersAdminConsole({ initial, longCardProfiles }: { initial: WeeklyPlayerAdminList; longCardProfiles: WeeklyLongCardProfile[] }) {
+export function WeeklyPlayersAdminConsole({ initial, longCardProfiles, openCreateInitially = false }: { initial: WeeklyPlayerAdminList; longCardProfiles: WeeklyLongCardProfile[]; openCreateInitially?: boolean }) {
   const [data, setData] = useState(initial);
+  const [longCardData, setLongCardData] = useState(longCardProfiles);
   const [query, setQuery] = useState("");
   const [status, setStatus] = useState<"all" | "active" | "inactive">("all");
   const [gender, setGender] = useState<"all" | "" | "男" | "女">("all");
   const [notice, setNotice] = useState("");
-  const [editor, setEditor] = useState<{ mode: "create" | "edit"; player?: WeeklyPlayerAdminListItem; form: PlayerForm; confirmSameName: boolean } | null>(null);
+  const [editor, setEditor] = useState<{ mode: "create" | "edit"; player?: WeeklyPlayerAdminListItem; form: PlayerForm; confirmSameName: boolean } | null>(openCreateInitially ? { mode: "create", form: emptyForm, confirmSameName: false } : null);
+  const [longCardEditor, setLongCardEditor] = useState<{ profile: WeeklyLongCardProfile; form: LongCardForm } | null>(null);
   const [saving, setSaving] = useState(false);
   const [visiblePhones, setVisiblePhones] = useState<Set<number>>(() => new Set());
 
@@ -66,8 +79,24 @@ export function WeeklyPlayersAdminConsole({ initial, longCardProfiles }: { initi
     });
   }
 
+  function openLongCardEdit(profile: WeeklyLongCardProfile) {
+    setNotice("");
+    setLongCardEditor({
+      profile,
+      form: {
+        submittedAt: dateOnly(profile.submittedAt), name: profile.name, gender: profile.gender === "男" || profile.gender === "女" ? profile.gender : "",
+        birthDate: dateOnly(profile.birthDate), phone: profile.phone, contactRelationship: profile.contactRelationship,
+        channel: profile.channel, notes: profile.notes
+      }
+    });
+  }
+
   function setField<K extends keyof PlayerForm>(field: K, value: PlayerForm[K]) {
     setEditor((current) => current ? { ...current, form: { ...current.form, [field]: value } } : null);
+  }
+
+  function setLongCardField<K extends keyof LongCardForm>(field: K, value: LongCardForm[K]) {
+    setLongCardEditor((current) => current ? { ...current, form: { ...current.form, [field]: value } } : null);
   }
 
   function phoneValue(profile: WeeklyLongCardProfile | null) {
@@ -111,20 +140,41 @@ export function WeeklyPlayersAdminConsole({ initial, longCardProfiles }: { initi
     }
   }
 
+  async function saveLongCard(event: FormEvent) {
+    event.preventDefault();
+    if (!longCardEditor) return;
+    setSaving(true);
+    setNotice("");
+    try {
+      const response = await fetch(`/api/admin/weekly-long-card-profiles/${longCardEditor.profile.sourceRowNumber}`, {
+        method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify(longCardEditor.form)
+      });
+      const payload = await response.json();
+      if (!response.ok) throw new Error(payload.message || "保存失败");
+      setLongCardData((current) => current.map((profile) => profile.sourceRowNumber === payload.profile.sourceRowNumber ? payload.profile : profile));
+      setLongCardEditor(null);
+      setNotice("长期卡学员资料已保存。");
+    } catch (error) {
+      setNotice(error instanceof Error ? error.message : "保存失败");
+    } finally {
+      setSaving(false);
+    }
+  }
+
   return (
     <section className="container section weekly-admin-workspace">
       <div className="admin-card weekly-long-card-records">
         <div className="admin-card-heading">
           <div>
-            <h2>长期卡学员信息（{longCardProfiles.length} 条）</h2>
+            <h2>长期卡学员信息（{longCardData.length} 条）</h2>
             <p>与附件 Sheet1 保持一行对应一行，并严格按原始表格顺序显示。电话仅管理员可见，点击后显示。</p>
           </div>
         </div>
         <div className="table-scroll weekly-admin-table-scroll">
           <table className="result-table weekly-admin-desktop-table">
-            <thead><tr><th>提交时间</th><th>姓名</th><th>性别</th><th>出生日期</th><th>联系电话（点击显示）</th><th>联系人所属关系</th><th>渠道</th><th>备注</th></tr></thead>
-            <tbody>{longCardProfiles.map((profile) => <tr key={profile.sourceRowNumber}>
-              <td>{profile.submittedAt || "—"}</td><td>{profile.name}</td><td>{profile.gender || "—"}</td><td>{profile.birthDate || "—"}</td><td>{phoneValue(profile)}</td><td>{profile.contactRelationship || "—"}</td><td>{profile.channel || "—"}</td><td>{profile.notes || "—"}</td>
+            <thead><tr><th>提交日期</th><th>姓名</th><th>性别</th><th>出生日期</th><th>联系电话（点击显示）</th><th>联系人所属关系</th><th>渠道</th><th>备注</th><th>操作</th></tr></thead>
+            <tbody>{longCardData.map((profile) => <tr key={profile.sourceRowNumber}>
+              <td>{dateOnly(profile.submittedAt) || "—"}</td><td>{profile.name}</td><td>{profile.gender || "—"}</td><td>{profile.birthDate || "—"}</td><td>{phoneValue(profile)}</td><td>{profile.contactRelationship || "—"}</td><td>{profile.channel || "—"}</td><td>{profile.notes || "—"}</td><td><button className="button compact" type="button" onClick={() => openLongCardEdit(profile)}><Pencil size={14} />编辑</button></td>
             </tr>)}</tbody>
           </table>
         </div>
@@ -182,6 +232,26 @@ export function WeeklyPlayersAdminConsole({ initial, longCardProfiles }: { initi
         </div>
         <div className="weekly-admin-login-actions"><button className="button primary" disabled={saving} type="submit"><Plus size={16} />{saving ? "保存中" : "保存"}</button></div>
       </form></div> : null}
+      {longCardEditor ? <div className="weekly-admin-login-backdrop" role="presentation"><form className="weekly-admin-login-modal" onSubmit={saveLongCard}>
+        <div className="admin-card-heading"><h2>编辑长期卡学员信息</h2><button className="button compact" type="button" onClick={() => setLongCardEditor(null)}>取消</button></div>
+        <div className="weekly-admin-grid">
+          <label>提交日期<input type="date" value={longCardEditor.form.submittedAt} onChange={(event) => setLongCardField("submittedAt", event.target.value)} /></label>
+          <label>姓名<input value={longCardEditor.form.name} onChange={(event) => setLongCardField("name", event.target.value)} /></label>
+          <label>性别<select value={longCardEditor.form.gender} onChange={(event) => setLongCardField("gender", event.target.value as LongCardForm["gender"])}><option value="">未知</option><option value="男">男</option><option value="女">女</option></select></label>
+          <label>出生日期<input type="date" value={longCardEditor.form.birthDate} onChange={(event) => setLongCardField("birthDate", event.target.value)} /></label>
+          <label>联系电话<input type="tel" value={longCardEditor.form.phone} onChange={(event) => setLongCardField("phone", event.target.value)} /></label>
+          <label>联系人所属关系<input value={longCardEditor.form.contactRelationship} onChange={(event) => setLongCardField("contactRelationship", event.target.value)} /></label>
+          <label>渠道<input value={longCardEditor.form.channel} onChange={(event) => setLongCardField("channel", event.target.value)} /></label>
+          <label className="full">备注<textarea rows={3} value={longCardEditor.form.notes} onChange={(event) => setLongCardField("notes", event.target.value)} /></label>
+        </div>
+        <div className="weekly-admin-login-actions"><button className="button primary" disabled={saving} type="submit"><Pencil size={16} />{saving ? "保存中" : "保存"}</button></div>
+      </form></div> : null}
     </section>
   );
+}
+
+function dateOnly(value: string) {
+  const match = value.trim().match(/^(\d{4})[-/.](\d{1,2})[-/.](\d{1,2})/);
+  if (!match) return "";
+  return `${match[1]}-${match[2].padStart(2, "0")}-${match[3].padStart(2, "0")}`;
 }
