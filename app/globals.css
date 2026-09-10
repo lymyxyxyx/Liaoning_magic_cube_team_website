@@ -1085,6 +1085,19 @@ main {
   background: transparent;
 }
 
+.weekly-sort-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 0;
+  border: 0;
+  color: inherit;
+  font: inherit;
+  font-weight: inherit;
+  background: transparent;
+  cursor: pointer;
+}
+
 .weekly-long-card-records {
   margin-top: 18px;
   padding: 14px;

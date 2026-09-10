@@ -1,7 +1,7 @@
 "use client";
 
 import { FormEvent, useMemo, useState } from "react";
-import { Pencil, Search } from "lucide-react";
+import { ArrowDown, ArrowUp, Pencil, Search } from "lucide-react";
 import type { WeeklyLongCardProfile } from "@/lib/weekly-player-admin-store";
 import { matchesWeeklyPlayerQuery } from "@/lib/weekly-player-search";
 
@@ -12,15 +12,18 @@ export function WeeklyPlayersAdminConsole({ longCardProfiles }: { longCardProfil
   const [profiles, setProfiles] = useState(longCardProfiles);
   const [query, setQuery] = useState("");
   const [suggestionsOpen, setSuggestionsOpen] = useState(false);
+  const [numberOrder, setNumberOrder] = useState<"asc" | "desc">("asc");
   const [page, setPage] = useState(1);
   const [notice, setNotice] = useState("");
   const [editor, setEditor] = useState<{ profile: WeeklyLongCardProfile; form: LongCardForm } | null>(null);
   const [saving, setSaving] = useState(false);
   const [visiblePhones, setVisiblePhones] = useState<Set<number>>(() => new Set());
   const filtered = useMemo(() => profiles.filter((profile) => matchesWeeklyPlayerQuery({ name: profile.name, wcaId: profile.wcaId }, query)), [profiles, query]);
+  const rosterNumberByRow = useMemo(() => new Map(profiles.map((profile, index) => [profile.sourceRowNumber, index + 1])), [profiles]);
+  const ordered = useMemo(() => [...filtered].sort((left, right) => (rosterNumberByRow.get(left.sourceRowNumber)! - rosterNumberByRow.get(right.sourceRowNumber)!) * (numberOrder === "asc" ? 1 : -1)), [filtered, numberOrder, rosterNumberByRow]);
   const pageCount = Math.max(1, Math.ceil(filtered.length / pageSize));
   const currentPage = Math.min(page, pageCount);
-  const visible = filtered.slice((currentPage - 1) * pageSize, currentPage * pageSize);
+  const visible = ordered.slice((currentPage - 1) * pageSize, currentPage * pageSize);
   const suggestions = useMemo(() => query.trim() ? filtered.slice(0, 8) : [], [filtered, query]);
 
   function updateQuery(value: string) { setQuery(value); setPage(1); setSuggestionsOpen(true); }
@@ -52,7 +55,7 @@ export function WeeklyPlayersAdminConsole({ longCardProfiles }: { longCardProfil
         {suggestionsOpen && suggestions.length > 0 ? <div id="long-card-search-suggestions" className="weekly-long-card-suggestions" role="listbox">{suggestions.map((profile) => <button key={profile.sourceRowNumber} type="button" role="option" aria-selected={false} onMouseDown={(event) => event.preventDefault()} onClick={() => selectSuggestion(profile)}>{profile.name}{profile.wcaId ? ` · ${profile.wcaId}` : ""}</button>)}</div> : null}
       </div>
       {notice ? <p className="admin-inline-notice">{notice}</p> : null}
-      <div className="table-scroll weekly-admin-table-scroll"><table className="result-table weekly-admin-desktop-table"><thead><tr><th>提交日期</th><th>姓名</th><th>性别</th><th>出生日期</th><th>组别</th><th>WCA ID</th><th>联系电话（点击显示）</th><th>联系人所属关系</th><th>渠道</th><th>备注</th><th>操作</th></tr></thead><tbody>{visible.map((profile) => <tr key={profile.sourceRowNumber}><td>{dateOnly(profile.submittedAt) || "—"}</td><td>{profile.name}</td><td>{profile.gender || "—"}</td><td>{profile.birthDate || "—"}</td><td>{ageGroup(profile.birthDate)}</td><td>{profile.wcaId || "—"}</td><td>{phoneValue(profile)}</td><td>{profile.contactRelationship || "—"}</td><td>{profile.channel || "—"}</td><td>{profile.notes || "—"}</td><td><button className="button compact" type="button" onClick={() => openEdit(profile)}><Pencil size={14} />编辑</button></td></tr>)}</tbody></table></div>
+      <div className="table-scroll weekly-admin-table-scroll"><table className="result-table weekly-admin-desktop-table"><thead><tr><th><button className="weekly-sort-button" type="button" onClick={() => { setNumberOrder((current) => current === "asc" ? "desc" : "asc"); setPage(1); }}>编号 {numberOrder === "asc" ? <ArrowUp size={14} aria-label="正序" /> : <ArrowDown size={14} aria-label="倒序" />}</button></th><th>提交日期</th><th>姓名</th><th>性别</th><th>出生日期</th><th>组别</th><th>WCA ID</th><th>联系电话（点击显示）</th><th>联系人所属关系</th><th>渠道</th><th>备注</th><th>操作</th></tr></thead><tbody>{visible.map((profile) => <tr key={profile.sourceRowNumber}><td>{rosterNumberByRow.get(profile.sourceRowNumber)}</td><td>{dateOnly(profile.submittedAt) || "—"}</td><td>{profile.name}</td><td>{profile.gender || "—"}</td><td>{profile.birthDate || "—"}</td><td>{ageGroup(profile.birthDate)}</td><td>{profile.wcaId || "—"}</td><td>{phoneValue(profile)}</td><td>{profile.contactRelationship || "—"}</td><td>{profile.channel || "—"}</td><td>{profile.notes || "—"}</td><td><button className="button compact" type="button" onClick={() => openEdit(profile)}><Pencil size={14} />编辑</button></td></tr>)}</tbody></table></div>
       {visible.length === 0 ? <p className="empty-state">没有符合条件的学员。</p> : null}
       <div className="weekly-admin-actions"><span>共 {filtered.length} 条，第 {currentPage}/{pageCount} 页</span><button className="button" type="button" disabled={currentPage <= 1} onClick={() => setPage(currentPage - 1)}>上一页</button><button className="button" type="button" disabled={currentPage >= pageCount} onClick={() => setPage(currentPage + 1)}>下一页</button></div>
     </div>
