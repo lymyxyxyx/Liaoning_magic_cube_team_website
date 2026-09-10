@@ -1,5 +1,4 @@
 import { PageHero } from "@/components/page-hero";
-import Link from "next/link";
 import { cookies } from "next/headers";
 import { listWeeklyMeetOptions } from "@/lib/weekly-entry-store";
 import { isGuestWeeklyHistorySlug } from "@/lib/weekly-guest-history";
@@ -60,7 +59,11 @@ export default async function WeeklyPage() {
           <div className="weekly-page-actions">
             <WeeklyHistoryMenu meets={historyMeets} />
             <WeeklyInlineAdminLogin isAdmin={isAdmin} />
-            {isAdmin ? <Link className="weekly-admin-library-link" href="/admin/weekly/players">周赛选手库</Link> : null}
+            {isAdmin ? <>
+              {/* Force a document navigation across the weekly admin auth boundary. */}
+              {/* eslint-disable-next-line @next/next/no-html-link-for-pages */}
+              <a className="weekly-admin-library-link" href="/admin/weekly/players">周赛选手库</a>
+            </> : null}
           </div>
         }
         label="辽宁线上周赛"

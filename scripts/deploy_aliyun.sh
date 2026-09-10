@@ -80,6 +80,14 @@ git checkout -B "$branch" "$target_commit"
 echo "[deploy] Building application."
 sudo docker compose exec -T web npm run build
 
+# Next.js regenerates this tracked type shim according to the container's
+# installed minor version. It is not a production source change and must not
+# leave the receive worktree dirty for the next deployment.
+if ! git diff --quiet -- next-env.d.ts; then
+  echo "[deploy] Restoring generated next-env.d.ts."
+  git restore -- next-env.d.ts
+fi
+
 echo "[deploy] Restarting web container."
 sudo docker compose restart web
 sudo docker compose ps

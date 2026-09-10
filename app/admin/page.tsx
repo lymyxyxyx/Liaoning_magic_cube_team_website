@@ -25,6 +25,7 @@ const adminCards = [
   {
     title: "周赛选手库",
     href: "/admin/weekly/players",
+    forceReload: true,
     description: "维护周赛选手档案、稳定 player_id、生日、地区和停用状态。"
   },
   {
@@ -51,12 +52,18 @@ export default function AdminPage() {
         进入对应模块维护人员资料、信息反馈、周赛选手和比赛账单。
       </PageHero>
       <section className="container section admin-module-grid" aria-label="后台功能入口">
-        {adminCards.map((card) => (
-          <Link className="admin-module-card" href={card.href} key={card.href}>
-            <strong>{card.title}</strong>
-            <span>{card.description}</span>
-          </Link>
-        ))}
+        {adminCards.map((card) => {
+          const content = <><strong>{card.title}</strong><span>{card.description}</span></>;
+          return card.forceReload ? (
+            <a className="admin-module-card" href={card.href} key={card.href}>
+              {content}
+            </a>
+          ) : (
+            <Link className="admin-module-card" href={card.href} key={card.href}>
+              {content}
+            </Link>
+          );
+        })}
       </section>
     </>
   );

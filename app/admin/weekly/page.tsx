@@ -18,9 +18,11 @@ export default async function AdminWeeklyPage() {
         管理周赛项目、选手库和历史数据；日常成绩录入请使用前台“立即参加”入口。
       </PageHero>
       <section className="container weekly-admin-toolbar" aria-label="周赛管理工具">
-        <Link className="button primary" href="/admin/weekly/players">
+        {/* This route crosses into the separately authenticated weekly admin area. */}
+        {/* eslint-disable-next-line @next/next/no-html-link-for-pages */}
+        <a className="button primary" href="/admin/weekly/players">
           周赛选手库
-        </Link>
+        </a>
         <Link className="button" href="/admin/weekly/players/import">
           导入选手 Excel
         </Link>
