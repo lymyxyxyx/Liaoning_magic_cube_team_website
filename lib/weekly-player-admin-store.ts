@@ -132,7 +132,7 @@ export async function listWeeklyPlayersForAdmin(input: {
   page?: number;
 } = {}): Promise<WeeklyPlayerAdminList> {
   const query = input.query?.trim() || "";
-  const status = input.status === "inactive" ? "inactive" : "active";
+  const status = input.status === "inactive" ? "inactive" : input.status === "active" ? "active" : "all";
   const gender = input.gender === "男" || input.gender === "女" || input.gender === "" ? input.gender : "all";
   const page = Math.max(1, Math.floor(input.page || 1));
   const filters: string[] = [weeklyV2PlayerSourceSql("wpl")];
@@ -141,8 +141,10 @@ export async function listWeeklyPlayersForAdmin(input: {
     params.push(`%${query}%`);
     filters.push(`(wpl.name ILIKE $${params.length} OR wpl.wca_id ILIKE $${params.length} OR wpl.province ILIKE $${params.length} OR wpl.city ILIKE $${params.length})`);
   }
-  params.push(status);
-  filters.push(`wpl.status = $${params.length}`);
+  if (status !== "all") {
+    params.push(status);
+    filters.push(`wpl.status = $${params.length}`);
+  }
   if (gender !== "all") {
     params.push(gender);
     filters.push(`wpl.gender = $${params.length}`);
@@ -152,27 +154,46 @@ export async function listWeeklyPlayersForAdmin(input: {
   const countResult = await pool.query<{ total: string }>(`SELECT count(*)::text AS total FROM weekly_player_library wpl ${where}`, params);
   params.push(pageSize, (page - 1) * pageSize);
   const { rows } = await pool.query<PlayerRow>(
-    `SELECT wpl.id, wpl.name, wpl.gender, wpl.birth_date, wpl.wca_id, wpl.province, wpl.city,
-            wpl.notes, wpl.status, wpl.deactivated_at, wpl.deactivation_reason, wpl.source,
-            wpl.created_at, wpl.updated_at,
-            COUNT(wr.id)::text AS result_count, MAX(wm.starts_at) AS last_competed_at
-       FROM weekly_player_library wpl
-       LEFT JOIN weekly_results wr ON wr.player_id = wpl.id
-       LEFT JOIN weekly_meets wm ON wm.id = wr.meet_id
+    `WITH selected_players AS (
+       SELECT wpl.id, wpl.name, wpl.gender, wpl.birth_date, wpl.wca_id, wpl.province, wpl.city,
+              wpl.notes, wpl.status, wpl.deactivated_at, wpl.deactivation_reason, wpl.source,
+              wpl.created_at, wpl.updated_at
+         FROM weekly_player_library wpl
+         ${where}
+        ORDER BY wpl.status, wpl.name, wpl.id
+        LIMIT $${params.length - 1} OFFSET $${params.length}
+     ), result_stats AS (
+       SELECT wr.player_id, COUNT(wr.id)::text AS result_count, MAX(wm.starts_at) AS last_competed_at
+         FROM weekly_results wr
+         JOIN selected_players player ON player.id = wr.player_id
+         LEFT JOIN weekly_meets wm ON wm.id = wr.meet_id
+        GROUP BY wr.player_id
+     )
+     SELECT player.id, player.name, player.gender, player.birth_date, player.wca_id, player.province, player.city,
+            player.notes, player.status, player.deactivated_at, player.deactivation_reason, player.source,
+            player.created_at, player.updated_at,
+            COALESCE(result_stats.result_count, '0') AS result_count, result_stats.last_competed_at,
+            long_card.source_row_number AS long_card_source_row_number,
+            long_card.submitted_at AS long_card_submitted_at,
+            long_card.student_name AS long_card_name,
+            long_card.gender AS long_card_gender,
+            long_card.birth_date AS long_card_birth_date,
+            long_card.phone AS long_card_phone,
+            long_card.contact_relationship AS long_card_contact_relationship,
+            long_card.channel AS long_card_channel,
+            long_card.source_notes AS long_card_notes,
+            long_card.matched_player_id AS long_card_matched_player_id
+       FROM selected_players player
+       LEFT JOIN result_stats ON result_stats.player_id = player.id
        LEFT JOIN LATERAL (
          SELECT source_row_number, submitted_at, student_name, gender, birth_date, phone,
                 contact_relationship, channel, source_notes, matched_player_id
            FROM weekly_long_card_profiles
-          WHERE matched_player_id = wpl.id
+          WHERE matched_player_id = player.id
           ORDER BY submitted_at DESC, source_row_number DESC
           LIMIT 1
        ) long_card ON TRUE
-       ${where}
-      GROUP BY wpl.id, long_card.source_row_number, long_card.submitted_at, long_card.student_name,
-               long_card.gender, long_card.birth_date, long_card.phone, long_card.contact_relationship,
-               long_card.channel, long_card.source_notes, long_card.matched_player_id
-      ORDER BY wpl.status, wpl.name, wpl.id
-      LIMIT $${params.length - 1} OFFSET $${params.length}`,
+      ORDER BY player.status, player.name, player.id`,
     params
   );
   return {

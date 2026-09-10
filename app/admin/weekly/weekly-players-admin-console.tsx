@@ -120,8 +120,8 @@ export function WeeklyPlayersAdminConsole({ initial, longCardProfiles }: { initi
             <p>与附件 Sheet1 保持一行对应一行，并严格按原始表格顺序显示。电话仅管理员可见，点击后显示。</p>
           </div>
         </div>
-        <div className="table-scroll">
-          <table className="result-table">
+        <div className="table-scroll weekly-admin-table-scroll">
+          <table className="result-table weekly-admin-desktop-table">
             <thead><tr><th>提交时间</th><th>姓名</th><th>性别</th><th>出生日期</th><th>联系电话（点击显示）</th><th>联系人所属关系</th><th>渠道</th><th>备注</th></tr></thead>
             <tbody>{longCardProfiles.map((profile) => <tr key={profile.sourceRowNumber}>
               <td>{profile.submittedAt || "—"}</td><td>{profile.name}</td><td>{profile.gender || "—"}</td><td>{profile.birthDate || "—"}</td><td>{phoneValue(profile)}</td><td>{profile.contactRelationship || "—"}</td><td>{profile.channel || "—"}</td><td>{profile.notes || "—"}</td>
@@ -150,8 +150,8 @@ export function WeeklyPlayersAdminConsole({ initial, longCardProfiles }: { initi
           <div className="weekly-admin-actions"><button className="button" type="submit"><Search size={16} />筛选</button></div>
         </form>
         {notice ? <p className="admin-inline-notice">{notice}</p> : null}
-        <div className="table-scroll">
-          <table className="result-table">
+        <div className="table-scroll weekly-admin-table-scroll">
+          <table className="result-table weekly-admin-desktop-table">
             <thead><tr><th>姓名</th><th>性别 / 出生日期</th><th>WCA ID</th><th>地区</th><th>长期卡资料</th><th>状态</th><th>成绩</th><th>最近参赛</th><th>操作</th></tr></thead>
             <tbody>{data.players.map((player) => <tr key={player.id}>
               <td><strong>{player.name}</strong></td>

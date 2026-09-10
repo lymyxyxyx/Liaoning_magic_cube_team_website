@@ -11529,6 +11529,74 @@ a.commercial-member-link:hover {
     font-weight: inherit;
     justify-content: initial;
   }
+
+  /* The weekly admin library is a dense working table on every device. */
+  .weekly-admin-table-scroll {
+    overflow-x: auto;
+    overflow-y: hidden;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .result-table.weekly-admin-desktop-table {
+    display: table;
+    width: max-content;
+    min-width: 100%;
+  }
+
+  .weekly-admin-desktop-table thead {
+    display: table-header-group;
+  }
+
+  .weekly-admin-desktop-table tbody {
+    display: table-row-group;
+    padding: 0;
+    background: transparent;
+  }
+
+  .weekly-admin-desktop-table tr {
+    display: table-row;
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
+  }
+
+  .weekly-admin-desktop-table th,
+  .weekly-admin-desktop-table td {
+    display: table-cell;
+    width: auto;
+    padding: 8px 10px;
+    border-bottom: 1px solid var(--line);
+    text-align: center;
+    white-space: nowrap;
+  }
+
+  .weekly-admin-desktop-table td::before {
+    content: none;
+  }
+
+  .weekly-admin-desktop-table td:nth-child(1),
+  .weekly-admin-desktop-table td:nth-child(2) {
+    grid-column: auto;
+    justify-content: initial;
+  }
+}
+
+.weekly-players-loading {
+  display: grid;
+  gap: 6px;
+  color: var(--text-body);
+}
+
+.weekly-players-loading strong {
+  color: var(--text-strong);
+  font-size: 16px;
+}
+
+.weekly-players-loading span {
+  color: var(--muted);
+  font-size: 14px;
 }
 .weekly-admin-lock-panel {
   display: grid;
