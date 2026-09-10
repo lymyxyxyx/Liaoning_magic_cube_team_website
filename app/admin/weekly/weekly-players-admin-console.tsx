@@ -113,10 +113,26 @@ export function WeeklyPlayersAdminConsole({ initial, longCardProfiles }: { initi
 
   return (
     <section className="container section weekly-admin-workspace">
+      <div className="admin-card weekly-long-card-records">
+        <div className="admin-card-heading">
+          <div>
+            <h2>长期卡学员信息（{longCardProfiles.length} 条）</h2>
+            <p>与附件 Sheet1 保持一行对应一行，并严格按原始表格顺序显示。电话仅管理员可见，点击后显示。</p>
+          </div>
+        </div>
+        <div className="table-scroll">
+          <table className="result-table">
+            <thead><tr><th>提交时间</th><th>姓名</th><th>性别</th><th>出生日期</th><th>联系电话（点击显示）</th><th>联系人所属关系</th><th>渠道</th><th>备注</th></tr></thead>
+            <tbody>{longCardProfiles.map((profile) => <tr key={profile.sourceRowNumber}>
+              <td>{profile.submittedAt || "—"}</td><td>{profile.name}</td><td>{profile.gender || "—"}</td><td>{profile.birthDate || "—"}</td><td>{phoneValue(profile)}</td><td>{profile.contactRelationship || "—"}</td><td>{profile.channel || "—"}</td><td>{profile.notes || "—"}</td>
+            </tr>)}</tbody>
+          </table>
+        </div>
+      </div>
       <div className="admin-card">
         <div className="admin-card-heading">
           <div>
-            <h2>选手档案</h2>
+            <h2>周赛选手档案</h2>
             <p>历史成绩保留其姓名快照。停用只影响以后新增成绩的默认选择，不删除已有成绩。</p>
           </div>
           <button className="button primary" type="button" onClick={openCreate}><UserRoundPlus size={16} />新建选手</button>
@@ -150,18 +166,6 @@ export function WeeklyPlayersAdminConsole({ initial, longCardProfiles }: { initi
         {data.players.length === 0 ? <p className="empty-state">没有符合条件的选手。</p> : null}
         <div className="weekly-admin-actions"><span>共 {data.total} 名，第 {data.page}/{pageCount} 页</span><button className="button" type="button" disabled={data.page <= 1} onClick={() => load(data.page - 1)}>上一页</button><button className="button" type="button" disabled={data.page >= pageCount} onClick={() => load(data.page + 1)}>下一页</button></div>
       </div>
-      <details className="admin-card weekly-long-card-records">
-        <summary>长期卡原始资料（{longCardProfiles.length} 条）</summary>
-        <p>仅管理员可见。所有原表字段均保留；电话默认隐藏。</p>
-        <div className="table-scroll">
-          <table className="result-table">
-            <thead><tr><th>提交时间</th><th>姓名</th><th>性别</th><th>出生日期</th><th>电话</th><th>联系人关系</th><th>渠道</th><th>备注</th><th>关联选手</th></tr></thead>
-            <tbody>{longCardProfiles.map((profile) => <tr key={profile.sourceRowNumber}>
-              <td>{profile.submittedAt || "—"}</td><td>{profile.name}</td><td>{profile.gender || "—"}</td><td>{profile.birthDate || "—"}</td><td>{phoneValue(profile)}</td><td>{profile.contactRelationship || "—"}</td><td>{profile.channel || "—"}</td><td>{profile.notes || "—"}</td><td>{profile.matchedPlayerId ? "已关联" : "待人工关联"}</td>
-            </tr>)}</tbody>
-          </table>
-        </div>
-      </details>
       {editor ? <div className="weekly-admin-login-backdrop" role="presentation"><form className="weekly-admin-login-modal" onSubmit={save}>
         <div className="admin-card-heading"><h2>{title}</h2><button className="button compact" type="button" onClick={() => setEditor(null)}>取消</button></div>
         <div className="weekly-admin-grid">
