@@ -72,7 +72,7 @@ export default async function WeeklyResultsEntryPage() {
               <span>历史周赛</span>
               {historyMeets.map((meet) => (
                 <Link href={`/weekly/${meet.slug}`} key={meet.id}>
-                  {meet.slug.replace(/^(.+)-week-(\d+)$/, "$1 W$2")}
+                  {meet.title}
                 </Link>
               ))}
             </nav>

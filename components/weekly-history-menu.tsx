@@ -8,7 +8,7 @@ export function WeeklyHistoryMenu({ meets }: { meets: WeeklyMeetOption[] }) {
       <div>
         {meets.map((meet) => (
           <Link href={`/weekly/${meet.slug}`} key={meet.id}>
-            {meet.slug.replace(/^(.+)-week-(\d+)$/, "$1 W$2")}
+            {meet.title}
           </Link>
         ))}
       </div>
