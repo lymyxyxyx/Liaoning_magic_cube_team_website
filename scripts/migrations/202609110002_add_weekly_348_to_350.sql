@@ -25,7 +25,7 @@ WITH event_configs (event_code, event_name, format, attempt_count, seq) AS (
 )
 INSERT INTO weekly_events (id, meet_id, kind, title, event_name, group_name, is_all_around, event_code, format, attempt_count, enabled, seq, updated_at)
 SELECT target.id || '-wca-' || config.event_code || '-' || config.format, target.id, 'other',
-       config.event_name || ' · ' || CASE WHEN config.format = 'best1' THEN '单次取最快' ELSE '五次取平均' END,
+       config.event_name || ' · ' || CASE WHEN config.format = 'best1' THEN '单次' ELSE '五次取中' END,
        config.event_name, NULL, FALSE, config.event_code, config.format, config.attempt_count, TRUE, config.seq, now()
   FROM target_meets target CROSS JOIN event_configs config
 ON CONFLICT (meet_id, event_code) WHERE event_code IS NOT NULL AND event_code <> ''
