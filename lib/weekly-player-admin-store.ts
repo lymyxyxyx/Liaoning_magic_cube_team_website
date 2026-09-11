@@ -252,7 +252,10 @@ export async function createWeeklyLongCardProfile(input: Partial<WeeklyLongCardP
       `INSERT INTO weekly_player_library
          (id, name, gender, birth_date, wca_id, wca_id_confirmed, province, city, notes, status, source, updated_at)
        VALUES ($1,$2,$3,$4,$5,$6,'','',$7,'active','admin_manual',now())`,
-      [playerId, name, normalizeGender(input.gender), normalizeDate(birthDate), wcaId, Boolean(wcaId), input.notes?.trim() || ""]
+      // A manually typed WCA ID is useful metadata, but it is not evidence of
+      // identity. It stays private until the matching workflow or an admin
+      // explicitly confirms it.
+      [playerId, name, normalizeGender(input.gender), normalizeDate(birthDate), wcaId, false, input.notes?.trim() || ""]
     );
     const { rows } = await client.query<{
       source_row_number: number; submitted_at: string; student_name: string; gender: string; birth_date: string;

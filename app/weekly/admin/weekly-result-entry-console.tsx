@@ -1045,7 +1045,7 @@ export function WeeklyResultEntryConsole({ initialMeets, initialPlayers = [], ev
             </div>
             <div className="weekly-player-editor-grid">
               <label className="field"><span>姓名（必填）</span><input autoFocus value={newPlayerDraft.name} onChange={(event) => setNewPlayerDraft({ ...newPlayerDraft, name: event.target.value })} /></label>
-              <label className="field"><span>WCA ID（可选）</span><input value={newPlayerDraft.wcaId} onChange={(event) => setNewPlayerDraft({ ...newPlayerDraft, wcaId: event.target.value.toUpperCase() })} /></label>
+              <label className="field"><span>WCA ID（可选，录入后待确认）</span><input value={newPlayerDraft.wcaId} onChange={(event) => setNewPlayerDraft({ ...newPlayerDraft, wcaId: event.target.value.toUpperCase() })} /></label>
               <label className="field"><span>出生日期（可选）</span><input type="date" value={newPlayerDraft.birthDate} onChange={(event) => setNewPlayerDraft({ ...newPlayerDraft, birthDate: event.target.value })} /></label>
               <label className="field"><span>性别（可选）</span><select value={newPlayerDraft.gender} onChange={(event) => setNewPlayerDraft({ ...newPlayerDraft, gender: event.target.value as NewPlayerDraft["gender"] })}><option value="">未填写</option><option value="男">男</option><option value="女">女</option></select></label>
               <label className="field"><span>联系电话（可选）</span><input type="tel" value={newPlayerDraft.phone} onChange={(event) => setNewPlayerDraft({ ...newPlayerDraft, phone: event.target.value })} /></label>
@@ -1066,7 +1066,7 @@ export function WeeklyResultEntryConsole({ initialMeets, initialPlayers = [], ev
             </div>
             <div className="weekly-player-editor-grid">
               <label className="field"><span>姓名</span><input value={playerDraft.name} onChange={(event) => setPlayerDraft({ ...playerDraft, name: event.target.value })} /></label>
-              <label className="field"><span>WCA ID</span><input value={playerDraft.wcaId} onChange={(event) => { const wcaId = event.target.value.toUpperCase(); setPlayerDraft({ ...playerDraft, wcaId, wcaIdConfirmed: Boolean(wcaId.trim()) }); }} /></label>
+              <label className="field"><span>WCA ID（修改后待确认）</span><input value={playerDraft.wcaId} onChange={(event) => { const wcaId = event.target.value.toUpperCase(); setPlayerDraft({ ...playerDraft, wcaId, wcaIdConfirmed: false }); }} /></label>
               <label className="field"><span>出生日期</span><input type="date" value={playerDraft.birthDate} onChange={(event) => setPlayerDraft({ ...playerDraft, birthDate: event.target.value, ageGroup: getWeeklyAgeGroup(event.target.value) })} /></label>
               <label className="field"><span>性别</span><select value={playerDraft.gender} onChange={(event) => setPlayerDraft({ ...playerDraft, gender: event.target.value as WeeklyPlayer["gender"] })}><option value="男">男</option><option value="女">女</option></select></label>
               <label className="field"><span>省</span><input value={playerDraft.province} onChange={(event) => setPlayerDraft({ ...playerDraft, province: event.target.value })} /></label>
