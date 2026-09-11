@@ -1137,6 +1137,20 @@ main {
   font-weight: 800;
 }
 
+.weekly-admin-exit button {
+  border: 0;
+  padding: 0;
+  color: var(--blue-deep);
+  background: transparent;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 750;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.weekly-admin-exit button:hover { color: var(--blue); }
+
 .weekly-admin-library-link {
   color: var(--blue-deep);
   font-size: 14px;

@@ -30,7 +30,7 @@ export function WeeklyInlineAdminLogin({ isAdmin }: { isAdmin: boolean }) {
     }
   }
 
-  if (isAdmin) return <span className="weekly-admin-mode">管理员模式</span>;
+  if (isAdmin) return <><span className="weekly-admin-mode">管理员模式</span><form className="weekly-admin-exit" action="/api/weekly-auth/logout" method="post"><button type="submit">退出管理</button></form></>;
 
   return (
     <details className="weekly-inline-admin-login">
