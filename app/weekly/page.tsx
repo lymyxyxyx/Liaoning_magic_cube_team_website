@@ -8,6 +8,7 @@ import { WeeklyResultEntryConsole } from "./admin/weekly-result-entry-console";
 import { WeeklyHistoryMenu } from "@/components/weekly-history-menu";
 import { WeeklyInlineAdminLogin } from "@/components/weekly-inline-admin-login";
 import Link from "next/link";
+import { WeeklyCurrentResults } from "@/components/weekly-current-results";
 
 export const dynamic = "force-dynamic";
 
@@ -25,6 +26,7 @@ export default async function WeeklyPage() {
     .filter((meet) => isGuestWeeklyHistorySlug(meet.slug))
     .sort((a, b) => meetStartsAtTimestamp(b.startsAt) - meetStartsAtTimestamp(a.startsAt));
   const adminMeets = allMeets.filter((meet) => meet.id !== "weekly-test-entry" && meet.dataVersion === 2);
+  const currentMeet = adminMeets.filter((meet) => meet.status === "open" && (!meet.startsAt || new Date(meet.startsAt).getTime() <= Date.now()) && (!meet.endsAt || new Date(meet.endsAt).getTime() >= Date.now())).sort((left, right) => meetStartsAtTimestamp(right.startsAt) - meetStartsAtTimestamp(left.startsAt))[0];
 
   return (
     <>
@@ -46,6 +48,8 @@ export default async function WeeklyPage() {
       >
         本周成绩将在管理员录入后显示；当前游客可直接查看，不需要邀请码。
       </PageHero>
+
+      {currentMeet ? <WeeklyCurrentResults meet={currentMeet} /> : null}
 
       {isAdmin ? (
         <WeeklyResultEntryConsole

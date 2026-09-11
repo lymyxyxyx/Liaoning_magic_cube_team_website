@@ -1062,6 +1062,18 @@ main {
 .weekly-grade-row--beginner { background: #fef9c3; }
 .weekly-grade-footnote { margin: 0; color: var(--muted); font-size: 13px; }
 
+.weekly-current-results { display: grid; gap: 18px; }
+.weekly-current-results-heading h2 { margin: 4px 0 6px; }
+.weekly-current-results-heading p { margin: 0; color: var(--muted); }
+.weekly-current-event-grid { display: grid; gap: 16px; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); }
+.weekly-current-event-card { overflow: hidden; border: 1px solid var(--line); border-radius: 14px; background: var(--surface); box-shadow: var(--shadow); }
+.weekly-current-event-card .section-header { margin: 0; padding: 14px 16px 8px; }
+.weekly-current-event-card .section-header h3 { margin: 2px 0 0; }
+.weekly-current-event-card .section-header > span { color: var(--muted); font-size: 13px; font-weight: 700; }
+.weekly-current-event-card .result-table-wrap { border: 0; border-radius: 0; }
+.weekly-current-event-card .result-table { min-width: 560px; }
+.weekly-current-event-card .empty-state { margin: 0; padding: 16px; }
+
 .weekly-current-page-hero,
 .weekly-detail-page-hero {
   overflow: visible;
