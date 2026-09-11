@@ -3,6 +3,7 @@ import { pinyin } from "pinyin-pro";
 type SearchableWeeklyPlayer = {
   name: string;
   wcaId?: string;
+  weeklyNumber?: number;
 };
 
 export function matchesWeeklyPlayerQuery(player: SearchableWeeklyPlayer, query: string) {
@@ -14,6 +15,7 @@ export function matchesWeeklyPlayerQuery(player: SearchableWeeklyPlayer, query: 
 
   return (
     player.name.includes(query.trim()) ||
+    String(player.weeklyNumber || "").includes(normalizedQuery) ||
     (player.wcaId || "").toLowerCase().includes(normalizedQuery) ||
     getPinyinInitials(chineseName || player.name).includes(normalizedQuery) ||
     fullPinyin.includes(normalizedQuery)

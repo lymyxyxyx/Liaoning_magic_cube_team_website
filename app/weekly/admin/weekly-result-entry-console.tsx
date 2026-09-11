@@ -649,8 +649,8 @@ export function WeeklyResultEntryConsole({ initialMeets, initialPlayers = [], ev
           </div>
           <div className="weekly-result-search-bar" role="search" aria-label="查询周赛成绩">
             <label>
-              姓名 / WCA ID
-              <input value={resultSearchQuery} onChange={(event) => setResultSearchQuery(event.target.value)} placeholder="输入姓名或 WCA ID" />
+              姓名 / 周赛编号
+              <input value={resultSearchQuery} onChange={(event) => setResultSearchQuery(event.target.value)} placeholder="输入姓名或周赛编号" />
             </label>
             <div className="weekly-event-tabs-field">
               <span>项目</span>
