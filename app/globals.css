@@ -4098,7 +4098,7 @@ textarea {
    never receive the score-entry panel or its read-only input placeholders. */
 .weekly-entry-shell--results-only > .weekly-admin-card,
 .weekly-entry-shell--results-only .weekly-entry-panel {
-  display: none;
+  display: none !important;
 }
 
 .weekly-entry-shell--results-only .weekly-entry-grid {

@@ -44,7 +44,7 @@ export default async function WeeklyPage() {
           </div>
         }
         label="辽宁线上周赛"
-        title="本周周赛成绩"
+        title={currentMeet?.title || "本周周赛成绩"}
       >
         本周成绩将在管理员录入后显示；当前游客可直接查看，不需要邀请码。
       </PageHero>

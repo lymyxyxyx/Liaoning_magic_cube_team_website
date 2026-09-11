@@ -63,13 +63,13 @@ export default async function WeeklyDetailPage({ params }: { params: Promise<{ s
 
   const mainResults = sortWeeklyResultsByAverage(meet.results);
   const eventSections: WeeklyEvent[] = [
-    ...(meet.results.length > 0 ? [{
+    {
       id: "333",
       eventCode: "333",
       title: `三阶比赛第${meet.yearWeek}周`,
       eventName: "三阶",
       results: mainResults
-    }] : []),
+    },
     ...meet.events.map((event) => ({ ...event, results: sortWeeklyResultsByAverage(event.results) }))
   ].map((event) => ({
     ...event,
@@ -130,8 +130,11 @@ export default async function WeeklyDetailPage({ params }: { params: Promise<{ s
 
         <div className="weekly-event-stack">
           {eventSections.map((event) => {
-            const hasAgeGroup = event.results.some((result) => result.ageGroup);
+            // Keep future/empty weeks structurally identical to completed
+            // weeks, so entering results later never changes the table shape.
+            const hasAgeGroup = !event.isAllAround || event.results.some((result) => result.ageGroup);
             const hasAttempts = !event.isAllAround;
+            const columnCount = hasAttempts ? (hasAgeGroup ? 14 : 13) : (hasAgeGroup ? 5 : 4);
 
             const table = (
               <section className="weekly-event-section" id={eventAnchorId(event)}>
@@ -204,6 +207,9 @@ export default async function WeeklyDetailPage({ params }: { params: Promise<{ s
                           </tr>
                         );
                       })}
+                      {event.results.length === 0 ? (
+                        <tr><td colSpan={columnCount}>本项目暂无已录入成绩。</td></tr>
+                      ) : null}
                     </tbody>
                   </table>
                 </div>
