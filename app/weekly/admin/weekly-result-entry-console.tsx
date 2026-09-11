@@ -746,7 +746,7 @@ export function WeeklyResultEntryConsole({ initialMeets, initialPlayers = [], ev
             <div className="weekly-age-tabs-field">
               <span>年龄组</span>
               <div className="weekly-age-tabs" role="tablist" aria-label="年龄组筛选">
-                {['全部', 'U6', 'U8', 'U10', 'U12', 'U18', '成人', '待补'].map((group) => (
+                {['全部', 'U6', 'U8', 'U10', 'U12', 'U18', '成人组', '待补'].map((group) => (
                   <button
                     className={`weekly-age-tab ${resultAgeGroup === group ? "is-active" : ""}`.trim()}
                     key={group}
