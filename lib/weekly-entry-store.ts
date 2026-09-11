@@ -163,7 +163,7 @@ export async function listWeeklyHistoryForAdmin(): Promise<WeeklyHistoryAdminRow
       WHERE meet.data_version = 2
       GROUP BY meet.id, meet.title, meet.week_number, meet.date_label, meet.status, meet.starts_at
       ORDER BY meet.starts_at DESC NULLS LAST, meet.week_number DESC
-      LIMIT 8`
+      `
   );
   return rows.map((row) => ({
     id: row.id, title: row.title, weekNumber: row.week_number, dateLabel: row.date_label,
@@ -269,7 +269,7 @@ export async function createWeeklyMeet(input: {
     const id = duplicate.rows[0] ? `${baseId}-${Date.now()}` : baseId;
     const slug = requestedSlug === baseId && id !== baseId ? id : requestedSlug;
     const dateLabel = formatWeeklyDateRange(startDate, endDate);
-    const title = input.title?.trim() || `辽宁魔方线上周赛 · ${dateLabel}`;
+    const title = input.title?.trim() || `第${weekNumber}周周赛（${startDate.getFullYear()}年第${getIsoWeek(startDate)}周）`;
     const status = input.status || "draft";
     const templateConfigs = input.templateMeetId
       ? await client.query<{ event_id: string; format: string; enabled: boolean; seq: number }>(
@@ -318,6 +318,34 @@ export async function createWeeklyMeet(input: {
       isPublic: false,
       dataVersion: 2
     } satisfies WeeklyMeetOption;
+  } catch (error) {
+    await client.query("ROLLBACK");
+    throw error;
+  } finally {
+    client.release();
+  }
+}
+
+/** Removes an empty v2 meet only; meets with entered results remain protected. */
+export async function deleteEmptyWeeklyMeet(id: string) {
+  const pool = getPostgresPool();
+  const client = await pool.connect();
+  try {
+    await client.query("BEGIN");
+    const exists = await client.query<{ result_count: string }>(
+      `SELECT count(result.id)::text AS result_count
+         FROM weekly_meets meet
+         LEFT JOIN weekly_results result ON result.meet_id = meet.id
+        WHERE meet.id = $1 AND meet.data_version = 2
+        GROUP BY meet.id`,
+      [id]
+    );
+    if (!exists.rows[0]) throw new Error("周赛不存在，或历史数据不可删除");
+    if (Number(exists.rows[0].result_count) > 0) throw new Error("该周已有成绩，不能删除。请使用编辑调整状态。");
+    await client.query("DELETE FROM weekly_events WHERE meet_id = $1", [id]);
+    const deleted = await client.query("DELETE FROM weekly_meets WHERE id = $1 AND data_version = 2", [id]);
+    if (deleted.rowCount !== 1) throw new Error("删除周赛失败");
+    await client.query("COMMIT");
   } catch (error) {
     await client.query("ROLLBACK");
     throw error;

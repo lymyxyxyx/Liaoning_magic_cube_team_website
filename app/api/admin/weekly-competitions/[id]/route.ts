@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { listWeeklyMeetEventConfigs, updateWeeklyMeetConfig, type WeeklyMeetEventConfig } from "@/lib/weekly-entry-store";
+import { deleteEmptyWeeklyMeet, listWeeklyMeetEventConfigs, updateWeeklyMeetConfig, type WeeklyMeetEventConfig } from "@/lib/weekly-entry-store";
 import { hasWeeklyAdminSession } from "@/lib/weekly-admin-auth";
 import { isWeeklySameOrigin } from "@/lib/weekly-request-security";
 import { isBoundedString } from "@/lib/weekly-request-validation";
@@ -56,5 +56,17 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     return NextResponse.json({ ok: true });
   } catch (error) {
     return NextResponse.json({ message: error instanceof Error ? error.message : "保存周赛配置失败" }, { status: 400 });
+  }
+}
+
+export async function DELETE(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  if (!(await hasWeeklyAdminSession(request))) return NextResponse.json({ message: "需要管理员登录" }, { status: 401 });
+  if (!isWeeklySameOrigin(request)) return NextResponse.json({ message: "请求来源不受信任" }, { status: 403 });
+  const { id } = await params;
+  try {
+    await deleteEmptyWeeklyMeet(id);
+    return NextResponse.json({ ok: true });
+  } catch (error) {
+    return NextResponse.json({ message: error instanceof Error ? error.message : "删除周赛失败" }, { status: 400 });
   }
 }

@@ -9,7 +9,7 @@ import type { WCA_EVENTS } from "@/lib/wca-events";
 type Meet = { id: string; title: string; dateLabel: string; status?: string; startsAt?: string | null; endsAt?: string | null; isPublic?: boolean; dataVersion?: number };
 type Config = { eventId: string; format: WeeklyResultFormat; enabled: boolean; seq: number };
 
-export function WeeklyMeetConfigConsole({ initialMeets, events }: { initialMeets: Meet[]; events: ReadonlyArray<(typeof WCA_EVENTS)[number]> }) {
+export function WeeklyMeetConfigConsole({ initialMeets, events, defaultOpen = false }: { initialMeets: Meet[]; events: ReadonlyArray<(typeof WCA_EVENTS)[number]>; defaultOpen?: boolean }) {
   const [meets, setMeets] = useState(initialMeets);
   const [selectedId, setSelectedId] = useState(initialMeets[0]?.id || "");
   const selected = meets.find((meet) => meet.id === selectedId);
@@ -101,7 +101,7 @@ export function WeeklyMeetConfigConsole({ initialMeets, events }: { initialMeets
   }
 
   return (
-    <details open className="admin-card weekly-meet-config">
+    <details open={defaultOpen} className="admin-card weekly-meet-config">
       <summary className="weekly-admin-fold-summary">
         <span>
           <strong>当前周赛配置</strong>
