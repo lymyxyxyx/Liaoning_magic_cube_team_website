@@ -102,9 +102,15 @@ if ! git diff --quiet -- next-env.d.ts; then
   git restore -- next-env.d.ts
 fi
 
-echo "[deploy] Restarting web container."
-sudo docker compose restart web
-sudo docker compose ps
+echo "[deploy] Recreating web container from the fresh build."
+# A plain restart can occasionally retain an old Next.js process after a fast
+# deployment. Recreating only the web service makes the build swap explicit
+# while leaving PostgreSQL and other services untouched.
+sudo docker compose up -d --no-deps --force-recreate web
+if [[ "$(sudo docker compose ps --status running -q web)" == "" ]]; then
+  echo "[deploy] Web container did not reach the running state." >&2
+  exit 1
+fi
 
 echo "[deploy] Waiting for health endpoint."
 for attempt in 1 2 3 4 5 6 7 8 9 10; do
@@ -117,6 +123,14 @@ for attempt in 1 2 3 4 5 6 7 8 9 10; do
   fi
   sleep 2
 done
+
+# Keep fast deploys fast, but still prove that the actual public page renders;
+# /api/health alone cannot catch a stale or broken Next.js page bundle.
+echo "[deploy] Checking public weekly page."
+if ! curl -fsSL --max-time 10 http://127.0.0.1:3000/weekly >/dev/null; then
+  echo "[deploy] Weekly page did not render after deployment." >&2
+  exit 1
+fi
 
 if [[ "$smoke_mode" == "full" ]]; then
   echo "[deploy] Running production smoke test."

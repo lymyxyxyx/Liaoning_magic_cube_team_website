@@ -1,5 +1,11 @@
 import type { Person } from "@/lib/data";
 
+/**
+ * Static player list for people directory pages.
+ * IMPORTANT: New players added via admin UI go to PostgreSQL (weekly_player_library),
+ * not here. This list must be manually updated to keep people directory in sync.
+ * Consider running a sync script periodically or migrating to dynamic loading.
+ */
 const weeklyPlayers = [
   ["王一桐", "wang-yitong"],
   ["姚孟妤", "yao-mengyu"],

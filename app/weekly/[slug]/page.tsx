@@ -8,7 +8,7 @@ import { getWeeklyMeetBySlug } from "@/lib/weekly-db";
 import { isWeeklyCompetitionEnabled } from "@/lib/weekly-feature";
 import { hasWeeklyAdminCookie } from "@/lib/weekly-admin-auth";
 import { sortWeeklyResultsByAverage } from "@/lib/weekly-result-display";
-import { isGuestWeeklyHistorySlug } from "@/lib/weekly-guest-history";
+import { isGuestWeeklyHistoryMeet } from "@/lib/weekly-guest-history";
 import { listWeeklyMeetOptions } from "@/lib/weekly-entry-store";
 import { WeeklyHistoryMenu } from "@/components/weekly-history-menu";
 
@@ -46,14 +46,19 @@ function eventAnchorId(event: WeeklyEvent) {
 export default async function WeeklyDetailPage({ params }: { params: Promise<{ slug: string }> }) {
   if (!isWeeklyCompetitionEnabled()) notFound();
   const { slug } = await params;
-  const includePrivate = isGuestWeeklyHistorySlug(slug) || await hasWeeklyAdminCookie(await cookies());
+  const [allMeets, isAdmin] = await Promise.all([
+    listWeeklyMeetOptions(),
+    hasWeeklyAdminCookie(await cookies())
+  ]);
+  const requestedMeet = allMeets.find((candidate) => candidate.slug === slug);
+  const includePrivate = Boolean(requestedMeet && isGuestWeeklyHistoryMeet(requestedMeet)) || isAdmin;
   const meet = await getWeeklyMeetBySlug(slug, { includePrivate });
 
   if (!meet) {
     notFound();
   }
-  const historyMeets = (await listWeeklyMeetOptions())
-    .filter((candidate) => isGuestWeeklyHistorySlug(candidate.slug))
+  const historyMeets = allMeets
+    .filter((candidate) => isGuestWeeklyHistoryMeet(candidate))
     .sort((a, b) => new Date(b.startsAt || 0).getTime() - new Date(a.startsAt || 0).getTime());
 
   const mainResults = sortWeeklyResultsByAverage(meet.results);

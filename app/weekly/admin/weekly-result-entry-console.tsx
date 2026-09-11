@@ -4,7 +4,7 @@ import { Check, LogIn, Pencil, RefreshCw, Save, Search, Trash2, UserRoundPen, X 
 import Link from "next/link";
 import type { CSSProperties, KeyboardEvent } from "react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { getWeeklyAgeGroup, getWeeklyRankingAgeGroupOrder } from "@/lib/weekly-age-groups";
+import { getWeeklyAgeGroup } from "@/lib/weekly-age-groups";
 import {
   calculateResultByFormat,
   formatResult,
@@ -427,9 +427,7 @@ export function WeeklyResultEntryConsole({ initialMeets, initialPlayers = [], ev
           setNotice(error.message);
           return;
         }
-        setResults((prev) => buildOptimisticResults(prev, playerForSave, parsedAttempts, selectedFormat));
-        setAttempts(Array.from({ length: selectedFormatConfig.attemptCount }, () => ""));
-        setNotice(error instanceof Error ? `本地已显示，数据库保存失败：${error.message}` : "本地已显示，数据库保存失败。");
+        setNotice(error instanceof Error ? `保存失败：${error.message}，请重试。` : "保存失败，请重试。");
         attemptRefs.current[0]?.focus();
       })
       .finally(() => setIsSaving(false));
@@ -438,22 +436,16 @@ export function WeeklyResultEntryConsole({ initialMeets, initialPlayers = [], ev
   function createPlayerAndSaveResult() {
     if (!newPlayerDraft?.name.trim()) return;
     setIsSaving(true); setNotice("");
-    fetch("/api/admin/weekly-long-card-profiles", {
-      method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(newPlayerDraft)
+    // The server creates the profile and result in one database transaction:
+    // a failed score save can no longer leave a stray player in the library.
+    fetch(`/api/weekly-competitions/${encodeURIComponent(selectedMeetId)}/results`, {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ eventId: selectedEventId, format: selectedFormat, attempts, newPlayer: newPlayerDraft })
     })
       .then(async (response) => {
-        const payload = await response.json().catch(() => null) as { profile?: { matchedPlayerId?: string | null; name: string; wcaId: string; gender: string; birthDate: string }; message?: string } | null;
-        const playerId = payload?.profile?.matchedPlayerId;
-        if (!response.ok || !payload?.profile || !playerId) throw new Error(payload?.message || "新建周赛学员失败");
-        const profile = payload.profile;
-        const player: WeeklyPlayer = { id: playerId, name: profile.name, slug: "", wcaId: profile.wcaId || "", gender: profile.gender === "女" ? "女" : "男", province: "", city: "", birthDate: profile.birthDate || "", ageGroup: getWeeklyAgeGroup(profile.birthDate || "") || "", ageGroupIsFuzzy: false };
-        return fetch(`/api/weekly-competitions/${encodeURIComponent(selectedMeetId)}/results`, {
-          method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ eventId: selectedEventId, format: selectedFormat, player, attempts, isNewPlayer: true })
-        }).then(async (resultResponse) => {
-          const resultPayload = await resultResponse.json().catch(() => null) as { results?: EnteredResult[]; message?: string } | null;
-          if (!resultResponse.ok) throw new Error(resultPayload?.message || "保存成绩失败");
-          return { player, results: resultPayload?.results || [] };
-        });
+        const payload = await response.json().catch(() => null) as { player?: WeeklyPlayer; results?: EnteredResult[]; message?: string } | null;
+        if (!response.ok || !payload?.player) throw new Error(payload?.message || "新建选手并保存成绩失败");
+        return { player: payload.player, results: payload.results || [] };
       })
       .then(({ player, results: nextResults }) => {
         setSelectedPlayer(player); setPlayerQuery(player.name); setKnownPlayers((current) => mergePlayers(current, [player]));
@@ -1124,29 +1116,6 @@ export function WeeklyResultEntryConsole({ initialMeets, initialPlayers = [], ev
   );
 }
 
-function buildOptimisticResults(prev: EnteredResult[], player: WeeklyPlayer, attempts: ResultValue[], format: WeeklyResultFormat): EnteredResult[] {
-  const calculated = calculateResultByFormat(attempts, format);
-  const nextResult: EnteredResult = {
-    id: Math.max(0, ...prev.map((result) => result.id)) + 1,
-    rank: 0,
-    sourceRank: null,
-    player,
-    level: "",
-    grade: "",
-    sourcePersonalBest: null,
-    best: calculated.best,
-    average: calculated.average,
-    attempts,
-    detail: attempts.map(formatResult).join(" / "),
-    pbRefreshed: false,
-    pbAverageRefreshed: false,
-    isNewPlayer: false
-  };
-  const withoutSamePlayer = prev.filter((result) => result.player.name !== player.name);
-  const sorted = [nextResult, ...withoutSamePlayer].sort(compareEnteredResults);
-  return sorted.map((result, index) => ({ ...result, rank: index + 1 }));
-}
-
 function findPlayerByName(name: string, players: WeeklyPlayer[]) {
   const trimmedName = name.trim();
   if (!trimmedName) return null;
@@ -1180,9 +1149,12 @@ function toWeeklyPlayer(player: Partial<WeeklyPlayer> & Pick<WeeklyPlayer, "id" 
 }
 
 function getAttemptClass(attempt: ResultValue | undefined, attempts: ResultValue[]) {
-  void attempt;
-  void attempts;
-  return "weekly-attempt-cell";
+  if (attempt === undefined || attempt === "DNF" || attempt === "DNS") return "weekly-attempt-cell";
+  const best = attempts.reduce<number | null>((min, v) => {
+    if (typeof v !== "number") return min;
+    return min === null || v < min ? v : min;
+  }, null);
+  return attempt === best ? "weekly-attempt-cell fastest-cell" : "weekly-attempt-cell";
 }
 
 function mergePlayers(currentPlayers: WeeklyPlayer[], nextPlayers: WeeklyPlayer[]) {
@@ -1190,18 +1162,6 @@ function mergePlayers(currentPlayers: WeeklyPlayer[], nextPlayers: WeeklyPlayer[
   for (const player of currentPlayers) merged.set(player.id, player);
   for (const player of nextPlayers) merged.set(player.id, player);
   return Array.from(merged.values());
-}
-
-function compareEnteredResults(a: EnteredResult, b: EnteredResult) {
-  const groupOrder = getWeeklyRankingAgeGroupOrder(a.player.ageGroup || "待补") - getWeeklyRankingAgeGroupOrder(b.player.ageGroup || "待补");
-  if (groupOrder !== 0) return groupOrder;
-  const aAverage = typeof a.average === "number" ? a.average : Number.MAX_SAFE_INTEGER;
-  const bAverage = typeof b.average === "number" ? b.average : Number.MAX_SAFE_INTEGER;
-  if (aAverage !== bAverage) return aAverage - bAverage;
-  const aBest = typeof a.best === "number" ? a.best : Number.MAX_SAFE_INTEGER;
-  const bBest = typeof b.best === "number" ? b.best : Number.MAX_SAFE_INTEGER;
-  if (aBest !== bBest) return aBest - bBest;
-  return a.player.name.localeCompare(b.player.name, "zh-Hans-CN");
 }
 
 function formatPlayerMeta(player: WeeklyPlayer) {

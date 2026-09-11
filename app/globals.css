@@ -11757,6 +11757,103 @@ a.commercial-member-link:hover {
   }
 }
 
+/* Weekly pages deliberately keep their desktop tables on phones.  Administrators
+ * need to compare attempts side by side, and visitors asked for horizontal
+ * scrolling rather than the global two-column card transformation. */
+@media (max-width: 900px) {
+  .weekly-detail-content .result-table-wrap,
+  .weekly-current-results .result-table-wrap,
+  .weekly-grade-table-wrap {
+    overflow-x: auto;
+    overflow-y: hidden;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .weekly-detail-content .result-table,
+  .weekly-current-results .result-table {
+    display: table;
+    width: max-content;
+    min-width: 760px;
+    font-size: 12px;
+  }
+
+  .weekly-detail-content .result-table thead,
+  .weekly-current-results .result-table thead {
+    display: table-header-group;
+  }
+
+  .weekly-detail-content .result-table tbody,
+  .weekly-current-results .result-table tbody {
+    display: table-row-group;
+    padding: 0;
+    background: transparent;
+  }
+
+  .weekly-detail-content .result-table tr,
+  .weekly-current-results .result-table tr {
+    display: table-row;
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
+  }
+
+  .weekly-detail-content .result-table th,
+  .weekly-detail-content .result-table td,
+  .weekly-current-results .result-table th,
+  .weekly-current-results .result-table td {
+    display: table-cell;
+    width: auto;
+    padding: 7px 8px;
+    border-bottom: 1px solid var(--line);
+    text-align: center;
+    white-space: nowrap;
+  }
+
+  .weekly-detail-content .result-table td::before,
+  .weekly-current-results .result-table td::before {
+    display: none;
+  }
+
+  .weekly-detail-content .result-table td:nth-child(1),
+  .weekly-detail-content .result-table td:nth-child(2),
+  .weekly-current-results .result-table td:nth-child(1),
+  .weekly-current-results .result-table td:nth-child(2) {
+    grid-column: auto;
+    justify-content: initial;
+    font-weight: inherit;
+  }
+
+  .weekly-current-event-grid {
+    display: block;
+  }
+
+  .weekly-current-event-card {
+    overflow: visible;
+    margin: 0 0 22px;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
+  }
+
+  .weekly-current-event-card .section-header {
+    padding: 0 0 8px;
+  }
+
+  .weekly-current-event-card .empty-state {
+    padding: 12px 0;
+    border-radius: 0;
+    background: transparent;
+  }
+
+  .weekly-current-results-heading h2,
+  .weekly-detail-content .section-header h2 {
+    font-size: clamp(20px, 6vw, 26px);
+  }
+}
+
 .weekly-players-loading {
   display: grid;
   gap: 6px;

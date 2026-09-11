@@ -1,3 +1,5 @@
+// weeklyPlayerPeople is a static list. New players added via admin UI go to PostgreSQL.
+// See lib/weekly-players.ts for sync notes.
 import { weeklyPlayerPeople } from "@/lib/weekly-players";
 import cubingCompetitionNameZh from "../data/cubing-competition-name-zh.json";
 

@@ -612,7 +612,7 @@ export async function saveWeeklyResult(input: {
   player: WeeklyPlayer;
   attempts: string[];
   isNewPlayer?: boolean;
-}) {
+}, transactionClient?: PoolClient) {
   if (!isWcaEventId(input.eventId)) throw new Error("项目不正确");
   const formatConfig = getWeeklyResultFormat(input.format);
   if (input.eventId === "individual" && formatConfig.id !== "best1") throw new Error("个人全能只允许录入一次连续计时成绩");
@@ -629,14 +629,15 @@ export async function saveWeeklyResult(input: {
   if (meet.dataVersion !== 2) throw new Error("历史数据 / 只读");
 
   const pool = getPostgresPool();
-  const client = await pool.connect();
+  const ownsTransaction = !transactionClient;
+  const client = transactionClient || await pool.connect();
   const playerName = input.player.name.trim();
   const playerSlug = input.player.slug || (input.player.id.startsWith("code:") ? input.player.id.slice(5) : "");
   const pbEventId = getPersonalBestEventId(input.eventId);
   const playerAgeGroup = getWeeklyAgeGroup(input.player.birthDate, meet.startsAt ? new Date(meet.startsAt) : new Date()) || input.player.ageGroup || "";
 
   try {
-    await client.query("BEGIN");
+    if (ownsTransaction) await client.query("BEGIN");
     await assertWeeklyEventConfig(client, meet.id, input.eventId, formatConfig.id);
     const eventKey = await resolveWeeklyEventKey(client, meet.id, input.eventId, formatConfig.id);
     const playerLibrary = await client.query<{ status: string; personal_bests: WeeklyPersonalBests | null; personal_bests_average: WeeklyPersonalBests | null }>(
@@ -710,13 +711,13 @@ export async function saveWeeklyResult(input: {
     await refreshWeeklyPlayerPersonalBest(client, input.player.id, input.eventId, pbEventId);
 
     await rerankWeeklyEvent(client, meet.id, eventKey);
-    await client.query("COMMIT");
+    if (ownsTransaction) await client.query("COMMIT");
     return calculated;
   } catch (error) {
-    await client.query("ROLLBACK");
+    if (ownsTransaction) await client.query("ROLLBACK");
     throw error;
   } finally {
-    client.release();
+    if (ownsTransaction) client.release();
   }
 }
 

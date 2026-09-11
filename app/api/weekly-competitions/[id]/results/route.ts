@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getWeeklyMeetEntryAvailability, getWeeklyMeetVisibility, listWeeklyResults, saveWeeklyResult } from "@/lib/weekly-entry-store";
 import { findWeeklyEligiblePlayer } from "@/lib/weekly-player-library";
+import { createWeeklyLongCardProfile } from "@/lib/weekly-player-admin-store";
+import { getPostgresPool } from "@/lib/postgres";
+import { getWeeklyAgeGroup } from "@/lib/weekly-age-groups";
 import { isWeeklyCompetitionEnabled } from "@/lib/weekly-feature";
 import { verifySessionToken } from "@/lib/auth";
 import { isWeeklySameOrigin } from "@/lib/weekly-request-security";
@@ -74,41 +77,75 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     attempts?: string[];
     format?: "avg5" | "best3" | "avg3" | "best1";
     isNewPlayer?: boolean;
+    newPlayer?: {
+      name?: string;
+      wcaId?: string;
+      gender?: "" | "男" | "女";
+      birthDate?: string;
+      phone?: string;
+      contactRelationship?: string;
+      channel?: string;
+      notes?: string;
+    };
   } | null;
 
   try {
-    if (!isBoundedString(payload?.eventId, 20, true) || !payload.player ||
+    if (!isBoundedString(payload?.eventId, 20, true) ||
         !isWeeklyResultFormat(payload.format) || !isWeeklyAttempts(payload.attempts, payload.format) ||
-        !isBoundedString(payload.player.id, 200, true) || !isBoundedString(payload.player.name, 100, true) ||
-        (payload.isNewPlayer !== undefined && typeof payload.isNewPlayer !== "boolean")) {
+        (payload.isNewPlayer !== undefined && typeof payload.isNewPlayer !== "boolean") ||
+        (!payload.newPlayer && (!payload.player || !isBoundedString(payload.player.id, 200, true) || !isBoundedString(payload.player.name, 100, true)))) {
       return NextResponse.json({ message: "缺少成绩录入信息" }, { status: 400 });
     }
     const availability = await getWeeklyMeetEntryAvailability(id, { adminOverride: true });
     if (!availability.canEnter) return NextResponse.json({ message: availability.message }, { status: 403 });
-    const libraryPlayer = await findWeeklyEligiblePlayer({ id: payload.player.id, name: payload.player.name });
-    if (!libraryPlayer) return NextResponse.json({ message: "请先从周赛选手库选择选手" }, { status: 400 });
-
-    const calculated = await saveWeeklyResult({
-      meetId: id,
-      eventId: payload.eventId,
-      format: payload.format || "avg5",
-      player: {
-        id: libraryPlayer.id,
-        name: libraryPlayer.name,
-        slug: "",
-        wcaId: libraryPlayer.wcaId || "",
-        gender: libraryPlayer.gender === "女" ? "女" : "男",
-        province: libraryPlayer.province,
-        city: libraryPlayer.city,
-        birthDate: libraryPlayer.birthDate,
-        ageGroup: libraryPlayer.ageGroup || "",
-        ageGroupIsFuzzy: Boolean(libraryPlayer.ageGroupIsFuzzy)
-      },
-      attempts: payload.attempts as string[],
-      isNewPlayer: Boolean(payload.isNewPlayer)
-    });
+    let savedPlayer;
+    let calculated;
+    if (payload.newPlayer) {
+      if (!isBoundedString(payload.newPlayer.name, 100, true)) return NextResponse.json({ message: "新建选手必须填写姓名" }, { status: 400 });
+      const pool = getPostgresPool();
+      const client = await pool.connect();
+      try {
+        await client.query("BEGIN");
+        const profile = await createWeeklyLongCardProfile(payload.newPlayer, client);
+        if (!profile.matchedPlayerId) throw new Error("新建周赛学员失败");
+        savedPlayer = {
+          id: profile.matchedPlayerId,
+          name: profile.name,
+          slug: "",
+          wcaId: profile.wcaId || "",
+          gender: profile.gender === "女" ? "女" as const : "男" as const,
+          province: "",
+          city: "",
+          birthDate: profile.birthDate || "",
+          ageGroup: getWeeklyAgeGroup(profile.birthDate || "") || "",
+          ageGroupIsFuzzy: false
+        };
+        calculated = await saveWeeklyResult({
+          meetId: id, eventId: payload.eventId, format: payload.format || "avg5", player: savedPlayer,
+          attempts: payload.attempts as string[], isNewPlayer: true
+        }, client);
+        await client.query("COMMIT");
+      } catch (error) {
+        await client.query("ROLLBACK");
+        throw error;
+      } finally {
+        client.release();
+      }
+    } else {
+      const libraryPlayer = await findWeeklyEligiblePlayer({ id: payload.player!.id, name: payload.player!.name });
+      if (!libraryPlayer) return NextResponse.json({ message: "请先从周赛选手库选择选手" }, { status: 400 });
+      savedPlayer = {
+        id: libraryPlayer.id, name: libraryPlayer.name, slug: "", wcaId: libraryPlayer.wcaId || "",
+        gender: (libraryPlayer.gender === "女" ? "女" : "男") as "女" | "男", province: libraryPlayer.province, city: libraryPlayer.city,
+        birthDate: libraryPlayer.birthDate, ageGroup: libraryPlayer.ageGroup || "", ageGroupIsFuzzy: Boolean(libraryPlayer.ageGroupIsFuzzy)
+      };
+      calculated = await saveWeeklyResult({
+        meetId: id, eventId: payload.eventId, format: payload.format || "avg5", player: savedPlayer,
+        attempts: payload.attempts as string[], isNewPlayer: Boolean(payload.isNewPlayer)
+      });
+    }
     const results = await listWeeklyResults(id, payload.eventId, payload.format || "avg5");
-    return NextResponse.json({ calculated, results });
+    return NextResponse.json({ calculated, results, player: savedPlayer });
   } catch (error) {
     return NextResponse.json({ message: error instanceof Error ? error.message : "保存成绩失败" }, { status: 400 });
   }

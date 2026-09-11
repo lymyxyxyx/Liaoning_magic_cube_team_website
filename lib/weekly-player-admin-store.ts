@@ -230,16 +230,17 @@ export async function listWeeklyLongCardProfilesForAdmin(): Promise<WeeklyLongCa
 }
 
 /** Creates the long-card record and its active weekly-player entry together. */
-export async function createWeeklyLongCardProfile(input: Partial<WeeklyLongCardProfile>) {
+export async function createWeeklyLongCardProfile(input: Partial<WeeklyLongCardProfile>, transactionClient?: PoolClient) {
   const name = input.name?.trim() || "";
   if (!name) throw new Error("姓名必填");
   const submittedAt = normalizeOptionalDate(input.submittedAt || new Date().toISOString().slice(0, 10), "提交日期");
   const birthDate = normalizeOptionalDate(input.birthDate || "", "出生日期");
   const wcaId = input.wcaId?.trim().toUpperCase() || "";
   const pool = getPostgresPool();
-  const client = await pool.connect();
+  const ownsTransaction = !transactionClient;
+  const client = transactionClient || await pool.connect();
   try {
-    await client.query("BEGIN");
+    if (ownsTransaction) await client.query("BEGIN");
     await client.query("LOCK TABLE weekly_long_card_profiles IN SHARE ROW EXCLUSIVE MODE");
     await assertWcaIdAvailable(client, wcaId);
     const { rows: numberRows } = await client.query<{ source_row_number: number }>(
@@ -265,7 +266,7 @@ export async function createWeeklyLongCardProfile(input: Partial<WeeklyLongCardP
                  contact_relationship, channel, source_notes, wca_id, matched_player_id`,
       [sourceRowNumber, submittedAt, name, normalizeGender(input.gender), birthDate, input.phone?.trim() || "", input.contactRelationship?.trim() || "", input.channel?.trim() || "", input.notes?.trim() || "", wcaId, playerId]
     );
-    await client.query("COMMIT");
+    if (ownsTransaction) await client.query("COMMIT");
     const row = rows[0];
     return {
       sourceRowNumber: row.source_row_number, submittedAt: row.submitted_at || "", name: row.student_name,
@@ -274,10 +275,10 @@ export async function createWeeklyLongCardProfile(input: Partial<WeeklyLongCardP
       notes: row.source_notes || "", wcaId: row.wca_id || "", matchedPlayerId: row.matched_player_id
     } satisfies WeeklyLongCardProfile;
   } catch (error) {
-    await client.query("ROLLBACK");
+    if (ownsTransaction) await client.query("ROLLBACK");
     throw error;
   } finally {
-    client.release();
+    if (ownsTransaction) client.release();
   }
 }
 
