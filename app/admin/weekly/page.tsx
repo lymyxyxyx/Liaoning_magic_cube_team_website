@@ -26,6 +26,7 @@ export function WeeklyAdminToolbar({ active }: { active: "players" | "management
     {/* eslint-disable-next-line @next/next/no-html-link-for-pages */}
     <a className={`button${active === "players" ? " primary" : ""}`} href="/admin/weekly/players">周赛选手管理</a>
     <Link className={`button${active === "management" ? " primary" : ""}`} href="/admin/weekly?view=management">周赛管理</Link>
+    <Link className="button" href="/weekly">返回本周周赛</Link>
     <form action="/api/weekly-auth/logout" method="post"><button className="button" type="submit">退出登录</button></form>
   </section>;
 }

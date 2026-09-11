@@ -363,7 +363,8 @@ export async function updateWeeklyMeetConfig(input: {
 
 export async function searchWeeklyPlayers(query: string): Promise<WeeklyPlayer[]> {
   const q = query.trim();
-  const [libraryPlayers, rosterNumbers] = await Promise.all([listWeeklyEligiblePlayers(), listWeeklyRosterNumbers()]);
+  const libraryPlayers = await listWeeklyEligiblePlayers();
+  const rosterNumbers = await listWeeklyRosterNumbers(libraryPlayers);
   return libraryPlayers
     .map((player) => ({ player, weeklyNumber: rosterNumbers.get(player.id) }))
     .filter(({ player, weeklyNumber }) => !q || matchesWeeklyPlayerQuery({ ...player, weeklyNumber }, q))
@@ -449,7 +450,8 @@ export async function listWeeklyResults(meetIdOrSlug: string, eventId: string, f
   if (!isWcaEventId(eventId)) throw new Error("项目不正确");
   const formatConfig = getWeeklyResultFormat(format);
 
-  const [eligiblePlayers, rosterNumbers] = await Promise.all([listWeeklyEligiblePlayers(), listWeeklyRosterNumbers()]);
+  const eligiblePlayers = await listWeeklyEligiblePlayers();
+  const rosterNumbers = await listWeeklyRosterNumbers(eligiblePlayers);
   const pool = getPostgresPool();
   const meet = await resolveWeeklyMeet(meetIdOrSlug);
   if (!meet) throw new Error("周赛不存在");
@@ -520,14 +522,18 @@ export async function listWeeklyResults(meetIdOrSlug: string, eventId: string, f
   });
 }
 
-async function listWeeklyRosterNumbers() {
+async function listWeeklyRosterNumbers(libraryPlayers: ReadonlyArray<Pick<WeeklyPlayer, "id" | "name">>) {
   const pool = getPostgresPool();
-  const { rows } = await pool.query<{ matched_player_id: string | null }>(
-    "SELECT matched_player_id FROM weekly_long_card_profiles ORDER BY source_row_number"
+  const { rows } = await pool.query<{ student_name: string; matched_player_id: string | null }>(
+    "SELECT student_name, matched_player_id FROM weekly_long_card_profiles ORDER BY source_row_number"
   );
+  const playerIdsByName = new Map<string, string[]>();
+  for (const player of libraryPlayers) playerIdsByName.set(player.name, [...(playerIdsByName.get(player.name) || []), player.id]);
   const numbers = new Map<string, number>();
   rows.forEach((row, index) => {
-    if (row.matched_player_id) numbers.set(row.matched_player_id, index + 1);
+    const exactNameMatches = playerIdsByName.get(row.student_name) || [];
+    const playerId = row.matched_player_id || (exactNameMatches.length === 1 ? exactNameMatches[0] : null);
+    if (playerId) numbers.set(playerId, index + 1);
   });
   return numbers;
 }
