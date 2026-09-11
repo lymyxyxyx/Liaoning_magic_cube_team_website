@@ -4,11 +4,13 @@ set -euo pipefail
 branch="main"
 backup_mode="full"
 smoke_mode="full"
+migration_mode="full"
 for argument in "$@"; do
   case "$argument" in
     --fast)
       backup_mode="skip"
       smoke_mode="skip"
+      migration_mode="skip"
       ;;
     --full)
       backup_mode="full"
@@ -16,6 +18,12 @@ for argument in "$@"; do
       ;;
     --skip-smoke)
       smoke_mode="skip"
+      ;;
+    --migrate)
+      migration_mode="full"
+      ;;
+    --skip-migrate)
+      migration_mode="skip"
       ;;
     --smoke)
       smoke_mode="full"
@@ -46,6 +54,7 @@ echo "[deploy] Branch: ${branch}"
 echo "[deploy] Target: ${target_short}"
 echo "[deploy] Backup: ${backup_mode}"
 echo "[deploy] Smoke test: ${smoke_mode}"
+echo "[deploy] Migrations: ${migration_mode}"
 
 # Both remotes must accept the exact local commit before the production
 # worktree is changed. The server-side check below catches a stale or
@@ -53,7 +62,7 @@ echo "[deploy] Smoke test: ${smoke_mode}"
 git push origin "${branch}"
 git push aliyun "${branch}"
 
-ssh "${ssh_args[@]}" "$server" bash -s -- "$app_dir" "$branch" "$target_commit" "$backup_mode" "$smoke_mode" <<'REMOTE'
+ssh "${ssh_args[@]}" "$server" bash -s -- "$app_dir" "$branch" "$target_commit" "$backup_mode" "$smoke_mode" "$migration_mode" <<'REMOTE'
 set -euo pipefail
 
 app_dir="$1"
@@ -61,6 +70,8 @@ branch="$2"
 target_commit="$3"
 backup_mode="$4"
 smoke_mode="$5"
+migration_mode="$6"
+deploy_started_at="$(date +%s)"
 target_short="${target_commit:0:12}"
 
 cd "$app_dir"
@@ -88,8 +99,12 @@ fi
 echo "[deploy] Checking out ${target_short}."
 git checkout -B "$branch" "$target_commit"
 
-echo "[deploy] Applying database migrations."
-sudo docker compose exec -T web npm run db:migrate </dev/null
+if [[ "$migration_mode" == "full" ]]; then
+  echo "[deploy] Applying database migrations."
+  sudo docker compose exec -T web npm run db:migrate </dev/null
+else
+  echo "[deploy] Fast mode: skipping database migrations."
+fi
 
 echo "[deploy] Building application."
 sudo docker compose exec -T web npm run build </dev/null
@@ -151,4 +166,5 @@ printf '%s branch=%s commit=%s health=ok smoke=%s\n' "$timestamp" "$branch" "$ta
   | sudo tee -a /opt/ln-cubing/logs/deployments.log >/dev/null
 
 echo "[deploy] Completed: ${target_short}"
+echo "[deploy] Elapsed: $(( $(date +%s) - deploy_started_at ))s"
 REMOTE
