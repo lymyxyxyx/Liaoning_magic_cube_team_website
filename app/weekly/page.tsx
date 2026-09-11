@@ -49,8 +49,6 @@ export default async function WeeklyPage() {
         本周成绩将在管理员录入后显示；当前游客可直接查看，不需要邀请码。
       </PageHero>
 
-      {currentMeet ? <WeeklyCurrentResults meet={currentMeet} /> : null}
-
       {isAdmin ? (
         <WeeklyResultEntryConsole
           initialAdminUnlocked
@@ -59,7 +57,7 @@ export default async function WeeklyPage() {
           mode="admin"
           variant="full"
         />
-      ) : null}
+      ) : currentMeet ? <WeeklyCurrentResults meet={currentMeet} /> : null}
     </>
   );
 }
