@@ -1,5 +1,8 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  // Deployment builds use an isolated directory, then swap it in only after
+  // compilation succeeds. This keeps the running server's .next tree intact.
+  distDir: process.env.NEXT_DIST_DIR || ".next",
   async headers() {
     return [
       {

@@ -1,7 +1,7 @@
 // Weekly competition groups use one adult group. O18/O30/O40 were legacy
 // labels from an earlier player-library design and must not be generated.
 export const weeklyAgeGroups = ["U6", "U8", "U10", "U12", "U18", "成人组"] as const;
-export const weeklyRankingAgeGroups = ["U6", "U8", "U10", "U12", "成人组", "待补"] as const;
+export const weeklyRankingAgeGroups = ["U6", "U8", "U10", "U12", "U18", "成人组", "待补"] as const;
 
 export function getWeeklyAgeGroup(birthDate: string, today = new Date()) {
   const age = getWeeklyAge(birthDate, today);
@@ -17,11 +17,11 @@ export function getWeeklyAgeGroup(birthDate: string, today = new Date()) {
 export function getWeeklyRankingAgeGroup(birthDate: string, configuredAgeGroup = "", today = new Date()) {
   const calculated = getWeeklyAgeGroup(birthDate, today);
   if (calculated) {
-    if (["U6", "U8", "U10", "U12"].includes(calculated)) return calculated;
+    if (["U6", "U8", "U10", "U12", "U18"].includes(calculated)) return calculated;
     return "成人组";
   }
-  if (["U6", "U8", "U10", "U12"].includes(configuredAgeGroup)) return configuredAgeGroup;
-  if (["成人", "成人组", "U18", "O18", "O30", "O40"].includes(configuredAgeGroup)) return "成人组";
+  if (["U6", "U8", "U10", "U12", "U18"].includes(configuredAgeGroup)) return configuredAgeGroup;
+  if (["成人", "成人组", "O18", "O30", "O40"].includes(configuredAgeGroup)) return "成人组";
   return "待补";
 }
 

@@ -940,6 +940,7 @@ export function WeeklyResultEntryConsole({ initialMeets, initialPlayers = [], ev
                   value={attempt}
                   onChange={(event) => updateAttempt(index, event.target.value)}
                   onKeyDown={(event) => handleAttemptKeyDown(event, index)}
+                  inputMode="decimal"
                   placeholder="00:00.00"
                   disabled={isPublicMode}
                   style={isPublicMode ? publicAttemptInputStyle : undefined}

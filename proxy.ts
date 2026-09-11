@@ -38,19 +38,13 @@ export async function proxy(request: NextRequest) {
   const weeklySlug = pathname.match(/^\/weekly\/([^/]+)\/?$/)?.[1] || "";
   const isGuestWeeklyHistoryPage = isGuestWeeklyHistorySlug(weeklySlug);
   const isWeeklyPage = pathname.startsWith("/weekly") && !isWeeklyLandingPage && !isGuestWeeklyHistoryPage && pathname !== "/weekly/results" && pathname !== "/weekly/history" && pathname !== "/weekly/grade-standards" && !pathname.startsWith("/weekly/access") && !pathname.startsWith("/weekly/admin");
-  const isWeeklyApi = pathname === "/api/weekly-competitions" || pathname.startsWith("/api/weekly-competitions/");
-  const isWeeklyResultReadApi = request.method === "GET" && pathname.startsWith("/api/weekly-competitions/") && pathname.endsWith("/results");
   const isWeeklyAdminApi = pathname.startsWith("/api/admin/weekly-");
 
   const hasWeeklyAccess = await hasWeeklyAccessSession(request);
   const hasWeeklyAdmin = await hasWeeklyAdminSession(request);
   // A weekly administrator may enter the same protected weekly route, but
   // write handlers still require the administrator audience explicitly.
-  if ((isWeeklyPage || (isWeeklyApi && !isWeeklyResultReadApi)) && !(hasWeeklyAccess || hasWeeklyAdmin)) {
-    if (isWeeklyApi) {
-      return NextResponse.json({ message: "请先输入周赛邀请码" }, { status: 401 });
-    }
-
+  if (isWeeklyPage && !(hasWeeklyAccess || hasWeeklyAdmin)) {
     const accessUrl = request.nextUrl.clone();
     accessUrl.pathname = "/weekly/access";
     accessUrl.search = "";

@@ -107,7 +107,17 @@ else
 fi
 
 echo "[deploy] Building application."
-sudo docker compose exec -T web npm run build </dev/null
+# Never build in .next while `next start` is serving from that directory.
+# During a normal Next build, manifests are rewritten in place and live
+# requests can briefly see incomplete output. Build in a commit-specific
+# staging directory, then swap it only after the build has succeeded.
+staged_next_dir=".next-deploy-${target_short}"
+previous_next_dir=".next-previous-${target_short}"
+if [[ -e "$staged_next_dir" || -e "$previous_next_dir" ]]; then
+  echo "[deploy] Refusing to reuse a stale staged build directory." >&2
+  exit 1
+fi
+sudo docker compose exec -T -e NEXT_DIST_DIR="$staged_next_dir" web npm run build </dev/null
 
 # Next.js regenerates this tracked type shim according to the container's
 # installed minor version. It is not a production source change and must not
@@ -117,12 +127,21 @@ if ! git diff --quiet -- next-env.d.ts; then
   git restore -- next-env.d.ts
 fi
 
-echo "[deploy] Restarting web container with the fresh build."
-# The application build lives in the bind-mounted worktree. A restart swaps
-# the Next.js process without discarding that build; force-recreating this
-# service may start before the mounted .next directory is available.
-sudo docker compose restart web
+echo "[deploy] Switching the completed build and restarting web."
+# Stop only after the new build is ready. Keep the preceding build until the
+# health checks pass so a failed start can be rolled back without rebuilding.
+sudo docker compose stop web
+if [[ -d .next ]]; then
+  sudo mv .next "$previous_next_dir"
+fi
+sudo mv "$staged_next_dir" .next
+sudo docker compose start web
 if [[ "$(sudo docker compose ps --status running -q web)" == "" ]]; then
+  if [[ -d "$previous_next_dir" ]]; then
+    sudo mv .next "${staged_next_dir}.failed"
+    sudo mv "$previous_next_dir" .next
+    sudo docker compose start web || true
+  fi
   echo "[deploy] Web container did not reach the running state." >&2
   exit 1
 fi
@@ -133,6 +152,13 @@ for attempt in 1 2 3 4 5 6 7 8 9 10; do
     break
   fi
   if [[ "$attempt" == "10" ]]; then
+    echo "[deploy] New build failed health checks; restoring the previous build." >&2
+    sudo docker compose stop web || true
+    sudo mv .next "${staged_next_dir}.failed" || true
+    if [[ -d "$previous_next_dir" ]]; then
+      sudo mv "$previous_next_dir" .next
+      sudo docker compose start web || true
+    fi
     echo "[deploy] Health check did not recover after restart." >&2
     exit 1
   fi
@@ -143,9 +169,19 @@ done
 # /api/health alone cannot catch a stale or broken Next.js page bundle.
 echo "[deploy] Checking public weekly page."
 if ! curl -fsSL --max-time 10 http://127.0.0.1:3000/weekly >/dev/null; then
+  echo "[deploy] New build did not render the weekly page; restoring the previous build." >&2
+  sudo docker compose stop web || true
+  sudo mv .next "${staged_next_dir}.failed" || true
+  if [[ -d "$previous_next_dir" ]]; then
+    sudo mv "$previous_next_dir" .next
+    sudo docker compose start web || true
+  fi
   echo "[deploy] Weekly page did not render after deployment." >&2
   exit 1
 fi
+
+# The old build is only disposable after the new server is demonstrably ready.
+sudo rm -rf "$previous_next_dir"
 
 if [[ "$smoke_mode" == "full" ]]; then
   echo "[deploy] Running production smoke test."
