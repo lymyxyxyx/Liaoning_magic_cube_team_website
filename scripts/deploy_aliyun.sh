@@ -102,11 +102,11 @@ if ! git diff --quiet -- next-env.d.ts; then
   git restore -- next-env.d.ts
 fi
 
-echo "[deploy] Recreating web container from the fresh build."
-# A plain restart can occasionally retain an old Next.js process after a fast
-# deployment. Recreating only the web service makes the build swap explicit
-# while leaving PostgreSQL and other services untouched.
-sudo docker compose up -d --no-deps --force-recreate web
+echo "[deploy] Restarting web container with the fresh build."
+# The application build lives in the bind-mounted worktree. A restart swaps
+# the Next.js process without discarding that build; force-recreating this
+# service may start before the mounted .next directory is available.
+sudo docker compose restart web
 if [[ "$(sudo docker compose ps --status running -q web)" == "" ]]; then
   echo "[deploy] Web container did not reach the running state." >&2
   exit 1
