@@ -23,11 +23,7 @@ export default async function WeeklyPage() {
   const historyMeets = allMeets
     .filter((meet) => isGuestWeeklyHistorySlug(meet.slug))
     .sort((a, b) => meetStartsAtTimestamp(b.startsAt) - meetStartsAtTimestamp(a.startsAt));
-  const now = Date.now();
-  const currentAdminMeets = allMeets.filter((meet) => {
-    if (meet.id === "weekly-test-entry" || meet.dataVersion !== 2 || !meet.startsAt || !meet.endsAt) return false;
-    return meetStartsAtTimestamp(meet.startsAt) <= now && now <= meetStartsAtTimestamp(meet.endsAt);
-  });
+  const adminMeets = allMeets.filter((meet) => meet.id !== "weekly-test-entry" && meet.dataVersion === 2);
 
   return (
     <>
@@ -51,9 +47,8 @@ export default async function WeeklyPage() {
 
       {isAdmin ? (
         <WeeklyResultEntryConsole
-          emptyMeetMessage="本周待输入"
           initialAdminUnlocked
-          initialMeets={currentAdminMeets}
+          initialMeets={adminMeets}
           events={WEEKLY_DEFAULT_EVENTS}
           mode="admin"
           variant="full"

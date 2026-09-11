@@ -132,6 +132,7 @@ export function WeeklyResultEntryConsole({ initialMeets, initialPlayers = [], ev
   const [isPlayerEditorOpen, setIsPlayerEditorOpen] = useState(false);
   const [playerDraft, setPlayerDraft] = useState<WeeklyPlayer | null>(null);
   const [isSavingPlayer, setIsSavingPlayer] = useState(false);
+  const [activePlayerCandidateIndex, setActivePlayerCandidateIndex] = useState(0);
   const attemptRefs = useRef<Array<HTMLInputElement | null>>([]);
   const playerInputRef = useRef<HTMLInputElement | null>(null);
   const selectedFormatConfig = getWeeklyResultFormat(selectedFormat);
@@ -164,6 +165,7 @@ export function WeeklyResultEntryConsole({ initialMeets, initialPlayers = [], ev
       .then((payload: { players: WeeklyPlayer[] }) => {
         const nextPlayers = payload.players || [];
         setPlayers(nextPlayers);
+        setActivePlayerCandidateIndex(0);
         setKnownPlayers((prev) => mergePlayers(prev, nextPlayers));
         // 搜索结果异步返回时，如果已经是唯一的精确姓名/WCA ID，自动完成绑定，
         // 避免用户必须再点一次同名选项才能保存成绩。
@@ -310,6 +312,7 @@ export function WeeklyResultEntryConsole({ initialMeets, initialPlayers = [], ev
   function updatePlayerQuery(value: string) {
     setPlayerQuery(value);
     setIsSearchingPlayers(Boolean(value.trim()));
+    setActivePlayerCandidateIndex(0);
     const exactPlayer = findPlayerByWcaId(value, players) || findPlayerByWcaId(value, knownPlayers) || findPlayerByName(value, players) || findPlayerByName(value, knownPlayers);
     if (exactPlayer) {
       setSelectedPlayer(exactPlayer);
@@ -815,24 +818,44 @@ export function WeeklyResultEntryConsole({ initialMeets, initialPlayers = [], ev
 
           <div className="weekly-player-picker">
             <label className="weekly-player-search">
-              选手
+              姓名 / 周赛编号
               <span>
                 <Search size={16} />
                 <input
                   ref={playerInputRef}
                   value={playerQuery}
                   onChange={(event) => updatePlayerQuery(event.currentTarget.value)}
-                  placeholder="输入姓名或 WCA ID"
+                  placeholder="输入姓名、拼音或周赛编号"
                   disabled={isPublicMode}
+                  role="combobox"
+                  aria-autocomplete="list"
+                  aria-expanded={playerQuery.trim().length > 0 && !selectedPlayer}
+                  aria-controls="weekly-player-suggestions"
+                  onKeyDown={(event) => {
+                    if (!playerCandidates.length) return;
+                    if (event.key === "ArrowDown") {
+                      event.preventDefault();
+                      setActivePlayerCandidateIndex((index) => Math.min(index + 1, playerCandidates.length - 1));
+                    } else if (event.key === "ArrowUp") {
+                      event.preventDefault();
+                      setActivePlayerCandidateIndex((index) => Math.max(index - 1, 0));
+                    } else if (event.key === "Enter") {
+                      event.preventDefault();
+                      selectPlayer(playerCandidates[activePlayerCandidateIndex] || playerCandidates[0]);
+                    } else if (event.key === "Escape") {
+                      setPlayerQuery("");
+                      setPlayers([]);
+                    }
+                  }}
                 />
               </span>
             </label>
 
             {playerQuery.trim() && !selectedPlayer ? (
-              <div className="weekly-player-results">
-                {playerCandidates.map((player) => (
-                  <button type="button" key={player.id} onMouseDown={(event) => event.preventDefault()} onClick={() => selectPlayer(player)}>
-                    <strong>{player.wcaId ? `${player.wcaId} · ` : ""}{player.name}</strong>
+              <div className="weekly-player-results" id="weekly-player-suggestions" role="listbox">
+                {playerCandidates.map((player, index) => (
+                  <button type="button" key={player.id} role="option" aria-selected={index === activePlayerCandidateIndex} className={index === activePlayerCandidateIndex ? "is-active" : ""} onMouseEnter={() => setActivePlayerCandidateIndex(index)} onMouseDown={(event) => event.preventDefault()} onClick={() => selectPlayer(player)}>
+                    <strong>{player.weeklyNumber ? `${player.weeklyNumber} · ` : ""}{player.name}{player.wcaId ? ` · ${player.wcaId}` : ""}</strong>
                     <small>{formatPlayerCandidateMeta(player)}</small>
                   </button>
                 ))}
