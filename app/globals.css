@@ -3838,12 +3838,28 @@ textarea {
 }
 
 .weekly-admin-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
   grid-template-columns: repeat(3, max-content);
   justify-content: start;
 }
 
 .weekly-admin-preview {
-  min-width: 980px;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.weekly-admin-preview .stat-band {
+  width: 100%;
+  grid-template-columns: repeat(auto-fit, minmax(112px, 1fr));
+  padding: 14px 0;
+}
+
+.weekly-admin-preview .table-scroll {
+  max-width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
 .weekly-entry-shell {
@@ -12338,8 +12354,13 @@ a.commercial-member-link:hover {
   }
 
   .weekly-page-actions {
+    flex-wrap: wrap;
     gap: 10px;
     margin-top: 2px;
+  }
+
+  .weekly-page-actions > * {
+    flex: 0 0 auto;
   }
 
   .weekly-history-menu summary,

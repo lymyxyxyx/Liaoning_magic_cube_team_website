@@ -11,7 +11,7 @@ export const dynamic = "force-dynamic";
 
 export default async function WeeklyResultsAdminPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const allMeets = (await listWeeklyMeetOptions()).filter((item) => item.id !== "weekly-test-entry" && item.dataVersion === 2).slice(0, 8);
+  const allMeets = (await listWeeklyMeetOptions()).filter((item) => item.id !== "weekly-test-entry" && item.dataVersion === 2);
   const meet = allMeets.find((item) => item.id === id);
   if (!meet) notFound();
   const meetOptions = [meet, ...allMeets.filter((item) => item.id !== meet.id)];

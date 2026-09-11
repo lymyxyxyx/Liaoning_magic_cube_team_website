@@ -50,9 +50,7 @@ export default async function WeeklyDetailPage({ params }: { params: Promise<{ s
     listWeeklyMeetOptions(),
     hasWeeklyAdminCookie(await cookies())
   ]);
-  const requestedMeet = allMeets.find((candidate) => candidate.slug === slug);
-  const includePrivate = Boolean(requestedMeet && isGuestWeeklyHistoryMeet(requestedMeet)) || isAdmin;
-  const meet = await getWeeklyMeetBySlug(slug, { includePrivate });
+  const meet = await getWeeklyMeetBySlug(slug, { includePrivate: isAdmin });
 
   if (!meet) {
     notFound();
