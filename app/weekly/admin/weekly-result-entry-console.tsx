@@ -930,7 +930,7 @@ export function WeeklyResultEntryConsole({ initialMeets, initialPlayers = [], ev
                   </button>
                 ))}
                 {playerCandidates.length === 0 && isSearchingPlayers ? <p>正在检索选手…</p> : null}
-                {playerCandidates.length === 0 && !isSearchingPlayers ? <p>没有找到选手，请联系管理员先加入周赛选手库。</p> : null}
+                {playerCandidates.length === 0 && !isSearchingPlayers ? <p>没有找到选手，点击保存成绩后可新建。</p> : null}
               </div>
             ) : null}
           </div>
