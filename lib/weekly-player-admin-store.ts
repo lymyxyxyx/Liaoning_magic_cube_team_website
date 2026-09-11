@@ -229,6 +229,58 @@ export async function listWeeklyLongCardProfilesForAdmin(): Promise<WeeklyLongCa
   }));
 }
 
+/** Creates the long-card record and its active weekly-player entry together. */
+export async function createWeeklyLongCardProfile(input: Partial<WeeklyLongCardProfile>) {
+  const name = input.name?.trim() || "";
+  if (!name) throw new Error("姓名必填");
+  const submittedAt = normalizeOptionalDate(input.submittedAt || new Date().toISOString().slice(0, 10), "提交日期");
+  const birthDate = normalizeOptionalDate(input.birthDate || "", "出生日期");
+  const wcaId = input.wcaId?.trim().toUpperCase() || "";
+  const pool = getPostgresPool();
+  const client = await pool.connect();
+  try {
+    await client.query("BEGIN");
+    await client.query("LOCK TABLE weekly_long_card_profiles IN SHARE ROW EXCLUSIVE MODE");
+    await assertWcaIdAvailable(client, wcaId);
+    const { rows: numberRows } = await client.query<{ source_row_number: number }>(
+      "SELECT COALESCE(MAX(source_row_number), 0) + 1 AS source_row_number FROM weekly_long_card_profiles"
+    );
+    const sourceRowNumber = Number(numberRows[0]?.source_row_number || 1);
+    const playerId = createLibraryPlayerId();
+    await client.query(
+      `INSERT INTO weekly_player_library
+         (id, name, gender, birth_date, wca_id, province, city, notes, status, source, updated_at)
+       VALUES ($1,$2,$3,$4,$5,'','',$6,'active','admin_manual',now())`,
+      [playerId, name, normalizeGender(input.gender), normalizeDate(birthDate), wcaId, input.notes?.trim() || ""]
+    );
+    const { rows } = await client.query<{
+      source_row_number: number; submitted_at: string; student_name: string; gender: string; birth_date: string;
+      phone: string; contact_relationship: string; channel: string; source_notes: string; wca_id: string; matched_player_id: string | null;
+    }>(
+      `INSERT INTO weekly_long_card_profiles
+         (source_row_number, source_file, submitted_at, student_name, gender, birth_date, phone,
+          contact_relationship, channel, source_notes, wca_id, matched_player_id, updated_at)
+       VALUES ($1,'管理员新建',$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,now())
+       RETURNING source_row_number, submitted_at, student_name, gender, birth_date, phone,
+                 contact_relationship, channel, source_notes, wca_id, matched_player_id`,
+      [sourceRowNumber, submittedAt, name, normalizeGender(input.gender), birthDate, input.phone?.trim() || "", input.contactRelationship?.trim() || "", input.channel?.trim() || "", input.notes?.trim() || "", wcaId, playerId]
+    );
+    await client.query("COMMIT");
+    const row = rows[0];
+    return {
+      sourceRowNumber: row.source_row_number, submittedAt: row.submitted_at || "", name: row.student_name,
+      gender: row.gender || "", birthDate: row.birth_date || "", phone: row.phone || "",
+      contactRelationship: row.contact_relationship || "", channel: row.channel || "",
+      notes: row.source_notes || "", wcaId: row.wca_id || "", matchedPlayerId: row.matched_player_id
+    } satisfies WeeklyLongCardProfile;
+  } catch (error) {
+    await client.query("ROLLBACK");
+    throw error;
+  } finally {
+    client.release();
+  }
+}
+
 export async function updateWeeklyLongCardProfile(sourceRowNumber: number, input: Partial<WeeklyLongCardProfile>) {
   if (!Number.isInteger(sourceRowNumber) || sourceRowNumber < 1) throw new Error("长期卡资料不存在");
   const pool = getPostgresPool();
