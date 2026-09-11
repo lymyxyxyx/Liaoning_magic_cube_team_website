@@ -77,6 +77,8 @@ type Props = {
   mode?: "admin" | "public";
   initialAdminUnlocked?: boolean;
   emptyMeetMessage?: string;
+  /** Public visitors use the exact same leaderboard, without the input panel. */
+  resultsOnly?: boolean;
 };
 
 const emptyAttempts = ["", "", "", "", ""];
@@ -104,7 +106,7 @@ const publicAttemptInputStyle: CSSProperties = {
   boxShadow: "none"
 };
 
-export function WeeklyResultEntryConsole({ initialMeets, initialPlayers = [], events, initialEventConfigs = [], initialResultEventIds, variant = "full", mode = "admin", initialAdminUnlocked = true, emptyMeetMessage = "选择周赛和项目，检索选手后录入五次成绩，保存后右侧榜单立即刷新。" }: Props) {
+export function WeeklyResultEntryConsole({ initialMeets, initialPlayers = [], events, initialEventConfigs = [], initialResultEventIds, variant = "full", mode = "admin", initialAdminUnlocked = true, emptyMeetMessage = "选择周赛和项目，检索选手后录入五次成绩，保存后右侧榜单立即刷新。", resultsOnly = false }: Props) {
   const defaultPublicMeet = initialMeets.find(isMeetEntryWindowOpen) || initialMeets.find((meet) => meet.id !== testMeetId && (!meet.startsAt || new Date(meet.startsAt).getTime() <= Date.now()));
   const defaultMeetId = mode === "public" ? defaultPublicMeet?.id || "" : initialMeets[0]?.id || "";
   const [meets, setMeets] = useState(initialMeets);
@@ -620,7 +622,7 @@ export function WeeklyResultEntryConsole({ initialMeets, initialPlayers = [], ev
 
   return (
     <section
-      className={`${variant === "workspace" ? "" : "container section"} weekly-entry-shell weekly-entry-shell--${variant} weekly-entry-shell--${mode}`.trim()}
+      className={`${variant === "workspace" ? "" : "container section"} weekly-entry-shell weekly-entry-shell--${variant} weekly-entry-shell--${mode} ${resultsOnly ? "weekly-entry-shell--results-only" : ""}`.trim()}
     >
       <div className="admin-card weekly-admin-card">
         <div className="admin-card-heading">

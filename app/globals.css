@@ -4094,6 +4094,17 @@ textarea {
   grid-template-columns: minmax(0, 1fr);
 }
 
+/* Visitors see the very same current-results table as administrators, but
+   never receive the score-entry panel or its read-only input placeholders. */
+.weekly-entry-shell--results-only > .weekly-admin-card,
+.weekly-entry-shell--results-only .weekly-entry-panel {
+  display: none;
+}
+
+.weekly-entry-shell--results-only .weekly-entry-grid {
+  grid-template-columns: minmax(0, 1fr);
+}
+
 .weekly-entry-panel {
   display: grid;
   gap: 8px;

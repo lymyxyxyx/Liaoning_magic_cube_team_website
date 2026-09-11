@@ -1,6 +1,6 @@
 import { PageHero } from "@/components/page-hero";
 import { cookies } from "next/headers";
-import { listWeeklyMeetOptions } from "@/lib/weekly-entry-store";
+import { listWeeklyMeetEventConfigs, listWeeklyMeetOptions } from "@/lib/weekly-entry-store";
 import { isGuestWeeklyHistoryMeet } from "@/lib/weekly-guest-history";
 import { hasWeeklyAdminCookie } from "@/lib/weekly-admin-auth";
 import { WEEKLY_DEFAULT_EVENTS } from "@/lib/wca-events";
@@ -8,7 +8,6 @@ import { WeeklyResultEntryConsole } from "./admin/weekly-result-entry-console";
 import { WeeklyHistoryMenu } from "@/components/weekly-history-menu";
 import { WeeklyInlineAdminLogin } from "@/components/weekly-inline-admin-login";
 import Link from "next/link";
-import { WeeklyCurrentResults } from "@/components/weekly-current-results";
 
 export const dynamic = "force-dynamic";
 
@@ -27,6 +26,7 @@ export default async function WeeklyPage() {
     .sort((a, b) => meetStartsAtTimestamp(b.startsAt) - meetStartsAtTimestamp(a.startsAt));
   const adminMeets = allMeets.filter((meet) => meet.id !== "weekly-test-entry" && meet.dataVersion === 2);
   const currentMeet = adminMeets.filter((meet) => meet.status === "open" && (!meet.startsAt || new Date(meet.startsAt).getTime() <= Date.now()) && (!meet.endsAt || new Date(meet.endsAt).getTime() >= Date.now())).sort((left, right) => meetStartsAtTimestamp(right.startsAt) - meetStartsAtTimestamp(left.startsAt))[0];
+  const currentEventConfigs = currentMeet ? await listWeeklyMeetEventConfigs(currentMeet.id).catch(() => []) : [];
 
   return (
     <>
@@ -57,7 +57,17 @@ export default async function WeeklyPage() {
           mode="admin"
           variant="full"
         />
-      ) : currentMeet ? <WeeklyCurrentResults meet={currentMeet} /> : null}
+      ) : currentMeet ? (
+        <WeeklyResultEntryConsole
+          initialMeets={[currentMeet]}
+          events={WEEKLY_DEFAULT_EVENTS}
+          initialEventConfigs={currentEventConfigs}
+          initialResultEventIds={currentEventConfigs.filter((config) => config.enabled).map((config) => config.eventId)}
+          mode="public"
+          initialAdminUnlocked={false}
+          resultsOnly
+        />
+      ) : null}
     </>
   );
 }
