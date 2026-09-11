@@ -1,10 +1,8 @@
 "use client";
 
 import { FormEvent, useState } from "react";
-import { useRouter } from "next/navigation";
 
 export function WeeklyInlineAdminLogin({ isAdmin }: { isAdmin: boolean }) {
-  const router = useRouter();
   const [password, setPassword] = useState("");
   const [notice, setNotice] = useState("");
   const [submitting, setSubmitting] = useState(false);
@@ -22,7 +20,10 @@ export function WeeklyInlineAdminLogin({ isAdmin }: { isAdmin: boolean }) {
       });
       const payload = await response.json().catch(() => null) as { message?: string } | null;
       if (!response.ok) throw new Error(payload?.message || "管理员密码不正确");
-      router.refresh();
+      // A full navigation makes the newly issued httpOnly cookie available to
+      // the server-rendered weekly console immediately; no second login is
+      // required to unlock score entry.
+      window.location.assign("/weekly");
     } catch (error) {
       setNotice(error instanceof Error ? error.message : "管理员登录失败");
     } finally {

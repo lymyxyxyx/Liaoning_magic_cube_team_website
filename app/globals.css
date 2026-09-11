@@ -4105,6 +4105,30 @@ textarea {
   grid-template-columns: minmax(0, 1fr);
 }
 
+/* Desktop weekly pages are dense operational screens. Keep the hierarchy
+   clear without the oversized display type used by editorial landing pages. */
+@media (min-width: 901px) {
+  .page-hero.weekly-current-page-hero h1,
+  .page-hero.weekly-detail-page-hero h1,
+  .page-hero.weekly-grade-page-hero h1 {
+    font-size: 23px;
+    line-height: 1.18;
+  }
+
+  .weekly-entry-results .section-header h2,
+  .weekly-detail-content .section-header h2 {
+    font-size: 20px;
+    line-height: 1.25;
+  }
+
+  .weekly-entry-progress,
+  .weekly-result-search-bar label,
+  .weekly-event-tabs-field,
+  .weekly-age-tabs-field {
+    font-size: 12px;
+  }
+}
+
 .weekly-entry-panel {
   display: grid;
   gap: 8px;
