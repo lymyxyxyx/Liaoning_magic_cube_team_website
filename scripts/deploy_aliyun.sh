@@ -91,7 +91,7 @@ fi
 
 if [[ "$backup_mode" == "full" ]]; then
   echo "[deploy] Creating a pre-deploy runtime backup."
-  sudo "$app_dir/scripts/backup.sh" --keep 7
+  sudo "$app_dir/scripts/backup.sh" --keep 7 </dev/null
 else
   echo "[deploy] Fast mode: skipping the pre-deploy runtime backup."
 fi
