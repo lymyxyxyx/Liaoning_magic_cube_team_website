@@ -7,6 +7,7 @@ import { WEEKLY_DEFAULT_EVENTS } from "@/lib/wca-events";
 import { WeeklyResultEntryConsole } from "./admin/weekly-result-entry-console";
 import { WeeklyHistoryMenu } from "@/components/weekly-history-menu";
 import { WeeklyInlineAdminLogin } from "@/components/weekly-inline-admin-login";
+import Link from "next/link";
 
 export const dynamic = "force-dynamic";
 
@@ -32,6 +33,7 @@ export default async function WeeklyPage() {
         actions={
           <div className="weekly-page-actions">
             <WeeklyHistoryMenu meets={historyMeets} />
+            <Link className="weekly-grade-standards-link" href="/weekly/grade-standards">等级标准</Link>
             <WeeklyInlineAdminLogin isAdmin={isAdmin} />
             {isAdmin ? <>
               {/* eslint-disable-next-line @next/next/no-html-link-for-pages */}
