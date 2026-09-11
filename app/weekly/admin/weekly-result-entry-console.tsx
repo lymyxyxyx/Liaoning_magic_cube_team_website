@@ -685,7 +685,7 @@ export function WeeklyResultEntryConsole({ initialMeets, initialPlayers = [], ev
               <h2>当前成绩列表</h2>
               <p className="weekly-entry-progress">当前项目已录入 {recordedCount} 人</p>
             </div>
-            <button className="button" type="button" onClick={refreshResults}>
+            <button className="button weekly-refresh-results" type="button" onClick={refreshResults}>
               <RefreshCw size={16} />
               刷新
             </button>

@@ -12288,3 +12288,147 @@ a.commercial-member-link:hover {
     font-size: 11px;
   }
 }
+
+/* Phone weekly view: retain the desktop-table workflow, but remove the
+   oversized editorial rhythm that made the first screen feel sparse on Safari. */
+@media (max-width: 640px) {
+  .site-header {
+    min-height: 58px;
+    padding: 8px 14px;
+  }
+
+  .brand-mark {
+    width: 30px;
+    height: 30px;
+  }
+
+  .brand strong {
+    font-size: 14px;
+    line-height: 1.25;
+  }
+
+  .page-hero.weekly-current-page-hero,
+  .page-hero.weekly-detail-page-hero,
+  .page-hero.weekly-grade-page-hero {
+    width: min(var(--page-w), calc(100% - 28px));
+    gap: 10px;
+    margin-top: 10px;
+    padding: 12px 14px;
+  }
+
+  .page-hero.weekly-current-page-hero h1,
+  .page-hero.weekly-detail-page-hero h1,
+  .page-hero.weekly-grade-page-hero h1 {
+    margin: 3px 0 5px;
+    font-size: 22px;
+    line-height: 1.22;
+  }
+
+  .page-hero.weekly-current-page-hero p,
+  .page-hero.weekly-detail-page-hero p,
+  .page-hero.weekly-grade-page-hero p {
+    font-size: 13px;
+    line-height: 1.5;
+  }
+
+  .page-hero.weekly-current-page-hero .eyebrow,
+  .page-hero.weekly-detail-page-hero .eyebrow,
+  .page-hero.weekly-grade-page-hero .eyebrow {
+    font-size: 12px;
+  }
+
+  .weekly-page-actions {
+    gap: 10px;
+    margin-top: 2px;
+  }
+
+  .weekly-history-menu summary,
+  .weekly-grade-standards-link,
+  .weekly-inline-admin-login summary,
+  .weekly-admin-library-link,
+  .weekly-admin-mode,
+  .weekly-admin-exit button {
+    font-size: 13px;
+  }
+
+  .weekly-entry-shell {
+    gap: 12px;
+  }
+
+  .weekly-entry-shell--full {
+    width: min(var(--page-w), calc(100% - 28px));
+  }
+
+  .weekly-entry-results .section-header {
+    margin-bottom: 10px;
+  }
+
+  .weekly-entry-results .section-header h2,
+  .weekly-detail-content .section-header h2,
+  .weekly-current-results-heading h2 {
+    font-size: 21px;
+    line-height: 1.28;
+  }
+
+  .weekly-entry-progress {
+    margin-top: 4px;
+    font-size: 12px;
+  }
+
+  .weekly-refresh-results {
+    min-height: 36px;
+    padding: 0 11px;
+    font-size: 13px;
+  }
+
+  .weekly-entry-panel {
+    gap: 7px;
+    padding: 10px;
+  }
+
+  .weekly-entry-controls label,
+  .weekly-player-search,
+  .weekly-create-player label,
+  .weekly-attempt-grid label,
+  .weekly-event-tabs-field,
+  .weekly-age-tabs-field {
+    font-size: 12.5px;
+  }
+
+  .weekly-entry-controls select,
+  .weekly-player-search input,
+  .weekly-create-player input,
+  .weekly-create-player select,
+  .weekly-attempt-grid input {
+    min-height: 38px;
+    padding: 7px 9px;
+  }
+
+  .weekly-event-tab {
+    min-width: 84px;
+    min-height: 38px;
+    gap: 1px;
+    padding: 5px 10px;
+    font-size: 13px;
+  }
+
+  .weekly-event-tab small {
+    font-size: 9.5px;
+  }
+
+  .weekly-age-tab {
+    min-width: 48px;
+    min-height: 34px;
+    padding: 5px 10px;
+    font-size: 13px;
+  }
+
+  .weekly-entry-table {
+    font-size: 12px;
+  }
+
+  .weekly-entry-table th,
+  .weekly-entry-table td {
+    padding: 7px 6px;
+  }
+}
