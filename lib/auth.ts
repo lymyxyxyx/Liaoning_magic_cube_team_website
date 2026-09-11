@@ -45,7 +45,7 @@ function timingSafeEqual(a: Uint8Array, b: Uint8Array): boolean {
   return diff === 0;
 }
 
-export type SessionAudience = "site-admin" | "weekly-admin" | "weekly-access" | "judge";
+export type SessionAudience = "site-admin" | "weekly-admin" | "weekly-access" | "judge" | "commercial-admin";
 
 /** Tokens carry an explicit audience.  Cookie names are deliberately not a
  * security boundary: a token copied into a different cookie must still fail. */

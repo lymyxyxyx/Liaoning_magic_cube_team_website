@@ -9,6 +9,7 @@ type Props = {
   initialTeams: EditableCommercialTeam[];
   teamOptions: string[];
   wcaNameEntries: [string, string][];
+  isAdmin: boolean;
 };
 
 type SubmissionDraft = {
@@ -35,7 +36,7 @@ const emptySubmissionDraft: SubmissionDraft = {
   note: ""
 };
 
-export function CommercialTeamsClient({ initialTeams, teamOptions, wcaNameEntries }: Props) {
+export function CommercialTeamsClient({ initialTeams, teamOptions, wcaNameEntries, isAdmin: initialIsAdmin }: Props) {
   const wcaNames = new Map(wcaNameEntries);
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [draft, setDraft] = useState<SubmissionDraft>({
@@ -46,10 +47,68 @@ export function CommercialTeamsClient({ initialTeams, teamOptions, wcaNameEntrie
   const [dialogStatus, setDialogStatus] = useState("");
   const [submissionSucceeded, setSubmissionSucceeded] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(initialIsAdmin);
+  const [adminPassword, setAdminPassword] = useState("");
+  const [adminLoginStatus, setAdminLoginStatus] = useState("");
+  const [adminLoggingIn, setAdminLoggingIn] = useState(false);
+  const [editingMember, setEditingMember] = useState<{ teamId: string; memberId: string } | null>(null);
+  const [editTags, setEditTags] = useState("");
+  const [editStatus, setEditStatus] = useState("");
 
   function updateDraft(patch: Partial<SubmissionDraft>) {
     setDraft((current) => ({ ...current, ...patch }));
     setDialogStatus("");
+  }
+
+  async function adminLogin() {
+    if (!adminPassword.trim()) return;
+    setAdminLoggingIn(true);
+    setAdminLoginStatus("");
+    try {
+      const response = await fetch("/api/commercial-admin-login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ password: adminPassword })
+      });
+      if (!response.ok) {
+        const payload = await response.json().catch(() => null) as { message?: string };
+        throw new Error(payload?.message || "登录失败");
+      }
+      setIsAdmin(true);
+      setAdminPassword("");
+    } catch (error) {
+      setAdminLoginStatus(error instanceof Error ? error.message : "登录失败");
+    } finally {
+      setAdminLoggingIn(false);
+    }
+  }
+
+  function beginEditSpecialties(teamId: string, memberId: string, current: string[]) {
+    setEditingMember({ teamId, memberId });
+    setEditTags(current.join("、"));
+    setEditStatus("");
+  }
+
+  async function saveSpecialties() {
+    if (!editingMember) return;
+    setEditStatus("保存中...");
+    try {
+      const specialties = editTags.split(/[、,，]/).map((s) => s.trim()).filter(Boolean);
+      const response = await fetch("/api/commercial-admin-specialties", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ...editingMember, specialties })
+      });
+      if (!response.ok) {
+        const payload = await response.json().catch(() => null) as { message?: string };
+        throw new Error(payload?.message || "保存失败");
+      }
+      setEditingMember(null);
+      setEditStatus("");
+      window.location.reload();
+    } catch (error) {
+      setEditStatus(error instanceof Error ? error.message : "保存失败");
+    }
   }
 
   async function submitProfile() {
@@ -80,6 +139,21 @@ export function CommercialTeamsClient({ initialTeams, teamOptions, wcaNameEntrie
 
   return (
     <>
+      {isAdmin ? (
+        <div className="weekly-admin-lock-panel" style={{ marginBottom: 16 }}>
+          <strong>管理员模式</strong>
+          <span>可以编辑成员标签。</span>
+          <form action="/api/commercial-admin-logout" method="post"><button className="button" type="submit">退出管理</button></form>
+        </div>
+      ) : (
+        <div className="weekly-admin-lock-panel" style={{ marginBottom: 16, display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+          <strong>管理员入口</strong>
+          <input type="password" placeholder="管理员密码" value={adminPassword} onChange={(e) => { setAdminPassword(e.target.value); setAdminLoginStatus(""); }} onKeyDown={(e) => { if (e.key === "Enter") adminLogin(); }} style={{ padding: "4px 8px", borderRadius: 6, border: "1px solid var(--line)" }} />
+          <button className="button" type="button" onClick={adminLogin} disabled={adminLoggingIn || !adminPassword.trim()}>{adminLoggingIn ? "登录中..." : "登录"}</button>
+          {adminLoginStatus ? <span style={{ color: "var(--red)" }}>{adminLoginStatus}</span> : null}
+        </div>
+      )}
+
       <div className="commercial-submission-panel">
         <div>
           <strong>成员简介补充</strong>
@@ -206,19 +280,45 @@ export function CommercialTeamsClient({ initialTeams, teamOptions, wcaNameEntrie
 
       <div className="commercial-teams-list">
         {initialTeams.map((team) => (
-          <TeamSection key={team.id} team={team} wcaNames={wcaNames} />
+          <TeamSection key={team.id} team={team} wcaNames={wcaNames} isAdmin={isAdmin} onEditSpecialties={beginEditSpecialties} />
         ))}
       </div>
+
+      {editingMember ? (
+        <div className="commercial-submission-backdrop" role="presentation" onClick={() => setEditingMember(null)}>
+          <div className="commercial-submission-dialog" role="dialog" aria-modal="true" aria-label="编辑标签" onClick={(e) => e.stopPropagation()}>
+            <div className="commercial-submission-dialog-head">
+              <div><strong>编辑成员标签</strong><span>用顿号（、）分隔多个标签</span></div>
+              <button className="icon-button" type="button" onClick={() => setEditingMember(null)} aria-label="关闭"><X size={16} /></button>
+            </div>
+            <div className="commercial-submission-form">
+              <label className="commercial-submission-wide">
+                标签
+                <input value={editTags} onChange={(e) => setEditTags(e.target.value)} placeholder="如：三阶速拧、枫叶" />
+              </label>
+            </div>
+            {editStatus ? <p className="commercial-submission-dialog-status" role="alert">{editStatus}</p> : null}
+            <div className="commercial-submission-actions">
+              <button className="button button--ghost" type="button" onClick={() => setEditingMember(null)}>取消</button>
+              <button className="button primary" type="button" onClick={saveSpecialties}>保存</button>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </>
   );
 }
 
 function TeamSection({
   team,
-  wcaNames
+  wcaNames,
+  isAdmin,
+  onEditSpecialties
 }: {
   team: EditableCommercialTeam;
   wcaNames: Map<string, string>;
+  isAdmin: boolean;
+  onEditSpecialties: (teamId: string, memberId: string, current: string[]) => void;
 }) {
   const wcaCount = team.members.filter((m) => m.wcaId).length;
   const cityCount = new Set(team.members.map((member) => member.city).filter(Boolean)).size;
@@ -251,7 +351,7 @@ function TeamSection({
 
       <div className="commercial-member-grid">
         {team.members.map((member) => (
-          <MemberCard key={member.id} member={member} wcaName={member.wcaId ? wcaNames.get(member.wcaId) : undefined} />
+          <MemberCard key={member.id} member={member} wcaName={member.wcaId ? wcaNames.get(member.wcaId) : undefined} isAdmin={isAdmin} teamId={team.id} onEditSpecialties={onEditSpecialties} />
         ))}
       </div>
     </div>
@@ -277,7 +377,7 @@ function getTeamLogo(teamId: string) {
   }
 }
 
-function MemberCard({ member, wcaName }: { member: Person; wcaName?: string }) {
+function MemberCard({ member, wcaName, isAdmin, teamId, onEditSpecialties }: { member: Person; wcaName?: string; isAdmin: boolean; teamId: string; onEditSpecialties: (teamId: string, memberId: string, current: string[]) => void }) {
   const cubingUrl = member.wcaId ? `https://cubing.com/results/person/${member.wcaId}` : member.wcaUrl;
 
   return (
@@ -310,8 +410,10 @@ function MemberCard({ member, wcaName }: { member: Person; wcaName?: string }) {
             {member.specialties.map((tag) => (
               <span key={tag} className="commercial-member-tag">{tag}</span>
             ))}
+            {isAdmin ? <button className="commercial-member-tag" type="button" onClick={() => onEditSpecialties(teamId, member.id, member.specialties || [])} style={{ cursor: "pointer", border: "1px dashed var(--muted)", background: "transparent" }}>编辑</button> : null}
           </div>
         )}
+        {!member.specialties || member.specialties.length === 0 ? (isAdmin ? <div className="commercial-member-tags"><button className="commercial-member-tag" type="button" onClick={() => onEditSpecialties(teamId, member.id, [])} style={{ cursor: "pointer", border: "1px dashed var(--muted)", background: "transparent" }}>添加标签</button></div> : null) : null}
       </div>
     </div>
   );

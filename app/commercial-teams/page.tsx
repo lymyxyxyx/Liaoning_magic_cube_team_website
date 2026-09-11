@@ -1,9 +1,11 @@
 import type { Metadata } from "next";
+import { cookies } from "next/headers";
 import { PageHero } from "@/components/page-hero";
 import { CommercialTeamsClient } from "@/app/commercial-teams/commercial-teams-client";
 import { readCommercialTeams } from "@/lib/commercial-team-store";
 import { getPostgresPool } from "@/lib/postgres";
 import { enrichMembers } from "@/lib/commercial-team-enrichment";
+import { hasCommercialAdminCookie } from "@/lib/commercial-admin-auth";
 
 export const dynamic = "force-dynamic";
 
@@ -33,7 +35,10 @@ async function getWcaNames(wcaIds: string[]): Promise<Map<string, string>> {
 }
 
 export default async function CommercialTeamsPage() {
-  const teams = await readCommercialTeams();
+  const [teams, isAdmin] = await Promise.all([
+    readCommercialTeams(),
+    hasCommercialAdminCookie(await cookies())
+  ]);
   const publicTeams = teams.map((team) => {
     const publicTeam = { ...team };
     delete publicTeam.brandUrl;
@@ -72,6 +77,7 @@ export default async function CommercialTeamsPage() {
           initialTeams={publicTeams}
           teamOptions={publicTeams.map((team) => team.name)}
           wcaNameEntries={[...wcaNames.entries()]}
+          isAdmin={isAdmin}
         />
       </section>
     </>
