@@ -59,6 +59,12 @@ type EnteredResult = {
   detail: string;
   pbRefreshed: boolean;
   pbAverageRefreshed: boolean;
+  isNewPlayer: boolean;
+};
+
+type NewPlayerDraft = {
+  name: string; wcaId: string; gender: "" | "男" | "女"; birthDate: string;
+  phone: string; contactRelationship: string; channel: string; notes: string;
 };
 
 type Props = {
@@ -133,6 +139,7 @@ export function WeeklyResultEntryConsole({ initialMeets, initialPlayers = [], ev
   const [isPlayerEditorOpen, setIsPlayerEditorOpen] = useState(false);
   const [playerDraft, setPlayerDraft] = useState<WeeklyPlayer | null>(null);
   const [isSavingPlayer, setIsSavingPlayer] = useState(false);
+  const [newPlayerDraft, setNewPlayerDraft] = useState<NewPlayerDraft | null>(null);
   const [activePlayerCandidateIndex, setActivePlayerCandidateIndex] = useState(0);
   const attemptRefs = useRef<Array<HTMLInputElement | null>>([]);
   const playerInputRef = useRef<HTMLInputElement | null>(null);
@@ -344,18 +351,20 @@ export function WeeklyResultEntryConsole({ initialMeets, initialPlayers = [], ev
       return;
     }
     const currentPlayerQuery = playerInputRef.current?.value || playerQuery;
-    const playerForSave = selectedPlayer || findPlayerByName(currentPlayerQuery, players) || findPlayerByName(currentPlayerQuery, knownPlayers);
-    if (!playerForSave) {
-      setNotice("请先选择选手。");
-      return;
-    }
-
     let parsedAttempts: ResultValue[];
     try {
       parsedAttempts = attempts.map(parseResultInput);
       calculateResultByFormat(parsedAttempts, selectedFormat);
     } catch (error) {
       setNotice(error instanceof Error ? error.message : "成绩格式不正确。");
+      return;
+    }
+
+    const playerForSave = selectedPlayer || findPlayerByName(currentPlayerQuery, players) || findPlayerByName(currentPlayerQuery, knownPlayers);
+    if (!playerForSave) {
+      const name = currentPlayerQuery.trim();
+      if (!name) { setNotice("请先输入选手姓名。"); return; }
+      setNewPlayerDraft({ name, wcaId: "", gender: "", birthDate: "", phone: "", contactRelationship: "", channel: "", notes: "" });
       return;
     }
 
@@ -396,7 +405,7 @@ export function WeeklyResultEntryConsole({ initialMeets, initialPlayers = [], ev
     fetch(`/api/weekly-competitions/${encodeURIComponent(selectedMeetId)}/results`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ eventId: selectedEventId, format: selectedFormat, player: playerForSave, attempts })
+      body: JSON.stringify({ eventId: selectedEventId, format: selectedFormat, player: playerForSave, attempts, isNewPlayer: false })
     })
       .then((response) => {
         if (!response.ok) {
@@ -423,6 +432,36 @@ export function WeeklyResultEntryConsole({ initialMeets, initialPlayers = [], ev
         setNotice(error instanceof Error ? `本地已显示，数据库保存失败：${error.message}` : "本地已显示，数据库保存失败。");
         attemptRefs.current[0]?.focus();
       })
+      .finally(() => setIsSaving(false));
+  }
+
+  function createPlayerAndSaveResult() {
+    if (!newPlayerDraft?.name.trim()) return;
+    setIsSaving(true); setNotice("");
+    fetch("/api/admin/weekly-long-card-profiles", {
+      method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(newPlayerDraft)
+    })
+      .then(async (response) => {
+        const payload = await response.json().catch(() => null) as { profile?: { matchedPlayerId?: string | null; name: string; wcaId: string; gender: string; birthDate: string }; message?: string } | null;
+        const playerId = payload?.profile?.matchedPlayerId;
+        if (!response.ok || !payload?.profile || !playerId) throw new Error(payload?.message || "新建周赛学员失败");
+        const profile = payload.profile;
+        const player: WeeklyPlayer = { id: playerId, name: profile.name, slug: "", wcaId: profile.wcaId || "", gender: profile.gender === "女" ? "女" : "男", province: "", city: "", birthDate: profile.birthDate || "", ageGroup: getWeeklyAgeGroup(profile.birthDate || "") || "", ageGroupIsFuzzy: false };
+        return fetch(`/api/weekly-competitions/${encodeURIComponent(selectedMeetId)}/results`, {
+          method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ eventId: selectedEventId, format: selectedFormat, player, attempts, isNewPlayer: true })
+        }).then(async (resultResponse) => {
+          const resultPayload = await resultResponse.json().catch(() => null) as { results?: EnteredResult[]; message?: string } | null;
+          if (!resultResponse.ok) throw new Error(resultPayload?.message || "保存成绩失败");
+          return { player, results: resultPayload?.results || [] };
+        });
+      })
+      .then(({ player, results: nextResults }) => {
+        setSelectedPlayer(player); setPlayerQuery(player.name); setKnownPlayers((current) => mergePlayers(current, [player]));
+        setPlayers([player]); setResults(nextResults); setNewPlayerDraft(null);
+        setAttempts(Array.from({ length: selectedFormatConfig.attemptCount }, () => ""));
+        setNotice(`已新建周赛学员 ${player.name} 并保存成绩。`); refreshOperationLogs(); attemptRefs.current[0]?.focus();
+      })
+      .catch((error) => setNotice(error instanceof Error ? error.message : "新建选手并保存成绩失败。"))
       .finally(() => setIsSaving(false));
   }
 
@@ -768,7 +807,7 @@ export function WeeklyResultEntryConsole({ initialMeets, initialPlayers = [], ev
                         </div>
                       )}
                     </td>
-                    <td data-label="姓名">{result.player.name}</td>
+                    <td data-label="姓名">{result.player.name}{result.isNewPlayer ? <small className="weekly-new-player-badge">（新）</small> : null}</td>
                     <td data-label="组别">{result.player.ageGroup || "待补"}</td>
                     <td data-label="省市">{formatRegion(result.player)}</td>
                     <td data-label="段位">
@@ -1005,6 +1044,27 @@ export function WeeklyResultEntryConsole({ initialMeets, initialPlayers = [], ev
           </div>
         </div>
       ) : null}
+      {newPlayerDraft ? (
+        <div className="weekly-admin-login-backdrop" role="presentation">
+          <div className="weekly-admin-login-modal weekly-player-editor-modal" role="dialog" aria-modal="true" aria-labelledby="weekly-new-player-title">
+            <div className="admin-card-heading">
+              <div><span className="eyebrow">未在周赛选手库中找到</span><h2 id="weekly-new-player-title">是否新建周赛学员？</h2><p>确认后不跳转当前页面，会按顺序分配周赛编号，并同时保存这条成绩。</p></div>
+              <button className="icon-button" type="button" aria-label="关闭新建选手窗口" onClick={() => setNewPlayerDraft(null)} disabled={isSaving}><X size={17} /></button>
+            </div>
+            <div className="weekly-player-editor-grid">
+              <label className="field"><span>姓名（必填）</span><input autoFocus value={newPlayerDraft.name} onChange={(event) => setNewPlayerDraft({ ...newPlayerDraft, name: event.target.value })} /></label>
+              <label className="field"><span>WCA ID（可选）</span><input value={newPlayerDraft.wcaId} onChange={(event) => setNewPlayerDraft({ ...newPlayerDraft, wcaId: event.target.value.toUpperCase() })} /></label>
+              <label className="field"><span>出生日期（可选）</span><input type="date" value={newPlayerDraft.birthDate} onChange={(event) => setNewPlayerDraft({ ...newPlayerDraft, birthDate: event.target.value })} /></label>
+              <label className="field"><span>性别（可选）</span><select value={newPlayerDraft.gender} onChange={(event) => setNewPlayerDraft({ ...newPlayerDraft, gender: event.target.value as NewPlayerDraft["gender"] })}><option value="">未填写</option><option value="男">男</option><option value="女">女</option></select></label>
+              <label className="field"><span>联系电话（可选）</span><input type="tel" value={newPlayerDraft.phone} onChange={(event) => setNewPlayerDraft({ ...newPlayerDraft, phone: event.target.value })} /></label>
+              <label className="field"><span>联系人关系（可选）</span><input value={newPlayerDraft.contactRelationship} onChange={(event) => setNewPlayerDraft({ ...newPlayerDraft, contactRelationship: event.target.value })} /></label>
+              <label className="field"><span>渠道（可选）</span><input value={newPlayerDraft.channel} onChange={(event) => setNewPlayerDraft({ ...newPlayerDraft, channel: event.target.value })} /></label>
+              <label className="field"><span>备注（可选）</span><input value={newPlayerDraft.notes} onChange={(event) => setNewPlayerDraft({ ...newPlayerDraft, notes: event.target.value })} /></label>
+            </div>
+            <div className="weekly-admin-login-actions"><button className="button" type="button" onClick={() => setNewPlayerDraft(null)} disabled={isSaving}>取消</button><button className="button primary" type="button" onClick={createPlayerAndSaveResult} disabled={isSaving || !newPlayerDraft.name.trim()}><Save size={16} />{isSaving ? "保存中" : "新建并保存成绩"}</button></div>
+          </div>
+        </div>
+      ) : null}
       {isPlayerEditorOpen && playerDraft ? (
         <div className="weekly-admin-login-backdrop" role="presentation">
           <div className="weekly-admin-login-modal weekly-player-editor-modal" role="dialog" aria-modal="true" aria-labelledby="weekly-player-editor-title">
@@ -1079,7 +1139,8 @@ function buildOptimisticResults(prev: EnteredResult[], player: WeeklyPlayer, att
     attempts,
     detail: attempts.map(formatResult).join(" / "),
     pbRefreshed: false,
-    pbAverageRefreshed: false
+    pbAverageRefreshed: false,
+    isNewPlayer: false
   };
   const withoutSamePlayer = prev.filter((result) => result.player.name !== player.name);
   const sorted = [nextResult, ...withoutSamePlayer].sort(compareEnteredResults);

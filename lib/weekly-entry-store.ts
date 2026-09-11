@@ -70,6 +70,7 @@ export type WeeklyEnteredResult = {
   detail: string;
   pbRefreshed: boolean;
   pbAverageRefreshed: boolean;
+  isNewPlayer: boolean;
 };
 
 export type WeeklyOperationLog = {
@@ -546,7 +547,8 @@ export async function listWeeklyResults(meetIdOrSlug: string, eventId: string, f
       attempts: attemptValues,
       detail: attemptValues.map(formatResult).join(" / "),
       pbRefreshed: Boolean(row.pb_refreshed),
-      pbAverageRefreshed: Boolean(row.pb_average_refreshed)
+      pbAverageRefreshed: Boolean(row.pb_average_refreshed),
+      isNewPlayer: row.source === "manual_new_player"
     };
   });
 }
@@ -609,6 +611,7 @@ export async function saveWeeklyResult(input: {
   format: WeeklyResultFormat;
   player: WeeklyPlayer;
   attempts: string[];
+  isNewPlayer?: boolean;
 }) {
   if (!isWcaEventId(input.eventId)) throw new Error("项目不正确");
   const formatConfig = getWeeklyResultFormat(input.format);
@@ -662,7 +665,7 @@ export async function saveWeeklyResult(input: {
     const inserted = await client.query<{ id: number }>(
         `INSERT INTO weekly_results
           (event_id, meet_id, rank, player_id, player_name, player_slug, gender, age_group, level, grade, average, personal_best, pb_refreshed, pb_average_refreshed, source, updated_at)
-         VALUES ($1,$2,0,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,'manual_entry',now())
+         VALUES ($1,$2,0,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,now())
          RETURNING id`,
         [
           eventKey,
@@ -677,7 +680,8 @@ export async function saveWeeklyResult(input: {
           resultValueToSeconds(calculated.average),
           resultValueToSeconds(calculated.best),
           pbRefreshed,
-          pbAverageRefreshed
+          pbAverageRefreshed,
+          input.isNewPlayer ? "manual_new_player" : "manual_entry"
         ]
       );
     const resultId = inserted.rows[0].id;

@@ -73,12 +73,14 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     };
     attempts?: string[];
     format?: "avg5" | "best3" | "avg3" | "best1";
+    isNewPlayer?: boolean;
   } | null;
 
   try {
     if (!isBoundedString(payload?.eventId, 20, true) || !payload.player ||
         !isWeeklyResultFormat(payload.format) || !isWeeklyAttempts(payload.attempts, payload.format) ||
-        !isBoundedString(payload.player.id, 200, true) || !isBoundedString(payload.player.name, 100, true)) {
+        !isBoundedString(payload.player.id, 200, true) || !isBoundedString(payload.player.name, 100, true) ||
+        (payload.isNewPlayer !== undefined && typeof payload.isNewPlayer !== "boolean")) {
       return NextResponse.json({ message: "缺少成绩录入信息" }, { status: 400 });
     }
     const availability = await getWeeklyMeetEntryAvailability(id, { adminOverride: true });
@@ -102,7 +104,8 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
         ageGroup: libraryPlayer.ageGroup || "",
         ageGroupIsFuzzy: Boolean(libraryPlayer.ageGroupIsFuzzy)
       },
-      attempts: payload.attempts as string[]
+      attempts: payload.attempts as string[],
+      isNewPlayer: Boolean(payload.isNewPlayer)
     });
     const results = await listWeeklyResults(id, payload.eventId, payload.format || "avg5");
     return NextResponse.json({ calculated, results });

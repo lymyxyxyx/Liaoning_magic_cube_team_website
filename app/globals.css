@@ -11884,6 +11884,15 @@ a.commercial-member-link:hover {
   white-space: nowrap;
 }
 
+.weekly-new-player-badge {
+  display: inline-block;
+  margin-left: 5px;
+  color: #2563eb;
+  font-size: 0.78rem;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
 .weekly-wca-status {
   display: inline-flex;
   align-items: center;
