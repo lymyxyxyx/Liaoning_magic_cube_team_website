@@ -29,7 +29,7 @@ export default async function WeeklyHistoryPage() {
           {meets.map((meet) => (
             <Link className="weekly-list-item" href={`/weekly/${meet.slug}`} key={meet.id}>
               <span>
-                <strong>第{meet.weekNumber}周 · {meet.title}</strong>
+                <strong>{meet.title}</strong>
                 <small>{meet.dateLabel}</small>
               </span>
               <span className="status">已发布</span>
