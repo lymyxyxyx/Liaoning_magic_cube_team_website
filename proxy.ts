@@ -37,7 +37,7 @@ export async function proxy(request: NextRequest) {
   const isWeeklyLandingPage = pathname === "/weekly" || pathname === "/weekly/";
   const weeklySlug = pathname.match(/^\/weekly\/([^/]+)\/?$/)?.[1] || "";
   const isGuestWeeklyHistoryPage = isGuestWeeklyHistorySlug(weeklySlug);
-  const isWeeklyPage = pathname.startsWith("/weekly") && !isWeeklyLandingPage && !isGuestWeeklyHistoryPage && pathname !== "/weekly/results" && pathname !== "/weekly/history" && !pathname.startsWith("/weekly/access") && !pathname.startsWith("/weekly/admin");
+  const isWeeklyPage = pathname.startsWith("/weekly") && !isWeeklyLandingPage && !isGuestWeeklyHistoryPage && pathname !== "/weekly/results" && pathname !== "/weekly/history" && pathname !== "/weekly/grade-standards" && !pathname.startsWith("/weekly/access") && !pathname.startsWith("/weekly/admin");
   const isWeeklyApi = pathname === "/api/weekly-competitions" || pathname.startsWith("/api/weekly-competitions/");
   const isWeeklyResultReadApi = request.method === "GET" && pathname.startsWith("/api/weekly-competitions/") && pathname.endsWith("/results");
   const isWeeklyAdminApi = pathname.startsWith("/api/admin/weekly-");

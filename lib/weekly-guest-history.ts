@@ -2,6 +2,9 @@ type WeeklyHistoryCandidate = {
   id: string;
   dataVersion: number;
   endsAt?: string | null;
+  startsAt?: string | null;
+  status?: string | null;
+  isPublic?: boolean;
 };
 
 /**
@@ -13,6 +16,16 @@ export function isGuestWeeklyHistoryMeet(meet: WeeklyHistoryCandidate, now = new
   if (meet.id === "weekly-test-entry" || meet.dataVersion !== 2 || !meet.endsAt) return false;
   const endsAt = new Date(meet.endsAt).getTime();
   return Number.isFinite(endsAt) && endsAt < now.getTime();
+}
+
+/** One source of truth for every guest-facing weekly read path. */
+export function isWeeklyMeetVisibleToGuests(meet: WeeklyHistoryCandidate, now = new Date()) {
+  if (meet.isPublic || isGuestWeeklyHistoryMeet(meet, now)) return true;
+  if (meet.id === "weekly-test-entry" || meet.dataVersion !== 2 || meet.status !== "open") return false;
+  const startsAt = meet.startsAt ? new Date(meet.startsAt).getTime() : null;
+  const endsAt = meet.endsAt ? new Date(meet.endsAt).getTime() : null;
+  return (startsAt === null || (Number.isFinite(startsAt) && startsAt <= now.getTime())) &&
+    (endsAt === null || (Number.isFinite(endsAt) && now.getTime() <= endsAt));
 }
 
 /**

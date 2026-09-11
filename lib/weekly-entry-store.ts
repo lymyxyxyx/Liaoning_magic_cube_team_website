@@ -18,6 +18,7 @@ import { createLibraryPlayerId, listWeeklyEligiblePlayers, type WeeklyPersonalBe
 import { matchesWeeklyPlayerQuery } from "@/lib/weekly-player-search";
 import { weeklyV2ActivePlayerSql, weeklyV2PlayerSourceSql } from "@/lib/weekly-player-scope";
 import { getShenyangAssociationGrade } from "@/lib/shenyang-association-grades";
+import { isWeeklyMeetVisibleToGuests } from "@/lib/weekly-guest-history";
 
 export type WeeklyMeetOption = {
   id: string;
@@ -178,15 +179,21 @@ export async function isWeeklyMeetPubliclyVisible(meetIdOrSlug: string) {
 
 export async function getWeeklyMeetVisibility(meetIdOrSlug: string) {
   const pool = getPostgresPool();
-  const { rows } = await pool.query<{ is_public: boolean }>(
-    `SELECT is_public
+  const { rows } = await pool.query<{ id: string; is_public: boolean; data_version: number; status: string; starts_at: string | null; ends_at: string | null }>(
+    `SELECT id, is_public, data_version, status, starts_at, ends_at
        FROM weekly_meets
       WHERE id = $1 OR slug = $1
       LIMIT 1`,
     [meetIdOrSlug],
   );
   if (!rows[0]) return null;
-  return { isPublic: rows[0].is_public };
+  const row = rows[0];
+  return {
+    isPublic: isWeeklyMeetVisibleToGuests({
+      id: row.id, isPublic: row.is_public, dataVersion: row.data_version,
+      status: row.status, startsAt: row.starts_at, endsAt: row.ends_at
+    })
+  };
 }
 
 export async function listWeeklyMeetEventConfigs(meetId: string): Promise<WeeklyMeetEventConfig[]> {
