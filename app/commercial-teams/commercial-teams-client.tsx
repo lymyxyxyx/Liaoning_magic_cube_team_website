@@ -24,6 +24,18 @@ type SubmissionDraft = {
   note: string;
 };
 
+type MemberDraft = {
+  name: string;
+  gender: "男" | "女" | "";
+  city: string;
+  wcaId: string;
+  mainEvent: string;
+  bio: string;
+  specialties: string;
+};
+
+const emptyMemberDraft: MemberDraft = { name: "", gender: "", city: "沈阳", wcaId: "", mainEvent: "", bio: "", specialties: "" };
+
 const emptySubmissionDraft: SubmissionDraft = {
   playerName: "",
   teamName: "",
@@ -39,10 +51,7 @@ const emptySubmissionDraft: SubmissionDraft = {
 export function CommercialTeamsClient({ initialTeams, teamOptions, wcaNameEntries, isAdmin: initialIsAdmin }: Props) {
   const wcaNames = new Map(wcaNameEntries);
   const [isFormOpen, setIsFormOpen] = useState(false);
-  const [draft, setDraft] = useState<SubmissionDraft>({
-    ...emptySubmissionDraft,
-    teamName: teamOptions[0] || ""
-  });
+  const [draft, setDraft] = useState<SubmissionDraft>({ ...emptySubmissionDraft, teamName: teamOptions[0] || "" });
   const [status, setStatus] = useState("");
   const [dialogStatus, setDialogStatus] = useState("");
   const [submissionSucceeded, setSubmissionSucceeded] = useState(false);
@@ -51,9 +60,13 @@ export function CommercialTeamsClient({ initialTeams, teamOptions, wcaNameEntrie
   const [adminPassword, setAdminPassword] = useState("");
   const [adminLoginStatus, setAdminLoginStatus] = useState("");
   const [adminLoggingIn, setAdminLoggingIn] = useState(false);
-  const [editingMember, setEditingMember] = useState<{ teamId: string; memberId: string } | null>(null);
-  const [editTags, setEditTags] = useState("");
-  const [editStatus, setEditStatus] = useState("");
+
+  const [memberDialog, setMemberDialog] = useState<"edit" | "create" | null>(null);
+  const [memberDraft, setMemberDraft] = useState<MemberDraft>(emptyMemberDraft);
+  const [memberTeamId, setMemberTeamId] = useState("");
+  const [memberTargetId, setMemberTargetId] = useState("");
+  const [memberSaving, setMemberSaving] = useState(false);
+  const [memberDialogStatus, setMemberDialogStatus] = useState("");
 
   function updateDraft(patch: Partial<SubmissionDraft>) {
     setDraft((current) => ({ ...current, ...patch }));
@@ -83,31 +96,61 @@ export function CommercialTeamsClient({ initialTeams, teamOptions, wcaNameEntrie
     }
   }
 
-  function beginEditSpecialties(teamId: string, memberId: string, current: string[]) {
-    setEditingMember({ teamId, memberId });
-    setEditTags(current.join("、"));
-    setEditStatus("");
+  function openEditMember(teamId: string, member: Person) {
+    setMemberDialog("edit");
+    setMemberTeamId(teamId);
+    setMemberTargetId(member.id);
+    setMemberDraft({
+      name: member.name,
+      gender: member.gender || "",
+      city: member.city || "",
+      wcaId: member.wcaId || "",
+      mainEvent: member.mainEvent || "",
+      bio: member.bio || "",
+      specialties: (member.specialties || []).join("、")
+    });
+    setMemberDialogStatus("");
   }
 
-  async function saveSpecialties() {
-    if (!editingMember) return;
-    setEditStatus("保存中...");
+  function openCreateMember(teamId: string) {
+    setMemberDialog("create");
+    setMemberTeamId(teamId);
+    setMemberTargetId("");
+    setMemberDraft({ ...emptyMemberDraft });
+    setMemberDialogStatus("");
+  }
+
+  async function saveMember() {
+    setMemberSaving(true);
+    setMemberDialogStatus("保存中...");
     try {
-      const specialties = editTags.split(/[、,，]/).map((s) => s.trim()).filter(Boolean);
+      const specialties = memberDraft.specialties.split(/[、,，]/).map((s) => s.trim()).filter(Boolean);
+      const body = {
+        teamId: memberTeamId,
+        ...(memberDialog === "edit" ? { memberId: memberTargetId } : {}),
+        name: memberDraft.name,
+        gender: memberDraft.gender || undefined,
+        city: memberDraft.city,
+        wcaId: memberDraft.wcaId,
+        mainEvent: memberDraft.mainEvent,
+        bio: memberDraft.bio,
+        specialties
+      };
       const response = await fetch("/api/commercial-admin-specialties", {
-        method: "PATCH",
+        method: memberDialog === "edit" ? "PATCH" : "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...editingMember, specialties })
+        body: JSON.stringify(body)
       });
       if (!response.ok) {
         const payload = await response.json().catch(() => null) as { message?: string };
         throw new Error(payload?.message || "保存失败");
       }
-      setEditingMember(null);
-      setEditStatus("");
+      setMemberDialog(null);
       window.location.reload();
     } catch (error) {
-      setEditStatus(error instanceof Error ? error.message : "保存失败");
+      setMemberDialogStatus(error instanceof Error ? error.message : "保存失败");
+    } finally {
+      setMemberSaving(false);
     }
   }
 
@@ -142,7 +185,7 @@ export function CommercialTeamsClient({ initialTeams, teamOptions, wcaNameEntrie
       {isAdmin ? (
         <div className="weekly-admin-lock-panel" style={{ marginBottom: 16 }}>
           <strong>管理员模式</strong>
-          <span>可以编辑成员标签。</span>
+          <span>可以编辑成员信息和新建成员。</span>
           <form action="/api/commercial-admin-logout" method="post"><button className="button" type="submit">退出管理</button></form>
         </div>
       ) : (
@@ -159,15 +202,7 @@ export function CommercialTeamsClient({ initialTeams, teamOptions, wcaNameEntrie
           <strong>成员简介补充</strong>
           <span>选手、家长或老师可以提交简介，审核通过后再展示。</span>
         </div>
-        <button
-          className="button primary"
-          type="button"
-          onClick={() => {
-            setDialogStatus("");
-            setSubmissionSucceeded(false);
-            setIsFormOpen(true);
-          }}
-        >
+        <button className="button primary" type="button" onClick={() => { setDialogStatus(""); setSubmissionSucceeded(false); setIsFormOpen(true); }}>
           提交成员简介
         </button>
       </div>
@@ -181,96 +216,31 @@ export function CommercialTeamsClient({ initialTeams, teamOptions, wcaNameEntrie
                 <strong>提交成员简介</strong>
                 <span>只需填写选手姓名和简介内容，其他信息可选；联系方式仅后台可见。</span>
               </div>
-              <button
-                className="icon-button"
-                type="button"
-                onClick={() => {
-                  setIsFormOpen(false);
-                  setDialogStatus("");
-                  setSubmissionSucceeded(false);
-                }}
-                aria-label="关闭"
-              >
-                <X size={16} />
-              </button>
+              <button className="icon-button" type="button" onClick={() => { setIsFormOpen(false); setDialogStatus(""); setSubmissionSucceeded(false); }} aria-label="关闭"><X size={16} /></button>
             </div>
             {submissionSucceeded ? (
               <div className="commercial-submission-success" role="status">
                 <strong>提交成功</strong>
                 <span>信息已经进入后台待审核列表，管理员审核后会更新展示。</span>
-                <button
-                  className="button primary"
-                  type="button"
-                  onClick={() => {
-                    setIsFormOpen(false);
-                    setSubmissionSucceeded(false);
-                  }}
-                >
-                  知道了
-                </button>
+                <button className="button primary" type="button" onClick={() => { setIsFormOpen(false); setSubmissionSucceeded(false); }}>知道了</button>
               </div>
             ) : (
               <>
                 <div className="commercial-submission-form">
-                  <label>
-                    选手姓名 <em>必填</em>
-                    <input value={draft.playerName} onChange={(event) => updateDraft({ playerName: event.target.value })} />
-                  </label>
-                  <label>
-                    所属战队
-                    <select value={draft.teamName} onChange={(event) => updateDraft({ teamName: event.target.value })}>
-                      <option value="">不确定 / 暂不填写</option>
-                      {teamOptions.map((teamName) => (
-                        <option key={teamName} value={teamName}>
-                          {teamName}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
-                  <label>
-                    城市
-                    <input value={draft.city} onChange={(event) => updateDraft({ city: event.target.value })} placeholder="如：沈阳，选填" />
-                  </label>
-                  <label>
-                    WCA ID
-                    <input value={draft.wcaId} onChange={(event) => updateDraft({ wcaId: event.target.value })} placeholder="选填" />
-                  </label>
-                  <label>
-                    主项
-                    <input value={draft.mainEvent} onChange={(event) => updateDraft({ mainEvent: event.target.value })} placeholder="如：三阶速拧，选填" />
-                  </label>
-                  <label>
-                    提交人身份
-                    <select value={draft.submitterRole} onChange={(event) => updateDraft({ submitterRole: event.target.value })}>
-                      <option value="">选填</option>
-                      <option value="选手本人">选手本人</option>
-                      <option value="家长">家长</option>
-                      <option value="老师/教练">老师/教练</option>
-                      <option value="战队管理员">战队管理员</option>
-                      <option value="其他">其他</option>
-                    </select>
-                  </label>
-                  <label className="commercial-submission-wide">
-                    联系方式
-                    <input value={draft.contact} onChange={(event) => updateDraft({ contact: event.target.value })} placeholder="微信、手机号或邮箱，选填，仅后台可见" />
-                  </label>
-                  <label className="commercial-submission-wide">
-                    简介内容 <em>必填</em>
-                    <textarea value={draft.bio} onChange={(event) => updateDraft({ bio: event.target.value })} placeholder="建议包含主项、代表成绩、战队身份等。涉及未成年人时请确认已获监护人同意。" />
-                  </label>
-                  <label className="commercial-submission-wide">
-                    备注
-                    <textarea value={draft.note} onChange={(event) => updateDraft({ note: event.target.value })} placeholder="可填写证明链接、需要更正的原简介等，选填。" />
-                  </label>
+                  <label>选手姓名 <em>必填</em><input value={draft.playerName} onChange={(event) => updateDraft({ playerName: event.target.value })} /></label>
+                  <label>所属战队<select value={draft.teamName} onChange={(event) => updateDraft({ teamName: event.target.value })}><option value="">不确定 / 暂不填写</option>{teamOptions.map((t) => <option key={t} value={t}>{t}</option>)}</select></label>
+                  <label>城市<input value={draft.city} onChange={(event) => updateDraft({ city: event.target.value })} placeholder="如：沈阳，选填" /></label>
+                  <label>WCA ID<input value={draft.wcaId} onChange={(event) => updateDraft({ wcaId: event.target.value })} placeholder="选填" /></label>
+                  <label>主项<input value={draft.mainEvent} onChange={(event) => updateDraft({ mainEvent: event.target.value })} placeholder="如：三阶速拧，选填" /></label>
+                  <label>提交人身份<select value={draft.submitterRole} onChange={(event) => updateDraft({ submitterRole: event.target.value })}><option value="">选填</option><option value="选手本人">选手本人</option><option value="家长">家长</option><option value="老师/教练">老师/教练</option><option value="战队管理员">战队管理员</option><option value="其他">其他</option></select></label>
+                  <label className="commercial-submission-wide">联系方式<input value={draft.contact} onChange={(event) => updateDraft({ contact: event.target.value })} placeholder="微信、手机号或邮箱，选填，仅后台可见" /></label>
+                  <label className="commercial-submission-wide">简介内容 <em>必填</em><textarea value={draft.bio} onChange={(event) => updateDraft({ bio: event.target.value })} placeholder="建议包含主项、代表成绩、战队身份等。涉及未成年人时请确认已获监护人同意。" /></label>
+                  <label className="commercial-submission-wide">备注<textarea value={draft.note} onChange={(event) => updateDraft({ note: event.target.value })} placeholder="可填写证明链接、需要更正的原简介等，选填。" /></label>
                 </div>
                 {dialogStatus ? <p className="commercial-submission-dialog-status" role="alert">{dialogStatus}</p> : null}
                 <div className="commercial-submission-actions">
-                  <button className="button button--ghost" type="button" onClick={() => setIsFormOpen(false)} disabled={isSubmitting}>
-                    取消
-                  </button>
-                  <button className="button primary" type="button" onClick={submitProfile} disabled={isSubmitting}>
-                    {isSubmitting ? "提交中" : "提交审核"}
-                  </button>
+                  <button className="button button--ghost" type="button" onClick={() => setIsFormOpen(false)} disabled={isSubmitting}>取消</button>
+                  <button className="button primary" type="button" onClick={submitProfile} disabled={isSubmitting}>{isSubmitting ? "提交中" : "提交审核"}</button>
                 </div>
               </>
             )}
@@ -280,27 +250,30 @@ export function CommercialTeamsClient({ initialTeams, teamOptions, wcaNameEntrie
 
       <div className="commercial-teams-list">
         {initialTeams.map((team) => (
-          <TeamSection key={team.id} team={team} wcaNames={wcaNames} isAdmin={isAdmin} onEditSpecialties={beginEditSpecialties} />
+          <TeamSection key={team.id} team={team} wcaNames={wcaNames} isAdmin={isAdmin} onEdit={openEditMember} onCreate={openCreateMember} />
         ))}
       </div>
 
-      {editingMember ? (
-        <div className="commercial-submission-backdrop" role="presentation" onClick={() => setEditingMember(null)}>
-          <div className="commercial-submission-dialog" role="dialog" aria-modal="true" aria-label="编辑标签" onClick={(e) => e.stopPropagation()}>
+      {memberDialog ? (
+        <div className="commercial-submission-backdrop" role="presentation" onClick={() => setMemberDialog(null)}>
+          <div className="commercial-submission-dialog" role="dialog" aria-modal="true" aria-label={memberDialog === "edit" ? "编辑成员" : "新建成员"} onClick={(e) => e.stopPropagation()}>
             <div className="commercial-submission-dialog-head">
-              <div><strong>编辑成员标签</strong><span>用顿号（、）分隔多个标签</span></div>
-              <button className="icon-button" type="button" onClick={() => setEditingMember(null)} aria-label="关闭"><X size={16} /></button>
+              <div><strong>{memberDialog === "edit" ? "编辑成员" : "新建成员"}</strong><span>顿号分隔多个标签</span></div>
+              <button className="icon-button" type="button" onClick={() => setMemberDialog(null)} aria-label="关闭"><X size={16} /></button>
             </div>
             <div className="commercial-submission-form">
-              <label className="commercial-submission-wide">
-                标签
-                <input value={editTags} onChange={(e) => setEditTags(e.target.value)} placeholder="如：三阶速拧、枫叶" />
-              </label>
+              <label>姓名 <em>必填</em><input value={memberDraft.name} onChange={(e) => setMemberDraft((d) => ({ ...d, name: e.target.value }))} /></label>
+              <label>性别<select value={memberDraft.gender} onChange={(e) => setMemberDraft((d) => ({ ...d, gender: e.target.value as "男" | "女" | "" }))}><option value="">未填</option><option value="男">男</option><option value="女">女</option></select></label>
+              <label>城市<input value={memberDraft.city} onChange={(e) => setMemberDraft((d) => ({ ...d, city: e.target.value }))} /></label>
+              <label>WCA ID<input value={memberDraft.wcaId} onChange={(e) => setMemberDraft((d) => ({ ...d, wcaId: e.target.value }))} placeholder="选填" /></label>
+              <label>主项<input value={memberDraft.mainEvent} onChange={(e) => setMemberDraft((d) => ({ ...d, mainEvent: e.target.value }))} placeholder="如：三阶速拧" /></label>
+              <label className="commercial-submission-wide">简介<textarea value={memberDraft.bio} onChange={(e) => setMemberDraft((d) => ({ ...d, bio: e.target.value }))} placeholder="选手简介" /></label>
+              <label className="commercial-submission-wide">标签（顿号分隔）<input value={memberDraft.specialties} onChange={(e) => setMemberDraft((d) => ({ ...d, specialties: e.target.value }))} placeholder="如：三阶速拧、枫叶" /></label>
             </div>
-            {editStatus ? <p className="commercial-submission-dialog-status" role="alert">{editStatus}</p> : null}
+            {memberDialogStatus ? <p className="commercial-submission-dialog-status" role="alert">{memberDialogStatus}</p> : null}
             <div className="commercial-submission-actions">
-              <button className="button button--ghost" type="button" onClick={() => setEditingMember(null)}>取消</button>
-              <button className="button primary" type="button" onClick={saveSpecialties}>保存</button>
+              <button className="button button--ghost" type="button" onClick={() => setMemberDialog(null)} disabled={memberSaving}>取消</button>
+              <button className="button primary" type="button" onClick={saveMember} disabled={memberSaving || !memberDraft.name.trim()}>{memberSaving ? "保存中..." : "保存"}</button>
             </div>
           </div>
         </div>
@@ -309,20 +282,15 @@ export function CommercialTeamsClient({ initialTeams, teamOptions, wcaNameEntrie
   );
 }
 
-function TeamSection({
-  team,
-  wcaNames,
-  isAdmin,
-  onEditSpecialties
-}: {
+function TeamSection({ team, wcaNames, isAdmin, onEdit, onCreate }: {
   team: EditableCommercialTeam;
   wcaNames: Map<string, string>;
   isAdmin: boolean;
-  onEditSpecialties: (teamId: string, memberId: string, current: string[]) => void;
+  onEdit: (teamId: string, member: Person) => void;
+  onCreate: (teamId: string) => void;
 }) {
   const wcaCount = team.members.filter((m) => m.wcaId).length;
   const cityCount = new Set(team.members.map((member) => member.city).filter(Boolean)).size;
-
   const themeClass = `commercial-team-block--${team.id}`;
   const logo = getTeamLogo(team.id);
 
@@ -346,13 +314,18 @@ function TeamSection({
           </span>
         </div>
       </div>
-
       {team.description && <p className="commercial-team-description">{team.description}</p>}
-
       <div className="commercial-member-grid">
         {team.members.map((member) => (
-          <MemberCard key={member.id} member={member} wcaName={member.wcaId ? wcaNames.get(member.wcaId) : undefined} isAdmin={isAdmin} teamId={team.id} onEditSpecialties={onEditSpecialties} />
+          <MemberCard key={member.id} member={member} wcaName={member.wcaId ? wcaNames.get(member.wcaId) : undefined} isAdmin={isAdmin} teamId={team.id} onEdit={onEdit} />
         ))}
+        {isAdmin ? (
+          <div className="commercial-member-link">
+            <button className="commercial-member-card" type="button" onClick={() => onCreate(team.id)} style={{ cursor: "pointer", border: "2px dashed var(--muted)", background: "transparent", display: "flex", alignItems: "center", justifyContent: "center", minHeight: 120, color: "var(--muted)", fontSize: 14 }}>
+              + 新建成员
+            </button>
+          </div>
+        ) : null}
       </div>
     </div>
   );
@@ -360,24 +333,17 @@ function TeamSection({
 
 function getTeamLogo(teamId: string) {
   switch (teamId) {
-    case "gan-gurus":
-      return { mark: "G", title: "GAN", caption: "GURUS" };
-    case "speed-ace-linghang":
-      return { mark: "S", title: "SPEED", caption: "ACE 领航" };
-    case "speed-ace-qihang":
-      return { mark: "S", title: "SPEED", caption: "ACE 启航" };
-    case "mo-yu-team":
-      return { mark: "M", title: "MoYu", caption: "TEAM" };
-    case "meng-zhi-team":
-      return { mark: "梦", title: "MoYu", caption: "DREAM" };
-    case "future-stars-team":
-      return { mark: "Q", title: "QiYi", caption: "STAR" };
-    default:
-      return { mark: "T", title: "TEAM", caption: "CUBING" };
+    case "gan-gurus": return { mark: "G", title: "GAN", caption: "GURUS" };
+    case "speed-ace-linghang": return { mark: "S", title: "SPEED", caption: "ACE 领航" };
+    case "speed-ace-qihang": return { mark: "S", title: "SPEED", caption: "ACE 启航" };
+    case "mo-yu-team": return { mark: "M", title: "MoYu", caption: "TEAM" };
+    case "meng-zhi-team": return { mark: "梦", title: "MoYu", caption: "DREAM" };
+    case "future-stars-team": return { mark: "Q", title: "QiYi", caption: "STAR" };
+    default: return { mark: "T", title: "TEAM", caption: "CUBING" };
   }
 }
 
-function MemberCard({ member, wcaName, isAdmin, teamId, onEditSpecialties }: { member: Person; wcaName?: string; isAdmin: boolean; teamId: string; onEditSpecialties: (teamId: string, memberId: string, current: string[]) => void }) {
+function MemberCard({ member, wcaName, isAdmin, teamId, onEdit }: { member: Person; wcaName?: string; isAdmin: boolean; teamId: string; onEdit: (teamId: string, member: Person) => void }) {
   const cubingUrl = member.wcaId ? `https://cubing.com/results/person/${member.wcaId}` : member.wcaUrl;
 
   return (
@@ -397,9 +363,7 @@ function MemberCard({ member, wcaName, isAdmin, teamId, onEditSpecialties }: { m
               {member.wcaId || "WCA"}
             </a>
           ) : member.wcaId ? (
-            <span className="wca-id-badge" title={wcaName}>
-              {member.wcaId}
-            </span>
+            <span className="wca-id-badge" title={wcaName}>{member.wcaId}</span>
           ) : (
             <span className="wca-id-badge wca-id-badge--pending">待关联</span>
           )}
@@ -410,10 +374,13 @@ function MemberCard({ member, wcaName, isAdmin, teamId, onEditSpecialties }: { m
             {member.specialties.map((tag) => (
               <span key={tag} className="commercial-member-tag">{tag}</span>
             ))}
-            {isAdmin ? <button className="commercial-member-tag" type="button" onClick={() => onEditSpecialties(teamId, member.id, member.specialties || [])} style={{ cursor: "pointer", border: "1px dashed var(--muted)", background: "transparent" }}>编辑</button> : null}
           </div>
         )}
-        {!member.specialties || member.specialties.length === 0 ? (isAdmin ? <div className="commercial-member-tags"><button className="commercial-member-tag" type="button" onClick={() => onEditSpecialties(teamId, member.id, [])} style={{ cursor: "pointer", border: "1px dashed var(--muted)", background: "transparent" }}>添加标签</button></div> : null) : null}
+        {isAdmin ? (
+          <button className="button" type="button" onClick={() => onEdit(teamId, member)} style={{ marginTop: 8, fontSize: 12, padding: "4px 10px" }}>
+            编辑
+          </button>
+        ) : null}
       </div>
     </div>
   );
