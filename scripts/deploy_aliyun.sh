@@ -89,10 +89,10 @@ echo "[deploy] Checking out ${target_short}."
 git checkout -B "$branch" "$target_commit"
 
 echo "[deploy] Applying database migrations."
-sudo docker compose exec -T web npm run db:migrate
+sudo docker compose exec -T web npm run db:migrate </dev/null
 
 echo "[deploy] Building application."
-sudo docker compose exec -T web npm run build
+sudo docker compose exec -T web npm run build </dev/null
 
 # Next.js regenerates this tracked type shim according to the container's
 # installed minor version. It is not a production source change and must not
@@ -120,7 +120,7 @@ done
 
 if [[ "$smoke_mode" == "full" ]]; then
   echo "[deploy] Running production smoke test."
-  sudo docker compose exec -T -e BASE_URL=http://127.0.0.1:3000 web npm run test:smoke
+  sudo docker compose exec -T -e BASE_URL=http://127.0.0.1:3000 web npm run test:smoke </dev/null
 else
   echo "[deploy] Fast mode: skipping the production smoke test."
 fi
