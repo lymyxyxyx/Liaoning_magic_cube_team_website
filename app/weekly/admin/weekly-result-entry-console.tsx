@@ -70,6 +70,7 @@ type Props = {
   variant?: "full" | "workspace";
   mode?: "admin" | "public";
   initialAdminUnlocked?: boolean;
+  emptyMeetMessage?: string;
 };
 
 const emptyAttempts = ["", "", "", "", ""];
@@ -97,7 +98,7 @@ const publicAttemptInputStyle: CSSProperties = {
   boxShadow: "none"
 };
 
-export function WeeklyResultEntryConsole({ initialMeets, initialPlayers = [], events, initialEventConfigs = [], initialResultEventIds, variant = "full", mode = "admin", initialAdminUnlocked = true }: Props) {
+export function WeeklyResultEntryConsole({ initialMeets, initialPlayers = [], events, initialEventConfigs = [], initialResultEventIds, variant = "full", mode = "admin", initialAdminUnlocked = true, emptyMeetMessage = "选择周赛和项目，检索选手后录入五次成绩，保存后右侧榜单立即刷新。" }: Props) {
   const defaultPublicMeet = initialMeets.find(isMeetEntryWindowOpen) || initialMeets.find((meet) => meet.id !== testMeetId && (!meet.startsAt || new Date(meet.startsAt).getTime() <= Date.now()));
   const defaultMeetId = mode === "public" ? defaultPublicMeet?.id || "" : initialMeets[0]?.id || "";
   const [meets, setMeets] = useState(initialMeets);
@@ -591,7 +592,7 @@ export function WeeklyResultEntryConsole({ initialMeets, initialPlayers = [], ev
                   : "默认录入当前周赛，请选择项目和赛制。"
                 : selectedMeet
                   ? `${selectedMeet.dateLabel || selectedMeet.title} · ${formatMeetPeriod(selectedMeet)} · ${getMeetEntryLabel(selectedMeet)}`
-                  : "选择周赛和项目，检索选手后录入五次成绩，保存后右侧榜单立即刷新。"}
+                  : emptyMeetMessage}
             </p>
           </div>
           {!isPublicMode ? (
@@ -610,6 +611,7 @@ export function WeeklyResultEntryConsole({ initialMeets, initialPlayers = [], ev
             <label>
               周赛
               <select value={selectedMeetId} onChange={(event) => setSelectedMeetId(event.target.value)}>
+                {meets.length === 0 ? <option value="">本周待输入</option> : null}
                 {meets.map((meet) => (
                   <option value={meet.id} key={meet.id}>
                     {meet.title}
