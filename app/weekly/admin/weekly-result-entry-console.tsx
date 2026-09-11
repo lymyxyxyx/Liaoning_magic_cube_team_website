@@ -110,6 +110,7 @@ export function WeeklyResultEntryConsole({ initialMeets, initialPlayers = [], ev
   const [operationLogs, setOperationLogs] = useState<WeeklyOperationLog[]>([]);
   const [wcaCandidates, setWcaCandidates] = useState<Record<string, WeeklyWcaMatchCandidate[]>>({});
   const [resultSearchQuery, setResultSearchQuery] = useState("");
+  const [activeResultCandidateIndex, setActiveResultCandidateIndex] = useState(0);
   const [resultAgeGroup, setResultAgeGroup] = useState("全部");
   const [playerQuery, setPlayerQuery] = useState("");
   const [players, setPlayers] = useState<WeeklyPlayer[]>([]);
@@ -150,7 +151,7 @@ export function WeeklyResultEntryConsole({ initialMeets, initialPlayers = [], ev
     }
   }, [attempts, selectedFormat]);
 
-  const searchPlayers = useCallback((query: string, signal?: AbortSignal) => {
+  const searchPlayers = useCallback((query: string, signal?: AbortSignal, selectExact = false) => {
     const q = query.trim();
     if (!q) {
       setPlayers([]);
@@ -169,7 +170,7 @@ export function WeeklyResultEntryConsole({ initialMeets, initialPlayers = [], ev
         setKnownPlayers((prev) => mergePlayers(prev, nextPlayers));
         // 搜索结果异步返回时，如果已经是唯一的精确姓名/WCA ID，自动完成绑定，
         // 避免用户必须再点一次同名选项才能保存成绩。
-        const exactPlayer = findPlayerByWcaId(q, nextPlayers) || findPlayerByName(q, nextPlayers);
+        const exactPlayer = selectExact ? findPlayerByWcaId(q, nextPlayers) || findPlayerByName(q, nextPlayers) : null;
         if (exactPlayer) {
           setSelectedPlayer(exactPlayer);
           setPlayerQuery(exactPlayer.name);
@@ -273,12 +274,13 @@ export function WeeklyResultEntryConsole({ initialMeets, initialPlayers = [], ev
     }
     const controller = new AbortController();
     const timer = window.setTimeout(() => {
-      if (!playerQuery.trim()) {
+      const query = playerQuery.trim() || resultSearchQuery.trim();
+      if (!query) {
         setPlayers([]);
         setIsSearchingPlayers(false);
         return;
       }
-      void searchPlayers(playerQuery, controller.signal).finally(() => {
+      void searchPlayers(query, controller.signal, Boolean(playerQuery.trim())).finally(() => {
         if (!controller.signal.aborted) setIsSearchingPlayers(false);
       });
     }, 180);
@@ -287,7 +289,7 @@ export function WeeklyResultEntryConsole({ initialMeets, initialPlayers = [], ev
       window.clearTimeout(timer);
       controller.abort();
     };
-  }, [adminUnlocked, playerQuery, searchPlayers]);
+  }, [adminUnlocked, playerQuery, resultSearchQuery, searchPlayers]);
 
   function refreshMeets() {
     fetch("/api/weekly-competitions")
@@ -559,7 +561,7 @@ export function WeeklyResultEntryConsole({ initialMeets, initialPlayers = [], ev
   }
 
   const selectedMeet = meets.find((meet) => meet.id === selectedMeetId);
-  const selectedMeetCanEnter = selectedMeet ? isMeetEntryWindowOpen(selectedMeet) : false;
+  const selectedMeetCanEnter = Boolean(selectedMeet) && !isPublicMode;
   const selectedEvent = events.find((event) => event.id === selectedEventId);
   const recordedCount = results.length;
   const displayedResults = useMemo(() => {
@@ -579,6 +581,11 @@ export function WeeklyResultEntryConsole({ initialMeets, initialPlayers = [], ev
     const filteredPlayers = mergedPlayers.filter((player) => matchesWeeklyPlayerQuery(player, query));
     return filteredPlayers.slice(0, 8);
   }, [knownPlayers, playerQuery, players, selectedPlayer]);
+  const resultSearchCandidates = useMemo(() => {
+    const query = resultSearchQuery.trim();
+    if (!query) return [];
+    return mergePlayers(knownPlayers, players).filter((player) => matchesWeeklyPlayerQuery(player, query)).slice(0, 8);
+  }, [knownPlayers, players, resultSearchQuery]);
 
   return (
     <section
@@ -594,7 +601,7 @@ export function WeeklyResultEntryConsole({ initialMeets, initialPlayers = [], ev
                   ? `${selectedMeet.dateLabel || selectedMeet.title} · ${formatMeetPeriod(selectedMeet)} · 选择项目和赛制`
                   : "默认录入当前周赛，请选择项目和赛制。"
                 : selectedMeet
-                  ? `${selectedMeet.dateLabel || selectedMeet.title} · ${formatMeetPeriod(selectedMeet)} · ${getMeetEntryLabel(selectedMeet)}`
+                  ? `${selectedMeet.dateLabel || selectedMeet.title} · ${formatMeetPeriod(selectedMeet)} · 管理员可录入`
                   : emptyMeetMessage}
             </p>
           </div>
@@ -653,7 +660,31 @@ export function WeeklyResultEntryConsole({ initialMeets, initialPlayers = [], ev
           <div className="weekly-result-search-bar" role="search" aria-label="查询周赛成绩">
             <label>
               姓名 / 周赛编号
-              <input value={resultSearchQuery} onChange={(event) => setResultSearchQuery(event.target.value)} placeholder="输入姓名或周赛编号" />
+              <input
+                value={resultSearchQuery}
+                onChange={(event) => { setResultSearchQuery(event.target.value); setActiveResultCandidateIndex(0); }}
+                placeholder="输入姓名、拼音或周赛编号"
+                role="combobox"
+                aria-autocomplete="list"
+                aria-expanded={resultSearchCandidates.length > 0}
+                aria-controls="weekly-result-search-suggestions"
+                onKeyDown={(event) => {
+                  if (!resultSearchCandidates.length) return;
+                  if (event.key === "ArrowDown") {
+                    event.preventDefault();
+                    setActiveResultCandidateIndex((index) => Math.min(index + 1, resultSearchCandidates.length - 1));
+                  } else if (event.key === "ArrowUp") {
+                    event.preventDefault();
+                    setActiveResultCandidateIndex((index) => Math.max(index - 1, 0));
+                  } else if (event.key === "Enter") {
+                    event.preventDefault();
+                    setResultSearchQuery(resultSearchCandidates[activeResultCandidateIndex]?.name || resultSearchCandidates[0].name);
+                  } else if (event.key === "Escape") {
+                    setResultSearchQuery("");
+                  }
+                }}
+              />
+              {resultSearchCandidates.length > 0 ? <div className="weekly-player-results weekly-result-search-suggestions" id="weekly-result-search-suggestions" role="listbox">{resultSearchCandidates.map((player, index) => <button key={player.id} type="button" role="option" aria-selected={index === activeResultCandidateIndex} className={index === activeResultCandidateIndex ? "is-selected" : ""} onMouseEnter={() => setActiveResultCandidateIndex(index)} onMouseDown={(event) => event.preventDefault()} onClick={() => setResultSearchQuery(player.name)}><strong>{player.weeklyNumber ? `${player.weeklyNumber} · ` : ""}{player.name}{player.wcaId ? ` · ${player.wcaId}` : ""}</strong><small>{formatPlayerCandidateMeta(player)}</small></button>)}</div> : null}
             </label>
             <div className="weekly-event-tabs-field">
               <span>项目</span>

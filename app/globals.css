@@ -11830,11 +11830,25 @@ a.commercial-member-link:hover {
 }
 
 .weekly-result-search-bar label {
+  position: relative;
   display: grid;
   gap: 5px;
   color: #64748b;
   font-size: 0.85rem;
   font-weight: 700;
+}
+
+.weekly-result-search-suggestions {
+  position: absolute;
+  z-index: 50;
+  top: calc(100% + 4px);
+  left: 0;
+  width: min(420px, 70vw);
+  padding: 5px;
+  border: 1px solid #dbe4f2;
+  border-radius: 8px;
+  background: #fff;
+  box-shadow: 0 12px 26px rgba(15, 23, 42, 0.14);
 }
 
 .weekly-result-search-bar input,

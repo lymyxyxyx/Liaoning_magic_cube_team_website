@@ -81,7 +81,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
         !isBoundedString(payload.player.id, 200, true) || !isBoundedString(payload.player.name, 100, true)) {
       return NextResponse.json({ message: "缺少成绩录入信息" }, { status: 400 });
     }
-    const availability = await getWeeklyMeetEntryAvailability(id);
+    const availability = await getWeeklyMeetEntryAvailability(id, { adminOverride: true });
     if (!availability.canEnter) return NextResponse.json({ message: availability.message }, { status: 403 });
     const libraryPlayer = await findWeeklyEligiblePlayer({ id: payload.player.id, name: payload.player.name });
     if (!libraryPlayer) return NextResponse.json({ message: "请先从周赛选手库选择选手" }, { status: 400 });

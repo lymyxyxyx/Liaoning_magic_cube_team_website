@@ -143,7 +143,7 @@ export async function listWeeklyMeetOptions(): Promise<WeeklyMeetOption[]> {
             starts_at AS "startsAt", ends_at AS "endsAt",
             is_public AS "isPublic", data_version AS "dataVersion"
      FROM weekly_meets
-     ORDER BY CASE status WHEN 'open' THEN 0 WHEN 'draft' THEN 1 ELSE 2 END, week_number DESC, created_at DESC`
+     ORDER BY week_number DESC, created_at DESC`
   );
   return withOptionalTestMeet(rows);
 }
@@ -217,7 +217,7 @@ export async function listWeeklyMeetResultEventIds(meetId: string): Promise<stri
   return rows.map((row) => row.event_id).filter(Boolean);
 }
 
-export async function getWeeklyMeetEntryAvailability(meetIdOrSlug: string) {
+export async function getWeeklyMeetEntryAvailability(meetIdOrSlug: string, options: { adminOverride?: boolean } = {}) {
   const pool = getPostgresPool();
   const { rows } = await pool.query<{ status: string; starts_at: string | null; ends_at: string | null; data_version: number }>(
     `SELECT status, starts_at, ends_at, data_version
@@ -229,6 +229,7 @@ export async function getWeeklyMeetEntryAvailability(meetIdOrSlug: string) {
   const meet = rows[0];
   if (!meet) return { canEnter: false, message: "周赛不存在" };
   if (meet.data_version !== 2) return { canEnter: false, message: "历史数据 / 只读" };
+  if (options.adminOverride) return { canEnter: true, message: "管理员可录入" };
   if (meet.status !== "open") return { canEnter: false, message: "本周赛暂未开放成绩录入" };
   const now = Date.now();
   if (meet.starts_at && new Date(meet.starts_at).getTime() > now) return { canEnter: false, message: "周赛尚未开始" };
