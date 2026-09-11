@@ -17,6 +17,7 @@ import {
 import { createLibraryPlayerId, listWeeklyEligiblePlayers, type WeeklyPersonalBests } from "@/lib/weekly-player-library";
 import { matchesWeeklyPlayerQuery } from "@/lib/weekly-player-search";
 import { weeklyV2ActivePlayerSql, weeklyV2PlayerSourceSql } from "@/lib/weekly-player-scope";
+import { getShenyangAssociationGrade } from "@/lib/shenyang-association-grades";
 
 export type WeeklyMeetOption = {
   id: string;
@@ -619,6 +620,7 @@ export async function saveWeeklyResult(input: {
     const previousAveragePersonalBest = getStoredPersonalBest(storedAveragePersonalBests, pbEventId);
     const currentBest = resultValueToSeconds(calculated.best);
     const currentAverage = resultValueToSeconds(calculated.average);
+    const associationGrade = getShenyangAssociationGrade(input.eventId, calculated.average);
     const pbRefreshed = currentBest >= 0 && (previousPersonalBest === null || currentBest < previousPersonalBest);
     const pbAverageRefreshed = currentAverage >= 0 && (previousAveragePersonalBest === null || currentAverage < previousAveragePersonalBest);
     const existing = await client.query<{ id: number; average: string }>(
@@ -632,7 +634,7 @@ export async function saveWeeklyResult(input: {
     const inserted = await client.query<{ id: number }>(
         `INSERT INTO weekly_results
           (event_id, meet_id, rank, player_id, player_name, player_slug, gender, age_group, level, grade, average, personal_best, pb_refreshed, pb_average_refreshed, source, updated_at)
-         VALUES ($1,$2,0,$3,$4,$5,$6,$7,'','',$8,$9,$10,$11,'manual_entry',now())
+         VALUES ($1,$2,0,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,'manual_entry',now())
          RETURNING id`,
         [
           eventKey,
@@ -642,6 +644,8 @@ export async function saveWeeklyResult(input: {
           playerSlug,
           input.player.gender === "女" ? "女" : "男",
           playerAgeGroup || null,
+          associationGrade.level,
+          associationGrade.grade,
           resultValueToSeconds(calculated.average),
           resultValueToSeconds(calculated.best),
           pbRefreshed,
