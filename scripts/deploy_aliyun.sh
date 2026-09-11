@@ -119,12 +119,12 @@ if [[ -e "$staged_next_dir" || -e "$previous_next_dir" ]]; then
 fi
 sudo docker compose exec -T -e NEXT_DIST_DIR="$staged_next_dir" web npm run build </dev/null
 
-# Next.js regenerates this tracked type shim according to the container's
-# installed minor version. It is not a production source change and must not
-# leave the receive worktree dirty for the next deployment.
-if ! git diff --quiet -- next-env.d.ts; then
-  echo "[deploy] Restoring generated next-env.d.ts."
-  git restore -- next-env.d.ts
+# Next.js may rewrite these tracked compiler shims according to the
+# container's installed version. They are not production source changes and
+# must not leave the receive worktree dirty for the next deployment.
+if ! git diff --quiet -- next-env.d.ts tsconfig.json; then
+  echo "[deploy] Restoring generated Next.js compiler files."
+  git restore -- next-env.d.ts tsconfig.json
 fi
 
 echo "[deploy] Switching the completed build and restarting web."
