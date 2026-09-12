@@ -802,10 +802,10 @@ export function WeeklyResultEntryConsole({ initialMeets, initialPlayers = [], ev
                     <td data-label="组别">{result.player.ageGroup || "待补"}</td>
                     <td data-label="省市">{formatRegion(result.player)}</td>
                     <td data-label="段位">
-                      {result.level || getShenyangAssociationGrade(selectedEventId, result.average).level || "-"}
+                      {getShenyangAssociationGrade(selectedEventId, result.average).level || "-"}
                     </td>
                     <td data-label="等级" className="grade-cell">
-                      {result.grade || getShenyangAssociationGrade(selectedEventId, result.average).grade || "-"}
+                      {getShenyangAssociationGrade(selectedEventId, result.average).grade || "-"}
                     </td>
                     <td data-label="平均" className={result.pbAverageRefreshed ? "score-strong pb-cell pb-refreshed" : "score-strong"}>
                       {formatResult(result.average)}{result.pbAverageRefreshed ? <span className="weekly-pb-badge">PB</span> : null}

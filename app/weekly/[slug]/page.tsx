@@ -10,6 +10,7 @@ import { hasWeeklyAdminCookie } from "@/lib/weekly-admin-auth";
 import { sortWeeklyResultsByAverage } from "@/lib/weekly-result-display";
 import { isGuestWeeklyHistoryMeet } from "@/lib/weekly-guest-history";
 import { listWeeklyMeetOptions } from "@/lib/weekly-entry-store";
+import { getShenyangAssociationGrade } from "@/lib/shenyang-association-grades";
 import { WeeklyHistoryMenu } from "@/components/weekly-history-menu";
 
 export const dynamic = "force-dynamic";
@@ -41,6 +42,11 @@ function eventTabLabel(event: WeeklyEvent) {
 
 function eventAnchorId(event: WeeklyEvent) {
   return `weekly-event-${event.eventCode || event.id}`;
+}
+
+function weeklyGradeFor(eventCode: string | undefined, averageSeconds: number) {
+  const average = typeof averageSeconds === "number" && averageSeconds >= 0 ? Math.round(averageSeconds * 100) : "DNF";
+  return getShenyangAssociationGrade(eventCode || "", average);
 }
 
 export default async function WeeklyDetailPage({ params }: { params: Promise<{ slug: string }> }) {
@@ -170,6 +176,7 @@ export default async function WeeklyDetailPage({ params }: { params: Promise<{ s
                     <tbody>
                       {event.results.map((result) => {
                         const singleBest = getSingleBest(result.attempts);
+                        const weeklyGrade = weeklyGradeFor(event.eventCode, result.average);
 
                         return (
                           <tr key={`${event.id}-${result.rank}-${result.playerSlug}`}>
@@ -187,10 +194,10 @@ export default async function WeeklyDetailPage({ params }: { params: Promise<{ s
                             {hasAgeGroup ? <td data-label="年龄组">{result.ageGroup || "-"}</td> : null}
                             {hasAttempts ? (
                               <td data-label="段位">
-                                <span className={`level-pill level-${result.level}`}>{result.level}</span>
+                                <span className={`level-pill level-${weeklyGrade.level}`}>{weeklyGrade.level}</span>
                               </td>
                             ) : null}
-                            {hasAttempts ? <td data-label="等级" className="grade-cell">{result.grade}</td> : null}
+                            {hasAttempts ? <td data-label="等级" className="grade-cell">{weeklyGrade.grade}</td> : null}
                             <td data-label="平均" className="score-strong">{formatAttempt(result.average)}</td>
                             {hasAttempts ? <td data-label="本周最快">{formatAttempt(singleBest)}</td> : null}
                             <td data-label="个人PB" className={`pb-cell ${result.pbRefreshed ? "pb-refreshed" : ""}`}>
@@ -259,6 +266,7 @@ export default async function WeeklyDetailPage({ params }: { params: Promise<{ s
                             <tbody>
                               {sortedAgeResults.map((result) => {
                                 const singleBest = getSingleBest(result.attempts);
+                                const weeklyGrade = weeklyGradeFor(ageEvent.eventCode, result.average);
 
                                 return (
                                   <tr key={`${ageEvent.id}-${result.rank}-${result.playerSlug}`}>
@@ -274,9 +282,9 @@ export default async function WeeklyDetailPage({ params }: { params: Promise<{ s
                                     </td>
                                     <td data-label="性别">{result.gender}</td>
                                     <td data-label="段位">
-                                      <span className={`level-pill level-${result.level}`}>{result.level}</span>
+                                      <span className={`level-pill level-${weeklyGrade.level}`}>{weeklyGrade.level}</span>
                                     </td>
-                                    <td data-label="等级" className="grade-cell">{result.grade}</td>
+                                    <td data-label="等级" className="grade-cell">{weeklyGrade.grade}</td>
                                     <td data-label="平均" className="score-strong">{formatAttempt(result.average)}</td>
                                     {ageBest ? <td data-label="本周最快">{formatAttempt(singleBest)}</td> : null}
                                     <td data-label="个人PB" className={`pb-cell ${result.pbRefreshed ? "pb-refreshed" : ""}`}>

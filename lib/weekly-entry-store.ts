@@ -760,11 +760,13 @@ export async function correctWeeklyResult(input: {
     if (storedFormat !== formatConfig.id) throw new Error("修改赛制与原成绩不一致");
 
     const previousAttempts = await readWeeklyAttempts(client, input.resultId);
+    const eventId = await getEventIdFromStoredKey(client, result.rows[0].meet_id, result.rows[0].event_id);
+    const associationGrade = getShenyangAssociationGrade(eventId, calculated.average);
     await client.query(
       `UPDATE weekly_results
-       SET average = $1, personal_best = $2, pb_refreshed = FALSE, pb_average_refreshed = FALSE, source = 'admin_correction', updated_at = now()
+       SET average = $1, personal_best = $2, level = $4, grade = $5, pb_refreshed = FALSE, pb_average_refreshed = FALSE, source = 'admin_correction', updated_at = now()
        WHERE id = $3`,
-      [resultValueToSeconds(calculated.average), resultValueToSeconds(calculated.best), input.resultId]
+      [resultValueToSeconds(calculated.average), resultValueToSeconds(calculated.best), input.resultId, associationGrade.level, associationGrade.grade]
     );
     await client.query("DELETE FROM weekly_attempts WHERE result_id = $1", [input.resultId]);
     await insertWeeklyAttempts(client, input.resultId, parsedAttempts);
