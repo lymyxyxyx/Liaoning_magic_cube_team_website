@@ -272,10 +272,11 @@ export async function createWeeklyMeet(input: {
     const startDateValue = formatWeeklyDate(startDate);
     const endDateValue = formatWeeklyDate(endDate);
     const baseId = `weekly-${startDateValue}`;
-    const requestedSlug = input.slug?.trim() || baseId;
+    const defaultSlug = weeklySlugForDate(startDate);
+    const requestedSlug = input.slug?.trim() || defaultSlug;
     const duplicate = await client.query<{ id: string }>("SELECT id FROM weekly_meets WHERE id = $1 OR slug = $2 LIMIT 1", [baseId, requestedSlug]);
     const id = duplicate.rows[0] ? `${baseId}-${Date.now()}` : baseId;
-    const slug = requestedSlug === baseId && id !== baseId ? id : requestedSlug;
+    const slug = !input.slug && id !== baseId ? id : requestedSlug;
     const dateLabel = formatWeeklyDateRange(startDate, endDate);
     const title = input.title?.trim() || `第${weekNumber}周周赛（${startDate.getFullYear()}年第${getIsoWeek(startDate)}周）`;
     const status = input.status || "draft";
@@ -1044,6 +1045,20 @@ function getIsoWeek(date: Date) {
   target.setUTCDate(target.getUTCDate() + 4 - day);
   const yearStart = new Date(Date.UTC(target.getUTCFullYear(), 0, 1));
   return Math.ceil(((target.getTime() - yearStart.getTime()) / 86400000 + 1) / 7);
+}
+
+function getIsoWeekYear(date: Date) {
+  const target = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+  const day = target.getUTCDay() || 7;
+  target.setUTCDate(target.getUTCDate() + 4 - day);
+  const yearStart = new Date(Date.UTC(target.getUTCFullYear(), 0, 1));
+  const week = Math.ceil(((target.getTime() - yearStart.getTime()) / 86400000 + 1) / 7);
+  return { year: target.getUTCFullYear(), week };
+}
+
+function weeklySlugForDate(date: Date) {
+  const { year, week } = getIsoWeekYear(date);
+  return `${year}-week-${week}`;
 }
 
 function parseWeeklyDate(value: string) {

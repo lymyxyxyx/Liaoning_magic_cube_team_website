@@ -131,7 +131,7 @@ export function WeeklyResultEntryConsole({ initialMeets, initialPlayers = [], ev
   const [notice, setNotice] = useState("");
   const [isSaving, setIsSaving] = useState(false);
   const [isLoadingResults, setIsLoadingResults] = useState(false);
-  const [adminUnlocked, setAdminUnlocked] = useState(initialAdminUnlocked);
+  const [adminUnlocked] = useState(initialAdminUnlocked);
   const [isLoginOpen, setIsLoginOpen] = useState(false);
   const [loginPassword, setLoginPassword] = useState("");
   const [isLoggingIn, setIsLoggingIn] = useState(false);
@@ -463,18 +463,15 @@ export function WeeklyResultEntryConsole({ initialMeets, initialPlayers = [], ev
     if (!loginPassword.trim()) return;
     setIsLoggingIn(true);
     setNotice("");
-    fetch("/api/weekly-access", {
+    fetch("/api/weekly-login-inline", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ password: loginPassword, next: "/weekly/results" })
+      body: JSON.stringify({ password: loginPassword })
     })
       .then(async (response) => {
-        const payload = (await response.json().catch(() => null)) as { message?: string } | null;
-        if (!response.ok) throw new Error(payload?.message || "管理员口令不正确");
-        setAdminUnlocked(true);
-        setIsLoginOpen(false);
-        setLoginPassword("");
-        setNotice("管理员登录成功，可以开始录入和维护成绩。");
+        const payload = (await response.json().catch(() => null)) as { ok?: boolean; message?: string } | null;
+        if (!response.ok || !payload?.ok) throw new Error(payload?.message || "管理员口令不正确");
+        window.location.assign("/weekly/results");
       })
       .catch((error) => setNotice(error instanceof Error ? error.message : "管理员登录失败"))
       .finally(() => setIsLoggingIn(false));
