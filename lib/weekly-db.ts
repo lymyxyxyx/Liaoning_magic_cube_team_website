@@ -121,7 +121,7 @@ export async function getWeeklyMeetBySlug(
   try {
     const pool = getPostgresPool();
     const meetResult = await pool.query<MeetRow>(
-      "SELECT * FROM weekly_meets WHERE slug = $1 AND (is_public = TRUE OR $2::boolean = TRUE)",
+      "SELECT * FROM weekly_meets WHERE slug = $1 AND (is_public = TRUE OR data_version = 2 OR $2::boolean = TRUE)",
       [slug, options.includePrivate === true]
     );
     if (meetResult.rows.length === 0) return null;
