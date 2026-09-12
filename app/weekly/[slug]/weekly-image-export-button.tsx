@@ -2,6 +2,7 @@
 
 import { Download } from "lucide-react";
 import type { WeeklyAttempt, WeeklyMeet } from "@/lib/weekly";
+import { getShenyangAssociationGrade } from "@/lib/shenyang-association-grades";
 
 type ExportMeet = Pick<WeeklyMeet, "title" | "dateLabel" | "weekNumber" | "yearWeek" | "results">;
 
@@ -116,8 +117,8 @@ function drawPoster(context: CanvasRenderingContext2D, width: number, height: nu
       String(row.rank),
       row.playerName,
       row.gender,
-      row.level || "-",
-      row.grade || "-",
+      getShenyangAssociationGrade("333", row.average >= 0 ? Math.round(row.average * 100) : "DNF").level || "-",
+      getShenyangAssociationGrade("333", row.average >= 0 ? Math.round(row.average * 100) : "DNF").grade || "-",
       row.average.toFixed(2),
       formatAttempt(getSingleBest(row.attempts)),
       row.personalBest.toFixed(2),
