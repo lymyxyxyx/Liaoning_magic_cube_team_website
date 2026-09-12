@@ -28,6 +28,7 @@ export default async function WeeklyPage() {
   const visibleMeets = isAdmin ? adminMeets : adminMeets.filter((meet) => meet.isPublic);
   const currentMeet = visibleMeets.filter((meet) => meet.status === "open" && (!meet.startsAt || new Date(meet.startsAt).getTime() <= Date.now()) && (!meet.endsAt || new Date(meet.endsAt).getTime() >= Date.now())).sort((left, right) => meetStartsAtTimestamp(right.startsAt) - meetStartsAtTimestamp(left.startsAt))[0];
   const currentEventConfigs = currentMeet ? await listWeeklyMeetEventConfigs(currentMeet.id).catch(() => []) : [];
+  const emptyGuest = !isAdmin && !currentMeet;
 
   return (
     <>
@@ -45,9 +46,11 @@ export default async function WeeklyPage() {
           </div>
         }
         label="辽宁线上周赛"
-        title={currentMeet?.title || "本周周赛成绩"}
+        title={emptyGuest ? "本周暂无公开周赛" : currentMeet?.title || "本周周赛成绩"}
       >
-        本周成绩将在管理员录入后显示；当前游客可直接查看，不需要邀请码。
+        {emptyGuest
+          ? "周赛公布后，成绩将直接在此展示，游客无需邀请码。可先通过上方菜单查看历史周赛。"
+          : "本周成绩将在管理员录入后显示；当前游客可直接查看，不需要邀请码。"}
       </PageHero>
 
       {isAdmin ? (
