@@ -32,7 +32,12 @@ const checks = [
   // Weekly results are administrator-entered for now. Keep the public surface
   // read-only until a separately reviewed self-entry workflow is launched.
   { path: "/api/admin/weekly-competitions", ok: [401], type: "application/json" },
-  { path: "/api/weekly-competitions/weekly-test-entry/results", method: "POST", body: "{}", ok: [401], type: "application/json" },
+  // Node's fetch sends no Origin header by default, so the same-origin guard is
+  // exercised explicitly here. Same-origin + anonymous passes the origin guard
+  // and is rejected at the authentication layer (401).
+  { path: "/api/weekly-competitions/weekly-test-entry/results", method: "POST", body: "{}", origin: baseUrl, ok: [401], type: "application/json" },
+  // Cross-origin writes are rejected by the origin guard before authentication (403).
+  { path: "/api/weekly-competitions/weekly-test-entry/results", method: "POST", body: "{}", origin: "https://evil.example.invalid", ok: [403], type: "application/json" },
   { path: "/sitemap.xml", ok: [200], type: "xml" },
   { path: "/robots.txt", ok: [200], type: "text" }
 ];
@@ -59,10 +64,12 @@ async function run() {
   for (const check of checks) {
     const url = `${baseUrl}${check.path}`;
     try {
+      const headers = check.body ? { "Content-Type": "application/json" } : {};
+      if (check.origin) headers.Origin = check.origin;
       const res = await fetch(url, {
         method: check.method || "GET",
         body: check.body,
-        headers: check.body ? { "Content-Type": "application/json" } : undefined,
+        headers: Object.keys(headers).length > 0 ? headers : undefined,
         signal: AbortSignal.timeout(15000),
         redirect: "manual"
       });
