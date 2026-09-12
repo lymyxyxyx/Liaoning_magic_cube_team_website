@@ -21,10 +21,9 @@ export default async function WeeklyPage() {
     listWeeklyMeetOptions().catch(() => []),
     hasWeeklyAdminCookie(await cookies())
   ]);
-  const historyMeets = allMeets
-    .filter((meet) => isGuestWeeklyHistoryMeet(meet))
-    .sort((a, b) => meetStartsAtTimestamp(b.startsAt) - meetStartsAtTimestamp(a.startsAt));
   const adminMeets = allMeets.filter((meet) => meet.id !== "weekly-test-entry" && meet.dataVersion === 2);
+  const historyMeets = (isAdmin ? adminMeets : allMeets.filter((meet) => isGuestWeeklyHistoryMeet(meet)))
+    .sort((a, b) => meetStartsAtTimestamp(b.startsAt) - meetStartsAtTimestamp(a.startsAt));
   const visibleMeets = isAdmin ? adminMeets : adminMeets.filter((meet) => meet.isPublic);
   const currentMeet = visibleMeets.filter((meet) => meet.status === "open" && (!meet.startsAt || new Date(meet.startsAt).getTime() <= Date.now()) && (!meet.endsAt || new Date(meet.endsAt).getTime() >= Date.now())).sort((left, right) => meetStartsAtTimestamp(right.startsAt) - meetStartsAtTimestamp(left.startsAt))[0];
   const currentEventConfigs = currentMeet ? await listWeeklyMeetEventConfigs(currentMeet.id).catch(() => []) : [];

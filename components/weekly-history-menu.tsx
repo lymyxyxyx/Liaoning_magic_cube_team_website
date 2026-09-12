@@ -11,6 +11,7 @@ export function WeeklyHistoryMenu({ meets }: { meets: WeeklyMeetOption[] }) {
             {meet.title}
           </Link>
         ))}
+        {meets.length === 0 ? <span className="weekly-history-empty">暂无历史周赛</span> : null}
       </div>
     </details>
   );

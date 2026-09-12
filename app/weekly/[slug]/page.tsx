@@ -55,8 +55,9 @@ export default async function WeeklyDetailPage({ params }: { params: Promise<{ s
   if (!meet) {
     notFound();
   }
-  const historyMeets = allMeets
-    .filter((candidate) => isGuestWeeklyHistoryMeet(candidate))
+  const historyMeets = (isAdmin
+    ? allMeets.filter((meet) => meet.id !== "weekly-test-entry" && meet.dataVersion === 2)
+    : allMeets.filter((candidate) => isGuestWeeklyHistoryMeet(candidate)))
     .sort((a, b) => new Date(b.startsAt || 0).getTime() - new Date(a.startsAt || 0).getTime());
 
   const mainResults = sortWeeklyResultsByAverage(meet.results);

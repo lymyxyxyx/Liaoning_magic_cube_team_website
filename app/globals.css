@@ -984,6 +984,13 @@ main {
   border-top: 1px solid var(--line);
 }
 
+.weekly-history-empty {
+  padding: 8px 12px;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 700;
+}
+
 .weekly-history-menu a:hover {
   color: var(--blue);
   background: var(--soft);
