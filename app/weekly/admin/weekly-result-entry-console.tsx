@@ -480,7 +480,7 @@ export function WeeklyResultEntryConsole({ initialMeets, initialPlayers = [], ev
       .then(async (response) => {
         const payload = (await response.json().catch(() => null)) as { ok?: boolean; message?: string } | null;
         if (!response.ok || !payload?.ok) throw new Error(payload?.message || "管理员口令不正确");
-        window.location.assign("/weekly/results");
+        window.location.assign("/weekly");
       })
       .catch((error) => setNotice(error instanceof Error ? error.message : "管理员登录失败"))
       .finally(() => setIsLoggingIn(false));

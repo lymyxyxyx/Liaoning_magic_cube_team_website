@@ -1,13 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { verifySessionToken } from "@/lib/auth";
-import { isGuestWeeklyHistorySlug } from "@/lib/weekly-guest-history";
 import { getCanonicalAdminUrl } from "@/lib/site-origin";
 
 const adminCookieName = "liaoning_admin_session";
 const adminNextCookieName = "liaoning_admin_next";
 const weeklyAdminCookieName = "liaoning_weekly_admin_session";
 const weeklyAdminNextCookieName = "liaoning_weekly_next";
-const weeklyAccessCookieName = "liaoning_weekly_access_session";
 
 async function hasAdminSession(request: NextRequest) {
   const token = request.cookies.get(adminCookieName)?.value;
@@ -21,11 +19,6 @@ async function hasWeeklyAdminSession(request: NextRequest) {
   return verifySessionToken(token, "weekly-admin");
 }
 
-async function hasWeeklyAccessSession(request: NextRequest) {
-  const token = request.cookies.get(weeklyAccessCookieName)?.value;
-  return Boolean(token && await verifySessionToken(token, "weekly-access"));
-}
-
 function isSecureRequest(request: NextRequest) {
   return request.nextUrl.protocol === "https:" || request.headers.get("x-forwarded-proto") === "https";
 }
@@ -34,23 +27,9 @@ export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
   const host = request.headers.get("host") || "";
 
-  const isWeeklyLandingPage = pathname === "/weekly" || pathname === "/weekly/";
-  const weeklySlug = pathname.match(/^\/weekly\/([^/]+)\/?$/)?.[1] || "";
-  const isGuestWeeklyHistoryPage = isGuestWeeklyHistorySlug(weeklySlug);
-  const isWeeklyPage = pathname.startsWith("/weekly") && !isWeeklyLandingPage && !isGuestWeeklyHistoryPage && pathname !== "/weekly/results" && pathname !== "/weekly/history" && pathname !== "/weekly/grade-standards" && pathname !== "/weekly/provincial-rankings" && !pathname.startsWith("/weekly/access") && !pathname.startsWith("/weekly/admin");
   const isWeeklyAdminApi = pathname.startsWith("/api/admin/weekly-");
 
-  const hasWeeklyAccess = await hasWeeklyAccessSession(request);
   const hasWeeklyAdmin = await hasWeeklyAdminSession(request);
-  // A weekly administrator may enter the same protected weekly route, but
-  // write handlers still require the administrator audience explicitly.
-  if (isWeeklyPage && !(hasWeeklyAccess || hasWeeklyAdmin)) {
-    const accessUrl = request.nextUrl.clone();
-    accessUrl.pathname = "/weekly/access";
-    accessUrl.search = "";
-    accessUrl.searchParams.set("next", `${pathname}${request.nextUrl.search}`);
-    return NextResponse.redirect(accessUrl);
-  }
 
   if (isWeeklyAdminApi && !(await hasWeeklyAdminSession(request))) {
     return NextResponse.json({ message: "请先登录周赛管理员账号" }, { status: 401 });
