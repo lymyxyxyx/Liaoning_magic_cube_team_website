@@ -3,7 +3,7 @@
 import { CalendarPlus, Save, X } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { weeklyResultFormats, type WeeklyResultFormat } from "@/lib/weekly-result-utils";
-import { WEEKLY_DEFAULT_EVENT_IDS } from "@/lib/wca-events";
+import { isBigStackEventId, isWeeklySingleAttemptEvent, WEEKLY_DEFAULT_EVENT_IDS } from "@/lib/wca-events";
 import type { WCA_EVENTS } from "@/lib/wca-events";
 
 type Meet = { id: string; title: string; dateLabel: string; status?: string; startsAt?: string | null; endsAt?: string | null; isPublic?: boolean; dataVersion?: number };
@@ -126,21 +126,26 @@ export function WeeklyMeetConfigConsole({ initialMeets, events, defaultOpen = fa
           {(() => {
             const currentEventIds = new Set<string>(WEEKLY_DEFAULT_EVENT_IDS);
             const renderEvent = (event: (typeof WCA_EVENTS)[number]) => {
-              const config = configByEvent.get(event.id) || { eventId: event.id, format: "avg5" as const, enabled: false, seq: configs.length };
-              const availableFormats = weeklyResultFormats.filter((format) => event.id === "individual" ? format.id === "best1" : format.id === "avg5" || format.id === "best3");
+              const config = configByEvent.get(event.id) || { eventId: event.id, format: isWeeklySingleAttemptEvent(event.id) ? "best1" as const : "avg5" as const, enabled: false, seq: configs.length };
+              const availableFormats = weeklyResultFormats.filter((format) => isWeeklySingleAttemptEvent(event.id) ? format.id === "best1" : format.id === "avg5" || format.id === "best3");
               const selectedFormat = availableFormats.some((format) => format.id === config.format) ? config.format : availableFormats[0].id;
-              return <div key={event.id}><label><input type="checkbox" checked={config.enabled} onChange={(input) => updateEvent(event.id, { enabled: input.target.checked })} />{event.name}</label><select value={selectedFormat} onChange={(input) => updateEvent(event.id, { format: input.target.value as WeeklyResultFormat })}>{availableFormats.map((format) => <option key={format.id} value={format.id}>{format.name}</option>)}</select></div>;
+              return <div key={event.id}><label><input type="checkbox" checked={config.enabled} onChange={(input) => updateEvent(event.id, { enabled: input.target.checked, ...(isWeeklySingleAttemptEvent(event.id) ? { format: "best1" as const } : {}) })} />{event.name}</label><select value={selectedFormat} onChange={(input) => updateEvent(event.id, { format: input.target.value as WeeklyResultFormat })}>{availableFormats.map((format) => <option key={format.id} value={format.id}>{format.name}</option>)}</select></div>;
             };
             return <>
               <section className="weekly-event-config-group">
-                <h3>当前周赛项目</h3>
+                <h3>常规周赛项目</h3>
                 <p>本周默认开放以下六个项目；个人全能暂不适用段位等级标准。</p>
-                {events.filter((event) => currentEventIds.has(event.id)).map(renderEvent)}
+                {events.filter((event) => currentEventIds.has(event.id) && !isBigStackEventId(event.id)).map(renderEvent)}
+              </section>
+              <section className="weekly-event-config-group">
+                <h3>大堆</h3>
+                <p>按单次最快排名。目前默认展示三阶和镜面，二阶、金字塔、枫叶保留为后续项目。</p>
+                {events.filter((event) => currentEventIds.has(event.id) && isBigStackEventId(event.id)).map(renderEvent)}
               </section>
               <details className="weekly-event-config-group weekly-event-config-group--reserved">
                 <summary><h3>其他项目（预留）</h3><span>后续再开放</span></summary>
                 <p>后续增加项目时，在这里勾选并保存即可。</p>
-                {events.filter((event) => !currentEventIds.has(event.id)).map(renderEvent)}
+                {events.filter((event) => !currentEventIds.has(event.id) && !isBigStackEventId(event.id)).map(renderEvent)}
               </details>
             </>;
           })()}

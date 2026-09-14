@@ -1,6 +1,6 @@
 import { getPostgresPool } from "@/lib/postgres";
 import type { PoolClient } from "pg";
-import { getWcaEventName, isWcaEventId, WEEKLY_DEFAULT_EVENT_IDS } from "@/lib/wca-events";
+import { getWcaEventName, getWeeklyEventGroupName, isWeeklySingleAttemptEvent, isWcaEventId, WEEKLY_DEFAULT_EVENT_IDS } from "@/lib/wca-events";
 import { getWeeklyAgeGroup, getWeeklyRankingAgeGroup, getWeeklyRankingAgeGroupOrder } from "@/lib/weekly-age-groups";
 import { buildWeeklyRankAssignments } from "@/lib/weekly-ranking";
 import { weeklyBusinessDate } from "@/lib/weekly-results-import-dates";
@@ -623,8 +623,8 @@ export async function saveWeeklyResult(input: {
 }, transactionClient?: PoolClient) {
   if (!isWcaEventId(input.eventId)) throw new Error("项目不正确");
   const formatConfig = getWeeklyResultFormat(input.format);
-  if (input.eventId === "individual" && formatConfig.id !== "best1") throw new Error("个人全能只允许录入一次连续计时成绩");
-  if (input.eventId !== "individual" && formatConfig.id === "best1") throw new Error("常规项目必须录满五次成绩");
+  if (isWeeklySingleAttemptEvent(input.eventId) && formatConfig.id !== "best1") throw new Error("个人全能和大堆项目只允许录入单次最快成绩");
+  if (!isWeeklySingleAttemptEvent(input.eventId) && formatConfig.id === "best1") throw new Error("常规项目必须录满五次成绩");
   if (!input.player?.name?.trim()) throw new Error("请选择选手");
   if (!Array.isArray(input.attempts) || input.attempts.length !== formatConfig.attemptCount) {
     throw new Error(`必须录入 ${formatConfig.attemptCount} 次成绩`);
@@ -993,7 +993,7 @@ function attemptRowToResultValue(row: WeeklyAttemptRow): ResultValue {
 function defaultWeeklyMeetEventConfigs(): WeeklyMeetEventConfig[] {
   return WEEKLY_DEFAULT_EVENT_IDS.map((eventId, index) => ({
     eventId,
-    format: eventId === "individual" ? "best1" : "avg5",
+    format: isWeeklySingleAttemptEvent(eventId) ? "best1" : "avg5",
     enabled: true,
     seq: index
   }));
@@ -1009,18 +1009,19 @@ async function saveWeeklyMeetEvents(client: Pick<PoolClient, "query">, meetId: s
   for (const [index, config] of configs.entries()) {
     if (!isWcaEventId(config.eventId)) throw new Error("项目不正确");
     const format = getWeeklyResultFormat(config.format).id;
-    if (config.eventId === "individual" && format !== "best1") throw new Error("个人全能只允许使用单次赛制");
-    if (config.eventId !== "individual" && format === "best1") throw new Error("常规项目不能使用单次赛制");
+    if (isWeeklySingleAttemptEvent(config.eventId) && format !== "best1") throw new Error("个人全能和大堆项目只允许使用单次赛制");
+    if (!isWeeklySingleAttemptEvent(config.eventId) && format === "best1") throw new Error("常规项目不能使用单次赛制");
     const eventName = getWcaEventName(config.eventId);
     await client.query(
       `INSERT INTO weekly_events
          (id, meet_id, kind, title, event_name, group_name, is_all_around,
           event_code, format, attempt_count, enabled, seq, updated_at)
-       VALUES ($1,$2,'other',$3,$4,NULL,FALSE,$5,$6,$7,$8,$9,now())
+       VALUES ($1,$2,'other',$3,$4,$5,FALSE,$6,$7,$8,$9,$10,now())
        ON CONFLICT (meet_id, event_code)
          WHERE event_code IS NOT NULL AND event_code <> ''
        DO UPDATE SET title = EXCLUDED.title,
                      event_name = EXCLUDED.event_name,
+                     group_name = EXCLUDED.group_name,
                      format = EXCLUDED.format,
                      attempt_count = EXCLUDED.attempt_count,
                      enabled = EXCLUDED.enabled,
@@ -1029,8 +1030,9 @@ async function saveWeeklyMeetEvents(client: Pick<PoolClient, "query">, meetId: s
       [
         getWeeklyEventKey(meetId, config.eventId, format),
         meetId,
-        `${eventName} · ${getWeeklyResultFormat(format).name}`,
+        `${getWeeklyEventGroupName(config.eventId) ? `${getWeeklyEventGroupName(config.eventId)} · ` : ""}${eventName} · ${getWeeklyResultFormat(format).name}`,
         eventName,
+        getWeeklyEventGroupName(config.eventId),
         config.eventId,
         format,
         getWeeklyResultFormat(format).attemptCount,

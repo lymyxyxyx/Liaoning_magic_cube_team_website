@@ -3948,6 +3948,30 @@ textarea {
   scrollbar-width: thin;
 }
 
+.weekly-event-tab-group {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: stretch;
+  gap: 5px;
+  padding-left: 7px;
+  border-left: 1px solid #cbd9ed;
+}
+
+.weekly-event-tab-group > span {
+  display: grid;
+  place-items: center;
+  padding: 0 3px;
+  color: #315789;
+  font-size: 12px;
+  font-weight: 850;
+  writing-mode: vertical-rl;
+}
+
+.weekly-event-tab-group-tabs {
+  display: flex;
+  gap: 6px;
+}
+
 .weekly-event-tab {
   display: inline-flex;
   flex: 0 0 auto;

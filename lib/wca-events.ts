@@ -22,17 +22,38 @@ export const WCA_EVENTS = [
   { id: "individual", name: "个人全能", englishName: "Individual All-Around" },
   { id: "team", name: "团体赛", englishName: "Team" },
   { id: "bigstack100", name: "大堆（100个）", englishName: "Big Stack 100" },
-  { id: "bigstack300", name: "大堆（300个）", englishName: "Big Stack 300" }
+  { id: "bigstack300", name: "大堆（300个）", englishName: "Big Stack 300" },
+  { id: "bigstack333", name: "三阶", englishName: "3x3 Big Stack" },
+  { id: "bigstack222", name: "二阶", englishName: "2x2 Big Stack" },
+  { id: "bigstackpyram", name: "金字塔", englishName: "Pyraminx Big Stack" },
+  { id: "bigstackmaple", name: "枫叶", englishName: "Maple Leaf Big Stack" },
+  { id: "bigstackmirror", name: "镜面", englishName: "Mirror Big Stack" }
 ] as const;
 
 // 周赛当前开放项目。其它 WCA_EVENTS 保留在后台配置中，后续可直接启用。
-export const WEEKLY_DEFAULT_EVENT_IDS = ["333", "222", "pyram", "maple", "mirror", "individual"] as const;
+export const BIG_STACK_EVENT_IDS = ["bigstack333", "bigstack222", "bigstackpyram", "bigstackmaple", "bigstackmirror"] as const;
+
+// 大堆先展示已有数据的三阶、镜面；另三个子项已建好，后续启用即可。
+export const WEEKLY_VISIBLE_BIG_STACK_EVENT_IDS = ["bigstack333", "bigstackmirror"] as const;
+export const WEEKLY_DEFAULT_EVENT_IDS = ["333", "222", "pyram", "maple", "mirror", "individual", ...WEEKLY_VISIBLE_BIG_STACK_EVENT_IDS] as const;
 
 export const WEEKLY_DEFAULT_EVENTS = WEEKLY_DEFAULT_EVENT_IDS
   .map((eventId) => WCA_EVENTS.find((event) => event.id === eventId))
   .filter((event): event is (typeof WCA_EVENTS)[number] => Boolean(event));
 
 export type WcaEventId = (typeof WCA_EVENTS)[number]["id"];
+
+export function isBigStackEventId(eventId: string) {
+  return (BIG_STACK_EVENT_IDS as readonly string[]).includes(eventId);
+}
+
+export function getWeeklyEventGroupName(eventId: string) {
+  return isBigStackEventId(eventId) ? "大堆" : null;
+}
+
+export function isWeeklySingleAttemptEvent(eventId: string) {
+  return eventId === "individual" || isBigStackEventId(eventId);
+}
 
 export function getWcaEventName(eventId: string) {
   return WCA_EVENTS.find((event) => event.id === eventId)?.name || eventId;

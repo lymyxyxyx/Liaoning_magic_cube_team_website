@@ -5,7 +5,7 @@ import { randomUUID } from "node:crypto";
 import { isWeeklyV2ActivePlayer, weeklyV2ActivePlayerSql, weeklyV2PlayerSourceSql } from "@/lib/weekly-player-scope";
 
 export type WeeklyLibraryGender = "" | "男" | "女";
-export type WeeklyPersonalBests = Partial<Record<"333" | "222" | "pyram" | "mirror" | "maple" | "skewb" | "allAround", number>>;
+export type WeeklyPersonalBests = Partial<Record<"333" | "222" | "pyram" | "mirror" | "maple" | "skewb" | "allAround" | "bigstack333" | "bigstack222" | "bigstackpyram" | "bigstackmaple" | "bigstackmirror", number>>;
 
 export type WeeklyPlayerLibraryEntry = {
   id: string;
@@ -563,7 +563,7 @@ function normalizePersonalBests(value: unknown): WeeklyPersonalBests {
   if (!value || typeof value !== "object") return {};
   const input = value as Record<string, unknown>;
   const next: WeeklyPersonalBests = {};
-  for (const eventId of ["333", "222", "pyram", "mirror", "maple", "skewb", "allAround"] as const) {
+  for (const eventId of ["333", "222", "pyram", "mirror", "maple", "skewb", "allAround", "bigstack333", "bigstack222", "bigstackpyram", "bigstackmaple", "bigstackmirror"] as const) {
     const score = Number(input[eventId]);
     if (Number.isFinite(score) && score > 0) next[eventId] = score;
   }

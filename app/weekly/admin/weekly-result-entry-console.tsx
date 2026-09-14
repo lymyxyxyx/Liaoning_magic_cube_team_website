@@ -15,11 +15,13 @@ import {
   type WeeklyResultFormat
 } from "@/lib/weekly-result-utils";
 import type { WCA_EVENTS } from "@/lib/wca-events";
+import { isBigStackEventId, isWeeklySingleAttemptEvent } from "@/lib/wca-events";
 import { matchesWeeklyPlayerQuery } from "@/lib/weekly-player-search";
 import { getShenyangAssociationGrade } from "@/lib/shenyang-association-grades";
 import type { WeeklyOperationLog } from "@/lib/weekly-entry-store";
 import type { WeeklyWcaMatchCandidate } from "@/lib/weekly-player-library";
 import { WeeklyResultsImportConsole } from "@/app/admin/weekly/weekly-results-import-console";
+import { getWeeklyMeetMenuLabel } from "@/lib/weekly-meet-label";
 
 type MeetOption = {
   id: string;
@@ -151,9 +153,11 @@ export function WeeklyResultEntryConsole({ initialMeets, initialPlayers = [], ev
   const selectedFormatConfig = getWeeklyResultFormat(selectedFormat);
   const isPublicMode = mode === "public" || !adminUnlocked;
   const importEventConfigs = selectedMeetId ? initialMeetEventConfigsById[selectedMeetId] || initialEventConfigs : [];
-  const availableFormats = selectedEventId === "individual"
+  const availableFormats = isWeeklySingleAttemptEvent(selectedEventId)
     ? weeklyResultFormats.filter((format) => format.id === "best1")
     : weeklyResultFormats.filter((format) => format.id === "avg5" || format.id === "best3");
+  const regularVisibleEvents = visibleEvents.filter((event) => !isBigStackEventId(event.id));
+  const bigStackVisibleEvents = visibleEvents.filter((event) => isBigStackEventId(event.id));
 
   const calculated = useMemo(() => {
     try {
@@ -255,7 +259,7 @@ export function WeeklyResultEntryConsole({ initialMeets, initialPlayers = [], ev
   }, [selectedFormatConfig.attemptCount]);
 
   useEffect(() => {
-    if (selectedEventId === "individual") setSelectedFormat("best1");
+    if (isWeeklySingleAttemptEvent(selectedEventId)) setSelectedFormat("best1");
     else if (selectedFormat !== "avg5" && selectedFormat !== "best3") setSelectedFormat("avg5");
   }, [selectedEventId, selectedFormat]);
 
@@ -270,7 +274,7 @@ export function WeeklyResultEntryConsole({ initialMeets, initialPlayers = [], ev
     if (!isPublicMode) return;
     const configured = initialEventConfigs.find((config) => config.eventId === selectedEventId && config.enabled);
     if (configured) {
-      const normalizedFormat = selectedEventId === "individual"
+      const normalizedFormat = isWeeklySingleAttemptEvent(selectedEventId)
         ? "best1"
         : configured.format === "best3"
           ? "best3"
@@ -664,7 +668,7 @@ export function WeeklyResultEntryConsole({ initialMeets, initialPlayers = [], ev
                 {meets.length === 0 ? <option value="">本周待输入</option> : null}
                 {meets.map((meet) => (
                   <option value={meet.id} key={meet.id}>
-                    {meet.title}
+                    {getWeeklyMeetMenuLabel(meet.title)}
                   </option>
                 ))}
               </select>
@@ -755,7 +759,7 @@ export function WeeklyResultEntryConsole({ initialMeets, initialPlayers = [], ev
             <div className="weekly-event-tabs-field">
               <span>项目</span>
               <div className="weekly-event-tabs" role="tablist" aria-label="周赛项目">
-                {visibleEvents.map((event) => (
+                {regularVisibleEvents.map((event) => (
                   <button
                     className={`weekly-event-tab ${selectedEventId === event.id ? "is-active" : ""}`.trim()}
                     key={event.id}
@@ -768,6 +772,24 @@ export function WeeklyResultEntryConsole({ initialMeets, initialPlayers = [], ev
                     <small>{event.englishName}</small>
                   </button>
                 ))}
+                {bigStackVisibleEvents.length > 0 ? <div className="weekly-event-tab-group" role="presentation">
+                  <span>大堆</span>
+                  <div className="weekly-event-tab-group-tabs">
+                    {bigStackVisibleEvents.map((event) => (
+                      <button
+                        className={`weekly-event-tab ${selectedEventId === event.id ? "is-active" : ""}`.trim()}
+                        key={event.id}
+                        type="button"
+                        role="tab"
+                        aria-selected={selectedEventId === event.id}
+                        onClick={() => setSelectedEventId(event.id)}
+                      >
+                        <strong>{event.name}</strong>
+                        <small>{event.englishName}</small>
+                      </button>
+                    ))}
+                  </div>
+                </div> : null}
               </div>
             </div>
             <div className="weekly-age-tabs-field">
