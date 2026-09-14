@@ -685,18 +685,28 @@ export function WeeklyResultEntryConsole({ initialMeets, initialPlayers = [], ev
       </div>
 
       {!isPublicMode && selectedMeetId && isInlineImportOpen ? (
-        <div className="weekly-inline-import-slot">
-          <WeeklyResultsImportConsole
-            key={selectedMeetId}
-            embedded
-            meetId={selectedMeetId}
-            templateUrl={`/api/admin/weekly-meets/${encodeURIComponent(selectedMeetId)}/results-template`}
-            events={importEventConfigs}
-            onCommitted={() => {
-              refreshResults();
-              refreshOperationLogs();
-            }}
-          />
+        <div className="weekly-inline-import-slot" role="presentation">
+          <button className="weekly-inline-import-backdrop" type="button" aria-label="关闭智能导入" onClick={() => setIsInlineImportOpen(false)} />
+          <section className="weekly-inline-import-modal" role="dialog" aria-modal="true" aria-labelledby="weekly-inline-import-title">
+            <div className="weekly-inline-import-modal-heading">
+              <div>
+                <h2 id="weekly-inline-import-title">智能导入成绩</h2>
+                <p>导入、预览与确认均在当前页面完成。</p>
+              </div>
+              <button className="button compact" type="button" onClick={() => setIsInlineImportOpen(false)}><X size={15} />关闭</button>
+            </div>
+            <WeeklyResultsImportConsole
+              key={selectedMeetId}
+              embedded
+              meetId={selectedMeetId}
+              templateUrl={`/api/admin/weekly-meets/${encodeURIComponent(selectedMeetId)}/results-template`}
+              events={importEventConfigs}
+              onCommitted={() => {
+                refreshResults();
+                refreshOperationLogs();
+              }}
+            />
+          </section>
         </div>
       ) : null}
 
