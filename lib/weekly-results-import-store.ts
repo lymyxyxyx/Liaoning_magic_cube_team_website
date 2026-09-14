@@ -3,8 +3,8 @@ import { getPostgresPool } from "@/lib/postgres";
 import { calculateResultByFormat, formatResult, getWeeklyResultFormat, resultValueToSeconds, type ResultValue } from "@/lib/weekly-result-utils";
 import { normalizePastedWeeklyResults, normalizeWeeklyResultRow, type NormalizedWeeklyResultRow } from "@/lib/weekly-results-import";
 import { buildWeeklyPlayerImportMatch, type WeeklyImportPlayerCandidate } from "@/lib/weekly-player-import";
-import { createWeeklyResultsTemplate, parseWeeklyResultsWorkbook, type ParsedWeeklyResultsWorkbook, type WeeklyResultTemplateMeet } from "@/lib/weekly-results-xlsx";
-import { refreshWeeklyPlayerPersonalBestForEvent, rerankWeeklyEvent } from "@/lib/weekly-entry-store";
+import { createWeeklyResultsExport, createWeeklyResultsTemplate, parseWeeklyResultsWorkbook, type ParsedWeeklyResultsWorkbook, type WeeklyResultTemplateMeet } from "@/lib/weekly-results-xlsx";
+import { listWeeklyResults, refreshWeeklyPlayerPersonalBestForEvent, rerankWeeklyEvent } from "@/lib/weekly-entry-store";
 import { weeklyV2ActivePlayerSql } from "@/lib/weekly-player-scope";
 import { getWeeklyAgeGroup } from "@/lib/weekly-age-groups";
 import { weeklyBusinessDate, weeklyImportDateWarnings } from "@/lib/weekly-results-import-dates";
@@ -90,6 +90,36 @@ type BatchRow = {
 export async function getWeeklyResultsTemplate(meetId: string) {
   const context = await getImportContext(meetId);
   return { filename: `weekly-results-${context.slug}.xlsx`, buffer: createWeeklyResultsTemplate(context) };
+}
+
+export async function getWeeklyResultsExport(meetId: string) {
+  const context = await getImportContext(meetId);
+  const enabledEvents = context.events.filter((event) => event.enabled);
+  const resultsByEvent = await Promise.all(enabledEvents.map(async (event) => ({
+    event,
+    results: await listWeeklyResults(context.id, event.eventCode, event.format)
+  })));
+  const rows = resultsByEvent.flatMap(({ event, results }) => results.map((result) => ({
+    eventCode: event.eventCode,
+    format: event.format,
+    rank: result.rank,
+    playerId: result.player.id,
+    wcaId: result.player.wcaId,
+    playerName: result.player.name,
+    gender: result.player.gender,
+    ageGroup: result.player.ageGroup,
+    level: result.level,
+    grade: result.grade,
+    average: formatResult(result.average),
+    best: formatResult(result.best),
+    personalBest: formatResult(result.best),
+    pbRefreshed: result.pbRefreshed,
+    attempts: result.attempts.map(formatResult)
+  })));
+  return {
+    filename: `weekly-results-${context.slug}-export.xlsx`,
+    buffer: createWeeklyResultsExport(context, rows)
+  };
 }
 
 export async function createWeeklyResultsImportPreview(input: { meetId: string; filename: string; buffer?: Buffer; paste?: string; pasteEventCode?: string; actor: string }) {

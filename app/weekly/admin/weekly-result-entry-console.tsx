@@ -1176,8 +1176,16 @@ function formatPlayerMeta(player: WeeklyPlayer) {
 
 function formatMeetPeriod(meet: Pick<MeetOption, "startsAt" | "endsAt">) {
   const format = (value: Date) => `${value.getFullYear()}年${value.getMonth() + 1}月${value.getDate()}日`;
-  const formatDateTime = (value: Date) => `${format(value)} ${String(value.getHours()).padStart(2, "0")}:${String(value.getMinutes()).padStart(2, "0")}`;
-  if (meet.startsAt && meet.endsAt) return `北京时间 ${formatDateTime(new Date(meet.startsAt))} 开放 · ${formatDateTime(new Date(meet.endsAt))} 截止`;
+  const formatDateTime = (value: Date, isInclusiveEnd = false) => {
+    // The database stores the last moment of an all-day entry window as
+    // 23:59:59. Display it as 24:00 so the stated competition period is
+    // easier for participants to understand.
+    if (isInclusiveEnd && value.getHours() === 23 && value.getMinutes() === 59 && value.getSeconds() === 59) {
+      return `${format(value)} 24:00`;
+    }
+    return `${format(value)} ${String(value.getHours()).padStart(2, "0")}:${String(value.getMinutes()).padStart(2, "0")}`;
+  };
+  if (meet.startsAt && meet.endsAt) return `北京时间 ${formatDateTime(new Date(meet.startsAt))} 开放 · ${formatDateTime(new Date(meet.endsAt), true)} 截止`;
 
   const now = new Date();
   const monday = new Date(now);

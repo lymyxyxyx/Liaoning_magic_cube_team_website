@@ -18,12 +18,39 @@ export type NormalizedWeeklyResultRow = {
 
 export function normalizePastedWeeklyResults(text: string, defaults: { eventCode: string; format: string }) {
   const lines = text.replace(/\r/g, "").split("\n").filter((line) => line.trim());
-  return lines.map((line, index) => {
-    const values = line.split("\t").map((value) => value.trim());
-    const hasIdentityColumns = values.length >= 8;
-    const [playerId, wcaId, playerName, ...attemptValues] = hasIdentityColumns ? values : ["", "", values[0] || "", ...values.slice(1)];
-    return normalizeWeeklyResultRow({ eventCode: defaults.eventCode, playerId, wcaId, playerName, attemptValues, notes: "", sourceRow: index + 1, format: defaults.format });
+  return lines.flatMap((line, index) => {
+    const values = splitPastedLine(line);
+    if (isPastedHeader(values)) return [];
+    const withoutRank = removeLeadingRank(values);
+    const hasIdentityColumns = withoutRank.length >= 8;
+    const [playerId, wcaId, playerName, ...attemptValues] = hasIdentityColumns ? withoutRank : ["", "", withoutRank[0] || "", ...withoutRank.slice(1)];
+    return [normalizeWeeklyResultRow({ eventCode: defaults.eventCode, playerId, wcaId, playerName, attemptValues, notes: "", sourceRow: index + 1, format: defaults.format })];
   });
+}
+
+/**
+ * Teachers often paste rows copied from chat groups or spreadsheet previews,
+ * where columns are separated by tabs, spaces, Chinese punctuation, or slashes.
+ * Normalization remains deliberately conservative: a row still has to contain
+ * the exact number of valid attempts before it can reach the review screen.
+ */
+function splitPastedLine(line: string) {
+  const trimmed = line.trim();
+  if (trimmed.includes("\t")) return trimmed.split("\t").map(cleanPastedCell).filter(Boolean);
+  return trimmed.split(/[，,;；\s/]+/).map(cleanPastedCell).filter(Boolean);
+}
+
+function cleanPastedCell(value: string) {
+  return value.trim().replace(/^[：:]+|[：:]+$/g, "").replace(/[（(]新[）)]$/g, "");
+}
+
+function removeLeadingRank(values: string[]) {
+  return values.length > 1 && /^(?:#|第)?\d+(?:名)?$/.test(values[0]) ? values.slice(1) : values;
+}
+
+function isPastedHeader(values: string[]) {
+  const joined = values.join(" ").toLowerCase();
+  return /(?:姓名|选手|排名|成绩|平均|最快|attempt|\bt[1-5]\b)/.test(joined) && !values.some((value) => /^(?:\d+(?::\d+(?:\.\d+)?)?|dnf|dns)$/i.test(value));
 }
 
 export function normalizeWeeklyResultRow(input: { eventCode: string; playerId?: string; wcaId?: string; playerName?: string; attemptValues: unknown[]; notes?: string; sourceRow: number; format: string }): NormalizedWeeklyResultRow {

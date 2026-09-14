@@ -13,7 +13,7 @@ export function getWeeklyResultFormat(format: string | null | undefined) {
 }
 
 export function parseResultInput(input: string): ResultValue {
-  const clean = input.trim().toUpperCase();
+  const clean = normalizeResultInput(input);
   if (clean === "DNF") return "DNF";
   if (clean === "DNS") return "DNS";
   if (!clean) throw new Error("成绩不能为空");
@@ -35,6 +35,21 @@ export function parseResultInput(input: string): ResultValue {
   }
 
   return Math.round(seconds * 100);
+}
+
+function normalizeResultInput(input: string) {
+  const original = input.trim().toUpperCase().replace(/，/g, ".");
+  if (original === "弃权" || original === "未完成") return "DNF";
+  if (original === "未参赛" || original === "缺席") return "DNS";
+  // Common chat-style inputs: 12秒34, 12.34秒, 1分02秒34.
+  const chineseTime = original.match(/^(?:(\d+)分)?(\d+)(?:秒|S)(\d{1,2})?$/);
+  if (chineseTime) {
+    const minutes = Number(chineseTime[1] || 0);
+    const seconds = Number(chineseTime[2]);
+    const centiseconds = chineseTime[3] ? Number(chineseTime[3].padEnd(2, "0")) : 0;
+    return `${minutes}:${String(seconds).padStart(2, "0")}.${String(centiseconds).padStart(2, "0")}`;
+  }
+  return original.replace(/秒$/g, "").replace(/S$/g, "");
 }
 
 export function formatResult(value: ResultValue | null | undefined): string {

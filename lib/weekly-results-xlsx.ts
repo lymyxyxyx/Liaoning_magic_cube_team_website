@@ -17,20 +17,60 @@ export type ParsedWeeklyResultsWorkbook = {
   rows: Array<{ sourceRow: number; values: Record<(typeof weeklyResultHeaders)[number], string> }>;
 };
 
+export type WeeklyResultsExportRow = {
+  eventCode: string;
+  format: string;
+  rank: number;
+  playerId: string;
+  wcaId: string;
+  playerName: string;
+  gender: string;
+  ageGroup: string;
+  level: string;
+  grade: string;
+  average: string;
+  best: string;
+  personalBest: string;
+  pbRefreshed: boolean;
+  attempts: string[];
+};
+
 const maxZipEntryBytes = 2 * 1024 * 1024;
 type ZipEntry = { fileName: string; uncompressedSize: number };
 type ZipFileLike = { openReadStream(entry: ZipEntry, callback: (error: Error | null, stream?: Readable) => void): void; readEntry(): void; close(): void; on(event: string, callback: (...args: never[]) => void): void };
 
 export function createWeeklyResultsTemplate(meet: WeeklyResultTemplateMeet) {
   const info = [meet.slug, String(meet.weekNumber), meet.title, meet.startDate, meet.endDate];
+  return createWorkbook([
+    { name: "比赛信息", rows: [weeklyResultInfoHeaders, info] },
+    { name: "成绩", rows: [weeklyResultHeaders] }
+  ]);
+}
+
+export function createWeeklyResultsExport(meet: WeeklyResultTemplateMeet, rows: WeeklyResultsExportRow[]) {
+  const headers = ["项目", "赛制", "排名", "选手 ID", "WCA ID", "姓名", "性别", "年龄组", "段位", "等级", "平均", "本周最快", "个人 PB", "刷新 PB", "T1", "T2", "T3", "T4", "T5"];
+  const values = rows.map((row) => [
+    row.eventCode, row.format, String(row.rank), row.playerId, row.wcaId, row.playerName, row.gender,
+    row.ageGroup, row.level, row.grade, row.average, row.best, row.personalBest, row.pbRefreshed ? "是" : "否",
+    ...Array.from({ length: 5 }, (_, index) => row.attempts[index] || "")
+  ]);
+  return createWorkbook([
+    { name: "比赛信息", rows: [weeklyResultInfoHeaders, [meet.slug, String(meet.weekNumber), meet.title, meet.startDate, meet.endDate]] },
+    { name: "成绩导出", rows: [headers, ...values] }
+  ]);
+}
+
+function createWorkbook(sheets: Array<{ name: string; rows: readonly (readonly string[])[] }>) {
+  const sheetOverrides = sheets.map((_, index) => `<Override PartName="/xl/worksheets/sheet${index + 1}.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>`).join("");
+  const sheetNodes = sheets.map((sheet, index) => `<sheet name="${escapeXml(sheet.name)}" sheetId="${index + 1}" r:id="rId${index + 1}"/>`).join("");
+  const relationships = sheets.map((_, index) => `<Relationship Id="rId${index + 1}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet${index + 1}.xml"/>`).join("");
   const entries: Array<[string, string]> = [
-    ["[Content_Types].xml", `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/><Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/><Override PartName="/xl/worksheets/sheet2.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/><Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/></Types>`],
+    ["[Content_Types].xml", `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/>${sheetOverrides}<Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/></Types>`],
     ["_rels/.rels", `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/></Relationships>`],
-    ["xl/workbook.xml", `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheets><sheet name="比赛信息" sheetId="1" r:id="rId1"/><sheet name="成绩" sheetId="2" r:id="rId2"/></sheets></workbook>`],
-    ["xl/_rels/workbook.xml.rels", `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/><Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet2.xml"/><Relationship Id="rId3" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/></Relationships>`],
+    ["xl/workbook.xml", `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheets>${sheetNodes}</sheets></workbook>`],
+    ["xl/_rels/workbook.xml.rels", `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">${relationships}<Relationship Id="rId${sheets.length + 1}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/></Relationships>`],
     ["xl/styles.xml", `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><fonts count="1"><font><sz val="11"/><name val="Arial"/></font></fonts><fills count="1"><fill><patternFill patternType="none"/></fill></fills><borders count="1"><border><left/><right/><top/><bottom/><diagonal/></border></borders><cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs><cellXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/></cellXfs></styleSheet>`],
-    ["xl/worksheets/sheet1.xml", worksheetXml([weeklyResultInfoHeaders, info])],
-    ["xl/worksheets/sheet2.xml", worksheetXml([weeklyResultHeaders])]
+    ...sheets.map((sheet, index) => [`xl/worksheets/sheet${index + 1}.xml`, worksheetXml(sheet.rows)] as [string, string])
   ];
   return createStoredZip(entries.map(([name, content]) => ({ name, data: Buffer.from(content, "utf8") })));
 }

@@ -95,9 +95,9 @@ export function WeeklyResultsImportConsole({ meetId, templateUrl, events }: { me
       {notice ? <p className="admin-inline-notice">{notice}</p> : null}
     </div>
     <div className="admin-card">
-      <div className="admin-card-heading"><div><h2>批量粘贴</h2><p>粘贴后复用同一归一化、项目校验、选手匹配与预览流程。可粘贴“姓名 + 尝试成绩”，或包含 player_id、WCA ID 的制表符行。</p></div></div>
+      <div className="admin-card-heading"><div><h2>智能粘贴导入</h2><p>可直接粘贴聊天或表格中的整段成绩：支持制表符、空格、逗号、中文逗号与斜杠分隔；会跳过常见表头，识别排名、DNF/DNS、12秒34、1分02秒34等写法。</p></div></div>
       <div className="weekly-admin-actions"><label>项目 <select value={pasteEventCode} onChange={(event) => setPasteEventCode(event.target.value)}>{enabledEvents.map((event) => <option key={event.eventId} value={event.eventId}>{event.eventId} · {event.format}</option>)}</select></label><button className="button" type="button" disabled={busy || !paste.trim() || !pasteEventCode} onClick={previewPaste}>生成粘贴预览</button></div>
-      <textarea className="weekly-paste-box" value={paste} onChange={(event) => setPaste(event.target.value)} placeholder={"陈小明\t12.34\t12.50\t12.18\t12.60\t12.41"} />
+      <textarea className="weekly-paste-box" value={paste} onChange={(event) => setPaste(event.target.value)} placeholder={"排名 姓名 T1 T2 T3 T4 T5\n1 陈小明 12秒34 12.50 12.18 12.60 12.41\n2 李小红，13.05/13.22/12.97/13.40/13.11"} />
     </div>
     {preview && batch ? <Preview batch={batch} onResolve={resolve} onCommit={commit} onRollback={rollback} busy={busy} searchForRow={searchForRow} setSearchForRow={setSearchForRow} searchQuery={searchQuery} setSearchQuery={setSearchQuery} searchResults={searchResults} onSearch={searchPlayers} onCreate={createPlayer} /> : null}
   </section>;
