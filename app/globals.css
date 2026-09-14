@@ -3892,6 +3892,80 @@ textarea {
   font-size: 12px;
 }
 
+.weekly-import-confirmation-list {
+  display: grid;
+  gap: 7px;
+  margin-top: 10px;
+}
+
+.weekly-import-confirmation-row {
+  display: grid;
+  grid-template-columns: 38px minmax(92px, 0.8fr) minmax(190px, 1.4fr) minmax(110px, 0.8fr) minmax(112px, auto);
+  align-items: center;
+  gap: 10px;
+  padding: 9px 10px;
+  border: 1px solid #dce6f4;
+  border-radius: 9px;
+  background: #fbfdff;
+}
+
+.weekly-import-row-number {
+  display: grid;
+  justify-items: center;
+  gap: 1px;
+  color: var(--blue-deep);
+}
+
+.weekly-import-row-number strong {
+  font-size: 17px;
+  line-height: 1;
+}
+
+.weekly-import-confirmation-row small {
+  display: block;
+  margin-top: 2px;
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.35;
+}
+
+.weekly-import-row-player strong,
+.weekly-import-row-score strong {
+  display: block;
+  color: var(--ink);
+  font-size: 13px;
+  line-height: 1.35;
+}
+
+.weekly-import-row-score small {
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.weekly-import-row-match {
+  display: grid;
+  gap: 3px;
+}
+
+.weekly-import-confirmation-actions .weekly-result-import-match {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  min-width: 0;
+}
+
+.weekly-import-confirmation-actions .weekly-result-import-match .button {
+  width: auto;
+  min-height: 30px;
+  padding: 5px 8px;
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.weekly-import-confirmation-actions .weekly-result-import-search {
+  flex-basis: 100%;
+}
+
 .weekly-import-confirmation-summary strong {
   color: var(--ink);
   font-size: 16px;
@@ -4393,7 +4467,24 @@ textarea {
 }
 
 .weekly-inline-import-console .weekly-paste-box {
-  min-height: 124px;
+  min-height: 84px;
+  margin-top: 8px;
+  padding: 8px 10px;
+  line-height: 1.45;
+}
+
+.weekly-inline-import-console .admin-card-heading h2 {
+  font-size: 16px;
+}
+
+.weekly-inline-import-console .admin-card-heading p {
+  margin-top: 3px;
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.weekly-inline-import-console .weekly-admin-preview {
+  padding-top: 9px;
 }
 
 @media (max-width: 600px) {
@@ -4405,6 +4496,21 @@ textarea {
     max-height: calc(100vh - 28px);
     padding: 10px;
     border-radius: 10px;
+  }
+
+  .weekly-import-confirmation-row {
+    grid-template-columns: 34px 1fr;
+    gap: 7px 9px;
+  }
+
+  .weekly-import-row-score,
+  .weekly-import-row-match,
+  .weekly-import-confirmation-actions {
+    grid-column: 2;
+  }
+
+  .weekly-import-row-score small {
+    white-space: normal;
   }
 }
 

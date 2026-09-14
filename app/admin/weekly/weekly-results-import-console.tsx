@@ -152,12 +152,13 @@ function Preview({ batch, onResolve, onResolveAll, onCommit, onRollback, busy, s
       {batch.status === "rolled_back" ? <span>此批次已回滚。</span> : null}
     </div>
     {preview.globalErrors.length ? <p className="status error">{preview.globalErrors.join("；")}</p> : null}{preview.globalWarnings.length ? <p className="status">{preview.globalWarnings.join("；")}</p> : null}
-    <div className="table-scroll"><table className="result-table weekly-import-confirmation-table"><thead><tr><th>行</th><th>待录入选手</th><th>成绩</th><th>系统匹配</th><th>确认 / 修改</th></tr></thead><tbody>{preview.rows.map((row) => <tr key={row.sourceRow}>
-      <td>{row.sourceRow}<br /><small>{row.eventCode || "—"}</small></td><td><strong>{row.playerName || "—"}</strong>{row.wcaId ? <small>{row.wcaId}</small> : null}</td>
-      <td><strong>{row.averageText}</strong><small>最快 {row.bestText}</small><small>{row.attempts.map((attempt) => typeof attempt === "number" ? formatCentiseconds(attempt) : attempt).join(" / ") || "—"}</small></td>
-      <td>{row.matchedPlayerId ? <span className="weekly-import-match-confirmed">已确认：{row.matchedPlayerName}</span> : row.recommendedPlayerId ? <span className="weekly-import-match-recommended">建议：{row.candidates[0]?.name || row.playerName}</span> : <span className="weekly-import-match-unresolved">{statusLabel(row)}</span>}{[...row.warnings, ...row.errors].length ? <small className="weekly-import-row-warning">{[...row.warnings, ...row.errors].join("；")}</small> : null}</td>
-      <td><MatchControls row={row} onResolve={onResolve} busy={busy} searchOpen={searchForRow === row.sourceRow} onToggleSearch={() => setSearchForRow(searchForRow === row.sourceRow ? null : row.sourceRow)} searchQuery={searchQuery} setSearchQuery={setSearchQuery} searchResults={searchResults} onSearch={onSearch} onCreate={onCreate} /></td>
-    </tr>)}</tbody></table></div>
+    <div className="weekly-import-confirmation-list">{preview.rows.map((row) => <article className="weekly-import-confirmation-row" key={row.sourceRow}>
+      <div className="weekly-import-row-number"><strong>{row.sourceRow}</strong><small>{row.eventCode || "—"}</small></div>
+      <div className="weekly-import-row-player"><strong>{row.playerName || "—"}</strong>{row.wcaId ? <small>{row.wcaId}</small> : null}</div>
+      <div className="weekly-import-row-score"><strong>平均 {row.averageText} · 最快 {row.bestText}</strong><small>{row.attempts.map((attempt) => typeof attempt === "number" ? formatCentiseconds(attempt) : attempt).join(" / ") || "—"}</small></div>
+      <div className="weekly-import-row-match">{row.matchedPlayerId ? <span className="weekly-import-match-confirmed">已确认：{row.matchedPlayerName}</span> : row.recommendedPlayerId ? <span className="weekly-import-match-recommended">建议：{row.candidates[0]?.name || row.playerName}</span> : <span className="weekly-import-match-unresolved">{statusLabel(row)}</span>}{[...row.warnings, ...row.errors].length ? <small className="weekly-import-row-warning">{[...row.warnings, ...row.errors].join("；")}</small> : null}</div>
+      <div className="weekly-import-confirmation-actions"><MatchControls row={row} onResolve={onResolve} busy={busy} searchOpen={searchForRow === row.sourceRow} onToggleSearch={() => setSearchForRow(searchForRow === row.sourceRow ? null : row.sourceRow)} searchQuery={searchQuery} setSearchQuery={setSearchQuery} searchResults={searchResults} onSearch={onSearch} onCreate={onCreate} /></div>
+    </article>)}</div>
   </div>;
 }
 
