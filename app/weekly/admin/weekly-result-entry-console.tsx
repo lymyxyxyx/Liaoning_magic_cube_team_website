@@ -637,6 +637,10 @@ export function WeeklyResultEntryConsole({ initialMeets, initialPlayers = [], ev
           </div>
           {!isPublicMode ? (
             <div className="weekly-entry-heading-actions">
+              {selectedMeetId ? <>
+                <Link className="button" href={`/admin/weekly/${encodeURIComponent(selectedMeetId)}/results/import`}>智能导入</Link>
+                <a className="button" href={`/api/admin/weekly-meets/${encodeURIComponent(selectedMeetId)}/results-export`}>导出 Excel</a>
+              </> : null}
               <Link className="button" href="/admin/weekly#player-library">周赛选手库</Link>
               <button className="button" type="button" onClick={refreshMeets}>
                 <RefreshCw size={16} />
