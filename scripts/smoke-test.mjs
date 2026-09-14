@@ -32,12 +32,12 @@ const checks = [
   // Weekly results are administrator-entered for now. Keep the public surface
   // read-only until a separately reviewed self-entry workflow is launched.
   { path: "/api/admin/weekly-competitions", ok: [401], type: "application/json" },
-  // Node's fetch sends no Origin header by default, so the same-origin guard is
-  // exercised explicitly here. Same-origin + anonymous passes the origin guard
-  // and is rejected at the authentication layer (401).
-  { path: "/api/weekly-competitions/weekly-test-entry/results", method: "POST", body: "{}", origin: baseUrl, ok: [401], type: "application/json" },
-  // Cross-origin writes are rejected by the origin guard before authentication (403).
-  { path: "/api/weekly-competitions/weekly-test-entry/results", method: "POST", body: "{}", origin: "https://evil.example.invalid", ok: [403], type: "application/json" },
+  // When the weekly feature is enabled, a same-origin anonymous request is
+  // rejected by authentication (401) and a cross-origin request by the origin
+  // guard (403). CI deliberately leaves the feature disabled, in which case
+  // both requests correctly short-circuit with 404.
+  { path: "/api/weekly-competitions/weekly-test-entry/results", method: "POST", body: "{}", origin: baseUrl, ok: [401, 404], type: "application/json" },
+  { path: "/api/weekly-competitions/weekly-test-entry/results", method: "POST", body: "{}", origin: "https://evil.example.invalid", ok: [403, 404], type: "application/json" },
   { path: "/sitemap.xml", ok: [200], type: "xml" },
   { path: "/robots.txt", ok: [200], type: "text" }
 ];
