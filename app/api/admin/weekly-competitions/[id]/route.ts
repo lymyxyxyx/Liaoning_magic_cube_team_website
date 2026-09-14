@@ -23,7 +23,6 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
   const payload = (await request.json().catch(() => null)) as {
     title?: string;
     dateLabel?: string;
-    status?: "draft" | "open" | "closed" | "archived";
     isPublic?: boolean;
     startsAt?: string | null;
     endsAt?: string | null;
@@ -32,7 +31,6 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
 
   try {
     if (!isBoundedString(payload?.title, 200, true) || !isBoundedString(payload?.dateLabel, 100, true) ||
-        !["draft", "open", "closed", "archived"].includes(payload?.status || "") ||
         (payload.isPublic !== undefined && typeof payload.isPublic !== "boolean") ||
         !Array.isArray(payload?.eventConfigs) || payload.eventConfigs.length > 32 ||
         !payload.eventConfigs.every((config) => isBoundedString(config.eventId, 20, true) &&
@@ -46,7 +44,6 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
       id,
       title: payload.title,
       dateLabel: payload.dateLabel,
-      status: payload.status as "draft" | "open" | "closed" | "archived",
       isPublic: payload.isPublic,
       startsAt: payload.startsAt,
       endsAt: payload.endsAt,

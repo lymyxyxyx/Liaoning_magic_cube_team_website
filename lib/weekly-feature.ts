@@ -24,11 +24,4 @@ export function isWeeklyMeetPubliclyVisible(meet: {
   return Number.isFinite(publishedAt) && publishedAt <= Date.now();
 }
 
-export function isWeeklyMeetCurrent(meet: { status?: string | null; startsAt?: string | null; endsAt?: string | null }) {
-  if (meet.status !== "open") return false;
-  const now = Date.now();
-  const startsAt = meet.startsAt ? new Date(meet.startsAt).getTime() : null;
-  const endsAt = meet.endsAt ? new Date(meet.endsAt).getTime() : null;
-  return (startsAt === null || (Number.isFinite(startsAt) && startsAt <= now)) &&
-    (endsAt === null || (Number.isFinite(endsAt) && endsAt >= now));
-}
+export { isWeeklyMeetCurrent } from "@/lib/weekly-meet-status";

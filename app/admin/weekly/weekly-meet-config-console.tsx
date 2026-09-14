@@ -5,6 +5,7 @@ import { useEffect, useMemo, useState } from "react";
 import { weeklyResultFormats, type WeeklyResultFormat } from "@/lib/weekly-result-utils";
 import { isBigStackEventId, isWeeklySingleAttemptEvent, WEEKLY_DEFAULT_EVENT_IDS } from "@/lib/wca-events";
 import type { WCA_EVENTS } from "@/lib/wca-events";
+import { getWeeklyMeetStatus, weeklyMeetStatusLabel } from "@/lib/weekly-meet-status";
 
 type Meet = { id: string; title: string; dateLabel: string; status?: string; startsAt?: string | null; endsAt?: string | null; isPublic?: boolean; dataVersion?: number };
 type Config = { eventId: string; format: WeeklyResultFormat; enabled: boolean; seq: number };
@@ -15,7 +16,6 @@ export function WeeklyMeetConfigConsole({ initialMeets, events, defaultOpen = fa
   const selected = meets.find((meet) => meet.id === selectedId);
   const [title, setTitle] = useState("");
   const [dateLabel, setDateLabel] = useState("");
-  const [status, setStatus] = useState("draft");
   const [startsAt, setStartsAt] = useState("");
   const [endsAt, setEndsAt] = useState("");
   const [isPublic, setIsPublic] = useState(false);
@@ -26,13 +26,11 @@ export function WeeklyMeetConfigConsole({ initialMeets, events, defaultOpen = fa
   const [newStartDate, setNewStartDate] = useState(getNextMondayDate());
   const [newEndDate, setNewEndDate] = useState(getDateAfter(newStartDate, 6));
   const [templateMeetId, setTemplateMeetId] = useState(initialMeets[0]?.id || "");
-  const [newStatus, setNewStatus] = useState<"draft" | "open" | "closed" | "archived">("draft");
 
   useEffect(() => {
     if (!selected) return;
     setTitle(selected.title);
     setDateLabel(selected.dateLabel);
-    setStatus(selected.status || "draft");
     setStartsAt(toLocalValue(selected.startsAt));
     setEndsAt(toLocalValue(selected.endsAt));
     setIsPublic(Boolean(selected.isPublic));
@@ -58,12 +56,13 @@ export function WeeklyMeetConfigConsole({ initialMeets, events, defaultOpen = fa
     fetch(`/api/admin/weekly-competitions/${encodeURIComponent(selected.id)}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ title, dateLabel, status, isPublic, startsAt: startsAt || null, endsAt: endsAt || null, eventConfigs: configs })
+      body: JSON.stringify({ title, dateLabel, isPublic, startsAt: startsAt || null, endsAt: endsAt || null, eventConfigs: configs })
     })
       .then((response) => response.ok ? response.json() : response.json().then((body) => Promise.reject(new Error(body.message || "保存失败"))))
       .then(() => {
-        setMeets((current) => current.map((meet) => meet.id === selected.id ? { ...meet, title, dateLabel, status, isPublic, startsAt, endsAt } : meet));
-        setNotice(status === "open" ? "周赛已开放，前台会优先显示这一场。" : "周赛配置已保存。" );
+        const nextStatus = getWeeklyMeetStatus({ startsAt, endsAt });
+        setMeets((current) => current.map((meet) => meet.id === selected.id ? { ...meet, title, dateLabel, status: nextStatus, isPublic, startsAt, endsAt } : meet));
+        setNotice(nextStatus === "open" ? "周赛正在进行，前台会优先显示这一场。" : "周赛配置已保存，状态将按时间自动更新。" );
       })
       .catch((error) => setNotice(error instanceof Error ? error.message : "保存周赛配置失败。"))
       .finally(() => setSaving(false));
@@ -83,7 +82,7 @@ export function WeeklyMeetConfigConsole({ initialMeets, events, defaultOpen = fa
     fetch("/api/admin/weekly-competitions", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ startDate: newStartDate, endDate: newEndDate, templateMeetId: templateMeetId || null, status: newStatus })
+      body: JSON.stringify({ startDate: newStartDate, endDate: newEndDate, templateMeetId: templateMeetId || null })
     })
       .then(async (response) => {
         const payload = await response.json().catch(() => null) as { meet?: Meet; message?: string } | null;
@@ -117,7 +116,7 @@ export function WeeklyMeetConfigConsole({ initialMeets, events, defaultOpen = fa
         <div className="weekly-meet-config-fields">
           <label>标题<input value={title} onChange={(event) => setTitle(event.target.value)} /></label>
           <label>周期<input value={dateLabel} onChange={(event) => setDateLabel(event.target.value)} /></label>
-          <label>状态<select value={status} onChange={(event) => setStatus(event.target.value)}><option value="draft">草稿</option><option value="open">开放</option><option value="closed">已截止</option><option value="archived">已归档</option></select></label>
+          <label>系统状态<span className="weekly-meet-status-readonly">{weeklyMeetStatusLabel(getWeeklyMeetStatus({ startsAt, endsAt, status: selected.status }))}</span></label>
           <label>开始时间（北京时间）<input type="datetime-local" value={startsAt} onChange={(event) => setStartsAt(event.target.value)} /></label>
           <label>截止时间（北京时间）<input type="datetime-local" value={endsAt} onChange={(event) => setEndsAt(event.target.value)} /></label>
           <label>公开状态<input type="checkbox" checked={isPublic} onChange={(event) => setIsPublic(event.target.checked)} />公开展示成绩</label>
@@ -164,7 +163,7 @@ export function WeeklyMeetConfigConsole({ initialMeets, events, defaultOpen = fa
               <label>开始日期<input type="date" value={newStartDate} onChange={(event) => setNewStartDate(event.target.value)} /></label>
               <label>结束日期<input type="date" value={newEndDate} onChange={(event) => setNewEndDate(event.target.value)} /></label>
               <label>项目模板<select value={templateMeetId} onChange={(event) => setTemplateMeetId(event.target.value)}>{meets.map((meet) => <option key={meet.id} value={meet.id}>{meet.title}</option>)}</select></label>
-              <label>初始状态<select value={newStatus} onChange={(event) => setNewStatus(event.target.value as "draft" | "open" | "closed" | "archived")}><option value="draft">草稿</option><option value="open">开放</option><option value="closed">已截止</option><option value="archived">已归档</option></select></label>
+              <p className="weekly-meet-status-help">系统会按开始、截止时间自动显示“未开始、进行中或已结束”。</p>
             </div>
             <div className="weekly-admin-actions"><button className="button" type="button" onClick={() => setIsCreating(false)} disabled={saving}>取消</button><button className="button primary" type="button" onClick={createMeet} disabled={saving || !newStartDate || !newEndDate}><CalendarPlus size={16} />{saving ? "生成中" : "生成周赛"}</button></div>
           </div>

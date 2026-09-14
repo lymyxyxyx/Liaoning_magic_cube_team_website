@@ -8,6 +8,7 @@ import { WeeklyResultEntryConsole } from "./admin/weekly-result-entry-console";
 import { WeeklyHistoryMenu } from "@/components/weekly-history-menu";
 import { WeeklyInlineAdminLogin } from "@/components/weekly-inline-admin-login";
 import Link from "next/link";
+import { isWeeklyMeetCurrent } from "@/lib/weekly-meet-status";
 
 export const dynamic = "force-dynamic";
 
@@ -25,7 +26,7 @@ export default async function WeeklyPage() {
   const historyMeets = (isAdmin ? adminMeets : allMeets.filter((meet) => isGuestWeeklyHistoryMeet(meet)))
     .sort((a, b) => meetStartsAtTimestamp(b.startsAt) - meetStartsAtTimestamp(a.startsAt));
   const visibleMeets = adminMeets;
-  const currentMeet = visibleMeets.filter((meet) => meet.status === "open" && (!meet.startsAt || new Date(meet.startsAt).getTime() <= Date.now()) && (!meet.endsAt || new Date(meet.endsAt).getTime() >= Date.now())).sort((left, right) => meetStartsAtTimestamp(right.startsAt) - meetStartsAtTimestamp(left.startsAt))[0];
+  const currentMeet = visibleMeets.filter(isWeeklyMeetCurrent).sort((left, right) => meetStartsAtTimestamp(right.startsAt) - meetStartsAtTimestamp(left.startsAt))[0];
   const historyMenuMeets = !isAdmin && currentMeet ? [currentMeet, ...historyMeets] : historyMeets;
   // Guests should always arrive at a leaderboard. Between weekly windows,
   // fall back to the latest completed, publicly visible meet rather than

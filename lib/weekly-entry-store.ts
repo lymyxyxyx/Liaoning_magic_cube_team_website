@@ -19,6 +19,7 @@ import { matchesWeeklyPlayerQuery } from "@/lib/weekly-player-search";
 import { weeklyV2ActivePlayerSql, weeklyV2PlayerSourceSql } from "@/lib/weekly-player-scope";
 import { getShenyangAssociationGrade } from "@/lib/shenyang-association-grades";
 import { isWeeklyMeetVisibleToGuests } from "@/lib/weekly-guest-history";
+import { getWeeklyMeetStatus } from "@/lib/weekly-meet-status";
 
 export type WeeklyMeetOption = {
   id: string;
@@ -148,28 +149,28 @@ export async function listWeeklyMeetOptions(): Promise<WeeklyMeetOption[]> {
      FROM weekly_meets
      ORDER BY week_number DESC, created_at DESC`
   );
-  return withOptionalTestMeet(rows);
+  return withOptionalTestMeet(rows.map((meet) => ({ ...meet, status: getWeeklyMeetStatus(meet) })));
 }
 
 export async function listWeeklyHistoryForAdmin(): Promise<WeeklyHistoryAdminRow[]> {
   const pool = getPostgresPool();
   const { rows } = await pool.query<{
-    id: string; title: string; week_number: number; date_label: string; status: string;
+    id: string; title: string; week_number: number; date_label: string; status: string; starts_at: string | null; ends_at: string | null;
     result_count: string; competitor_count: string;
   }>(
-    `SELECT meet.id, meet.title, meet.week_number, meet.date_label, meet.status,
+    `SELECT meet.id, meet.title, meet.week_number, meet.date_label, meet.status, meet.starts_at, meet.ends_at,
             count(result.id)::text AS result_count,
             count(DISTINCT result.player_id)::text AS competitor_count
        FROM weekly_meets meet
        LEFT JOIN weekly_results result ON result.meet_id = meet.id
       WHERE meet.data_version = 2
-      GROUP BY meet.id, meet.title, meet.week_number, meet.date_label, meet.status, meet.starts_at
+      GROUP BY meet.id, meet.title, meet.week_number, meet.date_label, meet.status, meet.starts_at, meet.ends_at
       ORDER BY meet.starts_at DESC NULLS LAST, meet.week_number DESC
       `
   );
   return rows.map((row) => ({
     id: row.id, title: row.title, weekNumber: row.week_number, dateLabel: row.date_label,
-    status: row.status, resultCount: Number(row.result_count), competitorCount: Number(row.competitor_count)
+    status: getWeeklyMeetStatus({ status: row.status, startsAt: row.starts_at, endsAt: row.ends_at }), resultCount: Number(row.result_count), competitorCount: Number(row.competitor_count)
   }));
 }
 
@@ -239,10 +240,9 @@ export async function getWeeklyMeetEntryAvailability(meetIdOrSlug: string, optio
   if (!meet) return { canEnter: false, message: "周赛不存在" };
   if (meet.data_version !== 2) return { canEnter: false, message: "历史数据 / 只读" };
   if (options.adminOverride) return { canEnter: true, message: "管理员可录入" };
-  if (meet.status !== "open") return { canEnter: false, message: "本周赛暂未开放成绩录入" };
-  const now = Date.now();
-  if (meet.starts_at && new Date(meet.starts_at).getTime() > now) return { canEnter: false, message: "周赛尚未开始" };
-  if (meet.ends_at && new Date(meet.ends_at).getTime() < now) return { canEnter: false, message: "本周赛成绩录入已截止" };
+  const status = getWeeklyMeetStatus({ status: meet.status, startsAt: meet.starts_at, endsAt: meet.ends_at });
+  if (status === "draft") return { canEnter: false, message: "周赛尚未开始" };
+  if (status !== "open") return { canEnter: false, message: "本周赛成绩录入已截止" };
   return { canEnter: true, message: "" };
 }
 
@@ -253,7 +253,6 @@ export async function createWeeklyMeet(input: {
   title?: string;
   slug?: string;
   weekNumber?: number;
-  status?: "draft" | "open" | "closed" | "archived";
 }) {
   const startDate = parseWeeklyDate(input.startDate);
   const endDate = parseWeeklyDate(input.endDate);
@@ -279,7 +278,9 @@ export async function createWeeklyMeet(input: {
     const slug = !input.slug && id !== baseId ? id : requestedSlug;
     const dateLabel = formatWeeklyDateRange(startDate, endDate);
     const title = input.title?.trim() || `第${weekNumber}周周赛（${startDate.getFullYear()}年第${getIsoWeek(startDate)}周）`;
-    const status = input.status || "draft";
+    const startsAt = `${startDateValue}T00:00:00+08:00`;
+    const endsAt = `${endDateValue}T23:59:59+08:00`;
+    const status = getWeeklyMeetStatus({ startsAt, endsAt });
     const templateConfigs = input.templateMeetId
       ? await client.query<{ event_id: string; format: string; enabled: boolean; seq: number }>(
           `SELECT event_code AS event_id, format, enabled, seq
@@ -310,8 +311,8 @@ export async function createWeeklyMeet(input: {
         "下表中个人 PB 部分标红的为本周刷新的成绩。",
         "三阶为周赛主要项目，项目配置沿用模板周赛。",
         status,
-        `${startDateValue}T00:00:00+08:00`,
-        `${endDateValue}T23:59:59+08:00`
+        startsAt,
+        endsAt
       ]
     );
     await saveWeeklyMeetEvents(client, id, eventConfigs);
@@ -322,8 +323,8 @@ export async function createWeeklyMeet(input: {
       title,
       dateLabel,
       status,
-      startsAt: `${startDateValue}T00:00:00+08:00`,
-      endsAt: `${endDateValue}T23:59:59+08:00`,
+      startsAt,
+      endsAt,
       isPublic: false,
       dataVersion: 2
     } satisfies WeeklyMeetOption;
@@ -367,7 +368,6 @@ export async function updateWeeklyMeetConfig(input: {
   id: string;
   title: string;
   dateLabel: string;
-  status: "draft" | "open" | "closed" | "archived";
   startsAt?: string | null;
   endsAt?: string | null;
   isPublic?: boolean;
@@ -379,6 +379,7 @@ export async function updateWeeklyMeetConfig(input: {
   const client = await pool.connect();
   try {
     await client.query("BEGIN");
+    const status = getWeeklyMeetStatus({ startsAt: input.startsAt, endsAt: input.endsAt });
     const updated = await client.query(
       `UPDATE weekly_meets
        SET title = $1, date_label = $2, status = $3, starts_at = $4, ends_at = $5,
@@ -386,7 +387,7 @@ export async function updateWeeklyMeetConfig(input: {
            published_at = CASE WHEN COALESCE($6, is_public) AND NOT is_public THEN now()::text WHEN NOT COALESCE($6, is_public) THEN NULL ELSE published_at END,
            updated_at = now()
        WHERE id = $7 AND data_version = 2`,
-      [input.title.trim(), input.dateLabel.trim(), input.status, input.startsAt || null, input.endsAt || null, input.isPublic ?? null, input.id]
+      [input.title.trim(), input.dateLabel.trim(), status, input.startsAt || null, input.endsAt || null, input.isPublic ?? null, input.id]
     );
     if (updated.rowCount === 0) throw new Error("周赛不存在，或历史数据 / 只读");
     await saveWeeklyMeetEvents(client, input.id, input.eventConfigs);

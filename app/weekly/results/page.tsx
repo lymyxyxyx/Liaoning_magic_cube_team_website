@@ -23,7 +23,7 @@ export default async function WeeklyResultsEntryPage() {
   const sessionToken = (await cookies()).get("liaoning_weekly_admin_session")?.value || "";
   const initialAdminUnlocked = sessionToken ? await verifySessionToken(sessionToken, "weekly-admin") : false;
   const allMeets = await listWeeklyMeetOptions();
-  const meets = allMeets.filter((meet) => meet.status === "open" && meet.dataVersion === 2);
+  const meets = allMeets.filter((meet) => meet.dataVersion === 2);
   // All v2 weekly history is guest-visible; v1 meets remain gated on the public flag.
   const historyMeets = allMeets
     .filter((meet) => meet.id !== "weekly-test-entry" && meet.dataVersion === 2)
