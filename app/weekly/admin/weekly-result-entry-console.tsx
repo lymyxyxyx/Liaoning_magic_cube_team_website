@@ -63,6 +63,7 @@ type EnteredResult = {
   pbRefreshed: boolean;
   pbAverageRefreshed: boolean;
   isNewPlayer: boolean;
+  provincialRank?: number | null;
 };
 
 type NewPlayerDraft = {
@@ -824,6 +825,7 @@ export function WeeklyResultEntryConsole({ initialMeets, initialPlayers = [], ev
                   <th>段位</th>
                   <th>等级</th>
                   <th>平均</th>
+                  <th>辽宁省排名</th>
                   <th>个人 PB</th>
                   <th>本周最好</th>
                   {Array.from({ length: 5 }, (_, index) => <th key={index}>{index + 1}</th>)}
@@ -868,6 +870,7 @@ export function WeeklyResultEntryConsole({ initialMeets, initialPlayers = [], ev
                     <td data-label="平均" className={result.pbAverageRefreshed ? "score-strong pb-cell pb-refreshed" : "score-strong"}>
                       {formatResult(result.average)}{result.pbAverageRefreshed ? <span className="weekly-pb-badge">PB</span> : null}
                     </td>
+                    <td data-label="辽宁省排名" className="weekly-provincial-rank-cell">{result.provincialRank ? `#${result.provincialRank}` : "—"}</td>
                     <td data-label="个人 PB" className="pb-cell">
                       {formatResult(result.sourcePersonalBest ?? result.best)}
                     </td>
@@ -895,7 +898,7 @@ export function WeeklyResultEntryConsole({ initialMeets, initialPlayers = [], ev
                 ))}
                 {displayedResults.length === 0 ? (
                   <tr>
-                    <td colSpan={isPublicMode ? 16 : 17}>{isLoadingResults ? "正在读取成绩..." : results.length ? "没有符合筛选条件的成绩。" : "当前项目暂无成绩。"}</td>
+                    <td colSpan={isPublicMode ? 17 : 18}>{isLoadingResults ? "正在读取成绩..." : results.length ? "没有符合筛选条件的成绩。" : "当前项目暂无成绩。"}</td>
                   </tr>
                 ) : null}
               </tbody>

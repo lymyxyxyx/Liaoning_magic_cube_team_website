@@ -46,6 +46,7 @@ export default async function WeeklyPage() {
         actions={
           <div className="weekly-page-actions">
             <WeeklyHistoryMenu meets={historyMenuMeets} />
+            <Link className="weekly-grade-standards-link" href="/weekly/provincial-rankings">辽宁省榜</Link>
             <Link className="weekly-grade-standards-link" href="/weekly/grade-standards">等级标准</Link>
             <WeeklyInlineAdminLogin isAdmin={isAdmin} />
             {isAdmin ? <>

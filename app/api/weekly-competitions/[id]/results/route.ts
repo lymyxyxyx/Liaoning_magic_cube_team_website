@@ -10,6 +10,7 @@ import { isWeeklySameOrigin } from "@/lib/weekly-request-security";
 import { isBoundedString, isWeeklyAttempts, isWeeklyResultFormat } from "@/lib/weekly-request-validation";
 import { hasWeeklyAdminSession } from "@/lib/weekly-admin-auth";
 import { canReadWeeklyMeet } from "@/lib/weekly-read-access";
+import { getWeeklyProvincialRanks } from "@/lib/weekly-provincial-ranking";
 
 export const dynamic = "force-dynamic";
 
@@ -25,9 +26,11 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
   const format = request.nextUrl.searchParams.get("format") || "avg5";
   try {
     const results = await listWeeklyResults(id, eventId, format);
+    const provincialRanks = await getWeeklyProvincialRanks(eventId, results.map((result) => result.player.id));
+    const rankedResults = results.map((result) => ({ ...result, provincialRank: provincialRanks.get(result.player.id) || null }));
     const visibleResults = isAdmin
-      ? results
-      : results.map((result) => ({
+      ? rankedResults
+      : rankedResults.map((result) => ({
           ...result,
           player: {
             ...result.player,

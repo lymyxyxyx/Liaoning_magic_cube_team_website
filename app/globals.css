@@ -1059,6 +1059,60 @@ main {
   color: var(--blue);
 }
 
+.weekly-provincial-ranking-page {
+  display: grid;
+  gap: 14px;
+}
+
+.weekly-provincial-ranking-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+}
+
+.weekly-provincial-ranking-tabs a {
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 6px 11px;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.weekly-provincial-ranking-tabs a:hover,
+.weekly-provincial-ranking-tabs a.is-active {
+  border-color: #1c5bbe;
+  color: #174a9e;
+  background: #eaf1ff;
+}
+
+.weekly-provincial-ranking-note {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 8px;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.weekly-provincial-ranking-note strong {
+  color: var(--ink);
+  font-size: 16px;
+}
+
+.weekly-provincial-ranking-table td:last-child small {
+  display: block;
+  margin-top: 2px;
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.weekly-provincial-rank-cell {
+  color: #174a9e;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
 .weekly-grade-page {
   display: grid;
   gap: 16px;
