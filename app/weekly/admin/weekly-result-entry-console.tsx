@@ -19,6 +19,7 @@ import { matchesWeeklyPlayerQuery } from "@/lib/weekly-player-search";
 import { getShenyangAssociationGrade } from "@/lib/shenyang-association-grades";
 import type { WeeklyOperationLog } from "@/lib/weekly-entry-store";
 import type { WeeklyWcaMatchCandidate } from "@/lib/weekly-player-library";
+import { WeeklyResultsImportConsole } from "@/app/admin/weekly/weekly-results-import-console";
 
 type MeetOption = {
   id: string;
@@ -72,6 +73,7 @@ type Props = {
   initialPlayers?: WeeklyPlayer[];
   events: ReadonlyArray<(typeof WCA_EVENTS)[number]>;
   initialEventConfigs?: Array<{ eventId: string; format: WeeklyResultFormat; enabled: boolean }>;
+  initialMeetEventConfigsById?: Record<string, Array<{ eventId: string; format: WeeklyResultFormat; enabled: boolean }>>;
   initialResultEventIds?: string[];
   variant?: "full" | "workspace";
   mode?: "admin" | "public";
@@ -106,7 +108,7 @@ const publicAttemptInputStyle: CSSProperties = {
   boxShadow: "none"
 };
 
-export function WeeklyResultEntryConsole({ initialMeets, initialPlayers = [], events, initialEventConfigs = [], initialResultEventIds, variant = "full", mode = "admin", initialAdminUnlocked = true, emptyMeetMessage = "选择周赛和项目，检索选手后录入五次成绩，保存后右侧榜单立即刷新。", resultsOnly = false }: Props) {
+export function WeeklyResultEntryConsole({ initialMeets, initialPlayers = [], events, initialEventConfigs = [], initialMeetEventConfigsById = {}, initialResultEventIds, variant = "full", mode = "admin", initialAdminUnlocked = true, emptyMeetMessage = "选择周赛和项目，检索选手后录入五次成绩，保存后右侧榜单立即刷新。", resultsOnly = false }: Props) {
   const defaultPublicMeet = initialMeets.find(isMeetEntryWindowOpen) || initialMeets.find((meet) => meet.id !== testMeetId && (!meet.startsAt || new Date(meet.startsAt).getTime() <= Date.now()));
   const defaultMeetId = mode === "public" ? defaultPublicMeet?.id || "" : initialMeets[0]?.id || "";
   const [meets, setMeets] = useState(initialMeets);
@@ -141,12 +143,14 @@ export function WeeklyResultEntryConsole({ initialMeets, initialPlayers = [], ev
   const [isPlayerEditorOpen, setIsPlayerEditorOpen] = useState(false);
   const [playerDraft, setPlayerDraft] = useState<WeeklyPlayer | null>(null);
   const [isSavingPlayer, setIsSavingPlayer] = useState(false);
+  const [isInlineImportOpen, setIsInlineImportOpen] = useState(false);
   const [newPlayerDraft, setNewPlayerDraft] = useState<NewPlayerDraft | null>(null);
   const [activePlayerCandidateIndex, setActivePlayerCandidateIndex] = useState(0);
   const attemptRefs = useRef<Array<HTMLInputElement | null>>([]);
   const playerInputRef = useRef<HTMLInputElement | null>(null);
   const selectedFormatConfig = getWeeklyResultFormat(selectedFormat);
   const isPublicMode = mode === "public" || !adminUnlocked;
+  const importEventConfigs = selectedMeetId ? initialMeetEventConfigsById[selectedMeetId] || initialEventConfigs : [];
   const availableFormats = selectedEventId === "individual"
     ? weeklyResultFormats.filter((format) => format.id === "best1")
     : weeklyResultFormats.filter((format) => format.id === "avg5" || format.id === "best3");
@@ -638,7 +642,9 @@ export function WeeklyResultEntryConsole({ initialMeets, initialPlayers = [], ev
           {!isPublicMode ? (
             <div className="weekly-entry-heading-actions">
               {selectedMeetId ? <>
-                <Link className="button" href={`/admin/weekly/${encodeURIComponent(selectedMeetId)}/results/import`}>智能导入</Link>
+                <button className="button" type="button" onClick={() => setIsInlineImportOpen((open) => !open)}>
+                  {isInlineImportOpen ? "收起智能导入" : "智能导入"}
+                </button>
                 <a className="button" href={`/api/admin/weekly-meets/${encodeURIComponent(selectedMeetId)}/results-export`}>导出 Excel</a>
               </> : null}
               <Link className="button" href="/admin/weekly#player-library">周赛选手库</Link>
@@ -677,6 +683,22 @@ export function WeeklyResultEntryConsole({ initialMeets, initialPlayers = [], ev
         </div>
         {notice ? <p className="admin-inline-notice">{notice}</p> : null}
       </div>
+
+      {!isPublicMode && selectedMeetId && isInlineImportOpen ? (
+        <div className="weekly-inline-import-slot">
+          <WeeklyResultsImportConsole
+            key={selectedMeetId}
+            embedded
+            meetId={selectedMeetId}
+            templateUrl={`/api/admin/weekly-meets/${encodeURIComponent(selectedMeetId)}/results-template`}
+            events={importEventConfigs}
+            onCommitted={() => {
+              refreshResults();
+              refreshOperationLogs();
+            }}
+          />
+        </div>
+      ) : null}
 
       <div className="weekly-entry-grid">
         <div className="weekly-entry-results">

@@ -6,7 +6,16 @@ import type { WeeklyResultsImportBatch, WeeklyResultsImportPreviewRow } from "@/
 
 type SearchPlayer = { id: string; name: string; wcaId?: string; status?: "active" | "inactive"; province?: string; city?: string };
 
-export function WeeklyResultsImportConsole({ meetId, templateUrl, events }: { meetId: string; templateUrl: string; events: Array<{ eventId: string; format: string; enabled: boolean }> }) {
+type Props = {
+  meetId: string;
+  templateUrl: string;
+  events: Array<{ eventId: string; format: string; enabled: boolean }>;
+  /** Removes the page-level container when the importer is opened inside the score-entry panel. */
+  embedded?: boolean;
+  onCommitted?: () => void;
+};
+
+export function WeeklyResultsImportConsole({ meetId, templateUrl, events, embedded = false, onCommitted }: Props) {
   const [batch, setBatch] = useState<WeeklyResultsImportBatch | null>(null);
   const [paste, setPaste] = useState("");
   const [pasteEventCode, setPasteEventCode] = useState(events.find((event) => event.enabled)?.eventId || "");
@@ -73,7 +82,7 @@ export function WeeklyResultsImportConsole({ meetId, templateUrl, events }: { me
     try {
       const response = await fetch(`/api/admin/weekly-results-imports/${encodeURIComponent(batch.id)}/commit`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ meetId }) });
       const payload = await response.json(); if (!response.ok) throw new Error(payload.message || "提交成绩失败");
-      setBatch(payload.batch); setNotice("成绩批次已原子提交，并已重算 ranking 与 PB。");
+      setBatch(payload.batch); setNotice("成绩批次已原子提交，并已重算 ranking 与 PB。"); onCommitted?.();
     } catch (error) { setNotice(error instanceof Error ? error.message : "提交成绩失败"); } finally { setBusy(false); }
   }
 
@@ -88,7 +97,7 @@ export function WeeklyResultsImportConsole({ meetId, templateUrl, events }: { me
   }
 
   const preview = batch?.preview;
-  return <section className="container section weekly-admin-workspace">
+  return <section className={`${embedded ? "weekly-inline-import-console" : "container section weekly-admin-workspace"}`}>
     <div className="admin-card">
       <div className="admin-card-heading"><div><h2>标准 Excel 导入</h2><p>只支持本页下载的“比赛信息”和“成绩”两个固定工作表。赛制与尝试次数始终以当前周赛配置为准。</p></div></div>
       <div className="weekly-admin-actions"><a className="button" href={templateUrl}><FileDown size={16} />下载本期成绩模板</a><label className="button primary"><FileUp size={16} />{busy ? "处理中" : "上传标准 Excel"}<input hidden type="file" accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" onChange={upload} disabled={busy} /></label></div>

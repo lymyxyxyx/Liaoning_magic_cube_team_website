@@ -26,7 +26,11 @@ export default async function WeeklyPage() {
     .sort((a, b) => meetStartsAtTimestamp(b.startsAt) - meetStartsAtTimestamp(a.startsAt));
   const visibleMeets = adminMeets;
   const currentMeet = visibleMeets.filter((meet) => meet.status === "open" && (!meet.startsAt || new Date(meet.startsAt).getTime() <= Date.now()) && (!meet.endsAt || new Date(meet.endsAt).getTime() >= Date.now())).sort((left, right) => meetStartsAtTimestamp(right.startsAt) - meetStartsAtTimestamp(left.startsAt))[0];
-  const currentEventConfigs = currentMeet ? await listWeeklyMeetEventConfigs(currentMeet.id).catch(() => []) : [];
+  const [currentEventConfigs, adminMeetEventConfigEntries] = await Promise.all([
+    currentMeet ? listWeeklyMeetEventConfigs(currentMeet.id).catch(() => []) : Promise.resolve([]),
+    isAdmin ? Promise.all(adminMeets.map(async (meet) => [meet.id, await listWeeklyMeetEventConfigs(meet.id).catch(() => [])] as const)) : Promise.resolve([])
+  ]);
+  const adminMeetEventConfigsById = Object.fromEntries(adminMeetEventConfigEntries);
   const emptyGuest = !isAdmin && !currentMeet;
 
   return (
@@ -57,6 +61,7 @@ export default async function WeeklyPage() {
           initialAdminUnlocked
           initialMeets={adminMeets}
           events={WEEKLY_DEFAULT_EVENTS}
+          initialMeetEventConfigsById={adminMeetEventConfigsById}
           mode="admin"
           variant="full"
         />

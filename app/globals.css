@@ -4191,6 +4191,25 @@ textarea {
   font-size: 12px;
 }
 
+.weekly-inline-import-console {
+  display: grid;
+  gap: 12px;
+  padding-top: 4px;
+}
+
+.weekly-inline-import-slot {
+  margin-top: 14px;
+}
+
+.weekly-inline-import-console .admin-card {
+  padding: 12px;
+  background: #fff;
+}
+
+.weekly-inline-import-console .weekly-paste-box {
+  min-height: 144px;
+}
+
 .weekly-entry-shell--public .weekly-entry-panel .admin-card-heading p {
   color: var(--muted);
   font-size: 10.5px;
