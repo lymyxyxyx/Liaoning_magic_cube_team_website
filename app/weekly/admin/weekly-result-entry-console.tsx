@@ -632,7 +632,7 @@ export function WeeklyResultEntryConsole({ initialMeets, initialPlayers = [], ev
       <div className="admin-card weekly-admin-card">
         <div className="admin-card-heading">
           <div>
-            <h2>{isPublicMode ? "当前周赛成绩" : "单人成绩录入"}</h2>
+            <h2>{isPublicMode ? `${selectedMeet?.title || "周赛"}成绩` : "单人成绩录入"}</h2>
             <p>
               {isPublicMode
                 ? selectedMeet
