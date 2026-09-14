@@ -48,6 +48,15 @@ backup and the 18-route smoke test while retaining the production build, restart
 DEPLOY_SSH_KEY=/path/to/deploy-key scripts/deploy_aliyun.sh main --fast
 ```
 
+For ordinary application-code changes where you want to retain the complete
+smoke test, use code-only mode. It skips the pre-deploy backup and migration
+step (the application data is unchanged), but still builds, restarts, checks
+the health and weekly pages, and runs the full smoke test:
+
+```bash
+DEPLOY_SSH_KEY=/path/to/deploy-key scripts/deploy_aliyun.sh main --code-only
+```
+
 Use the default full mode for database migrations, imports, dependency/runtime
 changes, or any update where rollback may require restoring runtime data.
 

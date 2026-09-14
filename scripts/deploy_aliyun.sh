@@ -12,6 +12,13 @@ for argument in "$@"; do
       smoke_mode="skip"
       migration_mode="skip"
       ;;
+    --code-only)
+      # Code-only releases leave production data untouched. Keep the full
+      # smoke test, but avoid a multi-gigabyte backup and an unnecessary
+      # database-migration command.
+      backup_mode="skip"
+      migration_mode="skip"
+      ;;
     --full)
       backup_mode="full"
       smoke_mode="full"
@@ -73,6 +80,15 @@ smoke_mode="$5"
 migration_mode="$6"
 deploy_started_at="$(date +%s)"
 target_short="${target_commit:0:12}"
+stage_started_at="$deploy_started_at"
+
+finish_stage() {
+  local label="$1"
+  local now
+  now="$(date +%s)"
+  echo "[deploy] ${label}: $((now - stage_started_at))s (total $((now - deploy_started_at))s)"
+  stage_started_at="$now"
+}
 
 cd "$app_dir"
 
@@ -92,8 +108,10 @@ fi
 if [[ "$backup_mode" == "full" ]]; then
   echo "[deploy] Creating a pre-deploy runtime backup."
   sudo "$app_dir/scripts/backup.sh" --keep 7 </dev/null
+  finish_stage "Backup complete"
 else
   echo "[deploy] Fast mode: skipping the pre-deploy runtime backup."
+  finish_stage "Backup skipped"
 fi
 
 echo "[deploy] Checking out ${target_short}."
@@ -102,8 +120,10 @@ git checkout -B "$branch" "$target_commit"
 if [[ "$migration_mode" == "full" ]]; then
   echo "[deploy] Applying database migrations."
   sudo docker compose exec -T web npm run db:migrate </dev/null
+  finish_stage "Migrations complete"
 else
   echo "[deploy] Fast mode: skipping database migrations."
+  finish_stage "Migrations skipped"
 fi
 
 echo "[deploy] Building application."
@@ -118,6 +138,7 @@ if [[ -e "$staged_next_dir" || -e "$previous_next_dir" ]]; then
   exit 1
 fi
 sudo docker compose exec -T -e NEXT_DIST_DIR="$staged_next_dir" web npm run build </dev/null
+finish_stage "Build complete"
 
 # Next.js may rewrite these tracked compiler shims according to the
 # container's installed version. They are not production source changes and
@@ -145,6 +166,7 @@ if [[ "$(sudo docker compose ps --status running -q web)" == "" ]]; then
   echo "[deploy] Web container did not reach the running state." >&2
   exit 1
 fi
+finish_stage "Application switched"
 
 echo "[deploy] Waiting for health endpoint."
 for attempt in 1 2 3 4 5 6 7 8 9 10; do
@@ -179,6 +201,7 @@ if ! curl -fsSL --max-time 10 http://127.0.0.1:3000/weekly >/dev/null; then
   echo "[deploy] Weekly page did not render after deployment." >&2
   exit 1
 fi
+finish_stage "Health and weekly-page checks complete"
 
 # The old build is only disposable after the new server is demonstrably ready.
 sudo rm -rf "$previous_next_dir"
@@ -186,8 +209,10 @@ sudo rm -rf "$previous_next_dir"
 if [[ "$smoke_mode" == "full" ]]; then
   echo "[deploy] Running production smoke test."
   sudo docker compose exec -T -e BASE_URL=http://127.0.0.1:3000 web npm run test:smoke </dev/null
+  finish_stage "Smoke test complete"
 else
   echo "[deploy] Fast mode: skipping the production smoke test."
+  finish_stage "Smoke test skipped"
 fi
 
 deployed_commit="$(git rev-parse HEAD)"
