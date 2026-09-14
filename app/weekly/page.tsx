@@ -40,7 +40,7 @@ export default async function WeeklyPage() {
             <WeeklyInlineAdminLogin isAdmin={isAdmin} />
             {isAdmin ? <>
               {/* eslint-disable-next-line @next/next/no-html-link-for-pages */}
-              <a className="weekly-admin-library-link" href="/admin/weekly">后台管理</a>
+              <a className="weekly-admin-library-link" href="/admin/weekly?view=management">周赛管理</a>
             </> : null}
           </div>
         }
