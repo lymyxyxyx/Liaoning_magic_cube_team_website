@@ -23,7 +23,7 @@ export type WeeklyResultsImportPreviewRow = NormalizedWeeklyResultRow & {
 };
 
 export type WeeklyResultsImportPreview = {
-  parser: "weekly-results-template-v1" | "weekly-results-paste-v1";
+  parser: "weekly-results-template-v1" | "weekly-results-paste-v1" | "weekly-results-legacy-weekly-v1";
   source: "xlsx" | "paste";
   meetId: string;
   metadata: Record<string, string>;
@@ -131,7 +131,13 @@ export async function createWeeklyResultsImportPreview(input: { meetId: string; 
   let parser: WeeklyResultsImportPreview["parser"];
   if (input.buffer) {
     parsed = await parseWeeklyResultsWorkbook(input.buffer);
-    source = "xlsx"; parser = "weekly-results-template-v1"; metadata = parsed.metadata;
+    source = "xlsx"; parser = parsed.parser;
+    // A teacher's weekly statistics workbook has one sheet per event rather
+    // than the fixed import-template metadata sheet. It can still be safely
+    // imported because the selected meet supplies the authoritative identity.
+    metadata = parsed.parser === "weekly-results-legacy-weekly-v1"
+      ? { ...parsed.metadata, meet_slug: context.slug, week_number: String(context.weekNumber), title: context.title, start_date: context.startDate, end_date: context.endDate }
+      : parsed.metadata;
     rawRows = parsed.rows.map((row) => normalizeForEvent(row.values.event_code, row.values, row.sourceRow, context));
   } else {
     const text = input.paste?.trim() || "";

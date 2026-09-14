@@ -13,6 +13,7 @@ export type WeeklyResultTemplateMeet = {
 };
 
 export type ParsedWeeklyResultsWorkbook = {
+  parser: "weekly-results-template-v1" | "weekly-results-legacy-weekly-v1";
   metadata: Record<(typeof weeklyResultInfoHeaders)[number], string>;
   rows: Array<{ sourceRow: number; values: Record<(typeof weeklyResultHeaders)[number], string> }>;
 };
@@ -76,18 +77,20 @@ function createWorkbook(sheets: Array<{ name: string; rows: readonly (readonly s
 }
 
 export async function parseWeeklyResultsWorkbook(buffer: Buffer): Promise<ParsedWeeklyResultsWorkbook> {
-  const entries = await readZipEntries(buffer, new Set(["xl/workbook.xml", "xl/_rels/workbook.xml.rels", "xl/sharedStrings.xml", "xl/styles.xml", "xl/worksheets/sheet1.xml", "xl/worksheets/sheet2.xml"]));
-  const workbook = entries.get("xl/workbook.xml") || "";
-  const relationshipXml = entries.get("xl/_rels/workbook.xml.rels") || "";
-  const sheets = Array.from(workbook.matchAll(/<sheet\b([^>]*)\/>/g)).map((match) => ({ name: readXmlAttribute(match[1], "name"), relationshipId: readXmlAttribute(match[1], "r:id") }));
-  if (sheets.length !== 2 || sheets[0]?.name !== "比赛信息" || sheets[1]?.name !== "成绩") throw new Error("只支持包含“比赛信息”和“成绩”两个固定工作表的标准模板");
-  const targetByRelationship = new Map(Array.from(relationshipXml.matchAll(/<Relationship\b([^>]*)\/>/g)).map((match) => [readXmlAttribute(match[1], "Id"), `xl/${readXmlAttribute(match[1], "Target").replace(/^\/+/, "")}`]));
-  if (targetByRelationship.get(sheets[0].relationshipId) !== "xl/worksheets/sheet1.xml" || targetByRelationship.get(sheets[1].relationshipId) !== "xl/worksheets/sheet2.xml") throw new Error("标准模板工作表结构不正确");
-
+  const workbookEntries = await readZipEntries(buffer, new Set(["xl/workbook.xml", "xl/_rels/workbook.xml.rels", "xl/sharedStrings.xml", "xl/styles.xml"]));
+  const sheets = parseWorkbookSheets(workbookEntries.get("xl/workbook.xml") || "", workbookEntries.get("xl/_rels/workbook.xml.rels") || "");
+  const standardTemplate = sheets.length === 2 && sheets[0]?.name === "比赛信息" && sheets[1]?.name === "成绩";
+  const legacySheets = sheets.filter((sheet) => legacySheetSpecs.some((spec) => spec.sheetName === sheet.name));
+  const sourceSheets = standardTemplate ? sheets : legacySheets;
+  const entries = await readZipEntries(buffer, new Set(["xl/sharedStrings.xml", "xl/styles.xml", ...sourceSheets.map((sheet) => sheet.target)]));
   const sharedStrings = parseSharedStrings(entries.get("xl/sharedStrings.xml") || "");
+
+  if (!standardTemplate && legacySheets.length === 0) throw new Error("请上传标准成绩模板，或包含三阶、二阶、金字塔、枫叶、镜面、个人全能成绩页的周赛统计表");
+  if (!standardTemplate) return parseLegacyWeeklyWorkbook(legacySheets, entries, sharedStrings);
+
   const dateStyles = parseDateStyles(entries.get("xl/styles.xml") || "");
-  const infoRows = parseSheetRows(entries.get("xl/worksheets/sheet1.xml") || "", sharedStrings, dateStyles);
-  const resultRows = parseSheetRows(entries.get("xl/worksheets/sheet2.xml") || "", sharedStrings, dateStyles);
+  const infoRows = parseSheetRows(entries.get(sheets[0].target) || "", sharedStrings, dateStyles);
+  const resultRows = parseSheetRows(entries.get(sheets[1].target) || "", sharedStrings, dateStyles);
   const infoHeader = cellsToValues(infoRows[0]);
   const infoValues = cellsToValues(infoRows[1]);
   assertExactHeaders(infoHeader, weeklyResultInfoHeaders, "比赛信息");
@@ -99,7 +102,70 @@ export async function parseWeeklyResultsWorkbook(buffer: Buffer): Promise<Parsed
     sourceRow: row.rowNumber,
     values: Object.fromEntries(weeklyResultHeaders.map((header, index) => [header, cellsToValues(row)[index] || ""])) as ParsedWeeklyResultsWorkbook["rows"][number]["values"]
   })).filter((row) => weeklyResultHeaders.some((header) => row.values[header].trim()));
-  return { metadata, rows };
+  return { parser: "weekly-results-template-v1", metadata, rows };
+}
+
+const legacySheetSpecs = [
+  { sheetName: "三阶", eventCode: "333", nameColumn: 2, attemptColumn: 5, attemptCount: 5 },
+  { sheetName: "二阶", eventCode: "222", nameColumn: 2, attemptColumn: 4, attemptCount: 5 },
+  { sheetName: "金字塔", eventCode: "pyram", nameColumn: 2, attemptColumn: 4, attemptCount: 5 },
+  { sheetName: "枫叶", eventCode: "maple", nameColumn: 2, attemptColumn: 4, attemptCount: 5 },
+  { sheetName: "镜面", eventCode: "mirror", nameColumn: 2, attemptColumn: 4, attemptCount: 5 },
+  { sheetName: "个人全能", eventCode: "individual", nameColumn: 2, attemptColumn: 4, attemptCount: 1 }
+] as const;
+
+function parseLegacyWeeklyWorkbook(
+  sheets: Array<{ name: string; target: string }>,
+  entries: Map<string, string>,
+  sharedStrings: string[]
+): ParsedWeeklyResultsWorkbook {
+  const rows: ParsedWeeklyResultsWorkbook["rows"] = [];
+  let detectedWeekNumber = "";
+  for (const spec of legacySheetSpecs) {
+    const sheet = sheets.find((item) => item.name === spec.sheetName);
+    if (!sheet) continue;
+    // Keep raw numeric values here. Some teacher workbooks use a time-like
+    // number format for long results; interpreting that style as a calendar
+    // date would corrupt a result such as 144.30 seconds.
+    const sheetRows = parseSheetRows(entries.get(sheet.target) || "", sharedStrings, new Set());
+    const title = cellsToValues(sheetRows[0])[0] || "";
+    detectedWeekNumber ||= title.match(/第\s*(\d+)\s*周/)?.[1] || "";
+    for (const source of sheetRows.filter((row) => row.rowNumber >= 3)) {
+      const values = cellsToValues(source);
+      const playerName = values[spec.nameColumn - 1] || "";
+      const attempts = Array.from({ length: spec.attemptCount }, (_, index) => values[spec.attemptColumn - 1 + index] || "");
+      if (!playerName.trim() || !attempts.some((value) => value.trim())) continue;
+      rows.push({
+        sourceRow: rows.length + 1,
+        values: {
+          event_code: spec.eventCode,
+          player_id: "",
+          wca_id: "",
+          player_name: playerName.trim(),
+          attempt_1: attempts[0] || "",
+          attempt_2: attempts[1] || "",
+          attempt_3: attempts[2] || "",
+          attempt_4: attempts[3] || "",
+          attempt_5: attempts[4] || "",
+          notes: `来源：${spec.sheetName}第${source.rowNumber}行`
+        }
+      });
+    }
+  }
+  if (!rows.length) throw new Error("未在周赛统计表中找到可导入的成绩行");
+  return {
+    parser: "weekly-results-legacy-weekly-v1",
+    metadata: { meet_slug: "", week_number: detectedWeekNumber, title: "", start_date: "", end_date: "" },
+    rows
+  };
+}
+
+function parseWorkbookSheets(workbook: string, relationshipXml: string) {
+  const targetByRelationship = new Map(Array.from(relationshipXml.matchAll(/<Relationship\b([^>]*)\/>/g)).map((match) => [readXmlAttribute(match[1], "Id"), `xl/${readXmlAttribute(match[1], "Target").replace(/^\/+/, "")}`]));
+  return Array.from(workbook.matchAll(/<sheet\b([^>]*)\/>/g)).map((match) => {
+    const relationshipId = readXmlAttribute(match[1], "r:id");
+    return { name: readXmlAttribute(match[1], "name"), target: targetByRelationship.get(relationshipId) || "" };
+  }).filter((sheet) => Boolean(sheet.target));
 }
 
 function assertExactHeaders(actual: string[], expected: readonly string[], sheetName: string) {
