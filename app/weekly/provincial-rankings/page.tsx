@@ -3,11 +3,18 @@ import { notFound } from "next/navigation";
 import { PageHero } from "@/components/page-hero";
 import { isWeeklyCompetitionEnabled } from "@/lib/weekly-feature";
 import { listWeeklyProvincialRankingEvents, listWeeklyProvincialRankings, WEEKLY_PROVINCIAL_RANKING_NOTE } from "@/lib/weekly-provincial-ranking";
+import { getWeeklyMeetMenuLabel } from "@/lib/weekly-meet-label";
 
 export const dynamic = "force-dynamic";
 
 function formatAverage(value: number) {
   return value.toFixed(2);
+}
+
+function formatMeetPeriod(value: string) {
+  const dates = [...value.matchAll(/20\d{2}-(\d{1,2})-(\d{1,2})/g)];
+  if (dates.length >= 2) return `${Number(dates[0][1])}月${Number(dates[0][2])}日–${Number(dates[dates.length - 1][1])}月${Number(dates[dates.length - 1][2])}日`;
+  return value;
 }
 
 export default async function WeeklyProvincialRankingsPage({ searchParams }: { searchParams: Promise<{ event?: string }> }) {
@@ -27,9 +34,9 @@ export default async function WeeklyProvincialRankingsPage({ searchParams }: { s
         {events.map((event) => <Link className={event.eventCode === selectedEvent ? "is-active" : ""} href={`/weekly/provincial-rankings?event=${encodeURIComponent(event.eventCode)}`} key={event.eventCode}>{event.eventName}</Link>)}
       </nav>
       <div className="weekly-provincial-ranking-note"><strong>{selectedName}平均成绩榜</strong><span>每位选手仅保留纳入范围内的历史最好平均。</span></div>
-      <div className="result-table-wrap"><table className="result-table weekly-provincial-ranking-table"><thead><tr><th>辽宁省排名</th><th>姓名</th><th>性别</th><th>最好平均</th><th>达成周赛</th></tr></thead><tbody>
-        {rankings.map((row) => <tr key={row.playerId}><td className="score-strong">#{row.rank}</td><td>{row.playerSlug ? <Link className="table-person-link" href={`/people/${row.playerSlug}`}>{row.playerName}</Link> : row.playerName}</td><td>{row.gender}</td><td className="score-strong">{formatAverage(row.average)}</td><td>{row.meetTitle}<small>{row.dateLabel}</small></td></tr>)}
-        {!rankings.length ? <tr><td colSpan={5}>当前项目暂无可计入的周赛平均成绩。</td></tr> : null}
+      <div className="result-table-wrap"><table className="result-table weekly-provincial-ranking-table"><thead><tr><th>辽宁省排名</th><th>选手编号</th><th>姓名</th><th>组别</th><th>性别</th><th>WCA ID</th><th>最好平均</th><th>达成周赛</th></tr></thead><tbody>
+        {rankings.map((row) => <tr key={row.playerId}><td className="score-strong">#{row.rank}</td><td>{row.weeklyNumber ?? ""}</td><td>{row.playerSlug ? <Link className="table-person-link" href={`/people/${row.playerSlug}`}>{row.playerName}</Link> : row.playerName}</td><td>{row.ageGroup}</td><td>{row.gender}</td><td className="weekly-provincial-wca-id">{row.wcaId}</td><td className="score-strong">{formatAverage(row.average)}</td><td className="weekly-provincial-meet-cell">{getWeeklyMeetMenuLabel(row.meetTitle)} · {formatMeetPeriod(row.dateLabel)}</td></tr>)}
+        {!rankings.length ? <tr><td colSpan={8}>当前项目暂无可计入的周赛平均成绩。</td></tr> : null}
       </tbody></table></div>
     </section>
   </>;

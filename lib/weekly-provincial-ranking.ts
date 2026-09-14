@@ -11,7 +11,10 @@ export type WeeklyProvincialRankingRow = {
   playerId: string;
   playerName: string;
   playerSlug: string;
+  weeklyNumber: number | null;
+  ageGroup: string;
   gender: "男" | "女";
+  wcaId: string;
   average: number;
   meetTitle: string;
   dateLabel: string;
@@ -45,13 +48,16 @@ export async function listWeeklyProvincialRankings(eventCode: string): Promise<W
     player_id: string;
     player_name: string;
     player_slug: string;
+    weekly_number: number | null;
+    age_group: string | null;
     gender: string;
+    wca_id: string;
     average: string;
     meet_title: string;
     date_label: string;
   }>(
     `WITH eligible AS (
-       SELECT result.player_id, result.player_name, result.player_slug, result.gender,
+       SELECT result.player_id, result.player_name, result.player_slug, result.gender, result.age_group,
               result.average, meet.title AS meet_title, meet.date_label, meet.starts_at
          FROM weekly_results result
          JOIN weekly_events event ON event.id = result.event_id AND event.meet_id = result.meet_id
@@ -63,13 +69,23 @@ export async function listWeeklyProvincialRankings(eventCode: string): Promise<W
           AND result.average > 0
           AND result.player_id IS NOT NULL
      ), best AS (
-       SELECT DISTINCT ON (player_id) player_id, player_name, player_slug, gender, average, meet_title, date_label
+       SELECT DISTINCT ON (player_id) player_id, player_name, player_slug, gender, age_group, average, meet_title, date_label
          FROM eligible
         ORDER BY player_id, average ASC, starts_at ASC
      )
-     SELECT RANK() OVER (ORDER BY average ASC)::text AS rank, player_id, player_name, player_slug, gender,
-            average::text, meet_title, date_label
+     SELECT RANK() OVER (ORDER BY best.average ASC)::text AS rank, best.player_id, best.player_name, best.player_slug, best.gender,
+            best.age_group, COALESCE(card.source_row_number, NULL)::integer AS weekly_number,
+            COALESCE(NULLIF(library.wca_id, ''), NULLIF(card.wca_id, ''), '') AS wca_id,
+            best.average::text, best.meet_title, best.date_label
        FROM best
+       LEFT JOIN weekly_player_library library ON library.id = best.player_id
+       LEFT JOIN LATERAL (
+         SELECT source_row_number, wca_id
+           FROM weekly_long_card_profiles
+          WHERE matched_player_id = best.player_id
+          ORDER BY submitted_at DESC, source_row_number DESC
+          LIMIT 1
+       ) card ON TRUE
       ORDER BY average ASC, player_name ASC`,
     [WEEKLY_PROVINCIAL_RANKING_START, eventCode, averageFormats]
   );
@@ -78,7 +94,10 @@ export async function listWeeklyProvincialRankings(eventCode: string): Promise<W
     playerId: row.player_id,
     playerName: row.player_name,
     playerSlug: row.player_slug,
+    weeklyNumber: row.weekly_number,
+    ageGroup: row.age_group || "",
     gender: row.gender === "女" ? "女" : "男",
+    wcaId: row.wca_id || "",
     average: Number(row.average),
     meetTitle: row.meet_title,
     dateLabel: row.date_label

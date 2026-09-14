@@ -1100,17 +1100,25 @@ main {
   font-size: 16px;
 }
 
-.weekly-provincial-ranking-table td:last-child small {
-  display: block;
-  margin-top: 2px;
-  color: var(--muted);
-  font-size: 11px;
-}
-
 .weekly-provincial-rank-cell {
   color: #174a9e;
   font-weight: 800;
   white-space: nowrap;
+}
+
+.weekly-provincial-ranking-table td {
+  white-space: nowrap;
+}
+
+.weekly-provincial-wca-id {
+  color: var(--muted);
+  font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  font-size: 12px;
+}
+
+.weekly-provincial-meet-cell {
+  color: var(--muted);
+  font-size: 12px;
 }
 
 .weekly-grade-page {
