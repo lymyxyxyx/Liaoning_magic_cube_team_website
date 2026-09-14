@@ -1,8 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 
 export async function POST(request: NextRequest) {
-  const target = request.nextUrl.clone();
-  target.pathname = "/weekly";
-  target.search = "";
-  return NextResponse.redirect(target, { status: 303 });
+  void request;
+  return new NextResponse(null, { status: 303, headers: { Location: "/weekly" } });
 }
