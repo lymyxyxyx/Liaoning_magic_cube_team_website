@@ -1,6 +1,6 @@
 "use client";
 
-import { ChangeEvent, useState } from "react";
+import { ChangeEvent, useRef, useState } from "react";
 import { FileDown, FileUp, RotateCcw, Search, Send, UserPlus } from "lucide-react";
 import type { WeeklyResultsImportBatch, WeeklyResultsImportPreviewRow } from "@/lib/weekly-results-import-store";
 
@@ -24,6 +24,7 @@ export function WeeklyResultsImportConsole({ meetId, templateUrl, events, embedd
   const [searchForRow, setSearchForRow] = useState<number | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState<SearchPlayer[]>([]);
+  const pasteRef = useRef<HTMLTextAreaElement | null>(null);
   const enabledEvents = events.filter((event) => event.enabled);
 
   async function upload(event: ChangeEvent<HTMLInputElement>) {
@@ -33,9 +34,19 @@ export function WeeklyResultsImportConsole({ meetId, templateUrl, events, embedd
     await createPreview(form);
   }
 
-  async function previewPaste() {
-    const form = new FormData(); form.set("meetId", meetId); form.set("source", "paste"); form.set("paste", paste); form.set("eventCode", pasteEventCode);
+  async function previewPaste(rawPaste = paste) {
+    const form = new FormData(); form.set("meetId", meetId); form.set("source", "paste"); form.set("paste", rawPaste); form.set("eventCode", pasteEventCode);
     await createPreview(form);
+  }
+
+  function previewAfterPaste() {
+    // A real paste is already a complete score block. Parse it after the
+    // browser writes the textarea value, instead of making the operator
+    // click an extra button before seeing the pending entries.
+    window.setTimeout(() => {
+      const pastedText = pasteRef.current?.value.trim() || "";
+      if (pastedText && pasteEventCode) void previewPaste(pastedText);
+    }, 0);
   }
 
   async function createPreview(form: FormData) {
@@ -43,7 +54,7 @@ export function WeeklyResultsImportConsole({ meetId, templateUrl, events, embedd
     try {
       const response = await fetch("/api/admin/weekly-results-imports", { method: "POST", body: form });
       const payload = await response.json(); if (!response.ok) throw new Error(payload.message || "生成预览失败");
-      setBatch(payload.batch); setSearchForRow(null); setSearchResults([]); setNotice("已保存导入预览；本轮不会写入正式成绩。");
+      setBatch(payload.batch); setSearchForRow(null); setSearchResults([]); setNotice("已带出待确认成绩；确认前不会写入正式成绩。");
     } catch (error) { setNotice(error instanceof Error ? error.message : "生成预览失败"); } finally { setBusy(false); }
   }
 
@@ -55,6 +66,20 @@ export function WeeklyResultsImportConsole({ meetId, templateUrl, events, embedd
       const payload = await response.json(); if (!response.ok) throw new Error(payload.message || "更新匹配失败");
       setBatch(payload.batch); setSearchForRow(null); setSearchResults([]); setNotice("已更新该预览行的正式 player_id；尚未写入成绩。");
     } catch (error) { setNotice(error instanceof Error ? error.message : "更新匹配失败"); } finally { setBusy(false); }
+  }
+
+  async function resolveAllRecommended(rows: WeeklyResultsImportPreviewRow[]) {
+    if (!batch) return;
+    const resolutions = rows
+      .filter((row) => row.handlingStatus === "recommended" && row.recommendedPlayerId && row.errors.length === 0 && !row.existingResult)
+      .map((row) => ({ sourceRow: row.sourceRow, playerId: row.recommendedPlayerId }));
+    if (!resolutions.length) return;
+    setBusy(true); setNotice("");
+    try {
+      const response = await fetch(`/api/admin/weekly-results-imports/${encodeURIComponent(batch.id)}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ meetId, resolutions }) });
+      const payload = await response.json(); if (!response.ok) throw new Error(payload.message || "确认推荐匹配失败");
+      setBatch(payload.batch); setNotice(`已确认 ${resolutions.length} 条姓名推荐；仍可逐条修改。`);
+    } catch (error) { setNotice(error instanceof Error ? error.message : "确认推荐匹配失败"); } finally { setBusy(false); }
   }
 
   async function searchPlayers() {
@@ -105,32 +130,46 @@ export function WeeklyResultsImportConsole({ meetId, templateUrl, events, embedd
     </div>
     <div className="admin-card">
       <div className="admin-card-heading"><div><h2>智能粘贴导入</h2><p>可直接粘贴聊天或表格中的整段成绩：支持制表符、空格、逗号、中文逗号与斜杠分隔；会跳过常见表头，识别排名、DNF/DNS、12秒34、1分02秒34等写法。</p></div></div>
-      <div className="weekly-admin-actions"><label>项目 <select value={pasteEventCode} onChange={(event) => setPasteEventCode(event.target.value)}>{enabledEvents.map((event) => <option key={event.eventId} value={event.eventId}>{event.eventId} · {event.format}</option>)}</select></label><button className="button" type="button" disabled={busy || !paste.trim() || !pasteEventCode} onClick={previewPaste}>生成粘贴预览</button></div>
-      <textarea className="weekly-paste-box" value={paste} onChange={(event) => setPaste(event.target.value)} placeholder={"排名 姓名 T1 T2 T3 T4 T5\n1 陈小明 12秒34 12.50 12.18 12.60 12.41\n2 李小红，13.05/13.22/12.97/13.40/13.11"} />
+      <div className="weekly-admin-actions"><label>项目 <select value={pasteEventCode} onChange={(event) => setPasteEventCode(event.target.value)}>{enabledEvents.map((event) => <option key={event.eventId} value={event.eventId}>{event.eventId} · {event.format}</option>)}</select></label><button className="button" type="button" disabled={busy || !paste.trim() || !pasteEventCode} onClick={() => previewPaste()}>重新解析</button></div>
+      <textarea ref={pasteRef} className="weekly-paste-box" value={paste} onPaste={previewAfterPaste} onChange={(event) => setPaste(event.target.value)} placeholder={"直接粘贴成绩后会自动带出待确认清单\n\n排名 姓名 T1 T2 T3 T4 T5\n1 陈小明 12秒34 12.50 12.18 12.60 12.41\n2 李小红，13.05/13.22/12.97/13.40/13.11"} />
     </div>
-    {preview && batch ? <Preview batch={batch} onResolve={resolve} onCommit={commit} onRollback={rollback} busy={busy} searchForRow={searchForRow} setSearchForRow={setSearchForRow} searchQuery={searchQuery} setSearchQuery={setSearchQuery} searchResults={searchResults} onSearch={searchPlayers} onCreate={createPlayer} /> : null}
+    {preview && batch ? <Preview batch={batch} onResolve={resolve} onResolveAll={resolveAllRecommended} onCommit={commit} onRollback={rollback} busy={busy} searchForRow={searchForRow} setSearchForRow={setSearchForRow} searchQuery={searchQuery} setSearchQuery={setSearchQuery} searchResults={searchResults} onSearch={searchPlayers} onCreate={createPlayer} /> : null}
   </section>;
 }
 
-function Preview({ batch, onResolve, onCommit, onRollback, busy, searchForRow, setSearchForRow, searchQuery, setSearchQuery, searchResults, onSearch, onCreate }: { batch: WeeklyResultsImportBatch; onResolve: (row: WeeklyResultsImportPreviewRow, id: string) => Promise<void>; onCommit: () => Promise<void>; onRollback: () => Promise<void>; busy: boolean; searchForRow: number | null; setSearchForRow: (row: number | null) => void; searchQuery: string; setSearchQuery: (value: string) => void; searchResults: SearchPlayer[]; onSearch: () => Promise<void>; onCreate: (row: WeeklyResultsImportPreviewRow) => Promise<void> }) {
+function Preview({ batch, onResolve, onResolveAll, onCommit, onRollback, busy, searchForRow, setSearchForRow, searchQuery, setSearchQuery, searchResults, onSearch, onCreate }: { batch: WeeklyResultsImportBatch; onResolve: (row: WeeklyResultsImportPreviewRow, id: string) => Promise<void>; onResolveAll: (rows: WeeklyResultsImportPreviewRow[]) => Promise<void>; onCommit: () => Promise<void>; onRollback: () => Promise<void>; busy: boolean; searchForRow: number | null; setSearchForRow: (row: number | null) => void; searchQuery: string; setSearchQuery: (value: string) => void; searchResults: SearchPlayer[]; onSearch: () => Promise<void>; onCreate: (row: WeeklyResultsImportPreviewRow) => Promise<void> }) {
   const { preview } = batch;
+  const recommendedRows = preview.rows.filter((row) => row.handlingStatus === "recommended" && row.recommendedPlayerId && row.errors.length === 0 && !row.existingResult);
+  const confirmedRows = preview.rows.filter((row) => Boolean(row.matchedPlayerId)).length;
+  const needsAttention = preview.rows.filter((row) => row.errors.length || row.existingResult || (!row.matchedPlayerId && row.handlingStatus !== "recommended")).length;
   return <div className="admin-card weekly-admin-preview">
-    <div className="admin-card-heading"><div><h2>导入预览：{batch.filename}</h2><p>批次状态：{batch.status}。提交时会在一个事务内再次校验、写入成绩与尝试，并重算 ranking/PB。</p></div></div>
-    <div className="weekly-admin-actions">{batch.status === "ready" ? <button className="button primary" type="button" disabled={busy} onClick={onCommit}><Send size={16} />确认并提交成绩</button> : null}{batch.status === "committed" ? <button className="button" type="button" disabled={busy} onClick={onRollback}><RotateCcw size={16} />回滚本批成绩</button> : null}{batch.status === "rolled_back" ? <span>此批次已回滚。</span> : null}</div>
-    <div className="stat-band"><Stat value={preview.rawRowCount} label="总行数" /><Stat value={preview.validRowCount} label="可提交行数" /><Stat value={preview.warningCount} label="warning" /><Stat value={preview.errorCount} label="error" /><Stat value={preview.exactPlayerIdMatchCount} label="player_id 精确匹配" /><Stat value={preview.wcaIdMatchCount} label="WCA ID 匹配" /><Stat value={preview.nameRecommendationCount} label="姓名推荐" /><Stat value={preview.unmatchedCount} label="未匹配" /><Stat value={preview.conflictCount} label="冲突" /><Stat value={preview.existingResultCount} label="已有成绩" /></div>
+    <div className="admin-card-heading"><div><h2>待确认成绩</h2><p>系统已解析 {preview.rawRowCount} 条。请确认选手匹配；确认后才可提交。任一行都可单独修改选手。</p></div></div>
+    <div className="weekly-import-confirmation-summary"><span><strong>{confirmedRows}</strong> 已确认</span><span><strong>{recommendedRows.length}</strong> 待确认</span><span className={needsAttention ? "is-warning" : undefined}><strong>{needsAttention}</strong> 需处理</span></div>
+    <div className="weekly-admin-actions">
+      {recommendedRows.length ? <button className="button" type="button" disabled={busy} onClick={() => onResolveAll(recommendedRows)}>确认全部姓名推荐</button> : null}
+      {batch.status === "ready" ? <button className="button primary" type="button" disabled={busy} onClick={onCommit}><Send size={16} />确认并提交成绩</button> : null}
+      {batch.status === "committed" ? <button className="button" type="button" disabled={busy} onClick={onRollback}><RotateCcw size={16} />回滚本批成绩</button> : null}
+      {batch.status === "rolled_back" ? <span>此批次已回滚。</span> : null}
+    </div>
     {preview.globalErrors.length ? <p className="status error">{preview.globalErrors.join("；")}</p> : null}{preview.globalWarnings.length ? <p className="status">{preview.globalWarnings.join("；")}</p> : null}
-    <div className="table-scroll"><table className="result-table"><thead><tr><th>行</th><th>项目</th><th>Excel 姓名</th><th>匹配选手 / player_id</th><th>尝试（内部为百分之一秒）</th><th>best / average</th><th>warning / error</th><th>处理状态</th></tr></thead><tbody>{preview.rows.map((row) => <tr key={row.sourceRow}>
-      <td>{row.sourceRow}</td><td>{row.eventCode || "—"}</td><td>{row.playerName || "—"}<br /><small>{row.wcaId || row.playerId || "无身份字段"}</small></td>
-      <td>{row.matchedPlayerId && searchForRow !== row.sourceRow ? <>{row.matchedPlayerName}<br /><small>{row.matchedPlayerId}{row.matchedPlayerStatus === "inactive" ? " · inactive" : ""}</small><br /><button className="button compact" type="button" disabled={busy} onClick={() => setSearchForRow(row.sourceRow)}>更换匹配</button></> : <MatchControls row={row} onResolve={onResolve} busy={busy} searchOpen={searchForRow === row.sourceRow} onToggleSearch={() => setSearchForRow(searchForRow === row.sourceRow ? null : row.sourceRow)} searchQuery={searchQuery} setSearchQuery={setSearchQuery} searchResults={searchResults} onSearch={onSearch} onCreate={onCreate} />}</td>
-      <td>{row.attempts.map((attempt) => typeof attempt === "number" ? `${formatCentiseconds(attempt)} (${attempt} cs)` : attempt).join(" / ") || "—"}</td><td>{row.bestText} / {row.averageText}</td><td>{[...row.warnings, ...row.errors].join("；") || "—"}</td><td>{statusLabel(row)}</td>
+    <div className="table-scroll"><table className="result-table weekly-import-confirmation-table"><thead><tr><th>行</th><th>待录入选手</th><th>成绩</th><th>系统匹配</th><th>确认 / 修改</th></tr></thead><tbody>{preview.rows.map((row) => <tr key={row.sourceRow}>
+      <td>{row.sourceRow}<br /><small>{row.eventCode || "—"}</small></td><td><strong>{row.playerName || "—"}</strong>{row.wcaId ? <small>{row.wcaId}</small> : null}</td>
+      <td><strong>{row.averageText}</strong><small>最快 {row.bestText}</small><small>{row.attempts.map((attempt) => typeof attempt === "number" ? formatCentiseconds(attempt) : attempt).join(" / ") || "—"}</small></td>
+      <td>{row.matchedPlayerId ? <span className="weekly-import-match-confirmed">已确认：{row.matchedPlayerName}</span> : row.recommendedPlayerId ? <span className="weekly-import-match-recommended">建议：{row.candidates[0]?.name || row.playerName}</span> : <span className="weekly-import-match-unresolved">{statusLabel(row)}</span>}{[...row.warnings, ...row.errors].length ? <small className="weekly-import-row-warning">{[...row.warnings, ...row.errors].join("；")}</small> : null}</td>
+      <td><MatchControls row={row} onResolve={onResolve} busy={busy} searchOpen={searchForRow === row.sourceRow} onToggleSearch={() => setSearchForRow(searchForRow === row.sourceRow ? null : row.sourceRow)} searchQuery={searchQuery} setSearchQuery={setSearchQuery} searchResults={searchResults} onSearch={onSearch} onCreate={onCreate} /></td>
     </tr>)}</tbody></table></div>
   </div>;
 }
 
 function MatchControls({ row, onResolve, busy, searchOpen, onToggleSearch, searchQuery, setSearchQuery, searchResults, onSearch, onCreate }: { row: WeeklyResultsImportPreviewRow; onResolve: (row: WeeklyResultsImportPreviewRow, id: string) => Promise<void>; busy: boolean; searchOpen: boolean; onToggleSearch: () => void; searchQuery: string; setSearchQuery: (value: string) => void; searchResults: SearchPlayer[]; onSearch: () => Promise<void>; onCreate: (row: WeeklyResultsImportPreviewRow) => Promise<void> }) {
-  return <div className="weekly-result-import-match"><span>{row.recommendedPlayerId ? "建议确认候选" : "未自动关联"}</span>{row.candidates.map((candidate) => <button className="button compact" type="button" disabled={busy} key={candidate.id} onClick={() => onResolve(row, candidate.id)}>选 {candidate.name} · {candidate.id}</button>)}<button className="button compact" type="button" disabled={busy} onClick={onToggleSearch}><Search size={14} />搜索</button><button className="button compact" type="button" disabled={busy || !row.playerName} onClick={() => onCreate(row)}><UserPlus size={14} />新建</button>{searchOpen ? <div><input value={searchQuery} onChange={(event) => setSearchQuery(event.target.value)} placeholder="姓名、WCA ID 或拼音" /><button className="button compact" type="button" disabled={busy} onClick={onSearch}>查找</button>{searchResults.map((player) => <button className="button compact" type="button" disabled={busy} key={player.id} onClick={() => onResolve(row, player.id)}>{player.name} · {player.id}{player.status === "inactive" ? "（inactive）" : ""}</button>)}</div> : null}</div>;
+  const candidate = row.candidates[0];
+  const canConfirm = !row.matchedPlayerId && Boolean(row.recommendedPlayerId) && !row.errors.length && !row.existingResult;
+  return <div className="weekly-result-import-match">
+    {canConfirm && candidate ? <button className="button compact primary" type="button" disabled={busy} onClick={() => onResolve(row, candidate.id)}>确认 {candidate.name}</button> : null}
+    <button className="button compact" type="button" disabled={busy} onClick={onToggleSearch}>{row.matchedPlayerId ? "修改选手" : <><Search size={14} />修改</>}</button>
+    {!row.matchedPlayerId ? <button className="button compact" type="button" disabled={busy || !row.playerName} onClick={() => onCreate(row)}><UserPlus size={14} />新建选手</button> : null}
+    {searchOpen ? <div className="weekly-result-import-search"><input value={searchQuery} onChange={(event) => setSearchQuery(event.target.value)} placeholder="姓名、WCA ID 或拼音" /><button className="button compact" type="button" disabled={busy} onClick={onSearch}>查找</button>{searchResults.map((player) => <button className="button compact" type="button" disabled={busy} key={player.id} onClick={() => onResolve(row, player.id)}>选择 {player.name}{player.status === "inactive" ? "（停用）" : ""}</button>)}</div> : null}
+  </div>;
 }
-
-function Stat({ value, label }: { value: number; label: string }) { return <div className="stat"><strong>{value}</strong><span>{label}</span></div>; }
 function formatCentiseconds(value: number) { const minutes = Math.floor(value / 6000); const seconds = Math.floor((value % 6000) / 100); const centiseconds = value % 100; return minutes ? `${minutes}:${String(seconds).padStart(2, "0")}.${String(centiseconds).padStart(2, "0")}` : `${seconds}.${String(centiseconds).padStart(2, "0")}`; }
 function statusLabel(row: WeeklyResultsImportPreviewRow) { if (row.errors.length) return "阻止"; if (!row.matchedPlayerId) return row.handlingStatus === "recommended" ? "等待确认姓名推荐" : "等待人工处理"; return row.existingResult ? "已有成绩冲突" : "可提交"; }
