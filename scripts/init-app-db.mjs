@@ -323,16 +323,6 @@ async function main() {
     await client.query("CREATE UNIQUE INDEX IF NOT EXISTS weekly_player_wca_matches_confirmed_wca_idx ON weekly_player_wca_matches (wca_id) WHERE status = 'confirmed'");
 
     await client.query(`
-      CREATE TABLE IF NOT EXISTS big_stack_records (
-        id TEXT PRIMARY KEY,
-        name TEXT NOT NULL UNIQUE,
-        count INTEGER NOT NULL DEFAULT 0 CHECK (count >= 0),
-        updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
-      )
-    `);
-    await client.query("CREATE INDEX IF NOT EXISTS big_stack_records_count_idx ON big_stack_records (count DESC)");
-
-    await client.query(`
       CREATE TABLE IF NOT EXISTS feedback_messages (
         id TEXT PRIMARY KEY,
         type TEXT NOT NULL DEFAULT '名单反馈',

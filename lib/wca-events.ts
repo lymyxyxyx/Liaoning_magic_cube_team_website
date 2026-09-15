@@ -21,8 +21,6 @@ export const WCA_EVENTS = [
   { id: "maple", name: "枫叶", englishName: "Maple Leaf" },
   { id: "individual", name: "个人全能", englishName: "Individual All-Around" },
   { id: "team", name: "团体赛", englishName: "Team" },
-  { id: "bigstack100", name: "大堆（100个）", englishName: "Big Stack 100" },
-  { id: "bigstack300", name: "大堆（300个）", englishName: "Big Stack 300" },
   { id: "bigstack333", name: "三阶", englishName: "3x3 Big Stack" },
   { id: "bigstack222", name: "二阶", englishName: "2x2 Big Stack" },
   { id: "bigstackpyram", name: "金字塔", englishName: "Pyraminx Big Stack" },
