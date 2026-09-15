@@ -17,14 +17,14 @@ export const dynamic = "force-dynamic";
 export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   if (!isWeeklyCompetitionEnabled()) return NextResponse.json({ message: "Not found" }, { status: 404 });
-  const visibility = await getWeeklyMeetVisibility(id);
-  const isAdmin = await hasWeeklyAdminSession(request);
-  if (!canReadWeeklyMeet({ exists: Boolean(visibility), isPublic: Boolean(visibility?.isPublic), isWeeklyAdmin: isAdmin })) {
-    return NextResponse.json({ message: "Not found" }, { status: 404 });
-  }
-  const eventId = request.nextUrl.searchParams.get("eventId") || "333";
-  const format = request.nextUrl.searchParams.get("format") || "avg5";
   try {
+    const visibility = await getWeeklyMeetVisibility(id);
+    const isAdmin = await hasWeeklyAdminSession(request);
+    if (!canReadWeeklyMeet({ exists: Boolean(visibility), isPublic: Boolean(visibility?.isPublic), isWeeklyAdmin: isAdmin })) {
+      return NextResponse.json({ message: "Not found" }, { status: 404 });
+    }
+    const eventId = request.nextUrl.searchParams.get("eventId") || "333";
+    const format = request.nextUrl.searchParams.get("format") || "avg5";
     const results = await listWeeklyResults(id, eventId, format);
     const provincialRanks = await getWeeklyProvincialRanks(eventId, results.map((result) => result.player.id));
     const rankedResults = results.map((result) => ({ ...result, provincialRank: provincialRanks.get(result.player.id) || null }));
@@ -51,7 +51,8 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     if (error instanceof Error && error.message === "项目不正确") {
       return NextResponse.json({ message: error.message }, { status: 400 });
     }
-    return NextResponse.json({ results: [] });
+    console.error("[weekly-public-results] failed to load results", { meetId: id, error });
+    return NextResponse.json({ message: "成绩暂时无法加载，请稍后重试。" }, { status: 500 });
   }
 }
 

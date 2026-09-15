@@ -137,6 +137,7 @@ export function WeeklyResultEntryConsole({ initialMeets, initialPlayers = [], ev
   const [notice, setNotice] = useState("");
   const [isSaving, setIsSaving] = useState(false);
   const [isLoadingResults, setIsLoadingResults] = useState(false);
+  const [resultsLoadError, setResultsLoadError] = useState("");
   const [adminUnlocked] = useState(initialAdminUnlocked);
   const [isLoginOpen, setIsLoginOpen] = useState(false);
   const [loginPassword, setLoginPassword] = useState("");
@@ -203,19 +204,29 @@ export function WeeklyResultEntryConsole({ initialMeets, initialPlayers = [], ev
   const refreshResults = useCallback(() => {
     if (!selectedMeetId || !selectedEventId) {
       setResults([]);
+      setResultsLoadError("");
       return;
     }
 
     setIsLoadingResults(true);
+    setResultsLoadError("");
     fetch(
       `/api/weekly-competitions/${encodeURIComponent(selectedMeetId)}/results?eventId=${encodeURIComponent(selectedEventId)}&format=${encodeURIComponent(selectedFormat)}`
     )
-      .then((response) => {
-        if (!response.ok) throw new Error("results");
-        return response.json();
+      .then(async (response) => {
+        const payload = await response.json().catch(() => null) as { results?: EnteredResult[]; message?: string } | null;
+        if (!response.ok) throw new Error(payload?.message || "成绩暂时无法加载，请稍后重试。");
+        const nextResults = payload?.results;
+        if (!Array.isArray(nextResults)) throw new Error("成绩数据格式异常，请稍后重试。");
+        return nextResults;
       })
-      .then((payload: { results: EnteredResult[] }) => setResults(payload.results || []))
-      .catch(() => setNotice("读取成绩列表失败。"))
+      .then(setResults)
+      .catch((error) => {
+        const message = error instanceof Error ? error.message : "成绩暂时无法加载，请稍后重试。";
+        setResults([]);
+        setResultsLoadError(message);
+        setNotice(message);
+      })
       .finally(() => setIsLoadingResults(false));
   }, [selectedEventId, selectedFormat, selectedMeetId]);
 
@@ -902,7 +913,7 @@ export function WeeklyResultEntryConsole({ initialMeets, initialPlayers = [], ev
                 ))}
                 {displayedResults.length === 0 ? (
                   <tr>
-                    <td colSpan={isPublicMode ? 17 : 18}>{isLoadingResults ? "正在读取成绩..." : results.length ? "没有符合筛选条件的成绩。" : "当前项目暂无成绩。"}</td>
+                    <td colSpan={isPublicMode ? 17 : 18}>{isLoadingResults ? "正在读取成绩..." : resultsLoadError ? <><span>{resultsLoadError}</span><button className="button compact" type="button" onClick={refreshResults}>重新加载</button></> : results.length ? "没有符合筛选条件的成绩。" : "当前项目暂无成绩。"}</td>
                   </tr>
                 ) : null}
               </tbody>
