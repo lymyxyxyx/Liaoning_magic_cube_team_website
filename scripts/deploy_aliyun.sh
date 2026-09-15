@@ -137,6 +137,12 @@ if [[ -e "$staged_next_dir" || -e "$previous_next_dir" ]]; then
   echo "[deploy] Refusing to reuse a stale staged build directory." >&2
   exit 1
 fi
+# TypeScript scans the active build's generated validator because .next/types
+# is listed in tsconfig.json. That validator can still import routes deleted by
+# the new commit, causing an otherwise clean staged build to fail. It is not
+# needed at runtime, so remove only this generated type-checking artifact before
+# compiling the isolated replacement build.
+sudo rm -f .next/types/validator.ts .next/dev/types/validator.ts
 sudo docker compose exec -T -e NEXT_DIST_DIR="$staged_next_dir" web npm run build </dev/null
 finish_stage "Build complete"
 
