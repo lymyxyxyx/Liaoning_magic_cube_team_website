@@ -5055,6 +5055,30 @@ textarea {
   gap: 8px;
 }
 
+.weekly-player-data-switcher {
+  display: flex;
+  gap: 8px;
+  padding-block: 10px 0;
+}
+
+.weekly-player-data-switcher button {
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 8px 14px;
+  color: var(--muted);
+  background: var(--surface);
+  font: inherit;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.weekly-player-data-switcher button:hover,
+.weekly-player-data-switcher button.is-active {
+  border-color: var(--blue);
+  color: var(--blue);
+  background: var(--soft);
+}
+
 .weekly-library-shell--side {
   position: sticky;
   top: 84px;

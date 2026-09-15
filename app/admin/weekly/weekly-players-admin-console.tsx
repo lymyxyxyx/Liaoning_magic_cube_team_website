@@ -3,10 +3,31 @@
 import { FormEvent, useMemo, useState } from "react";
 import { ArrowDown, ArrowUp, Pencil, Search, UserPlus } from "lucide-react";
 import type { WeeklyLongCardProfile } from "@/lib/weekly-player-admin-store";
+import type { WeeklyPlayerLibraryEntry } from "@/lib/weekly-player-library";
 import { matchesWeeklyPlayerQuery } from "@/lib/weekly-player-search";
+import { WeeklyPlayerLibraryConsole } from "@/app/weekly/admin/weekly-player-library-console";
 
 type LongCardForm = Pick<WeeklyLongCardProfile, "submittedAt" | "name" | "gender" | "birthDate" | "phone" | "contactRelationship" | "channel" | "notes" | "wcaId">;
 const pageSize = 50;
+
+export function WeeklyPlayersAdminWorkspace({
+  longCardProfiles,
+  libraryPlayers
+}: {
+  longCardProfiles: WeeklyLongCardProfile[];
+  libraryPlayers: WeeklyPlayerLibraryEntry[];
+}) {
+  const [view, setView] = useState<"library" | "long-card">("library");
+  return <>
+    <section className="container section weekly-player-data-switcher" aria-label="选手资料类型">
+      <button className={view === "library" ? "is-active" : ""} type="button" onClick={() => setView("library")}>周赛选手库</button>
+      <button className={view === "long-card" ? "is-active" : ""} type="button" onClick={() => setView("long-card")}>长期卡原始资料</button>
+    </section>
+    {view === "library"
+      ? <WeeklyPlayerLibraryConsole initialPlayers={libraryPlayers} />
+      : <WeeklyPlayersAdminConsole longCardProfiles={longCardProfiles} />}
+  </>;
+}
 
 export function WeeklyPlayersAdminConsole({ longCardProfiles }: { longCardProfiles: WeeklyLongCardProfile[] }) {
   const [profiles, setProfiles] = useState(longCardProfiles);

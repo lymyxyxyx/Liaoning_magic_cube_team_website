@@ -1,10 +1,11 @@
 import { getPostgresPool } from "@/lib/postgres";
 import { getWcaEventName } from "@/lib/wca-events";
+import { weeklyV2PlayerSourceSql } from "@/lib/weekly-player-scope";
 
 // 第29至38周是首批连续纳入的十期周赛。此日期是固定起点，后续
 // 周赛会继续累积，早于该范围的旧录入不会追溯进入省榜。
 export const WEEKLY_PROVINCIAL_RANKING_START = "2026-07-13T00:00:00+08:00";
-export const WEEKLY_PROVINCIAL_RANKING_NOTE = "统计自2026年第29周起的周赛成绩，取个人历史最好平均。";
+export const WEEKLY_PROVINCIAL_RANKING_NOTE = "仅统计选手库中省份为辽宁的选手；自2026年第29周起，取个人历史最好平均。";
 
 export type WeeklyProvincialRankingRow = {
   rank: number;
@@ -13,7 +14,7 @@ export type WeeklyProvincialRankingRow = {
   playerSlug: string;
   weeklyNumber: number | null;
   ageGroup: string;
-  gender: "男" | "女";
+  gender: "" | "男" | "女";
   wcaId: string;
   average: number;
   meetTitle: string;
@@ -31,10 +32,13 @@ export async function listWeeklyProvincialRankingEvents(): Promise<WeeklyProvinc
        FROM weekly_results result
        JOIN weekly_events event ON event.id = result.event_id AND event.meet_id = result.meet_id
        JOIN weekly_meets meet ON meet.id = result.meet_id
+       JOIN weekly_player_library library ON library.id = result.player_id
       WHERE meet.data_version = 2
         AND meet.starts_at >= $1::timestamptz
         AND event.format = ANY($2::text[])
         AND result.average > 0
+        AND library.province = '辽宁'
+        AND ${weeklyV2PlayerSourceSql("library")}
       ORDER BY event.event_code`,
     [WEEKLY_PROVINCIAL_RANKING_START, averageFormats]
   );
@@ -62,18 +66,22 @@ export async function listWeeklyProvincialRankings(eventCode: string): Promise<W
          FROM weekly_results result
          JOIN weekly_events event ON event.id = result.event_id AND event.meet_id = result.meet_id
          JOIN weekly_meets meet ON meet.id = result.meet_id
+         JOIN weekly_player_library library_scope ON library_scope.id = result.player_id
         WHERE meet.data_version = 2
           AND meet.starts_at >= $1::timestamptz
           AND event.event_code = $2
           AND event.format = ANY($3::text[])
           AND result.average > 0
           AND result.player_id IS NOT NULL
+          AND library_scope.province = '辽宁'
+          AND ${weeklyV2PlayerSourceSql("library_scope")}
      ), best AS (
        SELECT DISTINCT ON (player_id) player_id, player_name, player_slug, gender, age_group, average, meet_title, date_label
          FROM eligible
         ORDER BY player_id, average ASC, starts_at ASC
      )
-     SELECT RANK() OVER (ORDER BY best.average ASC)::text AS rank, best.player_id, best.player_name, best.player_slug, best.gender,
+     SELECT RANK() OVER (ORDER BY best.average ASC)::text AS rank, best.player_id, best.player_name, best.player_slug,
+            COALESCE(library.gender, '') AS gender,
             best.age_group, COALESCE(card.source_row_number, NULL)::integer AS weekly_number,
             COALESCE(NULLIF(library.wca_id, ''), NULLIF(card.wca_id, ''), '') AS wca_id,
             best.average::text, best.meet_title, best.date_label
@@ -96,7 +104,7 @@ export async function listWeeklyProvincialRankings(eventCode: string): Promise<W
     playerSlug: row.player_slug,
     weeklyNumber: row.weekly_number,
     ageGroup: row.age_group || "",
-    gender: row.gender === "女" ? "女" : "男",
+    gender: row.gender === "女" ? "女" : row.gender === "男" ? "男" : "",
     wcaId: row.wca_id || "",
     average: Number(row.average),
     meetTitle: row.meet_title,

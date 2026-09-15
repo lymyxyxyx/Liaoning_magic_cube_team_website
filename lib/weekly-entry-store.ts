@@ -465,7 +465,7 @@ export async function createWeeklyPlayer(input: {
       name,
       wcaId,
       input.gender === "女" ? "女" : input.gender === "男" ? "男" : "",
-      input.province?.trim() || "",
+      input.province?.trim() || "辽宁",
       input.city?.trim() || "",
       input.birthDate?.trim() || ""
     ]

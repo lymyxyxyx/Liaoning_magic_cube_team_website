@@ -5,48 +5,11 @@ import { Pencil, Plus, Save, Trash2, X } from "lucide-react";
 import { getWeeklyRankingAgeGroup, weeklyRankingAgeGroups } from "@/lib/weekly-age-groups";
 import type { WeeklyLibraryGender, WeeklyPersonalBests, WeeklyPlayerLibraryEntry } from "@/lib/weekly-player-library";
 import { matchesWeeklyPlayerQuery } from "@/lib/weekly-player-search";
+import { weeklyLiaoningCityOptions, weeklyProvinceOptions } from "@/lib/weekly-regions";
 
 type DraftPlayer = WeeklyPlayerLibraryEntry;
 
 const defaultProvince = "辽宁";
-const defaultCity = "沈阳";
-const chinaProvinces = [
-  "北京",
-  "天津",
-  "河北",
-  "山西",
-  "内蒙古",
-  "辽宁",
-  "吉林",
-  "黑龙江",
-  "上海",
-  "江苏",
-  "浙江",
-  "安徽",
-  "福建",
-  "江西",
-  "山东",
-  "河南",
-  "湖北",
-  "湖南",
-  "广东",
-  "广西",
-  "海南",
-  "重庆",
-  "四川",
-  "贵州",
-  "云南",
-  "西藏",
-  "陕西",
-  "甘肃",
-  "青海",
-  "宁夏",
-  "新疆",
-  "香港",
-  "澳门",
-  "台湾"
-];
-const liaoningCities = ["沈阳", "大连", "鞍山", "抚顺", "本溪", "丹东", "锦州", "营口", "阜新", "辽阳", "盘锦", "铁岭", "朝阳", "葫芦岛"];
 
 const emptyDraft = {
   id: "",
@@ -56,7 +19,7 @@ const emptyDraft = {
   ageGroup: "",
   ageGroupIsFuzzy: false,
   province: defaultProvince,
-  city: defaultCity,
+  city: "",
   source: "后台新增"
 };
 
@@ -123,11 +86,7 @@ export function WeeklyPlayerLibraryConsole({
   }
 
   function openEditor(player: DraftPlayer) {
-    setEditingPlayer({
-      ...player,
-      province: player.province || defaultProvince,
-      city: player.city || defaultCity
-    });
+    setEditingPlayer({ ...player });
   }
 
   function updateEditingPlayer(next: Partial<DraftPlayer>) {
@@ -287,7 +246,7 @@ export function WeeklyPlayerLibraryConsole({
             <div className="admin-card-heading">
               <div>
                 <h2>新建选手</h2>
-                <p>默认辽宁沈阳，生日可后续补齐。</p>
+                <p>省份默认辽宁，城市和生日可后续补齐。</p>
               </div>
               <button className="icon-button" type="button" onClick={() => setIsCreatingPlayer(false)} aria-label="关闭新建">
                 <X size={17} />
@@ -397,10 +356,15 @@ function PlayerFields({
       <label>
         省份
         <select
-          value={player.province || defaultProvince}
-          onChange={(event) => onChange({ province: event.target.value, city: event.target.value === "辽宁" ? player.city || defaultCity : player.city })}
+          value={player.province || ""}
+          onChange={(event) => {
+            const province = event.target.value;
+            const city = province === "辽宁" && weeklyLiaoningCityOptions.includes(player.city as typeof weeklyLiaoningCityOptions[number]) ? player.city : "";
+            onChange({ province, city });
+          }}
         >
-          {chinaProvinces.map((province) => (
+          <option value="">未填写</option>
+          {weeklyProvinceOptions.map((province) => (
             <option value={province} key={province}>
               {province}
             </option>
@@ -409,8 +373,9 @@ function PlayerFields({
       </label>
       <label>
         城市
-        <select value={player.city || defaultCity} onChange={(event) => onChange({ city: event.target.value })}>
-          {liaoningCities.map((city) => (
+        <select value={player.city || ""} disabled={player.province !== "辽宁"} onChange={(event) => onChange({ city: event.target.value })}>
+          <option value="">未填写</option>
+          {weeklyLiaoningCityOptions.map((city) => (
             <option value={city} key={city}>
               {city}
             </option>

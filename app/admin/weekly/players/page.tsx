@@ -1,19 +1,23 @@
 import { PageHero } from "@/components/page-hero";
 import { listWeeklyLongCardProfilesForAdmin } from "@/lib/weekly-player-admin-store";
-import { WeeklyPlayersAdminConsole } from "../weekly-players-admin-console";
+import { listWeeklyPlayerLibrary } from "@/lib/weekly-player-library";
+import { WeeklyPlayersAdminWorkspace } from "../weekly-players-admin-console";
 import { WeeklyAdminToolbar } from "../page";
 
 export const dynamic = "force-dynamic";
 
 export default async function AdminWeeklyPlayersPage() {
-  const longCardProfiles = await listWeeklyLongCardProfilesForAdmin();
+  const [longCardProfiles, libraryPlayers] = await Promise.all([
+    listWeeklyLongCardProfilesForAdmin(),
+    listWeeklyPlayerLibrary()
+  ]);
   return (
     <>
       <PageHero label="后台管理 / 周赛" title="周赛选手档案">
-        长期卡学员资料按登记顺序保留；电话、精确生日和备注只在管理员后台显示。
+        在周赛选手库维护省份、城市和参赛资料；长期卡隐私信息只在管理员后台显示。
       </PageHero>
       <WeeklyAdminToolbar active="players" />
-      <WeeklyPlayersAdminConsole longCardProfiles={longCardProfiles} />
+      <WeeklyPlayersAdminWorkspace longCardProfiles={longCardProfiles} libraryPlayers={libraryPlayers} />
     </>
   );
 }

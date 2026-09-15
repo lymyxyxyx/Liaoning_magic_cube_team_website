@@ -251,7 +251,7 @@ export async function createWeeklyLongCardProfile(input: Partial<WeeklyLongCardP
     await client.query(
       `INSERT INTO weekly_player_library
          (id, name, gender, birth_date, wca_id, wca_id_confirmed, province, city, notes, status, source, updated_at)
-       VALUES ($1,$2,$3,$4,$5,$6,'','',$7,'active','admin_manual',now())`,
+       VALUES ($1,$2,$3,$4,$5,$6,'辽宁','',$7,'active','admin_manual',now())`,
       // A manually typed WCA ID is useful metadata, but it is not evidence of
       // identity. It stays private until the matching workflow or an admin
       // explicitly confirms it.
@@ -350,7 +350,7 @@ export async function createWeeklyPlayerProfile(input: Partial<WeeklyPlayerLibra
       normalizeGender(input.gender),
       normalizeDate(input.birthDate),
       wcaId,
-      input.province?.trim() || "",
+      input.province?.trim() || "辽宁",
       input.city?.trim() || "",
       input.notes?.trim() || ""
     ]
@@ -483,7 +483,7 @@ export async function commitPlayerImportBatch(input: { id: string; resolutions: 
         await client.query(
           `INSERT INTO weekly_player_library
              (id, name, gender, birth_date, wca_id, province, city, notes, status, source, updated_at)
-           VALUES ($1,$2,$3,$4,'','','','', 'active', 'players_excel_import', now())`,
+           VALUES ($1,$2,$3,$4,'','辽宁','','', 'active', 'players_excel_import', now())`,
           [id, row.name, row.gender, row.birthDate]
         );
         manifest.createdPlayerIds!.push(id);
