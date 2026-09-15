@@ -31,6 +31,7 @@ type MeetOption = {
   startsAt?: string | null;
   endsAt?: string | null;
   status?: string;
+  dataVersion?: number;
 };
 
 type WeeklyPlayer = {
@@ -310,15 +311,18 @@ export function WeeklyResultEntryConsole({ initialMeets, initialPlayers = [], ev
   }, [adminUnlocked, playerQuery, resultSearchQuery, searchPlayers]);
 
   function refreshMeets() {
-    fetch("/api/weekly-competitions")
+    fetch(isPublicMode ? "/api/weekly-competitions" : "/api/admin/weekly-competitions")
       .then((response) => {
         if (!response.ok) throw new Error("meets");
         return response.json();
       })
       .then((payload: { meets: MeetOption[] }) => {
-        setMeets(payload.meets || []);
-        if (!selectedMeetId && payload.meets?.[0]) {
-          const nextMeetId = mode === "public" ? payload.meets.find((meet) => meet.id !== testMeetId)?.id || payload.meets[0].id : payload.meets[0].id;
+        const nextMeets = isPublicMode
+          ? payload.meets || []
+          : (payload.meets || []).filter((meet) => meet.id !== testMeetId && meet.dataVersion === 2);
+        setMeets(nextMeets);
+        if (!selectedMeetId && nextMeets[0]) {
+          const nextMeetId = mode === "public" ? nextMeets.find((meet) => meet.id !== testMeetId)?.id || nextMeets[0].id : nextMeets[0].id;
           setSelectedMeetId(nextMeetId);
         }
       })

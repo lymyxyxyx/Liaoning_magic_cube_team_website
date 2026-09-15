@@ -46,7 +46,7 @@ function isMeetInProgress(meet: WeeklyMenuMeet, now = new Date()) {
 export function WeeklyHistoryMenu({ meets }: { meets: WeeklyMeetOption[] }) {
   return (
     <details className="weekly-history-menu">
-      <summary>历史周赛</summary>
+      <summary>周赛列表</summary>
       <div>
         {meets.map((meet) => {
           const inProgress = isMeetInProgress(meet);
@@ -60,7 +60,7 @@ export function WeeklyHistoryMenu({ meets }: { meets: WeeklyMeetOption[] }) {
           </Link>
           );
         })}
-        {meets.length === 0 ? <span className="weekly-history-empty">暂无历史周赛</span> : null}
+        {meets.length === 0 ? <span className="weekly-history-empty">暂无周赛</span> : null}
       </div>
     </details>
   );

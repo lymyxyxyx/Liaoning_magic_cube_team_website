@@ -7,21 +7,4 @@ export function isWeeklyFocusMeet(meet: { id?: string; slug?: string }) {
   return true;
 }
 
-export function isWeeklyMeetPubliclyVisible(meet: {
-  status?: string | null;
-  publishedAt?: string | null;
-  startsAt?: string | null;
-  endsAt?: string | null;
-}) {
-  if (!meet.status || meet.status === "draft") return false;
-  if (meet.status === "archived" && !meet.publishedAt) return false;
-  if (meet.startsAt) {
-    const startsAt = new Date(meet.startsAt).getTime();
-    if (Number.isFinite(startsAt) && startsAt > Date.now()) return false;
-  }
-  if (!meet.publishedAt) return true;
-  const publishedAt = new Date(meet.publishedAt).getTime();
-  return Number.isFinite(publishedAt) && publishedAt <= Date.now();
-}
-
 export { isWeeklyMeetCurrent } from "@/lib/weekly-meet-status";

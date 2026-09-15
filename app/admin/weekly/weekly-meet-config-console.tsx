@@ -5,9 +5,9 @@ import { useEffect, useMemo, useState } from "react";
 import { weeklyResultFormats, type WeeklyResultFormat } from "@/lib/weekly-result-utils";
 import { isBigStackEventId, isWeeklySingleAttemptEvent, WEEKLY_DEFAULT_EVENT_IDS } from "@/lib/wca-events";
 import type { WCA_EVENTS } from "@/lib/wca-events";
-import { getWeeklyMeetStatus, weeklyMeetStatusLabel } from "@/lib/weekly-meet-status";
+import { getWeeklyMeetStatus } from "@/lib/weekly-meet-status";
 
-type Meet = { id: string; title: string; dateLabel: string; status?: string; startsAt?: string | null; endsAt?: string | null; isPublic?: boolean; dataVersion?: number };
+type Meet = { id: string; title: string; dateLabel: string; status?: string; startsAt?: string | null; endsAt?: string | null; dataVersion?: number };
 type Config = { eventId: string; format: WeeklyResultFormat; enabled: boolean; seq: number };
 
 export function WeeklyMeetConfigConsole({ initialMeets, events, defaultOpen = false }: { initialMeets: Meet[]; events: ReadonlyArray<(typeof WCA_EVENTS)[number]>; defaultOpen?: boolean }) {
@@ -18,7 +18,6 @@ export function WeeklyMeetConfigConsole({ initialMeets, events, defaultOpen = fa
   const [dateLabel, setDateLabel] = useState("");
   const [startsAt, setStartsAt] = useState("");
   const [endsAt, setEndsAt] = useState("");
-  const [isPublic, setIsPublic] = useState(false);
   const [configs, setConfigs] = useState<Config[]>([]);
   const [notice, setNotice] = useState("");
   const [saving, setSaving] = useState(false);
@@ -33,7 +32,6 @@ export function WeeklyMeetConfigConsole({ initialMeets, events, defaultOpen = fa
     setDateLabel(selected.dateLabel);
     setStartsAt(toLocalValue(selected.startsAt));
     setEndsAt(toLocalValue(selected.endsAt));
-    setIsPublic(Boolean(selected.isPublic));
     fetch(`/api/admin/weekly-competitions/${encodeURIComponent(selected.id)}`)
       .then((response) => response.ok ? response.json() : Promise.reject(new Error("读取配置失败")))
       .then((payload: { eventConfigs: Config[] }) => setConfigs(payload.eventConfigs || []))
@@ -56,13 +54,13 @@ export function WeeklyMeetConfigConsole({ initialMeets, events, defaultOpen = fa
     fetch(`/api/admin/weekly-competitions/${encodeURIComponent(selected.id)}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ title, dateLabel, isPublic, startsAt: startsAt || null, endsAt: endsAt || null, eventConfigs: configs })
+      body: JSON.stringify({ title, dateLabel, startsAt: startsAt || null, endsAt: endsAt || null, eventConfigs: configs })
     })
       .then((response) => response.ok ? response.json() : response.json().then((body) => Promise.reject(new Error(body.message || "保存失败"))))
       .then(() => {
         const nextStatus = getWeeklyMeetStatus({ startsAt, endsAt });
-        setMeets((current) => current.map((meet) => meet.id === selected.id ? { ...meet, title, dateLabel, status: nextStatus, isPublic, startsAt, endsAt } : meet));
-        setNotice(nextStatus === "open" ? "周赛正在进行，前台会优先显示这一场。" : "周赛配置已保存，状态将按时间自动更新。" );
+        setMeets((current) => current.map((meet) => meet.id === selected.id ? { ...meet, title, dateLabel, status: nextStatus, startsAt, endsAt } : meet));
+        setNotice(nextStatus === "open" ? "周赛配置已保存，前台会优先显示这一场。" : "周赛配置已保存；时间只用于默认周次和周期提示。" );
       })
       .catch((error) => setNotice(error instanceof Error ? error.message : "保存周赛配置失败。"))
       .finally(() => setSaving(false));
@@ -93,7 +91,7 @@ export function WeeklyMeetConfigConsole({ initialMeets, events, defaultOpen = fa
         setMeets((current) => [meet, ...current]);
         setSelectedId(meet.id);
         setIsCreating(false);
-        setNotice("新周赛已生成，项目配置已沿用模板；成绩表为空，可以继续设置开放时间。");
+        setNotice("新周赛已生成并可公开查看；项目配置已沿用模板，成绩表为空。");
       })
       .catch((error) => setNotice(error instanceof Error ? error.message : "创建周赛失败。"))
       .finally(() => setSaving(false));
@@ -104,7 +102,7 @@ export function WeeklyMeetConfigConsole({ initialMeets, events, defaultOpen = fa
       <summary className="weekly-admin-fold-summary">
         <span>
           <strong>当前周赛配置</strong>
-          <small>选择周赛并维护日期、项目和开放时间</small>
+          <small>选择周赛并维护日期和项目</small>
         </span>
         <span className="weekly-fold-hint">展开配置</span>
       </summary>
@@ -116,10 +114,8 @@ export function WeeklyMeetConfigConsole({ initialMeets, events, defaultOpen = fa
         <div className="weekly-meet-config-fields">
           <label>标题<input value={title} onChange={(event) => setTitle(event.target.value)} /></label>
           <label>周期<input value={dateLabel} onChange={(event) => setDateLabel(event.target.value)} /></label>
-          <label>系统状态<span className="weekly-meet-status-readonly">{weeklyMeetStatusLabel(getWeeklyMeetStatus({ startsAt, endsAt, status: selected.status }))}</span></label>
           <label>开始时间（北京时间）<input type="datetime-local" value={startsAt} onChange={(event) => setStartsAt(event.target.value)} /></label>
           <label>截止时间（北京时间）<input type="datetime-local" value={endsAt} onChange={(event) => setEndsAt(event.target.value)} /></label>
-          <label>公开状态<input type="checkbox" checked={isPublic} onChange={(event) => setIsPublic(event.target.checked)} />公开展示成绩</label>
         </div>
         <div className="weekly-meet-event-configs">
           {(() => {
@@ -163,7 +159,7 @@ export function WeeklyMeetConfigConsole({ initialMeets, events, defaultOpen = fa
               <label>开始日期<input type="date" value={newStartDate} onChange={(event) => setNewStartDate(event.target.value)} /></label>
               <label>结束日期<input type="date" value={newEndDate} onChange={(event) => setNewEndDate(event.target.value)} /></label>
               <label>项目模板<select value={templateMeetId} onChange={(event) => setTemplateMeetId(event.target.value)}>{meets.map((meet) => <option key={meet.id} value={meet.id}>{meet.title}</option>)}</select></label>
-              <p className="weekly-meet-status-help">系统会按开始、截止时间自动显示“未开始、进行中或已结束”。</p>
+              <p className="weekly-meet-status-help">新周赛创建后游客即可查看；开始和截止时间只用于默认显示当前周及周期提示，不限制管理员编辑。</p>
             </div>
             <div className="weekly-admin-actions"><button className="button" type="button" onClick={() => setIsCreating(false)} disabled={saving}>取消</button><button className="button primary" type="button" onClick={createMeet} disabled={saving || !newStartDate || !newEndDate}><CalendarPlus size={16} />{saving ? "生成中" : "生成周赛"}</button></div>
           </div>

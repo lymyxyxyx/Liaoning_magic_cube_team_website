@@ -8,7 +8,7 @@ import { getWeeklyMeetBySlug } from "@/lib/weekly-db";
 import { isWeeklyCompetitionEnabled } from "@/lib/weekly-feature";
 import { hasWeeklyAdminCookie } from "@/lib/weekly-admin-auth";
 import { sortWeeklyResultsByAverage } from "@/lib/weekly-result-display";
-import { isGuestWeeklyHistoryMeet } from "@/lib/weekly-guest-history";
+import { isGuestVisibleWeeklyMeet } from "@/lib/weekly-guest-history";
 import { listWeeklyMeetOptions } from "@/lib/weekly-entry-store";
 import { getShenyangAssociationGrade } from "@/lib/shenyang-association-grades";
 import { WeeklyHistoryMenu } from "@/components/weekly-history-menu";
@@ -61,9 +61,8 @@ export default async function WeeklyDetailPage({ params }: { params: Promise<{ s
   if (!meet) {
     notFound();
   }
-  const historyMeets = (isAdmin
-    ? allMeets.filter((meet) => meet.id !== "weekly-test-entry" && meet.dataVersion === 2)
-    : allMeets.filter((candidate) => isGuestWeeklyHistoryMeet(candidate)))
+  const historyMeets = allMeets
+    .filter((candidate) => isGuestVisibleWeeklyMeet(candidate))
     .sort((a, b) => new Date(b.startsAt || 0).getTime() - new Date(a.startsAt || 0).getTime());
 
   const mainResults = sortWeeklyResultsByAverage(meet.results);

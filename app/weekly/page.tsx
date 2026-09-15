@@ -1,7 +1,7 @@
 import { PageHero } from "@/components/page-hero";
 import { cookies } from "next/headers";
 import { listWeeklyMeetEventConfigs, listWeeklyMeetOptions } from "@/lib/weekly-entry-store";
-import { isGuestWeeklyHistoryMeet } from "@/lib/weekly-guest-history";
+import { isGuestVisibleWeeklyMeet } from "@/lib/weekly-guest-history";
 import { hasWeeklyAdminCookie } from "@/lib/weekly-admin-auth";
 import { WEEKLY_DEFAULT_EVENTS } from "@/lib/wca-events";
 import { WeeklyResultEntryConsole } from "./admin/weekly-result-entry-console";
@@ -23,16 +23,17 @@ export default async function WeeklyPage() {
     hasWeeklyAdminCookie(await cookies())
   ]);
   const adminMeets = allMeets.filter((meet) => meet.id !== "weekly-test-entry" && meet.dataVersion === 2);
-  const historyMeets = (isAdmin ? adminMeets : allMeets.filter((meet) => isGuestWeeklyHistoryMeet(meet)))
+  const guestVisibleMeets = allMeets.filter((meet) => isGuestVisibleWeeklyMeet(meet))
     .sort((a, b) => meetStartsAtTimestamp(b.startsAt) - meetStartsAtTimestamp(a.startsAt));
   const visibleMeets = adminMeets;
   const currentMeet = visibleMeets.filter(isWeeklyMeetCurrent).sort((left, right) => meetStartsAtTimestamp(right.startsAt) - meetStartsAtTimestamp(left.startsAt))[0];
-  const historyMenuMeets = !isAdmin && currentMeet ? [currentMeet, ...historyMeets] : historyMeets;
-  // Guests should always arrive at a leaderboard. Between weekly windows,
-  // fall back to the latest completed, publicly visible meet rather than
-  // leaving the page with only the history menu.
-  const guestDisplayMeet = currentMeet || historyMeets[0];
+  const now = Date.now();
+  const latestStartedMeet = guestVisibleMeets.find((meet) => !meet.startsAt || meetStartsAtTimestamp(meet.startsAt) <= now);
+  // The landing page prefers the active week. Every other created week stays
+  // directly available from the same menu, including empty and future weeks.
+  const guestDisplayMeet = currentMeet || latestStartedMeet;
   const publicDisplayMeet = isAdmin ? currentMeet : guestDisplayMeet;
+  const adminEntryMeets = currentMeet ? [currentMeet, ...adminMeets.filter((meet) => meet.id !== currentMeet.id)] : adminMeets;
   const [currentEventConfigs, adminMeetEventConfigEntries] = await Promise.all([
     publicDisplayMeet ? listWeeklyMeetEventConfigs(publicDisplayMeet.id).catch(() => []) : Promise.resolve([]),
     isAdmin ? Promise.all(adminMeets.map(async (meet) => [meet.id, await listWeeklyMeetEventConfigs(meet.id).catch(() => [])] as const)) : Promise.resolve([])
@@ -46,7 +47,7 @@ export default async function WeeklyPage() {
         className="weekly-current-page-hero"
         actions={
           <div className="weekly-page-actions">
-            <WeeklyHistoryMenu meets={historyMenuMeets} />
+            <WeeklyHistoryMenu meets={guestVisibleMeets} />
             <Link className="weekly-grade-standards-link" href="/weekly/provincial-rankings">辽宁省榜</Link>
             <Link className="weekly-grade-standards-link" href="/weekly/grade-standards">等级标准</Link>
             <WeeklyInlineAdminLogin isAdmin={isAdmin} />
@@ -69,7 +70,7 @@ export default async function WeeklyPage() {
       {isAdmin ? (
         <WeeklyResultEntryConsole
           initialAdminUnlocked
-          initialMeets={adminMeets}
+          initialMeets={adminEntryMeets}
           events={WEEKLY_DEFAULT_EVENTS}
           initialMeetEventConfigsById={adminMeetEventConfigsById}
           mode="admin"

@@ -174,10 +174,6 @@ export async function listWeeklyHistoryForAdmin(): Promise<WeeklyHistoryAdminRow
   }));
 }
 
-export async function isWeeklyMeetPubliclyVisible(meetIdOrSlug: string) {
-  return Boolean((await getWeeklyMeetVisibility(meetIdOrSlug))?.isPublic);
-}
-
 export async function getWeeklyMeetVisibility(meetIdOrSlug: string) {
   const pool = getPostgresPool();
   const { rows } = await pool.query<{ id: string; is_public: boolean; data_version: number; status: string; starts_at: string | null; ends_at: string | null }>(
@@ -190,10 +186,7 @@ export async function getWeeklyMeetVisibility(meetIdOrSlug: string) {
   if (!rows[0]) return null;
   const row = rows[0];
   return {
-    isPublic: isWeeklyMeetVisibleToGuests({
-      id: row.id, isPublic: row.is_public, dataVersion: row.data_version,
-      status: row.status, startsAt: row.starts_at, endsAt: row.ends_at
-    })
+    isPublic: isWeeklyMeetVisibleToGuests({ id: row.id })
   };
 }
 
@@ -298,7 +291,7 @@ export async function createWeeklyMeet(input: {
       `INSERT INTO weekly_meets
         (id, slug, title, week_number, year, year_week, event, date_label, summary, pb_note, three_age_intro,
          status, starts_at, ends_at, is_public, data_version, updated_at)
-       VALUES ($1,$2,$3,$4,$5,$6,'三阶',$7,$8,$9,$10,$11,$12,$13,FALSE,2,now())`,
+       VALUES ($1,$2,$3,$4,$5,$6,'三阶',$7,$8,$9,$10,$11,$12,$13,TRUE,2,now())`,
       [
         id,
         slug,
@@ -325,7 +318,7 @@ export async function createWeeklyMeet(input: {
       status,
       startsAt,
       endsAt,
-      isPublic: false,
+      isPublic: true,
       dataVersion: 2
     } satisfies WeeklyMeetOption;
   } catch (error) {
@@ -370,7 +363,6 @@ export async function updateWeeklyMeetConfig(input: {
   dateLabel: string;
   startsAt?: string | null;
   endsAt?: string | null;
-  isPublic?: boolean;
   eventConfigs: WeeklyMeetEventConfig[];
 }) {
   if (!input.title.trim() || !input.dateLabel.trim()) throw new Error("请填写周赛标题和周期");
@@ -383,11 +375,11 @@ export async function updateWeeklyMeetConfig(input: {
     const updated = await client.query(
       `UPDATE weekly_meets
        SET title = $1, date_label = $2, status = $3, starts_at = $4, ends_at = $5,
-           is_public = COALESCE($6, is_public),
-           published_at = CASE WHEN COALESCE($6, is_public) AND NOT is_public THEN now()::text WHEN NOT COALESCE($6, is_public) THEN NULL ELSE published_at END,
+           is_public = TRUE,
+           published_at = COALESCE(published_at, now()::text),
            updated_at = now()
-       WHERE id = $7 AND data_version = 2`,
-      [input.title.trim(), input.dateLabel.trim(), status, input.startsAt || null, input.endsAt || null, input.isPublic ?? null, input.id]
+       WHERE id = $6 AND data_version = 2`,
+      [input.title.trim(), input.dateLabel.trim(), status, input.startsAt || null, input.endsAt || null, input.id]
     );
     if (updated.rowCount === 0) throw new Error("周赛不存在，或历史数据 / 只读");
     await saveWeeklyMeetEvents(client, input.id, input.eventConfigs);

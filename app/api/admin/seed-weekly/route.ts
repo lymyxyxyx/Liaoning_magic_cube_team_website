@@ -23,7 +23,7 @@ export async function POST() {
         `INSERT INTO weekly_meets
           (id, slug, title, week_number, year, year_week, published_at,
            event, date_label, summary, pb_note, three_age_intro, is_public, data_version, updated_at)
-         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,FALSE,1,now())
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,TRUE,1,now())
          ON CONFLICT (id) DO NOTHING`,
         [
           meet.id,

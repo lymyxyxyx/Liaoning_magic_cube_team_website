@@ -64,7 +64,7 @@ async function main() {
         status TEXT NOT NULL DEFAULT 'open',
         starts_at TIMESTAMPTZ,
         ends_at TIMESTAMPTZ,
-        is_public BOOLEAN NOT NULL DEFAULT FALSE,
+        is_public BOOLEAN NOT NULL DEFAULT TRUE,
         data_version SMALLINT NOT NULL DEFAULT 1,
         created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
         updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
@@ -73,7 +73,7 @@ async function main() {
     await client.query("ALTER TABLE weekly_meets ADD COLUMN IF NOT EXISTS status TEXT NOT NULL DEFAULT 'open'");
     await client.query("ALTER TABLE weekly_meets ADD COLUMN IF NOT EXISTS starts_at TIMESTAMPTZ");
     await client.query("ALTER TABLE weekly_meets ADD COLUMN IF NOT EXISTS ends_at TIMESTAMPTZ");
-    await client.query("ALTER TABLE weekly_meets ADD COLUMN IF NOT EXISTS is_public BOOLEAN NOT NULL DEFAULT FALSE");
+    await client.query("ALTER TABLE weekly_meets ADD COLUMN IF NOT EXISTS is_public BOOLEAN NOT NULL DEFAULT TRUE");
     await client.query("ALTER TABLE weekly_meets ADD COLUMN IF NOT EXISTS data_version SMALLINT NOT NULL DEFAULT 1");
     await client.query("ALTER TABLE weekly_meets ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ NOT NULL DEFAULT now()");
 
