@@ -2,7 +2,7 @@ import type { NextRequest } from "next/server";
 
 const WINDOW_MS = 15 * 60 * 1000;
 const MAX_FAILURES = 5;
-const BLOCK_MS = 15 * 60 * 1000;
+const BLOCK_MS = 60 * 1000;
 
 type LoginAttempt = {
   failures: number;
@@ -20,6 +20,12 @@ export function getWeeklyLoginRateLimit(request: NextRequest) {
   if (!current) return { key, allowed: true, retryAfterSeconds: 0 };
   if (current.blockedUntil > now) {
     return { key, allowed: false, retryAfterSeconds: Math.ceil((current.blockedUntil - now) / 1000) };
+  }
+  // A completed lock starts a fresh failure count. Otherwise any single typo
+  // after a one-minute lock would immediately lock every shared admin again.
+  if (current.blockedUntil > 0) {
+    attempts.delete(key);
+    return { key, allowed: true, retryAfterSeconds: 0 };
   }
   if (now - current.windowStartedAt >= WINDOW_MS) {
     attempts.delete(key);

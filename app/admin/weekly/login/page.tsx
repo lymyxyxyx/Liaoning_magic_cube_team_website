@@ -28,7 +28,7 @@ export default async function WeeklyAdminLoginPage({ searchParams }: { searchPar
           </span>
           <div>
             <h2>登录周赛后台</h2>
-            <p>请输入周赛管理员密码继续。</p>
+            <p>请输入周赛管理员密码继续。连续5次错误后暂停1分钟。</p>
           </div>
         </div>
         <label className="field admin-login-password">
