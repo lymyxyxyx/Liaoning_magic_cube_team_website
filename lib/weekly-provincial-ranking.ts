@@ -5,7 +5,7 @@ import { weeklyV2PlayerSourceSql } from "@/lib/weekly-player-scope";
 // 第29至38周是首批连续纳入的十期周赛。此日期是固定起点，后续
 // 周赛会继续累积，早于该范围的旧录入不会追溯进入省榜。
 export const WEEKLY_PROVINCIAL_RANKING_START = "2026-07-13T00:00:00+08:00";
-export const WEEKLY_PROVINCIAL_RANKING_NOTE = "仅统计选手库中省份为辽宁的选手；自2026年第29周起，取个人历史最好平均。";
+export const WEEKLY_PROVINCIAL_RANKING_NOTE = "仅统计选手库中省份为辽宁的选手；自2026年第29周起，取个人历史最好平均。年龄组采用选手创造该成绩时的组别，筛选后重新计算组内排名。";
 
 export type WeeklyProvincialRankingRow = {
   rank: number;
