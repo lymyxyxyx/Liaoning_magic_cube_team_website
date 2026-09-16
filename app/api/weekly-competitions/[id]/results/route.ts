@@ -71,7 +71,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       name: string;
       slug: string;
       wcaId: string;
-      gender: "男" | "女";
+      gender: "" | "男" | "女";
       province: string;
       city: string;
       birthDate: string;
@@ -117,7 +117,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
           name: profile.name,
           slug: "",
           wcaId: profile.wcaId || "",
-          gender: profile.gender === "女" ? "女" as const : "男" as const,
+          gender: profile.gender === "女" ? "女" as const : profile.gender === "男" ? "男" as const : "" as const,
           province: "",
           city: "",
           birthDate: profile.birthDate || "",
@@ -140,7 +140,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       if (!libraryPlayer) return NextResponse.json({ message: "请先从周赛选手库选择选手" }, { status: 400 });
       savedPlayer = {
         id: libraryPlayer.id, name: libraryPlayer.name, slug: "", wcaId: libraryPlayer.wcaId || "",
-        gender: (libraryPlayer.gender === "女" ? "女" : "男") as "女" | "男", province: libraryPlayer.province, city: libraryPlayer.city,
+        gender: (libraryPlayer.gender === "女" ? "女" : libraryPlayer.gender === "男" ? "男" : "") as "" | "男" | "女", province: libraryPlayer.province, city: libraryPlayer.city,
         birthDate: libraryPlayer.birthDate, ageGroup: libraryPlayer.ageGroup || "", ageGroupIsFuzzy: Boolean(libraryPlayer.ageGroupIsFuzzy)
       };
       calculated = await saveWeeklyResult({

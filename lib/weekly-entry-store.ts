@@ -49,7 +49,7 @@ export type WeeklyPlayer = {
   slug: string;
   wcaId: string;
   wcaIdConfirmed?: boolean;
-  gender: "男" | "女";
+  gender: "" | "男" | "女";
   province: string;
   city: string;
   birthDate: string;
@@ -405,7 +405,7 @@ export async function searchWeeklyPlayers(query: string): Promise<WeeklyPlayer[]
       slug: "",
       wcaId: player.wcaId || "",
       wcaIdConfirmed: Boolean(player.wcaIdConfirmed),
-      gender: player.gender === "女" ? ("女" as const) : ("男" as const),
+      gender: player.gender === "女" ? ("女" as const) : player.gender === "男" ? ("男" as const) : ("" as const),
       province: player.province,
       city: player.city,
       birthDate: player.birthDate,
@@ -419,7 +419,7 @@ export async function searchWeeklyPlayers(query: string): Promise<WeeklyPlayer[]
 export async function createWeeklyPlayer(input: {
   name: string;
   wcaId?: string;
-  gender?: "男" | "女";
+  gender?: "" | "男" | "女";
   province?: string;
   city?: string;
   birthDate?: string;
@@ -468,7 +468,7 @@ export async function createWeeklyPlayer(input: {
     name: player.name,
     slug: "",
     wcaId: player.wca_id,
-    gender: player.gender === "女" ? "女" : "男",
+    gender: player.gender === "女" ? "女" : player.gender === "男" ? "男" : "",
     province: player.province,
     city: player.city,
     birthDate: player.birth_date,
@@ -532,7 +532,7 @@ export async function listWeeklyResults(meetIdOrSlug: string, eventId: string, f
         slug: row.player_slug,
         wcaId,
         wcaIdConfirmed: Boolean(row.wca_id_confirmed || matchedPlayer?.wcaIdConfirmed),
-        gender: row.gender === "女" ? "女" : "男",
+        gender: row.gender === "女" ? "女" : row.gender === "男" ? "男" : "",
         province: row.player_province || matchedPlayer?.province || "辽宁",
         city: row.player_city || matchedPlayer?.city || "",
         birthDate: playerBirthDate,
@@ -675,7 +675,7 @@ export async function saveWeeklyResult(input: {
           input.player.id,
           playerName,
           playerSlug,
-          input.player.gender === "女" ? "女" : "男",
+          input.player.gender === "女" ? "女" : input.player.gender === "男" ? "男" : "",
           playerAgeGroup || null,
           associationGrade.level,
           associationGrade.grade,

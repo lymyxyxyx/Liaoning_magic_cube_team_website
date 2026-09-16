@@ -12,7 +12,7 @@ export async function POST(request: NextRequest) {
   const payload = (await request.json().catch(() => null)) as {
     name?: string;
     wcaId?: string;
-    gender?: "男" | "女";
+    gender?: "" | "男" | "女";
     province?: string;
     city?: string;
     birthDate?: string;

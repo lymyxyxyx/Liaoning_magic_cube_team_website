@@ -288,7 +288,7 @@ export async function commitWeeklyResultsImportBatch(input: { id: string; meetId
          VALUES ($1,$2,0,$3,$4,'',$5,$6,'', '', -1, -1, FALSE, FALSE,
                  'results_excel_import',$7,now())
          RETURNING id`,
-        [event.id, input.meetId, selected.id, selected.name, selected.gender === "女" ? "女" : "男", getWeeklyAgeGroup(selected.birth_date || "", meet.rows[0].starts_at ? new Date(meet.rows[0].starts_at) : new Date()) || null, batch.id]
+        [event.id, input.meetId, selected.id, selected.name, selected.gender === "女" ? "女" : selected.gender === "男" ? "男" : "", getWeeklyAgeGroup(selected.birth_date || "", meet.rows[0].starts_at ? new Date(meet.rows[0].starts_at) : new Date()) || null, batch.id]
       );
       const resultId = inserted.rows[0].id;
       await insertImportedAttempts(client, resultId, attempts);

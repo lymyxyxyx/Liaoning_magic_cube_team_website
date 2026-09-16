@@ -40,7 +40,7 @@ type WeeklyPlayer = {
   slug: string;
   wcaId: string;
   wcaIdConfirmed?: boolean;
-  gender: "男" | "女";
+  gender: "" | "男" | "女";
   province: string;
   city: string;
   birthDate: string;
@@ -1144,7 +1144,7 @@ export function WeeklyResultEntryConsole({ initialMeets, initialPlayers = [], ev
               <label className="field"><span>姓名</span><input value={playerDraft.name} onChange={(event) => setPlayerDraft({ ...playerDraft, name: event.target.value })} /></label>
               <label className="field"><span>WCA ID（修改后待确认）</span><input value={playerDraft.wcaId} onChange={(event) => { const wcaId = event.target.value.toUpperCase(); setPlayerDraft({ ...playerDraft, wcaId, wcaIdConfirmed: false }); }} /></label>
               <label className="field"><span>出生日期</span><input type="date" value={playerDraft.birthDate} onChange={(event) => setPlayerDraft({ ...playerDraft, birthDate: event.target.value, ageGroup: getWeeklyAgeGroup(event.target.value) })} /></label>
-              <label className="field"><span>性别</span><select value={playerDraft.gender} onChange={(event) => setPlayerDraft({ ...playerDraft, gender: event.target.value as WeeklyPlayer["gender"] })}><option value="男">男</option><option value="女">女</option></select></label>
+              <label className="field"><span>性别</span><select value={playerDraft.gender} onChange={(event) => setPlayerDraft({ ...playerDraft, gender: event.target.value as WeeklyPlayer["gender"] })}><option value="">未填写</option><option value="男">男</option><option value="女">女</option></select></label>
               <label className="field"><span>省</span><input value={playerDraft.province} onChange={(event) => setPlayerDraft({ ...playerDraft, province: event.target.value })} /></label>
               <label className="field"><span>市</span><input value={playerDraft.city} onChange={(event) => setPlayerDraft({ ...playerDraft, city: event.target.value })} /></label>
             </div>
@@ -1215,7 +1215,7 @@ function toWeeklyPlayer(player: Partial<WeeklyPlayer> & Pick<WeeklyPlayer, "id" 
     slug: player.slug || "",
     wcaId: player.wcaId || "",
     wcaIdConfirmed: Boolean(player.wcaIdConfirmed),
-    gender: player.gender === "女" ? "女" : "男",
+    gender: player.gender === "女" ? "女" : player.gender === "男" ? "男" : "",
     province: player.province || "辽宁",
     city: player.city || "",
     birthDate: player.birthDate || "",
