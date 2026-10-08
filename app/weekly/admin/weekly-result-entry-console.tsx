@@ -55,6 +55,7 @@ type WeeklyPlayer = {
 
 type EnteredResult = {
   id: number;
+  version: string;
   rank: number;
   sourceRank: number | null;
   player: WeeklyPlayer;
@@ -425,10 +426,11 @@ export function WeeklyResultEntryConsole({ initialMeets, initialPlayers = [], ev
       fetch(`/api/admin/weekly-results/${editingResult.id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ attempts, format: selectedFormat, reason: correctionReason })
+        body: JSON.stringify({ attempts, format: selectedFormat, reason: correctionReason, expectedVersion: editingResult.version })
       })
         .then((response) => {
           if (!response.ok) {
+            if (response.status === 409 || response.status === 428) refreshResults();
             return response.json().then((payload) => {
               throw new Error(payload.message || "修改成绩失败。");
             });
@@ -614,10 +616,11 @@ export function WeeklyResultEntryConsole({ initialMeets, initialPlayers = [], ev
     fetch(`/api/admin/weekly-results/${result.id}`, {
       method: "DELETE",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ reason })
+      body: JSON.stringify({ reason, expectedVersion: result.version })
     })
       .then((response) => {
         if (!response.ok) {
+          if (response.status === 409 || response.status === 428) { setDeleteTarget(null); refreshResults(); }
           return response.json().then((payload) => {
             throw new Error(payload.message || "删除成绩失败。");
           });
@@ -847,6 +850,11 @@ export function WeeklyResultEntryConsole({ initialMeets, initialPlayers = [], ev
             </div>
             {(resultSearchQuery || resultAgeGroup !== '全部') ? <button className="button" type="button" onClick={() => { setResultSearchQuery(''); setResultAgeGroup('全部'); }}>清除筛选</button> : null}
           </div>
+          <details className="weekly-result-rules">
+            <summary>排名与 PB 说明</summary>
+            <p>“全部”显示本项目总排名，选择年龄组后显示组内排名。常规项目按平均成绩、再按本周最好单次排序；完全相同按姓名排列，名次连续。大堆按最终数量从多到少排序。辽宁省排名是省榜中的历史最好成绩名次，同平均可并列。</p>
+            <p>PB 表示这场周赛的成绩优于历史基准及更早周赛成绩；“个人 PB”是档案中的当前最好成绩。修订、删除或回滚后，会重新计算相关徽标。</p>
+          </details>
           <p className="weekly-table-hint">左右滑动查看完整成绩</p>
           <div className="result-table-wrap" tabIndex={0} role="region" aria-label="周赛成绩，可左右滚动">
             <table className="result-table weekly-entry-table">

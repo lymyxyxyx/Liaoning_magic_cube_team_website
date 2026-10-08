@@ -219,3 +219,29 @@ ssh admin@39.106.199.195 'cd /opt/ln-cubing/app && sudo docker compose restart w
 ```
 
 After this change, all existing admin sessions will be invalidated (users will need to log in again).
+
+## Weekly login persistence and edit versions (2026-10-08)
+
+The weekly login limiter now requires the `weekly_login_rate_limits` PostgreSQL
+migration. Deploy this change in full mode so backup and migration run before
+the new application starts. An unavailable limiter database returns HTTP 503
+instead of bypassing the limit.
+
+Set `WEEKLY_TRUST_PROXY=true` only when the web port is restricted to the trusted
+proxy and Nginx overwrites `X-Real-IP` with `$remote_addr`. Do not trust an
+appended `X-Forwarded-For` chain. Environment changes require recreating the web
+container with `docker compose up -d --no-deps --force-recreate web`.
+
+Old administrator pages without a result version receive HTTP 428 and must be
+refreshed. Edits/deletes with stale versions receive HTTP 409.
+
+After backup, preview historical PB badge recalculation with:
+
+```bash
+sudo docker compose exec -T web node scripts/refresh-weekly-pb-history.mjs
+```
+
+Only `--apply` commits the recalculation. This changes derived PB values and
+badges, preserving attempts and edit/rollback versions. Isolated integration
+checks can run with `node scripts/verify-weekly-write-safety.cjs`; they create and
+drop a disposable schema and never read or write production result tables.

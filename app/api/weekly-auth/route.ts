@@ -19,13 +19,22 @@ function timingSafeStringEqual(a: string, b: string): boolean {
 }
 
 export async function POST(request: NextRequest) {
+  try {
+    return await handleLogin(request);
+  } catch (error) {
+    console.error("[weekly-login] login storage unavailable", error);
+    return NextResponse.json({ message: "登录服务暂时不可用，请稍后重试。" }, { status: 503 });
+  }
+}
+
+async function handleLogin(request: NextRequest) {
   const weeklyPassword = process.env.WEEKLY_ADMIN_PASSWORD?.trim() || "";
 
   if (!weeklyPassword) {
     return NextResponse.json({ message: "周赛管理员密码未配置" }, { status: 503 });
   }
 
-  const rateLimit = getWeeklyLoginRateLimit(request);
+  const rateLimit = await getWeeklyLoginRateLimit(request);
   if (!rateLimit.allowed) {
     return NextResponse.json({ message: "登录尝试过于频繁，请稍后再试" }, { status: 429, headers: { "Retry-After": String(rateLimit.retryAfterSeconds) } });
   }
@@ -35,7 +44,7 @@ export async function POST(request: NextRequest) {
   const nextPath = getSafeNextPath(request.cookies.get(weeklyNextCookieName)?.value || null);
 
   if (!timingSafeStringEqual(password, weeklyPassword)) {
-    const retryAfterSeconds = recordWeeklyLoginFailure(rateLimit.key);
+    const retryAfterSeconds = await recordWeeklyLoginFailure(rateLimit.key);
     if (retryAfterSeconds > 0) {
       return NextResponse.json({ message: "登录尝试过于频繁，请稍后再试" }, { status: 429, headers: { "Retry-After": String(retryAfterSeconds) } });
     }
@@ -45,7 +54,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.redirect(loginUrl, { status: 303 });
   }
 
-  clearWeeklyLoginFailures(rateLimit.key);
+  await clearWeeklyLoginFailures(rateLimit.key);
   const token = await createSessionToken(weeklyPassword, "weekly-admin");
 
   const response = createRelativeRedirect(nextPath);

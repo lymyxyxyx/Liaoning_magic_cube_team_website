@@ -1,3 +1,5 @@
+import { buildWeeklyPbHistory } from "@/lib/weekly-pb-history";
+import { assertWeeklyResultVersion } from "@/lib/weekly-result-version";
 import { getPostgresPool } from "@/lib/postgres";
 import type { PoolClient } from "pg";
 import { getWcaEventName, getWeeklyEventGroupName, isBigStackEventId, isWeeklySingleAttemptEvent, isWcaEventId, WEEKLY_DEFAULT_EVENT_IDS } from "@/lib/wca-events";
@@ -63,6 +65,7 @@ export type WeeklyPlayer = {
 
 export type WeeklyEnteredResult = {
   id: number;
+  version: string;
   rank: number;
   sourceRank: number | null;
   player: WeeklyPlayer;
@@ -99,6 +102,7 @@ export type WeeklyMeetEventConfig = {
 
 type WeeklyResultRow = {
   id: number;
+  result_version: string;
   rank: number;
   player_name: string;
   player_slug: string;
@@ -495,7 +499,7 @@ export async function listWeeklyResults(meetIdOrSlug: string, eventId: string, f
 
   const eventKey = await resolveWeeklyEventKey(pool, meet.id, eventId, formatConfig.id);
   const { rows } = await pool.query<WeeklyResultRow>(
-    `SELECT wr.*, COALESCE(NULLIF(wpm.wca_id, ''), NULLIF(wpl.wca_id, ''), CASE WHEN wr.player_id LIKE 'wca:%' THEN SUBSTRING(wr.player_id FROM 5) ELSE '' END) AS wca_id,
+    `SELECT wr.*, wr.updated_at::text AS result_version, COALESCE(NULLIF(wpm.wca_id, ''), NULLIF(wpl.wca_id, ''), CASE WHEN wr.player_id LIKE 'wca:%' THEN SUBSTRING(wr.player_id FROM 5) ELSE '' END) AS wca_id,
        COALESCE(wpl.birth_date, '') AS player_birth_date,
        COALESCE(wpl.age_group_override, '') AS player_age_group,
        COALESCE(wpl.province, '') AS player_province,
@@ -535,6 +539,7 @@ export async function listWeeklyResults(meetIdOrSlug: string, eventId: string, f
     const attemptValues = (attemptsByResult.get(row.id) || []).map(attemptRowToResultValue);
     return {
       id: row.id,
+      version: row.result_version,
       rank: groupRanks.get(row.id)!,
       sourceRank: row.source_rank,
       player: {
@@ -740,6 +745,7 @@ export async function saveWeeklyResult(input: {
 
 export async function correctWeeklyResult(input: {
   resultId: number;
+  expectedVersion: string;
   format: WeeklyResultFormat;
   attempts: string[];
   reason: string;
@@ -756,11 +762,15 @@ export async function correctWeeklyResult(input: {
   const client = await pool.connect();
   try {
     await client.query("BEGIN");
-    const result = await client.query<{ id: number; meet_id: string; event_id: string; player_id: string | null; player_name: string; average: string }>(
-      "SELECT id, meet_id, event_id, player_id, player_name, average FROM weekly_results WHERE id = $1 FOR UPDATE",
+    const owner = await client.query<{ player_id: string | null }>("SELECT player_id FROM weekly_results WHERE id = $1", [input.resultId]);
+    if (owner.rows[0]?.player_id) {
+      await client.query("SELECT id FROM weekly_player_library WHERE id = $1 FOR UPDATE", [owner.rows[0].player_id]);
+    }
+    const result = await client.query<{ id: number; meet_id: string; event_id: string; player_id: string | null; player_name: string; average: string; version: string }>(
+      "SELECT id, meet_id, event_id, player_id, player_name, average, updated_at::text AS version FROM weekly_results WHERE id = $1 FOR UPDATE",
       [input.resultId]
     );
-    if (!result.rows[0]) throw new Error("成绩不存在或已被删除");
+    assertWeeklyResultVersion(result.rows[0]?.version, input.expectedVersion);
     await assertMeetV2(client, result.rows[0].meet_id);
     if (result.rows[0].player_id) await assertWeeklyV2ActivePlayer(client, result.rows[0].player_id);
     const storedFormat = await getStoredFormat(client, result.rows[0].meet_id, result.rows[0].event_id);
@@ -774,7 +784,7 @@ export async function correctWeeklyResult(input: {
     const associationGrade = getShenyangAssociationGrade(eventId, calculated.average);
     await client.query(
       `UPDATE weekly_results
-       SET average = $1, personal_best = $2, level = $4, grade = $5, pb_refreshed = FALSE, pb_average_refreshed = FALSE, source = 'admin_correction', updated_at = now()
+       SET average = $1, personal_best = $2, level = $4, grade = $5, pb_refreshed = FALSE, pb_average_refreshed = FALSE, source = 'admin_correction', updated_at = clock_timestamp()
        WHERE id = $3`,
       [resultValueToSeconds(calculated.average), resultValueToSeconds(calculated.best), input.resultId, associationGrade.level, associationGrade.grade]
     );
@@ -812,7 +822,7 @@ export async function correctWeeklyResult(input: {
   }
 }
 
-export async function deleteWeeklyResult(input: { resultId: number; reason: string }) {
+export async function deleteWeeklyResult(input: { resultId: number; reason: string; expectedVersion: string }) {
   const reason = input.reason.trim();
   if (!reason) throw new Error("请填写删除原因");
 
@@ -820,11 +830,15 @@ export async function deleteWeeklyResult(input: { resultId: number; reason: stri
   const client = await pool.connect();
   try {
     await client.query("BEGIN");
-    const result = await client.query<{ id: number; meet_id: string; event_id: string; player_id: string | null; player_name: string; average: string }>(
-      "SELECT id, meet_id, event_id, player_id, player_name, average FROM weekly_results WHERE id = $1 FOR UPDATE",
+    const owner = await client.query<{ player_id: string | null }>("SELECT player_id FROM weekly_results WHERE id = $1", [input.resultId]);
+    if (owner.rows[0]?.player_id) {
+      await client.query("SELECT id FROM weekly_player_library WHERE id = $1 FOR UPDATE", [owner.rows[0].player_id]);
+    }
+    const result = await client.query<{ id: number; meet_id: string; event_id: string; player_id: string | null; player_name: string; average: string; version: string }>(
+      "SELECT id, meet_id, event_id, player_id, player_name, average, updated_at::text AS version FROM weekly_results WHERE id = $1 FOR UPDATE",
       [input.resultId]
     );
-    if (!result.rows[0]) throw new Error("成绩不存在或已被删除");
+    assertWeeklyResultVersion(result.rows[0]?.version, input.expectedVersion);
     await assertMeetV2(client, result.rows[0].meet_id);
     if (result.rows[0].player_id) await assertWeeklyV2ActivePlayer(client, result.rows[0].player_id);
 
@@ -1165,25 +1179,34 @@ async function refreshWeeklyPlayerPersonalBest(
   // computed by an import, otherwise rollback turns the imported PB into base.
   const baseBest = { ...(row.personal_bests_base || {}) };
   const baseAverage = { ...(row.personal_bests_average_base || {}) };
-  const results = await client.query<{ personal_best: string; average: string }>(
-    `SELECT wr.personal_best, wr.average
+  const results = await client.query<{ id: number; personal_best: string; average: string }>(
+    `SELECT wr.id, wr.personal_best, wr.average
        FROM weekly_results wr
        JOIN weekly_events we ON we.id = wr.event_id AND we.meet_id = wr.meet_id
        JOIN weekly_meets wm ON wm.id = wr.meet_id
-      WHERE wr.player_id = $1 AND we.event_code = $2 AND wm.data_version = 2`,
+      WHERE wr.player_id = $1 AND we.event_code = $2 AND wm.data_version = 2
+        AND wm.id <> 'weekly-test-entry'
+      ORDER BY wm.starts_at ASC NULLS LAST, wr.meet_id, wr.id`,
     [playerId, eventId]
   );
-  const resultBest = results.rows.map((item) => Number(item.personal_best)).filter((value) => Number.isFinite(value) && value >= 0);
-  const resultAverage = results.rows.map((item) => Number(item.average)).filter((value) => Number.isFinite(value) && value >= 0);
-  const higherIsBetter = isBigStackEventId(eventId);
-  const bestCandidates = [Number(baseBest[pbEventId]), ...resultBest].filter((value) => Number.isFinite(value) && (higherIsBetter ? value >= 0 : value > 0));
-  const averageCandidates = [Number(baseAverage[pbEventId]), ...resultAverage].filter((value) => Number.isFinite(value) && (higherIsBetter ? value >= 0 : value > 0));
+  const history = buildWeeklyPbHistory(
+    results.rows.map((result) => ({ id: result.id, best: Number(result.personal_best), average: Number(result.average) })),
+    getStoredPersonalBest(baseBest, pbEventId), getStoredPersonalBest(baseAverage, pbEventId), isBigStackEventId(eventId)
+  );
   const nextBest = { ...(row.personal_bests || {}) };
   const nextAverage = { ...(row.personal_bests_average || {}) };
-  if (bestCandidates.length > 0) nextBest[pbEventId] = (higherIsBetter ? Math.max : Math.min)(...bestCandidates);
+  if (history.best !== null) nextBest[pbEventId] = history.best;
   else delete nextBest[pbEventId];
-  if (averageCandidates.length > 0) nextAverage[pbEventId] = (higherIsBetter ? Math.max : Math.min)(...averageCandidates);
+  if (history.average !== null) nextAverage[pbEventId] = history.average;
   else delete nextAverage[pbEventId];
+  // Derived badge changes do not change the attempts' edit version or invalidate import rollback.
+  for (const flag of history.flags) {
+    await client.query(
+      `UPDATE weekly_results SET pb_refreshed = $2, pb_average_refreshed = $3
+       WHERE id = $1 AND (pb_refreshed IS DISTINCT FROM $2 OR pb_average_refreshed IS DISTINCT FROM $3)`,
+      [flag.id, flag.pbRefreshed, flag.pbAverageRefreshed]
+    );
+  }
   await client.query(
     `UPDATE weekly_player_library
      SET personal_bests = $1::jsonb, personal_bests_average = $2::jsonb,

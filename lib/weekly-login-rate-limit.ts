@@ -1,71 +1,50 @@
 import type { NextRequest } from "next/server";
+import { createHash } from "node:crypto";
+import { isIP } from "node:net";
+import { getPostgresPool } from "@/lib/postgres";
 
-const WINDOW_MS = 15 * 60 * 1000;
-const MAX_FAILURES = 5;
-const BLOCK_MS = 60 * 1000;
-
-type LoginAttempt = {
-  failures: number;
-  windowStartedAt: number;
-  blockedUntil: number;
-};
-
-const attempts = new Map<string, LoginAttempt>();
-
-export function getWeeklyLoginRateLimit(request: NextRequest) {
-  const key = getClientKey(request);
-  const now = Date.now();
-  const current = attempts.get(key);
-
-  if (!current) return { key, allowed: true, retryAfterSeconds: 0 };
-  if (current.blockedUntil > now) {
-    return { key, allowed: false, retryAfterSeconds: Math.ceil((current.blockedUntil - now) / 1000) };
-  }
-  // A completed lock starts a fresh failure count. Otherwise any single typo
-  // after a one-minute lock would immediately lock every shared admin again.
-  if (current.blockedUntil > 0) {
-    attempts.delete(key);
-    return { key, allowed: true, retryAfterSeconds: 0 };
-  }
-  if (now - current.windowStartedAt >= WINDOW_MS) {
-    attempts.delete(key);
-    return { key, allowed: true, retryAfterSeconds: 0 };
-  }
-  return { key, allowed: true, retryAfterSeconds: 0 };
+export async function getWeeklyLoginRateLimit(request: NextRequest) {
+  const key = getWeeklyLoginClientKey(request);
+  const { rows } = await getPostgresPool().query<{ retry_after: number }>(
+    `SELECT GREATEST(0, CEIL(EXTRACT(EPOCH FROM (blocked_until - now()))))::int AS retry_after
+       FROM weekly_login_rate_limits WHERE key_hash = $1`, [key]
+  );
+  const retryAfterSeconds = rows[0]?.retry_after || 0;
+  return { key, allowed: retryAfterSeconds === 0, retryAfterSeconds };
 }
 
-export function recordWeeklyLoginFailure(key: string) {
-  const now = Date.now();
-  const current = attempts.get(key);
-  const next = !current || now - current.windowStartedAt >= WINDOW_MS
-    ? { failures: 1, windowStartedAt: now, blockedUntil: 0 }
-    : { ...current, failures: current.failures + 1 };
-
-  if (next.failures >= MAX_FAILURES) next.blockedUntil = now + BLOCK_MS;
-  attempts.set(key, next);
-  pruneAttempts(now);
-  return Math.ceil(Math.max(0, next.blockedUntil - now) / 1000);
+export async function recordWeeklyLoginFailure(key: string) {
+  const { rows } = await getPostgresPool().query<{ retry_after: number }>(
+    `INSERT INTO weekly_login_rate_limits (key_hash, failures, window_started_at, blocked_until)
+     VALUES ($1, 1, now(), 'epoch')
+     ON CONFLICT (key_hash) DO UPDATE SET
+       failures = CASE
+         WHEN weekly_login_rate_limits.blocked_until > now() THEN weekly_login_rate_limits.failures
+         WHEN weekly_login_rate_limits.blocked_until > 'epoch' OR weekly_login_rate_limits.window_started_at <= now() - interval '15 minutes' THEN 1
+         ELSE weekly_login_rate_limits.failures + 1 END,
+       window_started_at = CASE
+         WHEN weekly_login_rate_limits.blocked_until > now() THEN weekly_login_rate_limits.window_started_at
+         WHEN weekly_login_rate_limits.blocked_until > 'epoch' OR weekly_login_rate_limits.window_started_at <= now() - interval '15 minutes' THEN now()
+         ELSE weekly_login_rate_limits.window_started_at END,
+       blocked_until = CASE
+         WHEN weekly_login_rate_limits.blocked_until > now() THEN weekly_login_rate_limits.blocked_until
+         WHEN weekly_login_rate_limits.blocked_until > 'epoch' OR weekly_login_rate_limits.window_started_at <= now() - interval '15 minutes' THEN 'epoch'::timestamptz
+         WHEN weekly_login_rate_limits.failures + 1 >= 5 THEN now() + interval '1 minute'
+         ELSE 'epoch'::timestamptz END
+     RETURNING GREATEST(0, CEIL(EXTRACT(EPOCH FROM (blocked_until - now()))))::int AS retry_after`, [key]
+  );
+  // Bound retention; identifiers are hashed and expired counters have no security value.
+  await getPostgresPool().query("DELETE FROM weekly_login_rate_limits WHERE window_started_at < now() - interval '1 day' AND blocked_until <= now()");
+  return rows[0].retry_after;
 }
 
-export function clearWeeklyLoginFailures(key: string) {
-  attempts.delete(key);
+export async function clearWeeklyLoginFailures(key: string) {
+  await getPostgresPool().query("DELETE FROM weekly_login_rate_limits WHERE key_hash = $1", [key]);
 }
 
-function getClientKey(request: NextRequest) {
-  // Only trust proxy-added IP headers when the deployment explicitly guarantees
-  // that the public edge strips client-supplied values first.
-  if (process.env.WEEKLY_TRUST_PROXY === "true") {
-    const forwarded = request.headers.get("x-forwarded-for")?.split(",", 1)[0]?.trim();
-    if (forwarded) return forwarded;
-    const realIp = request.headers.get("x-real-ip")?.trim();
-    if (realIp) return realIp;
-  }
-  return "shared-client-bucket";
-}
-
-function pruneAttempts(now: number) {
-  if (attempts.size < 1000) return;
-  for (const [key, attempt] of attempts) {
-    if (now - attempt.windowStartedAt >= WINDOW_MS && attempt.blockedUntil <= now) attempts.delete(key);
-  }
+export function getWeeklyLoginClientKey(request: NextRequest) {
+  // Nginx overwrites X-Real-IP with $remote_addr. Its appended X-Forwarded-For
+  // chain can include attacker input, so never use that chain for login limits.
+  const realIp = process.env.WEEKLY_TRUST_PROXY === "true" ? request.headers.get("x-real-ip")?.trim() : "";
+  return createHash("sha256").update(realIp && isIP(realIp) ? realIp : "shared-client-bucket").digest("hex");
 }

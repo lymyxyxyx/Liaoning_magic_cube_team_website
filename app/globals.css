@@ -12826,3 +12826,7 @@ a.commercial-member-link:hover {
   .brand-mark { flex-shrink: 0; }
   .weekly-page-actions summary { min-height: 30px; display: inline-flex; align-items: center; }
 }
+
+.weekly-result-rules { margin: 10px 0; color: var(--muted); font-size: 12px; line-height: 1.6; }
+.weekly-result-rules summary { cursor: pointer; color: var(--blue-deep); }
+.weekly-result-rules p { margin: 6px 0; }
