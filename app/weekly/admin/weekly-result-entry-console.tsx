@@ -24,6 +24,7 @@ import type { WeeklyOperationLog } from "@/lib/weekly-entry-store";
 import type { WeeklyWcaMatchCandidate } from "@/lib/weekly-player-library";
 import { WeeklyResultsImportConsole } from "@/app/admin/weekly/weekly-results-import-console";
 import { getWeeklyMeetMenuLabel } from "@/lib/weekly-meet-label";
+import { formatWeeklyEntryPeriod } from "@/lib/weekly-entry-period";
 import { buildWeeklyOverallRanking } from "@/lib/weekly-overall-ranking";
 
 type MeetOption = {
@@ -671,10 +672,10 @@ export function WeeklyResultEntryConsole({ initialMeets, initialPlayers = [], ev
             <p>
               {isPublicMode
                 ? selectedMeet
-                  ? `${selectedMeet.dateLabel || selectedMeet.title} · ${formatMeetPeriod(selectedMeet)} · 选择项目和赛制`
+                  ? `${selectedMeet.dateLabel || selectedMeet.title} · ${formatWeeklyEntryPeriod(selectedMeet)} · 选择项目和赛制`
                   : "默认录入当前周赛，请选择项目和赛制。"
                 : selectedMeet
-                  ? `${selectedMeet.dateLabel || selectedMeet.title} · ${formatMeetPeriod(selectedMeet)} · 管理员可录入`
+                  ? `${selectedMeet.dateLabel || selectedMeet.title} · ${formatWeeklyEntryPeriod(selectedMeet)} · 管理员可录入`
                   : emptyMeetMessage}
             </p>
           </div>
@@ -1277,27 +1278,6 @@ function formatPlayerMeta(player: WeeklyPlayer) {
   ].join(" · ");
 }
 
-function formatMeetPeriod(meet: Pick<MeetOption, "startsAt" | "endsAt">) {
-  const format = (value: Date) => `${value.getFullYear()}年${value.getMonth() + 1}月${value.getDate()}日`;
-  const formatDateTime = (value: Date, isInclusiveEnd = false) => {
-    // The database stores the last moment of an all-day entry window as
-    // 23:59:59. Display it as 24:00 so the stated competition period is
-    // easier for participants to understand.
-    if (isInclusiveEnd && value.getHours() === 23 && value.getMinutes() === 59 && value.getSeconds() === 59) {
-      return `${format(value)} 24:00`;
-    }
-    return `${format(value)} ${String(value.getHours()).padStart(2, "0")}:${String(value.getMinutes()).padStart(2, "0")}`;
-  };
-  if (meet.startsAt && meet.endsAt) return `北京时间 ${formatDateTime(new Date(meet.startsAt))} 开放 · ${formatDateTime(new Date(meet.endsAt), true)} 截止`;
-
-  const now = new Date();
-  const monday = new Date(now);
-  monday.setDate(now.getDate() - ((now.getDay() + 6) % 7));
-  const sunday = new Date(monday);
-  sunday.setDate(monday.getDate() + 6);
-  return `${format(monday)} 至 ${format(sunday)}`;
-}
-
 function isMeetEntryWindowOpen(meet: Pick<MeetOption, "status" | "startsAt" | "endsAt">) {
   if (meet.status !== "open") return false;
   const now = Date.now();
@@ -1329,7 +1309,7 @@ function formatOperationAction(action: WeeklyOperationLog["action"]) {
 function formatOperationTime(value: string) {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return value;
-  return date.toLocaleString("zh-CN", { hour12: false, month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" });
+  return date.toLocaleString("zh-CN", { timeZone: "Asia/Shanghai", hour12: false, month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" });
 }
 
 function getPlayerDisplayAgeGroup(player: Pick<WeeklyPlayer, "birthDate" | "ageGroup">) {
