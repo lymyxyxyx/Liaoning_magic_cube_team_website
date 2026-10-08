@@ -1,6 +1,7 @@
 "use client";
 
 import { ChangeEvent, useRef, useState } from "react";
+import { isBigStackEventId } from "@/lib/wca-events";
 import { FileDown, FileUp, RotateCcw, Search, Send, UserPlus } from "lucide-react";
 import type { WeeklyResultsImportBatch, WeeklyResultsImportPreviewRow } from "@/lib/weekly-results-import-store";
 
@@ -155,7 +156,7 @@ function Preview({ batch, onResolve, onResolveAll, onCommit, onRollback, busy, s
     <div className="weekly-import-confirmation-list">{preview.rows.map((row) => <article className="weekly-import-confirmation-row" key={row.sourceRow}>
       <div className="weekly-import-row-number"><strong>{row.sourceRow}</strong><small>{row.eventCode || "—"}</small></div>
       <div className="weekly-import-row-player"><strong>{row.playerName || "—"}</strong>{row.wcaId ? <small>{row.wcaId}</small> : null}</div>
-      <div className="weekly-import-row-score"><strong>平均 {row.averageText} · 最快 {row.bestText}</strong><small>{row.attempts.map((attempt) => typeof attempt === "number" ? formatCentiseconds(attempt) : attempt).join(" / ") || "—"}</small></div>
+      <div className="weekly-import-row-score"><strong>{isBigStackEventId(row.eventCode) ? `最终数量 ${row.averageText}（限时 1 小时）` : `平均 ${row.averageText} · 最快 ${row.bestText}`}</strong><small>{row.attempts.map((attempt) => typeof attempt === "number" ? (isBigStackEventId(row.eventCode) ? String(attempt / 100) : formatCentiseconds(attempt)) : attempt).join(" / ") || "—"}</small></div>
       <div className="weekly-import-row-match">{row.matchedPlayerId ? <span className="weekly-import-match-confirmed">已确认：{row.matchedPlayerName}</span> : row.recommendedPlayerId ? <span className="weekly-import-match-recommended">建议：{row.candidates[0]?.name || row.playerName}</span> : <span className="weekly-import-match-unresolved">{statusLabel(row)}</span>}{[...row.warnings, ...row.errors].length ? <small className="weekly-import-row-warning">{[...row.warnings, ...row.errors].join("；")}</small> : null}</div>
       <div className="weekly-import-confirmation-actions"><MatchControls row={row} onResolve={onResolve} busy={busy} searchOpen={searchForRow === row.sourceRow} onToggleSearch={() => setSearchForRow(searchForRow === row.sourceRow ? null : row.sourceRow)} searchQuery={searchQuery} setSearchQuery={setSearchQuery} searchResults={searchResults} onSearch={onSearch} onCreate={onCreate} /></div>
     </article>)}</div>

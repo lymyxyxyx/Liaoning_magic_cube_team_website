@@ -26,3 +26,13 @@ test("weekly detail display preserves an original source ranking", () => {
 
   assert.deepEqual(sorted.map((item) => item.playerName), ["第一名", "第二名"]);
 });
+
+
+test("big-stack history displays larger final counts first", () => {
+  const ranked = sortWeeklyResultsByAverage([
+    { ...result("少", 100, 100), rank: 1, sourceRank: 1 },
+    { ...result("多", 120, 120), rank: 1, sourceRank: 2 },
+    { ...result("DNF", -1, -1), rank: 2 }
+  ], true);
+  assert.deepEqual(ranked.map(({ playerName, rank }) => [playerName, rank]), [["多", 1], ["少", 2], ["DNF", 3]]);
+});

@@ -1,6 +1,26 @@
 export type ResultValue = number | "DNF" | "DNS";
 export type WeeklyResultFormat = "avg5" | "best3" | "avg3" | "best1";
 
+// Keep the existing scaled result representation; persisted values are the
+// unscaled count, and no database conversion of historical results is needed.
+export function parseCountResultInput(input: string): ResultValue {
+  const clean = input.trim().toUpperCase();
+  if (clean === "DNF" || clean === "DNS") return clean;
+  if (!/^\d+$/.test(clean)) throw new Error("大堆成绩请输入非负整数数量（限时 1 小时）");
+  const scaled = Number(clean) * 100;
+  if (!Number.isSafeInteger(scaled) || scaled > 2147483647) throw new Error("大堆成绩数量过大");
+  return scaled;
+}
+
+export function formatCountResult(value: ResultValue | null | undefined) {
+  if (value === null || value === undefined) return "-";
+  return typeof value === "number" ? String(value / 100) : value;
+}
+
+export function isBetterWeeklyResult(value: number, previous: number | null, higherIsBetter = false) {
+  return value >= 0 && (previous === null || (higherIsBetter ? value > previous : value < previous));
+}
+
 export const weeklyResultFormats = [
   { id: "avg5", name: "五次取平均", attemptCount: 5 },
   { id: "best3", name: "三次取最快", attemptCount: 3 },

@@ -1,6 +1,7 @@
+import { isBigStackEventId } from "@/lib/wca-events";
 import { createHash, randomUUID } from "node:crypto";
 import { getPostgresPool } from "@/lib/postgres";
-import { calculateResultByFormat, formatResult, getWeeklyResultFormat, resultValueToSeconds, type ResultValue } from "@/lib/weekly-result-utils";
+import { calculateResultByFormat, formatResult, formatCountResult, isBetterWeeklyResult, getWeeklyResultFormat, resultValueToSeconds, type ResultValue } from "@/lib/weekly-result-utils";
 import { normalizePastedWeeklyResults, normalizeWeeklyResultRow, type NormalizedWeeklyResultRow } from "@/lib/weekly-results-import";
 import { buildWeeklyPlayerImportMatch, type WeeklyImportPlayerCandidate } from "@/lib/weekly-player-import";
 import { createWeeklyResultsExport, createWeeklyResultsTemplate, parseWeeklyResultsWorkbook, type ParsedWeeklyResultsWorkbook, type WeeklyResultTemplateMeet } from "@/lib/weekly-results-xlsx";
@@ -110,11 +111,11 @@ export async function getWeeklyResultsExport(meetId: string) {
     ageGroup: result.player.ageGroup,
     level: result.level,
     grade: result.grade,
-    average: formatResult(result.average),
-    best: formatResult(result.best),
-    personalBest: formatResult(result.best),
+    average: (isBigStackEventId(event.eventCode) ? formatCountResult : formatResult)(result.average),
+    best: (isBigStackEventId(event.eventCode) ? formatCountResult : formatResult)(result.best),
+    personalBest: (isBigStackEventId(event.eventCode) ? formatCountResult : formatResult)(result.best),
     pbRefreshed: result.pbRefreshed,
-    attempts: result.attempts.map(formatResult)
+    attempts: result.attempts.map(isBigStackEventId(event.eventCode) ? formatCountResult : formatResult)
   })));
   return {
     filename: `weekly-results-${context.slug}-export.xlsx`,
@@ -296,14 +297,14 @@ export async function commitWeeklyResultsImportBatch(input: { id: string; meetId
       const pbKey = personalBestKey(row.eventCode);
       const best = resultValueToSeconds(calculated.best);
       const average = resultValueToSeconds(calculated.average);
-      const priorBest = storedPositiveValue(previousPbs.rows[0]?.personal_bests?.[pbKey]);
-      const priorAverage = storedPositiveValue(previousPbs.rows[0]?.personal_bests_average?.[pbKey]);
+      const priorBest = storedPositiveValue(previousPbs.rows[0]?.personal_bests?.[pbKey], isBigStackEventId(row.eventCode));
+      const priorAverage = storedPositiveValue(previousPbs.rows[0]?.personal_bests_average?.[pbKey], isBigStackEventId(row.eventCode));
       await client.query(
         `UPDATE weekly_results
             SET average = $1, personal_best = $2,
                 pb_refreshed = $3, pb_average_refreshed = $4, updated_at = now()
           WHERE id = $5`,
-        [average, best, best >= 0 && (priorBest === null || best < priorBest), average >= 0 && (priorAverage === null || average < priorAverage), resultId]
+        [average, best, isBetterWeeklyResult(best, priorBest, isBigStackEventId(row.eventCode)), isBetterWeeklyResult(average, priorAverage, isBigStackEventId(row.eventCode)), resultId]
       );
       const saved = await client.query<{ updated_at: string }>("SELECT updated_at FROM weekly_results WHERE id = $1", [resultId]);
       manifest.resultIds!.push(resultId);
@@ -415,7 +416,7 @@ async function buildPreview(input: { context: ImportMeetContext; source: WeeklyR
   const events = new Map(context.events.map((event) => [event.eventCode, event]));
   const existingResults = await listExistingResults(context.id);
   const previewRows = input.rows.map((source) => {
-    const row: WeeklyResultsImportPreviewRow = { ...source, warnings: [...source.warnings], errors: [...source.errors], candidates: [], recommendedPlayerId: "", handlingStatus: "unmatched", matchedPlayerName: "", matchedPlayerStatus: "", existingResult: false, duplicateExcelRow: false, bestText: formatResult(source.best), averageText: formatResult(source.average) };
+    const row: WeeklyResultsImportPreviewRow = { ...source, warnings: [...source.warnings], errors: [...source.errors], candidates: [], recommendedPlayerId: "", handlingStatus: "unmatched", matchedPlayerName: "", matchedPlayerStatus: "", existingResult: false, duplicateExcelRow: false, bestText: (isBigStackEventId(source.eventCode) ? formatCountResult : formatResult)(source.best), averageText: (isBigStackEventId(source.eventCode) ? formatCountResult : formatResult)(source.average) };
     const event = events.get(row.eventCode);
     if (!event || !event.enabled) row.errors.push("event_code 不属于当前周赛已启用项目");
     if (event && row.attempts.length !== event.attemptCount && !row.errors.some((message) => message.includes("尝试"))) row.errors.push(`该项目要求 ${event.attemptCount} 次尝试`);
@@ -510,7 +511,7 @@ async function insertImportedAttempts(client: PoolClient, resultId: number, atte
 }
 
 function personalBestKey(eventCode: string) { return eventCode === "individual" ? "allAround" : eventCode; }
-function storedPositiveValue(value: unknown) { const numeric = Number(value); return Number.isFinite(numeric) && numeric > 0 ? numeric : null; }
+function storedPositiveValue(value: unknown, allowZero = false) { const numeric = value === null || value === undefined ? NaN : Number(value); return Number.isFinite(numeric) && (allowZero ? numeric >= 0 : numeric > 0) ? numeric : null; }
 function groupBy<T>(items: T[], key: (item: T) => string) { const result = new Map<string, T[]>(); for (const item of items) { const group = result.get(key(item)) || []; group.push(item); result.set(key(item), group); } return result; }
 function normalizeName(value: string) { return value.normalize("NFKC").replace(/\s+/g, "").trim(); }
 function sanitizeFilename(value: string) { return value.replace(/[\\/\0]/g, "_").slice(0, 180) || "weekly-results.xlsx"; }

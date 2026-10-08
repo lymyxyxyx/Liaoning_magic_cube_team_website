@@ -1,6 +1,6 @@
 import { getPostgresPool } from "@/lib/postgres";
 import type { PoolClient } from "pg";
-import { getWcaEventName, getWeeklyEventGroupName, isWeeklySingleAttemptEvent, isWcaEventId, WEEKLY_DEFAULT_EVENT_IDS } from "@/lib/wca-events";
+import { getWcaEventName, getWeeklyEventGroupName, isBigStackEventId, isWeeklySingleAttemptEvent, isWcaEventId, WEEKLY_DEFAULT_EVENT_IDS } from "@/lib/wca-events";
 import { getWeeklyAgeGroup, getWeeklyRankingAgeGroup, getWeeklyRankingAgeGroupOrder } from "@/lib/weekly-age-groups";
 import { buildWeeklyRankAssignments } from "@/lib/weekly-ranking";
 import { weeklyBusinessDate } from "@/lib/weekly-results-import-dates";
@@ -9,6 +9,9 @@ import {
   formatResult,
   getWeeklyResultFormat,
   parseResultInput,
+  parseCountResultInput,
+  formatCountResult,
+  isBetterWeeklyResult,
   resultValueToSeconds,
   secondsToResultValue,
   type ResultValue,
@@ -505,7 +508,15 @@ export async function listWeeklyResults(meetIdOrSlug: string, eventId: string, f
      `,
     [meet.id, eventKey]
   );
-  rows.sort(compareWeeklyResultRows);
+  const isCountEvent = isBigStackEventId(eventId);
+  const formatScore = isCountEvent ? formatCountResult : formatResult;
+  const countRanks = new Map(isCountEvent ? buildWeeklyRankAssignments(
+    rows,
+    (row) => row.source_age_group || getWeeklyRankingAgeGroup(row.player_birth_date || "", row.age_group || row.player_age_group || "", row.meet_starts_at ? new Date(row.meet_starts_at) : new Date()),
+    getWeeklyRankingAgeGroupOrder,
+    true
+  ).map((row) => [row.id, row.rank]) : []);
+  rows.sort((a, b) => compareWeeklyResultRows(a, b, isCountEvent));
   const resultIds = rows.map((row) => row.id);
   const attempts =
     resultIds.length > 0
@@ -524,7 +535,7 @@ export async function listWeeklyResults(meetIdOrSlug: string, eventId: string, f
     const attemptValues = (attemptsByResult.get(row.id) || []).map(attemptRowToResultValue);
     return {
       id: row.id,
-      rank: row.source_rank ?? rank,
+      rank: isCountEvent ? countRanks.get(row.id)! : row.source_rank ?? rank,
       sourceRank: row.source_rank,
       player: {
         id: row.player_id || (row.player_slug ? `code:${row.player_slug}` : row.player_name),
@@ -546,7 +557,7 @@ export async function listWeeklyResults(meetIdOrSlug: string, eventId: string, f
       best: secondsToResultValue(row.personal_best),
       average: secondsToResultValue(row.average),
       attempts: attemptValues,
-      detail: attemptValues.map(formatResult).join(" / "),
+      detail: attemptValues.map(formatScore).join(" / "),
       pbRefreshed: Boolean(row.pb_refreshed),
       pbAverageRefreshed: Boolean(row.pb_average_refreshed),
       isNewPlayer: row.source === "manual_new_player"
@@ -616,14 +627,15 @@ export async function saveWeeklyResult(input: {
 }, transactionClient?: PoolClient) {
   if (!isWcaEventId(input.eventId)) throw new Error("项目不正确");
   const formatConfig = getWeeklyResultFormat(input.format);
-  if (isWeeklySingleAttemptEvent(input.eventId) && formatConfig.id !== "best1") throw new Error("个人全能和大堆项目只允许录入单次最快成绩");
+  if (isWeeklySingleAttemptEvent(input.eventId) && formatConfig.id !== "best1") throw new Error("个人全能和大堆项目只允许录入一个最终成绩");
   if (!isWeeklySingleAttemptEvent(input.eventId) && formatConfig.id === "best1") throw new Error("常规项目必须录满五次成绩");
   if (!input.player?.name?.trim()) throw new Error("请选择选手");
   if (!Array.isArray(input.attempts) || input.attempts.length !== formatConfig.attemptCount) {
     throw new Error(`必须录入 ${formatConfig.attemptCount} 次成绩`);
   }
 
-  const parsedAttempts = input.attempts.map(parseResultInput);
+  const formatScore = isBigStackEventId(input.eventId) ? formatCountResult : formatResult;
+  const parsedAttempts = input.attempts.map(isBigStackEventId(input.eventId) ? parseCountResultInput : parseResultInput);
   const calculated = calculateResultByFormat(parsedAttempts, formatConfig.id);
   const meet = input.meetId === testWeeklyMeet.id ? await ensureTestWeeklyMeet() : await resolveWeeklyMeet(input.meetId);
   if (!meet) throw new Error("周赛不存在");
@@ -654,8 +666,8 @@ export async function saveWeeklyResult(input: {
     const currentBest = resultValueToSeconds(calculated.best);
     const currentAverage = resultValueToSeconds(calculated.average);
     const associationGrade = getShenyangAssociationGrade(input.eventId, calculated.average);
-    const pbRefreshed = currentBest >= 0 && (previousPersonalBest === null || currentBest < previousPersonalBest);
-    const pbAverageRefreshed = currentAverage >= 0 && (previousAveragePersonalBest === null || currentAverage < previousAveragePersonalBest);
+    const pbRefreshed = isBetterWeeklyResult(currentBest, previousPersonalBest, isBigStackEventId(input.eventId));
+    const pbAverageRefreshed = isBetterWeeklyResult(currentAverage, previousAveragePersonalBest, isBigStackEventId(input.eventId));
     const existing = await client.query<{ id: number; average: string }>(
       `SELECT id FROM weekly_results
        WHERE meet_id = $1 AND event_id = $2
@@ -699,7 +711,7 @@ export async function saveWeeklyResult(input: {
         "created",
         "成绩录入",
         JSON.stringify([]),
-        JSON.stringify(parsedAttempts.map(formatResult)),
+        JSON.stringify(parsedAttempts.map(formatScore)),
         null,
         resultValueToSeconds(calculated.average),
         meet.id,
@@ -736,8 +748,6 @@ export async function correctWeeklyResult(input: {
     throw new Error(`必须录入 ${formatConfig.attemptCount} 次成绩`);
   }
 
-  const parsedAttempts = input.attempts.map(parseResultInput);
-  const calculated = calculateResultByFormat(parsedAttempts, formatConfig.id);
   const pool = getPostgresPool();
   const client = await pool.connect();
   try {
@@ -754,6 +764,9 @@ export async function correctWeeklyResult(input: {
 
     const previousAttempts = await readWeeklyAttempts(client, input.resultId);
     const eventId = await getEventIdFromStoredKey(client, result.rows[0].meet_id, result.rows[0].event_id);
+    const formatScore = isBigStackEventId(eventId) ? formatCountResult : formatResult;
+    const parsedAttempts = input.attempts.map(isBigStackEventId(eventId) ? parseCountResultInput : parseResultInput);
+    const calculated = calculateResultByFormat(parsedAttempts, formatConfig.id);
     const associationGrade = getShenyangAssociationGrade(eventId, calculated.average);
     await client.query(
       `UPDATE weekly_results
@@ -770,8 +783,8 @@ export async function correctWeeklyResult(input: {
       [
         input.resultId,
         reason,
-        JSON.stringify(previousAttempts.map(formatResult)),
-        JSON.stringify(parsedAttempts.map(formatResult)),
+        JSON.stringify(previousAttempts.map(formatScore)),
+        JSON.stringify(parsedAttempts.map(formatScore)),
         result.rows[0].average,
         resultValueToSeconds(calculated.average),
         result.rows[0].meet_id,
@@ -812,11 +825,13 @@ export async function deleteWeeklyResult(input: { resultId: number; reason: stri
     if (result.rows[0].player_id) await assertWeeklyV2ActivePlayer(client, result.rows[0].player_id);
 
     const previousAttempts = await readWeeklyAttempts(client, input.resultId);
+    const eventId = await getEventIdFromStoredKey(client, result.rows[0].meet_id, result.rows[0].event_id);
+    const formatScore = isBigStackEventId(eventId) ? formatCountResult : formatResult;
     await client.query(
       `INSERT INTO weekly_result_revisions
         (result_id, action, reason, previous_attempts, previous_average, meet_id, event_id, player_id, player_name)
        VALUES ($1,'deleted',$2,$3,$4,$5,$6,$7,$8)`,
-      [input.resultId, reason, JSON.stringify(previousAttempts.map(formatResult)), result.rows[0].average, result.rows[0].meet_id, result.rows[0].event_id, result.rows[0].player_id, result.rows[0].player_name]
+      [input.resultId, reason, JSON.stringify(previousAttempts.map(formatScore)), result.rows[0].average, result.rows[0].meet_id, result.rows[0].event_id, result.rows[0].player_id, result.rows[0].player_name]
     );
     await client.query("DELETE FROM weekly_results WHERE id = $1", [input.resultId]);
     if (result.rows[0].player_id) {
@@ -902,10 +917,12 @@ export async function rerankWeeklyEvent(client: PoolClient, meetId: string, even
     [meetId, eventId]
   );
 
+  const higherIsBetter = isBigStackEventId(await getEventIdFromStoredKey(client, meetId, eventId));
   const assignments = buildWeeklyRankAssignments(
     rows,
     (row) => getWeeklyRankingAgeGroup(row.birth_date || "", row.age_group || "", row.starts_at ? new Date(`${weeklyBusinessDate(row.starts_at)}T00:00:00`) : new Date()),
-    getWeeklyRankingAgeGroupOrder
+    getWeeklyRankingAgeGroupOrder,
+    higherIsBetter
   );
   for (const assignment of assignments) {
     await client.query("UPDATE weekly_results SET rank = $1 WHERE id = $2", [assignment.rank, assignment.id]);
@@ -914,21 +931,22 @@ export async function rerankWeeklyEvent(client: PoolClient, meetId: string, even
 
 function compareWeeklyResultRows(
   a: { player_name: string; average: string; personal_best: string; age_group: string | null; player_birth_date?: string | null; birth_date?: string | null; player_age_group?: string | null; meet_starts_at?: string | null },
-  b: { player_name: string; average: string; personal_best: string; age_group: string | null; player_birth_date?: string | null; birth_date?: string | null; player_age_group?: string | null; meet_starts_at?: string | null }
+  b: { player_name: string; average: string; personal_best: string; age_group: string | null; player_birth_date?: string | null; birth_date?: string | null; player_age_group?: string | null; meet_starts_at?: string | null },
+  higherIsBetter = false
 ) {
   const groupA = getWeeklyRankingAgeGroup(a.player_birth_date || a.birth_date || "", a.age_group || a.player_age_group || "", a.meet_starts_at ? new Date(a.meet_starts_at) : new Date());
   const groupB = getWeeklyRankingAgeGroup(b.player_birth_date || b.birth_date || "", b.age_group || b.player_age_group || "", b.meet_starts_at ? new Date(b.meet_starts_at) : new Date());
-  return getWeeklyRankingAgeGroupOrder(groupA) - getWeeklyRankingAgeGroupOrder(groupB) || compareResultScore(a, b) || a.player_name.localeCompare(b.player_name, "zh-CN");
+  return getWeeklyRankingAgeGroupOrder(groupA) - getWeeklyRankingAgeGroupOrder(groupB) || compareResultScore(a, b, higherIsBetter) || a.player_name.localeCompare(b.player_name, "zh-CN");
 }
 
-function compareResultScore(a: { average: string; personal_best: string }, b: { average: string; personal_best: string }) {
+function compareResultScore(a: { average: string; personal_best: string }, b: { average: string; personal_best: string }, higherIsBetter = false) {
   const averageA = Number(a.average);
   const averageB = Number(b.average);
-  const averageOrder = (averageA < 0 ? 1 : 0) - (averageB < 0 ? 1 : 0) || averageA - averageB;
+  const averageOrder = (averageA < 0 ? 1 : 0) - (averageB < 0 ? 1 : 0) || (higherIsBetter ? -1 : 1) * (averageA - averageB);
   if (averageOrder !== 0) return averageOrder;
   const bestA = Number(a.personal_best);
   const bestB = Number(b.personal_best);
-  return (bestA < 0 ? 1 : 0) - (bestB < 0 ? 1 : 0) || bestA - bestB;
+  return (bestA < 0 ? 1 : 0) - (bestB < 0 ? 1 : 0) || (higherIsBetter ? -1 : 1) * (bestA - bestB);
 }
 
 function getPersonalBestEventId(eventId: string): keyof WeeklyPersonalBests {
@@ -939,7 +957,7 @@ function getPersonalBestEventId(eventId: string): keyof WeeklyPersonalBests {
 
 function getStoredPersonalBest(personalBests: WeeklyPersonalBests, eventId: keyof WeeklyPersonalBests) {
   const value = Number(personalBests[eventId]);
-  if (Number.isFinite(value) && value > 0) return value;
+  if (Number.isFinite(value) && (isBigStackEventId(String(eventId)) ? value >= 0 : value > 0)) return value;
   // 兼容早期把枫叶成绩误存为 skewb 的 PB 数据。
   if (eventId === "maple") {
     const legacy = Number(personalBests.skewb);
@@ -1153,13 +1171,14 @@ async function refreshWeeklyPlayerPersonalBest(
   );
   const resultBest = results.rows.map((item) => Number(item.personal_best)).filter((value) => Number.isFinite(value) && value >= 0);
   const resultAverage = results.rows.map((item) => Number(item.average)).filter((value) => Number.isFinite(value) && value >= 0);
-  const bestCandidates = [Number(baseBest[pbEventId]), ...resultBest].filter((value) => Number.isFinite(value) && value > 0);
-  const averageCandidates = [Number(baseAverage[pbEventId]), ...resultAverage].filter((value) => Number.isFinite(value) && value > 0);
+  const higherIsBetter = isBigStackEventId(eventId);
+  const bestCandidates = [Number(baseBest[pbEventId]), ...resultBest].filter((value) => Number.isFinite(value) && (higherIsBetter ? value >= 0 : value > 0));
+  const averageCandidates = [Number(baseAverage[pbEventId]), ...resultAverage].filter((value) => Number.isFinite(value) && (higherIsBetter ? value >= 0 : value > 0));
   const nextBest = { ...(row.personal_bests || {}) };
   const nextAverage = { ...(row.personal_bests_average || {}) };
-  if (bestCandidates.length > 0) nextBest[pbEventId] = Math.min(...bestCandidates);
+  if (bestCandidates.length > 0) nextBest[pbEventId] = (higherIsBetter ? Math.max : Math.min)(...bestCandidates);
   else delete nextBest[pbEventId];
-  if (averageCandidates.length > 0) nextAverage[pbEventId] = Math.min(...averageCandidates);
+  if (averageCandidates.length > 0) nextAverage[pbEventId] = (higherIsBetter ? Math.max : Math.min)(...averageCandidates);
   else delete nextAverage[pbEventId];
   await client.query(
     `UPDATE weekly_player_library

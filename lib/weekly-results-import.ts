@@ -1,4 +1,5 @@
-import { calculateResultByFormat, formatResult, getWeeklyResultFormat, parseResultInput, type ResultValue } from "@/lib/weekly-result-utils";
+import { isBigStackEventId } from "@/lib/wca-events";
+import { calculateResultByFormat, formatResult, getWeeklyResultFormat, parseResultInput, parseCountResultInput, formatCountResult, type ResultValue } from "@/lib/weekly-result-utils";
 
 export type NormalizedWeeklyResultRow = {
   eventCode: string;
@@ -63,7 +64,7 @@ export function normalizeWeeklyResultRow(input: { eventCode: string; playerId?: 
   if (input.attemptValues.length !== format.attemptCount) errors.push(`该项目要求 ${format.attemptCount} 次尝试`);
   const attempts: ResultValue[] = [];
   for (const value of attemptValues) {
-    try { attempts.push(parseResultInput(String(value ?? ""))); } catch { errors.push("存在空白或格式错误的尝试成绩"); break; }
+    try { attempts.push((isBigStackEventId(eventCode) ? parseCountResultInput : parseResultInput)(String(value ?? ""))); } catch { errors.push("存在空白或格式错误的尝试成绩"); break; }
   }
   let best: ResultValue | null = null;
   let average: ResultValue | null = null;
@@ -75,5 +76,5 @@ export function normalizeWeeklyResultRow(input: { eventCode: string; playerId?: 
 }
 
 export function previewResultSummary(rows: NormalizedWeeklyResultRow[]) {
-  return { total: rows.length, ready: rows.filter((row) => !row.errors.length && Boolean(row.matchedPlayerId)).length, errors: rows.reduce((n, row) => n + row.errors.length, 0), warnings: rows.reduce((n, row) => n + row.warnings.length, 0), display: rows.map((row) => ({ ...row, bestText: formatResult(row.best), averageText: formatResult(row.average) })) };
+  return { total: rows.length, ready: rows.filter((row) => !row.errors.length && Boolean(row.matchedPlayerId)).length, errors: rows.reduce((n, row) => n + row.errors.length, 0), warnings: rows.reduce((n, row) => n + row.warnings.length, 0), display: rows.map((row) => ({ ...row, bestText: (isBigStackEventId(row.eventCode) ? formatCountResult : formatResult)(row.best), averageText: (isBigStackEventId(row.eventCode) ? formatCountResult : formatResult)(row.average) })) };
 }

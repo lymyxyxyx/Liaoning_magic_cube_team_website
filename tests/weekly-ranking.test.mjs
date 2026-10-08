@@ -25,3 +25,17 @@ test("ranking consistently uses the meet date for a player crossing an age bound
     { id: 4, rank: 4 }
   ]);
 });
+
+
+test("big-stack stored group ranks use descending counts", () => {
+  const rows = [
+    { id: 1, group: "U8", player_name: "少", average: "100", personal_best: "100" },
+    { id: 2, group: "U10", player_name: "多", average: "150", personal_best: "150" },
+    { id: 3, group: "U8", player_name: "多", average: "120", personal_best: "120" },
+    { id: 4, group: "U8", player_name: "零", average: "0", personal_best: "0" },
+    { id: 5, group: "U8", player_name: "DNF", average: "-1", personal_best: "-1" }
+  ];
+  assert.deepEqual(buildWeeklyRankAssignments(rows, (row) => row.group, getWeeklyRankingAgeGroupOrder, true), [
+    { id: 3, rank: 1 }, { id: 1, rank: 2 }, { id: 4, rank: 3 }, { id: 5, rank: 4 }, { id: 2, rank: 1 }
+  ]);
+});

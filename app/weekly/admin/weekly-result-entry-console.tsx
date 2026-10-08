@@ -10,6 +10,8 @@ import {
   formatResult,
   getWeeklyResultFormat,
   parseResultInput,
+  parseCountResultInput,
+  formatCountResult,
   weeklyResultFormats,
   type ResultValue,
   type WeeklyResultFormat
@@ -22,6 +24,7 @@ import type { WeeklyOperationLog } from "@/lib/weekly-entry-store";
 import type { WeeklyWcaMatchCandidate } from "@/lib/weekly-player-library";
 import { WeeklyResultsImportConsole } from "@/app/admin/weekly/weekly-results-import-console";
 import { getWeeklyMeetMenuLabel } from "@/lib/weekly-meet-label";
+import { buildWeeklyOverallRanking } from "@/lib/weekly-overall-ranking";
 
 type MeetOption = {
   id: string;
@@ -153,6 +156,9 @@ export function WeeklyResultEntryConsole({ initialMeets, initialPlayers = [], ev
   const [activePlayerCandidateIndex, setActivePlayerCandidateIndex] = useState(0);
   const attemptRefs = useRef<Array<HTMLInputElement | null>>([]);
   const playerInputRef = useRef<HTMLInputElement | null>(null);
+  const isCountEvent = isBigStackEventId(selectedEventId);
+  const formatScore = isCountEvent ? formatCountResult : formatResult;
+  const parseScore = isCountEvent ? parseCountResultInput : parseResultInput;
   const selectedFormatConfig = getWeeklyResultFormat(selectedFormat);
   const isPublicMode = mode === "public" || !adminUnlocked;
   const importEventConfigs = selectedMeetId ? initialMeetEventConfigsById[selectedMeetId] || initialEventConfigs : [];
@@ -165,11 +171,11 @@ export function WeeklyResultEntryConsole({ initialMeets, initialPlayers = [], ev
   const calculated = useMemo(() => {
     try {
       if (attempts.some((attempt) => !attempt.trim())) return null;
-      return calculateResultByFormat(attempts.map(parseResultInput), selectedFormat);
+      return calculateResultByFormat(attempts.map(parseScore), selectedFormat);
     } catch {
       return null;
     }
-  }, [attempts, selectedFormat]);
+  }, [attempts, selectedFormat, parseScore]);
 
   const searchPlayers = useCallback((query: string, signal?: AbortSignal, selectExact = false) => {
     const q = query.trim();
@@ -379,7 +385,7 @@ export function WeeklyResultEntryConsole({ initialMeets, initialPlayers = [], ev
     const currentPlayerQuery = playerInputRef.current?.value || playerQuery;
     let parsedAttempts: ResultValue[];
     try {
-      parsedAttempts = attempts.map(parseResultInput);
+      parsedAttempts = attempts.map(parseScore);
       calculateResultByFormat(parsedAttempts, selectedFormat);
     } catch (error) {
       setNotice(error instanceof Error ? error.message : "成绩格式不正确。");
@@ -562,7 +568,7 @@ export function WeeklyResultEntryConsole({ initialMeets, initialPlayers = [], ev
 
   function beginCorrection(result: EnteredResult) {
     selectPlayer(result.player);
-    setAttempts(result.attempts.map(formatResult));
+    setAttempts(result.attempts.map(formatScore));
     setCorrectionReason("");
     setEditingResult(result);
     setNotice(`正在修改 ${result.player.name} 的成绩。`);
@@ -620,14 +626,14 @@ export function WeeklyResultEntryConsole({ initialMeets, initialPlayers = [], ev
   const recordedCount = results.length;
   const displayedResults = useMemo(() => {
     const query = resultSearchQuery.trim();
-    const filtered = results.filter((result) => {
+    const scopedResults = resultAgeGroup === "全部" ? results : results.filter((result) => (result.player.ageGroup || "待补") === resultAgeGroup);
+    const rankedResults = buildWeeklyOverallRanking(scopedResults, isCountEvent);
+    return rankedResults.filter((result) => {
       const matchesQuery = !query || matchesWeeklyPlayerQuery(result.player, query);
       const matchesGroup = resultAgeGroup === "全部" || (result.player.ageGroup || "待补") === resultAgeGroup;
       return matchesQuery && matchesGroup;
     });
-    if (resultAgeGroup !== "全部") return filtered;
-    return [...filtered].sort(compareWeeklyOverallResults);
-  }, [resultAgeGroup, resultSearchQuery, results]);
+  }, [resultAgeGroup, resultSearchQuery, results, isCountEvent]);
   const playerCandidates = useMemo(() => {
     const query = playerQuery.trim();
     if (!query || selectedPlayer) return [];
@@ -695,7 +701,7 @@ export function WeeklyResultEntryConsole({ initialMeets, initialPlayers = [], ev
             <select value={selectedFormat} disabled={isPublicMode} onChange={(event) => setSelectedFormat(event.target.value as WeeklyResultFormat)}>
               {availableFormats.map((format) => (
                 <option value={format.id} key={format.id}>
-                  {format.name}
+                  {isCountEvent ? "限时 1 小时 · 最终数量" : format.name}
                 </option>
               ))}
             </select>
@@ -745,11 +751,11 @@ export function WeeklyResultEntryConsole({ initialMeets, initialPlayers = [], ev
           </div>
           <div className="weekly-result-search-bar" role="search" aria-label="查询周赛成绩">
             <label>
-              姓名 / 周赛编号
+              {isPublicMode ? "姓名" : "姓名 / 周赛编号"}
               <input
                 value={resultSearchQuery}
                 onChange={(event) => { setResultSearchQuery(event.target.value); setActiveResultCandidateIndex(0); }}
-                placeholder="输入姓名、拼音或周赛编号"
+                placeholder={isPublicMode ? "输入姓名或拼音" : "输入姓名、拼音或周赛编号"}
                 role="combobox"
                 aria-autocomplete="list"
                 aria-expanded={resultSearchCandidates.length > 0}
@@ -770,7 +776,7 @@ export function WeeklyResultEntryConsole({ initialMeets, initialPlayers = [], ev
                   }
                 }}
               />
-              {resultSearchCandidates.length > 0 ? <div className="weekly-player-results weekly-result-search-suggestions" id="weekly-result-search-suggestions" role="listbox">{resultSearchCandidates.map((player, index) => <button key={player.id} type="button" role="option" aria-selected={index === activeResultCandidateIndex} className={index === activeResultCandidateIndex ? "is-selected" : ""} onMouseEnter={() => setActiveResultCandidateIndex(index)} onMouseDown={(event) => event.preventDefault()} onClick={() => setResultSearchQuery(player.name)}><strong>{player.weeklyNumber ? `${player.weeklyNumber} · ` : ""}{player.name}{player.wcaId ? ` · ${player.wcaId}` : ""}</strong><small>{formatPlayerCandidateMeta(player)}</small></button>)}</div> : null}
+              {resultSearchCandidates.length > 0 ? <div className="weekly-player-results weekly-result-search-suggestions" id="weekly-result-search-suggestions" role="listbox">{resultSearchCandidates.map((player, index) => <button key={player.id} type="button" role="option" aria-selected={index === activeResultCandidateIndex} className={index === activeResultCandidateIndex ? "is-selected" : ""} onMouseEnter={() => setActiveResultCandidateIndex(index)} onMouseDown={(event) => event.preventDefault()} onClick={() => setResultSearchQuery(player.name)}><strong>{!isPublicMode && player.weeklyNumber ? `${player.weeklyNumber} · ` : ""}{player.name}{player.wcaId ? ` · ${player.wcaId}` : ""}</strong><small>{formatPlayerCandidateMeta(player)}</small></button>)}</div> : null}
             </label>
             <div className="weekly-event-tabs-field">
               <span>项目</span>
@@ -832,18 +838,17 @@ export function WeeklyResultEntryConsole({ initialMeets, initialPlayers = [], ev
               <thead>
                 <tr>
                   <th>排名</th>
-                  <th>周赛编号</th>
                   <th>WCA ID</th>
                   <th>姓名</th>
                   <th>组别</th>
                   <th>省市</th>
-                  <th>段位</th>
-                  <th>等级</th>
-                  <th>平均</th>
-                  <th>辽宁省排名</th>
+                  {!isCountEvent ? <th>段位</th> : null}
+                  {!isCountEvent ? <th>等级</th> : null}
+                  <th>{isCountEvent ? "最终数量" : "平均"}</th>
+                  {!isCountEvent ? <th>辽宁省排名</th> : null}
                   <th>个人 PB</th>
-                  <th>本周最好</th>
-                  {Array.from({ length: 5 }, (_, index) => <th key={index}>{index + 1}</th>)}
+                  {!isCountEvent ? <th>本周最好</th> : null}
+                  {!isCountEvent ? Array.from({ length: 5 }, (_, index) => <th key={index}>{index + 1}</th>) : null}
                   {!isPublicMode ? <th>操作</th> : null}
                 </tr>
               </thead>
@@ -851,7 +856,6 @@ export function WeeklyResultEntryConsole({ initialMeets, initialPlayers = [], ev
                 {displayedResults.map((result) => (
                   <tr key={result.id}>
                     <td data-label="排名">{result.rank}</td>
-                    <td data-label="周赛编号">{getWeeklyNumber(result.player, knownPlayers) || "—"}</td>
                     <td data-label="WCA ID">
                       {result.player.wcaIdConfirmed ? (
                         <span className="weekly-wca-status">{result.player.wcaId}<Check size={13} aria-label="管理员已确认" /></span>
@@ -876,26 +880,26 @@ export function WeeklyResultEntryConsole({ initialMeets, initialPlayers = [], ev
                     <td data-label="姓名">{result.player.name}{result.isNewPlayer ? <small className="weekly-new-player-badge">（新）</small> : null}</td>
                     <td data-label="组别">{result.player.ageGroup || "待补"}</td>
                     <td data-label="省市">{formatRegion(result.player)}</td>
-                    <td data-label="段位">
+                    {!isCountEvent ? <><td data-label="段位">
                       {getShenyangAssociationGrade(selectedEventId, result.average).level || "-"}
                     </td>
                     <td data-label="等级" className="grade-cell">
                       {getShenyangAssociationGrade(selectedEventId, result.average).grade || "-"}
+                    </td></> : null}
+                    <td data-label={isCountEvent ? "最终数量" : "平均"} className={result.pbAverageRefreshed ? "score-strong pb-cell pb-refreshed" : "score-strong"}>
+                      {formatScore(result.average)}{result.pbAverageRefreshed ? <span className="weekly-pb-badge">PB</span> : null}
                     </td>
-                    <td data-label="平均" className={result.pbAverageRefreshed ? "score-strong pb-cell pb-refreshed" : "score-strong"}>
-                      {formatResult(result.average)}{result.pbAverageRefreshed ? <span className="weekly-pb-badge">PB</span> : null}
-                    </td>
-                    <td data-label="辽宁省排名" className="weekly-provincial-rank-cell">{result.provincialRank ? `#${result.provincialRank}` : "—"}</td>
+                    {!isCountEvent ? <td data-label="辽宁省排名" className="weekly-provincial-rank-cell">{result.provincialRank ? `#${result.provincialRank}` : "—"}</td> : null}
                     <td data-label="个人 PB" className="pb-cell">
-                      {formatResult(result.sourcePersonalBest ?? result.best)}
+                      {formatScore(result.sourcePersonalBest ?? result.best)}
                     </td>
-                    <td data-label="本周最好" className={result.pbRefreshed ? "pb-cell pb-refreshed" : "pb-cell"}>
-                      {formatResult(result.best)}{result.pbRefreshed ? <span className="weekly-pb-badge">PB</span> : null}
-                    </td>
-                    {Array.from({ length: 5 }, (_, index) => {
+                    {!isCountEvent ? <td data-label="本周最好" className={result.pbRefreshed ? "pb-cell pb-refreshed" : "pb-cell"}>
+                      {formatScore(result.best)}{result.pbRefreshed ? <span className="weekly-pb-badge">PB</span> : null}
+                    </td> : null}
+                    {!isCountEvent ? Array.from({ length: 5 }, (_, index) => {
                       const attempt = result.attempts[index];
-                      return <td data-label={`第${index + 1}次`} className={getAttemptClass(attempt, result.attempts)} key={index}>{formatResult(attempt)}</td>;
-                    })}
+                      return <td data-label={`第${index + 1}次`} className={getAttemptClass(attempt, result.attempts)} key={index}>{formatScore(attempt)}</td>;
+                    }) : null}
                     {!isPublicMode ? (
                       <td data-label="操作" className="weekly-result-actions">
                         <button className="button" type="button" title="修改成绩" aria-label={`修改 ${result.player.name} 的成绩`} onClick={() => beginCorrection(result)}>
@@ -913,7 +917,7 @@ export function WeeklyResultEntryConsole({ initialMeets, initialPlayers = [], ev
                 ))}
                 {displayedResults.length === 0 ? (
                   <tr>
-                    <td colSpan={isPublicMode ? 17 : 18}>{isLoadingResults ? "正在读取成绩..." : resultsLoadError ? <><span>{resultsLoadError}</span><button className="button compact" type="button" onClick={refreshResults}>重新加载</button></> : results.length ? "没有符合筛选条件的成绩。" : "当前项目暂无成绩。"}</td>
+                    <td colSpan={isCountEvent ? (isPublicMode ? 7 : 8) : (isPublicMode ? 16 : 17)}>{isLoadingResults ? "正在读取成绩..." : resultsLoadError ? <><span>{resultsLoadError}</span><button className="button compact" type="button" onClick={refreshResults}>重新加载</button></> : results.length ? "没有符合筛选条件的成绩。" : "当前项目暂无成绩。"}</td>
                   </tr>
                 ) : null}
               </tbody>
@@ -927,7 +931,7 @@ export function WeeklyResultEntryConsole({ initialMeets, initialPlayers = [], ev
             <h2>{editingResult ? "纠正成绩" : "输入板"}</h2>
             <p>
               {selectedMeet
-                ? `${selectedMeet.dateLabel || selectedMeet.title} · ${selectedEvent?.name || selectedEventId} · ${selectedFormatConfig.name}`
+                ? `${selectedMeet.dateLabel || selectedMeet.title} · ${selectedEvent?.name || selectedEventId} · ${isCountEvent ? "限时 1 小时 · 最终数量" : selectedFormatConfig.name}`
                 : "请先选择周赛"}
             </p>
           </div>
@@ -992,7 +996,7 @@ export function WeeklyResultEntryConsole({ initialMeets, initialPlayers = [], ev
               <div className="weekly-player-results" id="weekly-player-suggestions" role="listbox">
                 {playerCandidates.map((player, index) => (
                   <button type="button" key={player.id} role="option" aria-selected={index === activePlayerCandidateIndex} className={index === activePlayerCandidateIndex ? "is-active" : ""} onMouseEnter={() => setActivePlayerCandidateIndex(index)} onMouseDown={(event) => event.preventDefault()} onClick={() => selectPlayer(player)}>
-                    <strong>{player.weeklyNumber ? `${player.weeklyNumber} · ` : ""}{player.name}{player.wcaId ? ` · ${player.wcaId}` : ""}</strong>
+                    <strong>{!isPublicMode && player.weeklyNumber ? `${player.weeklyNumber} · ` : ""}{player.name}{player.wcaId ? ` · ${player.wcaId}` : ""}</strong>
                     <small>{formatPlayerCandidateMeta(player)}</small>
                   </button>
                 ))}
@@ -1005,7 +1009,7 @@ export function WeeklyResultEntryConsole({ initialMeets, initialPlayers = [], ev
           <div className="weekly-attempt-grid">
             {attempts.map((attempt, index) => (
               <label key={index} style={isPublicMode ? publicAttemptRowStyle : undefined}>
-                <span style={isPublicMode ? publicAttemptNumberStyle : undefined}>{index + 1}.</span>
+                <span style={isPublicMode ? publicAttemptNumberStyle : undefined}>{isCountEvent ? "数量" : `${index + 1}.`}</span>
                 <input
                   ref={(node) => {
                     attemptRefs.current[index] = node;
@@ -1013,8 +1017,9 @@ export function WeeklyResultEntryConsole({ initialMeets, initialPlayers = [], ev
                   value={attempt}
                   onChange={(event) => updateAttempt(index, event.target.value)}
                   onKeyDown={(event) => handleAttemptKeyDown(event, index)}
-                  inputMode="decimal"
-                  placeholder="00:00.00"
+                  inputMode={isCountEvent ? "numeric" : "decimal"}
+                  aria-label={isCountEvent ? "最终数量（限时 1 小时）" : `第 ${index + 1} 次成绩`}
+                  placeholder={isCountEvent ? "最终数量，如 120" : "00:00.00"}
                   disabled={isPublicMode}
                   style={isPublicMode ? publicAttemptInputStyle : undefined}
                 />
@@ -1024,13 +1029,13 @@ export function WeeklyResultEntryConsole({ initialMeets, initialPlayers = [], ev
 
           <div className="weekly-calculated">
             <div>
-              <span>最好单次</span>
-              <strong>{calculated ? formatResult(calculated.best) : "-"}</strong>
+              <span>{isCountEvent ? "最终数量（限时 1 小时）" : "最好单次"}</span>
+              <strong>{calculated ? formatScore(calculated.best) : "-"}</strong>
             </div>
-            <div>
+            {!isCountEvent ? <div>
               <span>平均</span>
-              <strong>{calculated ? formatResult(calculated.average) : "-"}</strong>
-            </div>
+              <strong>{calculated ? formatScore(calculated.average) : "-"}</strong>
+            </div> : null}
           </div>
 
           {editingResult ? (
@@ -1293,21 +1298,6 @@ function formatPlayerCandidateMeta(player: WeeklyPlayer) {
 
 function formatRegion(player: WeeklyPlayer) {
   return [player.province, player.city].filter(Boolean).join(" · ") || "-";
-}
-
-function getWeeklyNumber(player: WeeklyPlayer, knownPlayers: WeeklyPlayer[]) {
-  return player.weeklyNumber || knownPlayers.find((candidate) => candidate.id === player.id)?.weeklyNumber;
-}
-
-function compareWeeklyOverallResults(a: EnteredResult, b: EnteredResult) {
-  if (a.sourceRank !== null && b.sourceRank !== null) return a.sourceRank - b.sourceRank;
-  return resultScore(a.average, b.average) || resultScore(a.best, b.best) || a.player.name.localeCompare(b.player.name, "zh-CN");
-}
-
-function resultScore(a: ResultValue, b: ResultValue) {
-  const scoreA = typeof a === "number" ? a : Number.POSITIVE_INFINITY;
-  const scoreB = typeof b === "number" ? b : Number.POSITIVE_INFINITY;
-  return scoreA - scoreB;
 }
 
 function formatOperationAction(action: WeeklyOperationLog["action"]) {

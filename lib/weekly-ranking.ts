@@ -8,7 +8,8 @@ export type WeeklyRankingRow = {
 export function buildWeeklyRankAssignments<T extends WeeklyRankingRow>(
   rows: T[],
   getGroup: (row: T) => string,
-  getGroupOrder: (group: string) => number
+  getGroupOrder: (group: string) => number,
+  higherIsBetter = false
 ) {
   const ranked = rows.map((row) => ({ row, group: getGroup(row) }));
   ranked.sort((a, b) => {
@@ -16,11 +17,12 @@ export function buildWeeklyRankAssignments<T extends WeeklyRankingRow>(
     if (groupOrder !== 0) return groupOrder;
     const averageA = Number(a.row.average);
     const averageB = Number(b.row.average);
-    const averageOrder = (averageA < 0 ? 1 : 0) - (averageB < 0 ? 1 : 0) || averageA - averageB;
+    const direction = higherIsBetter ? -1 : 1;
+    const averageOrder = (averageA < 0 ? 1 : 0) - (averageB < 0 ? 1 : 0) || direction * (averageA - averageB);
     if (averageOrder !== 0) return averageOrder;
     const bestA = Number(a.row.personal_best);
     const bestB = Number(b.row.personal_best);
-    const bestOrder = (bestA < 0 ? 1 : 0) - (bestB < 0 ? 1 : 0) || bestA - bestB;
+    const bestOrder = (bestA < 0 ? 1 : 0) - (bestB < 0 ? 1 : 0) || direction * (bestA - bestB);
     return bestOrder || a.row.player_name.localeCompare(b.row.player_name, "zh-CN");
   });
 

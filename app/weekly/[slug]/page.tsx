@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { cookies } from "next/headers";
 import { ArrowLeft } from "lucide-react";
+import { isBigStackEventId } from "@/lib/wca-events";
 import { PageHero } from "@/components/page-hero";
 import { getSingleBest, type WeeklyEvent } from "@/lib/weekly";
 import { getWeeklyMeetBySlug } from "@/lib/weekly-db";
@@ -74,10 +75,10 @@ export default async function WeeklyDetailPage({ params }: { params: Promise<{ s
       eventName: "三阶",
       results: mainResults
     },
-    ...meet.events.map((event) => ({ ...event, results: sortWeeklyResultsByAverage(event.results) }))
+    ...meet.events.map((event) => ({ ...event, results: sortWeeklyResultsByAverage(event.results, isBigStackEventId(event.eventCode || "")) }))
   ].map((event) => ({
     ...event,
-    results: sortWeeklyResultsByAverage(event.results)
+    results: sortWeeklyResultsByAverage(event.results, isBigStackEventId(event.eventCode || ""))
   }));
 
   return (
@@ -136,9 +137,14 @@ export default async function WeeklyDetailPage({ params }: { params: Promise<{ s
           {eventSections.map((event) => {
             // Keep future/empty weeks structurally identical to completed
             // weeks, so entering results later never changes the table shape.
+            const isCountEvent = isBigStackEventId(event.eventCode || "");
+            const formatScore = (value: number | "DNF" | "DNS" | null) => {
+              if (isCountEvent && typeof value === "number" && value >= 0) return String(value);
+              return formatAttempt(value);
+            };
             const hasAgeGroup = !event.isAllAround || event.results.some((result) => result.ageGroup);
-            const hasAttempts = !event.isAllAround;
-            const columnCount = hasAttempts ? (hasAgeGroup ? 14 : 13) : (hasAgeGroup ? 5 : 4);
+            const hasAttempts = !event.isAllAround && !isCountEvent;
+            const columnCount = hasAttempts ? (hasAgeGroup ? 14 : 13) : (hasAgeGroup ? 6 : 5);
 
             const table = (
               <section className="weekly-event-section" id={eventAnchorId(event)}>
@@ -158,7 +164,7 @@ export default async function WeeklyDetailPage({ params }: { params: Promise<{ s
                         {hasAgeGroup ? <th>年龄组</th> : null}
                         {hasAttempts ? <th>段位</th> : null}
                         {hasAttempts ? <th>等级</th> : null}
-                        <th>{event.isAllAround ? "成绩" : "平均"}</th>
+                        <th>{isCountEvent ? "最终数量（限时 1 小时）" : event.isAllAround ? "成绩" : "平均"}</th>
                         {hasAttempts ? <th>本周最快</th> : null}
                         <th>个人 PB</th>
                         {hasAttempts ? (
@@ -197,10 +203,10 @@ export default async function WeeklyDetailPage({ params }: { params: Promise<{ s
                               </td>
                             ) : null}
                             {hasAttempts ? <td data-label="等级" className="grade-cell">{weeklyGrade.grade}</td> : null}
-                            <td data-label="平均" className="score-strong">{formatAttempt(result.average)}</td>
+                            <td data-label={isCountEvent ? "最终数量" : "平均"} className="score-strong">{formatScore(result.average)}</td>
                             {hasAttempts ? <td data-label="本周最快">{formatAttempt(singleBest)}</td> : null}
                             <td data-label="个人PB" className={`pb-cell ${result.pbRefreshed ? "pb-refreshed" : ""}`}>
-                              {formatAttempt(result.personalBest)}
+                              {formatScore(result.personalBest)}
                             </td>
                             {hasAttempts
                               ? result.attempts.map((attempt, index) => (
