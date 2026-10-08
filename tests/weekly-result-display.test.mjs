@@ -18,13 +18,13 @@ test("weekly detail display sorts faster averages first and places DNF averages 
   assert.deepEqual(sorted.map((item) => item.playerName), ["快", "同平均更快单次", "同平均较慢单次", "慢", "DNF"]);
 });
 
-test("weekly detail display preserves an original source ranking", () => {
+test("weekly detail rebuilds ranks by score rather than imported group ranks", () => {
   const sorted = sortWeeklyResultsByAverage([
     { ...result("第二名", 10, 8), sourceRank: 2 },
     { ...result("第一名", 10, 9), sourceRank: 1 }
   ]);
 
-  assert.deepEqual(sorted.map((item) => item.playerName), ["第一名", "第二名"]);
+  assert.deepEqual(sorted.map((item) => item.playerName), ["第二名", "第一名"]);
 });
 
 
@@ -35,4 +35,22 @@ test("big-stack history displays larger final counts first", () => {
     { ...result("DNF", -1, -1), rank: 2 }
   ], true);
   assert.deepEqual(ranked.map(({ playerName, rank }) => [playerName, rank]), [["多", 1], ["少", 2], ["DNF", 3]]);
+});
+
+
+test("historical overall ranking replaces duplicated age-group ranks", () => {
+  const sorted = sortWeeklyResultsByAverage([
+    { ...result("慢", 18, 8), rank: 1, sourceRank: 1 },
+    { ...result("快", 12, 9), rank: 1, sourceRank: 1 },
+    { ...result("中", 15, 10), rank: 2 }
+  ]);
+  assert.deepEqual(sorted.map(({ playerName, rank }) => [playerName, rank]), [["快", 1], ["中", 2], ["慢", 3]]);
+});
+
+test("average ties use the current round's best instead of a historical PB", () => {
+  const sorted = sortWeeklyResultsByAverage([
+    { ...result("历史PB快", 12, 5), rank: 1, attempts: [11, 12, 13] },
+    { ...result("本周单次快", 12, 8), rank: 2, attempts: [10, 12, 14] }
+  ]);
+  assert.deepEqual(sorted.map((row) => row.playerName), ["本周单次快", "历史PB快"]);
 });

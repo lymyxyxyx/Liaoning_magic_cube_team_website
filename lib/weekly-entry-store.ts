@@ -69,6 +69,7 @@ export type WeeklyEnteredResult = {
   level: string;
   grade: string;
   sourcePersonalBest: ResultValue | null;
+  personalBest: ResultValue | null;
   best: ResultValue;
   average: ResultValue;
   attempts: ResultValue[];
@@ -108,6 +109,7 @@ type WeeklyResultRow = {
   level: string;
   grade: string;
   source_personal_best: string | null;
+  player_personal_bests?: WeeklyPersonalBests | null;
   average: string;
   personal_best: string;
   player_id: string | null;
@@ -499,6 +501,7 @@ export async function listWeeklyResults(meetIdOrSlug: string, eventId: string, f
        COALESCE(wpl.province, '') AS player_province,
        COALESCE(wpl.city, '') AS player_city,
        COALESCE(wpl.wca_id_confirmed, FALSE) OR COALESCE(wpm.status = 'confirmed', FALSE) OR wr.player_id LIKE 'wca:%' AS wca_id_confirmed,
+       wpl.personal_bests AS player_personal_bests,
        wm.starts_at AS meet_starts_at
      FROM weekly_results wr
      LEFT JOIN weekly_player_library wpl ON wpl.id = wr.player_id
@@ -510,12 +513,12 @@ export async function listWeeklyResults(meetIdOrSlug: string, eventId: string, f
   );
   const isCountEvent = isBigStackEventId(eventId);
   const formatScore = isCountEvent ? formatCountResult : formatResult;
-  const countRanks = new Map(isCountEvent ? buildWeeklyRankAssignments(
+  const groupRanks = new Map(buildWeeklyRankAssignments(
     rows,
     (row) => row.source_age_group || getWeeklyRankingAgeGroup(row.player_birth_date || "", row.age_group || row.player_age_group || "", row.meet_starts_at ? new Date(row.meet_starts_at) : new Date()),
     getWeeklyRankingAgeGroupOrder,
-    true
-  ).map((row) => [row.id, row.rank]) : []);
+    isCountEvent
+  ).map((row) => [row.id, row.rank]));
   rows.sort((a, b) => compareWeeklyResultRows(a, b, isCountEvent));
   const resultIds = rows.map((row) => row.id);
   const attempts =
@@ -524,18 +527,15 @@ export async function listWeeklyResults(meetIdOrSlug: string, eventId: string, f
       : { rows: [] };
   const attemptsByResult = groupBy(attempts.rows, (row) => row.result_id);
 
-  const rankByGroup = new Map<string, number>();
   return rows.map((row) => {
     const matchedPlayer = eligiblePlayers.find((player) => player.id === row.player_id);
     const wcaId = row.wca_id || matchedPlayer?.wcaId || "";
     const playerBirthDate = row.player_birth_date || matchedPlayer?.birthDate || "";
     const rankingAgeGroup = row.source_age_group || getWeeklyRankingAgeGroup(playerBirthDate, row.age_group || row.player_age_group || "", row.meet_starts_at ? new Date(row.meet_starts_at) : new Date());
-    const rank = (rankByGroup.get(rankingAgeGroup) || 0) + 1;
-    rankByGroup.set(rankingAgeGroup, rank);
     const attemptValues = (attemptsByResult.get(row.id) || []).map(attemptRowToResultValue);
     return {
       id: row.id,
-      rank: isCountEvent ? countRanks.get(row.id)! : row.source_rank ?? rank,
+      rank: groupRanks.get(row.id)!,
       sourceRank: row.source_rank,
       player: {
         id: row.player_id || (row.player_slug ? `code:${row.player_slug}` : row.player_name),
@@ -553,6 +553,10 @@ export async function listWeeklyResults(meetIdOrSlug: string, eventId: string, f
       },
       level: row.level || "",
       grade: row.grade || "",
+      personalBest: (() => {
+        const best = getStoredPersonalBest(row.player_personal_bests || {}, getPersonalBestEventId(eventId));
+        return best === null ? null : secondsToResultValue(best);
+      })(),
       sourcePersonalBest: row.source_personal_best === null ? null : secondsToResultValue(row.source_personal_best),
       best: secondsToResultValue(row.personal_best),
       average: secondsToResultValue(row.average),

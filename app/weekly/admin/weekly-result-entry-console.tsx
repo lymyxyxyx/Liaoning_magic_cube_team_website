@@ -60,6 +60,7 @@ type EnteredResult = {
   level: string;
   grade: string;
   sourcePersonalBest: ResultValue | null;
+  personalBest?: ResultValue | null;
   best: ResultValue;
   average: ResultValue;
   attempts: ResultValue[];
@@ -156,6 +157,8 @@ export function WeeklyResultEntryConsole({ initialMeets, initialPlayers = [], ev
   const [activePlayerCandidateIndex, setActivePlayerCandidateIndex] = useState(0);
   const attemptRefs = useRef<Array<HTMLInputElement | null>>([]);
   const playerInputRef = useRef<HTMLInputElement | null>(null);
+  const resultsRequestRef = useRef<AbortController | null>(null);
+  const resultsScopeRef = useRef("");
   const isCountEvent = isBigStackEventId(selectedEventId);
   const formatScore = isCountEvent ? formatCountResult : formatResult;
   const parseScore = isCountEvent ? parseCountResultInput : parseResultInput;
@@ -208,16 +211,24 @@ export function WeeklyResultEntryConsole({ initialMeets, initialPlayers = [], ev
   }, []);
 
   const refreshResults = useCallback(() => {
+    resultsRequestRef.current?.abort();
+    const controller = new AbortController();
+    resultsRequestRef.current = controller;
+    const scope = `${selectedMeetId}:${selectedEventId}:${selectedFormat}`;
+    if (resultsScopeRef.current !== scope) setResults([]);
+    resultsScopeRef.current = scope;
     if (!selectedMeetId || !selectedEventId) {
       setResults([]);
       setResultsLoadError("");
+      setIsLoadingResults(false);
       return;
     }
 
     setIsLoadingResults(true);
     setResultsLoadError("");
     fetch(
-      `/api/weekly-competitions/${encodeURIComponent(selectedMeetId)}/results?eventId=${encodeURIComponent(selectedEventId)}&format=${encodeURIComponent(selectedFormat)}`
+      `/api/weekly-competitions/${encodeURIComponent(selectedMeetId)}/results?eventId=${encodeURIComponent(selectedEventId)}&format=${encodeURIComponent(selectedFormat)}`,
+      { signal: controller.signal }
     )
       .then(async (response) => {
         const payload = await response.json().catch(() => null) as { results?: EnteredResult[]; message?: string } | null;
@@ -226,14 +237,15 @@ export function WeeklyResultEntryConsole({ initialMeets, initialPlayers = [], ev
         if (!Array.isArray(nextResults)) throw new Error("成绩数据格式异常，请稍后重试。");
         return nextResults;
       })
-      .then(setResults)
+      .then((nextResults) => { if (!controller.signal.aborted) setResults(nextResults); })
       .catch((error) => {
+        if (controller.signal.aborted) return;
         const message = error instanceof Error ? error.message : "成绩暂时无法加载，请稍后重试。";
         setResults([]);
         setResultsLoadError(message);
         setNotice(message);
       })
-      .finally(() => setIsLoadingResults(false));
+      .finally(() => { if (!controller.signal.aborted) setIsLoadingResults(false); });
   }, [selectedEventId, selectedFormat, selectedMeetId]);
 
   const refreshOperationLogs = useCallback(() => {
@@ -263,6 +275,7 @@ export function WeeklyResultEntryConsole({ initialMeets, initialPlayers = [], ev
 
   useEffect(() => {
     refreshResults();
+    return () => resultsRequestRef.current?.abort();
   }, [refreshResults]);
 
   useEffect(() => {
@@ -644,8 +657,8 @@ export function WeeklyResultEntryConsole({ initialMeets, initialPlayers = [], ev
   const resultSearchCandidates = useMemo(() => {
     const query = resultSearchQuery.trim();
     if (!query) return [];
-    return mergePlayers(knownPlayers, players).filter((player) => matchesWeeklyPlayerQuery(player, query)).slice(0, 8);
-  }, [knownPlayers, players, resultSearchQuery]);
+    return mergePlayers(results.map((result) => result.player), isPublicMode ? [] : mergePlayers(knownPlayers, players)).filter((player) => matchesWeeklyPlayerQuery(player, query)).slice(0, 8);
+  }, [knownPlayers, players, resultSearchQuery, results, isPublicMode]);
 
   return (
     <section
@@ -833,18 +846,27 @@ export function WeeklyResultEntryConsole({ initialMeets, initialPlayers = [], ev
             </div>
             {(resultSearchQuery || resultAgeGroup !== '全部') ? <button className="button" type="button" onClick={() => { setResultSearchQuery(''); setResultAgeGroup('全部'); }}>清除筛选</button> : null}
           </div>
-          <div className="result-table-wrap">
+          <p className="weekly-table-hint">左右滑动查看完整成绩</p>
+          <div className="result-table-wrap" tabIndex={0} role="region" aria-label="周赛成绩，可左右滚动">
             <table className="result-table weekly-entry-table">
+              <colgroup>
+                <col className="weekly-col-rank" /><col className="weekly-col-name" /><col className="weekly-col-score" />
+                <col className="weekly-col-wca" /><col className="weekly-col-group" /><col className="weekly-col-region" />
+                {!isCountEvent ? <><col className="weekly-col-level" /><col className="weekly-col-grade" /><col className="weekly-col-score" /></> : null}
+                <col className="weekly-col-score" />
+                {!isCountEvent ? <><col className="weekly-col-score" />{Array.from({ length: 5 }, (_, index) => <col className="weekly-col-attempt" key={index} />)}</> : null}
+                {!isPublicMode ? <col className="weekly-col-actions" /> : null}
+              </colgroup>
               <thead>
                 <tr>
                   <th>排名</th>
-                  <th>WCA ID</th>
                   <th>姓名</th>
+                  <th>{isCountEvent ? "最终数量" : "平均"}</th>
+                  <th>WCA ID</th>
                   <th>组别</th>
                   <th>省市</th>
                   {!isCountEvent ? <th>段位</th> : null}
                   {!isCountEvent ? <th>等级</th> : null}
-                  <th>{isCountEvent ? "最终数量" : "平均"}</th>
                   {!isCountEvent ? <th>辽宁省排名</th> : null}
                   <th>个人 PB</th>
                   {!isCountEvent ? <th>本周最好</th> : null}
@@ -856,6 +878,10 @@ export function WeeklyResultEntryConsole({ initialMeets, initialPlayers = [], ev
                 {displayedResults.map((result) => (
                   <tr key={result.id}>
                     <td data-label="排名">{result.rank}</td>
+                    <td data-label="姓名">{result.player.name}{result.isNewPlayer ? <small className="weekly-new-player-badge">（新）</small> : null}</td>
+                    <td data-label={isCountEvent ? "最终数量" : "平均"} className={result.pbAverageRefreshed ? "score-strong pb-cell pb-refreshed" : "score-strong"}>
+                      {formatScore(result.average)}{result.pbAverageRefreshed ? <span className="weekly-pb-badge">PB</span> : null}
+                    </td>
                     <td data-label="WCA ID">
                       {result.player.wcaIdConfirmed ? (
                         <span className="weekly-wca-status">{result.player.wcaId}<Check size={13} aria-label="管理员已确认" /></span>
@@ -877,7 +903,6 @@ export function WeeklyResultEntryConsole({ initialMeets, initialPlayers = [], ev
                         </div>
                       )}
                     </td>
-                    <td data-label="姓名">{result.player.name}{result.isNewPlayer ? <small className="weekly-new-player-badge">（新）</small> : null}</td>
                     <td data-label="组别">{result.player.ageGroup || "待补"}</td>
                     <td data-label="省市">{formatRegion(result.player)}</td>
                     {!isCountEvent ? <><td data-label="段位">
@@ -886,12 +911,9 @@ export function WeeklyResultEntryConsole({ initialMeets, initialPlayers = [], ev
                     <td data-label="等级" className="grade-cell">
                       {getShenyangAssociationGrade(selectedEventId, result.average).grade || "-"}
                     </td></> : null}
-                    <td data-label={isCountEvent ? "最终数量" : "平均"} className={result.pbAverageRefreshed ? "score-strong pb-cell pb-refreshed" : "score-strong"}>
-                      {formatScore(result.average)}{result.pbAverageRefreshed ? <span className="weekly-pb-badge">PB</span> : null}
-                    </td>
                     {!isCountEvent ? <td data-label="辽宁省排名" className="weekly-provincial-rank-cell">{result.provincialRank ? `#${result.provincialRank}` : "—"}</td> : null}
                     <td data-label="个人 PB" className="pb-cell">
-                      {formatScore(result.sourcePersonalBest ?? result.best)}
+                      {formatScore(result.personalBest ?? result.sourcePersonalBest ?? result.best)}
                     </td>
                     {!isCountEvent ? <td data-label="本周最好" className={result.pbRefreshed ? "pb-cell pb-refreshed" : "pb-cell"}>
                       {formatScore(result.best)}{result.pbRefreshed ? <span className="weekly-pb-badge">PB</span> : null}
