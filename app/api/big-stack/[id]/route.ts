@@ -9,19 +9,27 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
   if (!(await hasWeeklyAdminSession(request))) return NextResponse.json({ message: "需要管理员登录" }, { status: 401 });
   if (!isWeeklySameOrigin(request)) return NextResponse.json({ message: "请求来源不受信任" }, { status: 403 });
   const { id } = await params;
-  const payload = await request.json().catch(() => null) as { name?: string; eventId?: string; solveCount?: number; meetId?: string | null; sourceLabel?: string } | null;
+  const payload = await request.json().catch(() => null) as {
+    name?: string;
+    eventId?: string;
+    solveCount?: number;
+    playerId?: string;
+    wcaId?: string;
+    achievedAt?: string;
+    meetId?: string | null;
+    sourceLabel?: string;
+    note?: string;
+    reason?: string;
+  } | null;
   const eventId = payload?.eventId || "";
   const solveCount = payload?.solveCount;
-  const meetId = payload?.meetId;
-  const sourceLabel = payload?.sourceLabel;
   if (!payload || typeof payload.name !== "string" || !payload.name.trim() || !isBigStackEvent(eventId) ||
-      typeof solveCount !== "number" || !Number.isInteger(solveCount) || solveCount < 0 ||
-      !(typeof meetId === "string" || meetId === null) || typeof sourceLabel !== "string") {
+      typeof solveCount !== "number" || !Number.isInteger(solveCount) || solveCount < 0) {
     return NextResponse.json({ message: "大堆记录参数不正确" }, { status: 400 });
   }
   try {
-    await updateBigStackRecord(id, { name: payload.name, eventId, solveCount, meetId, sourceLabel });
-    return NextResponse.json({ ok: true });
+    const record = await updateBigStackRecord(id, { ...payload, name: payload.name, eventId, solveCount });
+    return NextResponse.json({ record });
   } catch (error) {
     return NextResponse.json({ message: error instanceof Error ? error.message : "更新大堆记录失败" }, { status: 400 });
   }
@@ -30,8 +38,9 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
 export async function DELETE(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   if (!(await hasWeeklyAdminSession(request))) return NextResponse.json({ message: "需要管理员登录" }, { status: 401 });
   if (!isWeeklySameOrigin(request)) return NextResponse.json({ message: "请求来源不受信任" }, { status: 403 });
+  const payload = await request.json().catch(() => null) as { reason?: string } | null;
   try {
-    await deleteBigStackRecord((await params).id);
+    await deleteBigStackRecord((await params).id, payload?.reason || "");
     return NextResponse.json({ ok: true });
   } catch (error) {
     return NextResponse.json({ message: error instanceof Error ? error.message : "删除大堆记录失败" }, { status: 400 });

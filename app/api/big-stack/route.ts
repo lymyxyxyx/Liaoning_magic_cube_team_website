@@ -1,11 +1,29 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createBigStackRecord, isBigStackEvent, listBigStackRecords } from "@/lib/big-stack";
+import {
+  createBigStackRecord,
+  isBigStackEvent,
+  listBigStackRecords,
+  listBigStackRevisions
+} from "@/lib/big-stack";
 import { hasWeeklyAdminSession } from "@/lib/weekly-admin-auth";
 import { isWeeklySameOrigin } from "@/lib/weekly-request-security";
 
 export const dynamic = "force-dynamic";
 
 export async function GET(request: NextRequest) {
+  if (request.nextUrl.searchParams.get("history") === "1") {
+    if (!(await hasWeeklyAdminSession(request))) return NextResponse.json({ message: "需要管理员登录" }, { status: 401 });
+    try {
+      const revisions = await listBigStackRevisions({
+        recordId: request.nextUrl.searchParams.get("recordId") || undefined,
+        limit: Number(request.nextUrl.searchParams.get("limit") || 50)
+      });
+      return NextResponse.json({ revisions });
+    } catch {
+      return NextResponse.json({ message: "读取修改历史失败" }, { status: 500 });
+    }
+  }
+
   const event = request.nextUrl.searchParams.get("event") || "333";
   if (!isBigStackEvent(event)) return NextResponse.json({ message: "项目不正确" }, { status: 400 });
   try {
@@ -18,17 +36,27 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   if (!(await hasWeeklyAdminSession(request))) return NextResponse.json({ message: "需要管理员登录" }, { status: 401 });
   if (!isWeeklySameOrigin(request)) return NextResponse.json({ message: "请求来源不受信任" }, { status: 403 });
-  const payload = await request.json().catch(() => null) as { name?: string; eventId?: string; solveCount?: number; meetId?: string } | null;
+  const payload = await request.json().catch(() => null) as {
+    name?: string;
+    eventId?: string;
+    solveCount?: number;
+    playerId?: string;
+    wcaId?: string;
+    achievedAt?: string;
+    meetId?: string | null;
+    sourceLabel?: string;
+    note?: string;
+    reason?: string;
+  } | null;
   const eventId = payload?.eventId || "";
   const solveCount = payload?.solveCount;
-  const meetId = payload?.meetId;
   if (!payload || typeof payload.name !== "string" || !payload.name.trim() || !isBigStackEvent(eventId) ||
-      typeof solveCount !== "number" || !Number.isInteger(solveCount) || solveCount < 0 || typeof meetId !== "string" || !meetId) {
-    return NextResponse.json({ message: "请填写姓名、项目、还原数量和所属周赛" }, { status: 400 });
+      typeof solveCount !== "number" || !Number.isInteger(solveCount) || solveCount < 0) {
+    return NextResponse.json({ message: "请填写姓名、项目和一小时还原数量" }, { status: 400 });
   }
   try {
-    const id = await createBigStackRecord({ name: payload.name, eventId, solveCount, meetId });
-    return NextResponse.json({ id }, { status: 201 });
+    const record = await createBigStackRecord({ ...payload, name: payload.name, eventId, solveCount });
+    return NextResponse.json({ record }, { status: 201 });
   } catch (error) {
     return NextResponse.json({ message: error instanceof Error ? error.message : "保存大堆记录失败" }, { status: 400 });
   }

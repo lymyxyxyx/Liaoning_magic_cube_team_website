@@ -17,7 +17,8 @@
     "wca:check": "node scripts/update_wca_data.mjs --check",
     "wca:update": "node scripts/update_wca_data.mjs",
     "wca:cleanup": "node scripts/cleanup-wca.mjs",
-    "db:init": "node scripts/init-app-db.mjs"
+    "db:init": "node scripts/init-app-db.mjs",
+    "big-stack:baseline": "node scripts/import-big-stack-baseline.mjs --confirm-baseline"
   },
   "dependencies": {
     "geist": "^1.7.1",
