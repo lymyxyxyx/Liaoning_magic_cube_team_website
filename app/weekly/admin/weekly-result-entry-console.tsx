@@ -302,7 +302,7 @@ export function WeeklyResultEntryConsole({ initialMeets, initialPlayers = [], ev
     setAttempts(Array.from({ length: selectedFormatConfig.attemptCount }, () => ""));
     setEditingResult(null);
     setCorrectionReason("");
-  }, [selectedEventId, selectedFormatConfig.attemptCount]);
+  }, [selectedMeetId, selectedEventId, selectedFormat, selectedFormatConfig.attemptCount]);
 
   useEffect(() => {
     if (!isPublicMode) return;

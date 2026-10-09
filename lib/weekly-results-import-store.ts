@@ -5,7 +5,7 @@ import { calculateResultByFormat, formatResult, formatCountResult, isBetterWeekl
 import { normalizePastedWeeklyResults, normalizeWeeklyResultRow, type NormalizedWeeklyResultRow } from "@/lib/weekly-results-import";
 import { buildWeeklyPlayerImportMatch, type WeeklyImportPlayerCandidate } from "@/lib/weekly-player-import";
 import { createWeeklyResultsExport, createWeeklyResultsTemplate, parseWeeklyResultsWorkbook, type ParsedWeeklyResultsWorkbook, type WeeklyResultTemplateMeet } from "@/lib/weekly-results-xlsx";
-import { listWeeklyResults, refreshWeeklyPlayerPersonalBestForEvent, rerankWeeklyEvent } from "@/lib/weekly-entry-store";
+import { listWeeklyResults, refreshWeeklyPlayerPersonalBestForEvent, rerankWeeklyEvent, lockWeeklyResultWrites } from "@/lib/weekly-entry-store";
 import { weeklyV2ActivePlayerSql } from "@/lib/weekly-player-scope";
 import { getWeeklyAgeGroup } from "@/lib/weekly-age-groups";
 import { weeklyBusinessDate, weeklyImportDateWarnings } from "@/lib/weekly-results-import-dates";
@@ -113,7 +113,7 @@ export async function getWeeklyResultsExport(meetId: string) {
     grade: result.grade,
     average: (isBigStackEventId(event.eventCode) ? formatCountResult : formatResult)(result.average),
     best: (isBigStackEventId(event.eventCode) ? formatCountResult : formatResult)(result.best),
-    personalBest: (isBigStackEventId(event.eventCode) ? formatCountResult : formatResult)(result.best),
+    personalBest: (isBigStackEventId(event.eventCode) ? formatCountResult : formatResult)(result.personalBest ?? result.sourcePersonalBest ?? result.best),
     pbRefreshed: result.pbRefreshed,
     attempts: result.attempts.map(isBigStackEventId(event.eventCode) ? formatCountResult : formatResult)
   })));
@@ -141,8 +141,8 @@ export async function createWeeklyResultsImportPreview(input: { meetId: string; 
       : parsed.metadata;
     rawRows = parsed.rows.map((row) => normalizeForEvent(row.values.event_code, row.values, row.sourceRow, context));
   } else {
-    const text = input.paste?.trim() || "";
-    if (!text) throw new Error("请粘贴成绩内容");
+    const text = input.paste || "";
+    if (!text.trim()) throw new Error("请粘贴成绩内容");
     const eventCode = input.pasteEventCode?.trim() || "";
     const event = context.events.find((item) => item.eventCode === eventCode && item.enabled);
     if (!event) throw new Error("请选择当前周赛已启用的项目后再粘贴");
@@ -190,9 +190,10 @@ export async function resolveWeeklyResultsImportPlayers(input: { batchId: string
   const status = preview.globalErrors.length || preview.errorCount ? "needs_review" : preview.validRowCount === preview.rawRowCount ? "ready" : "parsed";
   const { rows: updated } = await pool.query<BatchRow>(
     `UPDATE weekly_import_batches SET status = $2, raw_row_count = $3, valid_row_count = $4, warning_count = $5, error_count = $6, preview_jsonb = $7::jsonb, admin_actor = $8
-     WHERE id = $1 AND kind = 'results' RETURNING *`,
-    [input.batchId, status, preview.rawRowCount, preview.validRowCount, preview.warningCount, preview.errorCount, JSON.stringify(preview), input.actor]
+     WHERE id = $1 AND kind = 'results' AND status = $9 AND preview_jsonb = $10::jsonb RETURNING *`,
+    [input.batchId, status, preview.rawRowCount, preview.validRowCount, preview.warningCount, preview.errorCount, JSON.stringify(preview), input.actor, existing.status, JSON.stringify(existing.preview)]
   );
+  if (!updated[0]) throw new Error("导入批次已被其他操作修改，请刷新后重试");
   return mapBatch(updated[0]);
 }
 
@@ -206,6 +207,7 @@ export async function commitWeeklyResultsImportBatch(input: { id: string; meetId
   const client = await pool.connect();
   try {
     await client.query("BEGIN");
+    await lockWeeklyResultWrites(client);
     const batchResult = await client.query<BatchRow>(
       "SELECT * FROM weekly_import_batches WHERE id = $1 AND kind = 'results' FOR UPDATE",
       [input.id]
@@ -217,9 +219,9 @@ export async function commitWeeklyResultsImportBatch(input: { id: string; meetId
     if (batch.status !== "ready") throw new Error("只有 ready 状态且没有错误的预览可以提交");
     const duplicate = await client.query<{ id: string }>(
       `SELECT id FROM weekly_import_batches
-        WHERE kind = 'results' AND file_sha256 = $1 AND status = 'committed' AND id <> $2
+        WHERE kind = 'results' AND file_sha256 = $1 AND status = 'committed' AND id <> $2 AND preview_jsonb->>'meetId' = $3
         LIMIT 1`,
-      [batch.file_sha256, batch.id]
+      [batch.file_sha256, batch.id, input.meetId]
     );
     if (duplicate.rows[0]) throw new Error("该文件已经成功提交过成绩，不能重复提交");
 
@@ -243,6 +245,7 @@ export async function commitWeeklyResultsImportBatch(input: { id: string; meetId
     const affectedEvents = new Set<string>();
     const affectedPlayerEvents = new Map<string, { playerId: string; eventCode: string }>();
 
+    await lockImportPlayers(client, preview.rows.map((row) => row.matchedPlayerId));
     for (const row of preview.rows) {
       const event = events.get(row.eventCode);
       if (!event || !event.enabled) throw new Error(`第 ${row.sourceRow} 行的项目已停用或不存在`);
@@ -338,6 +341,7 @@ export async function rollbackWeeklyResultsImportBatch(input: { id: string; meet
   const client = await pool.connect();
   try {
     await client.query("BEGIN");
+    await lockWeeklyResultWrites(client);
     const batchResult = await client.query<BatchRow>(
       "SELECT * FROM weekly_import_batches WHERE id = $1 AND kind = 'results' FOR UPDATE",
       [input.id]
@@ -350,6 +354,7 @@ export async function rollbackWeeklyResultsImportBatch(input: { id: string; meet
     const manifest = parseManifest(batch.commit_manifest_jsonb);
     if (!manifest.results?.length) throw new Error("提交清单缺少本批成绩，不能自动回滚");
 
+    await lockImportPlayers(client, manifest.results.map((item) => item.playerId));
     const affectedEvents = new Set<string>();
     const affectedPlayerEvents = new Map<string, { playerId: string; eventCode: string }>();
     for (const item of manifest.results) {
@@ -515,3 +520,8 @@ function storedPositiveValue(value: unknown, allowZero = false) { const numeric 
 function groupBy<T>(items: T[], key: (item: T) => string) { const result = new Map<string, T[]>(); for (const item of items) { const group = result.get(key(item)) || []; group.push(item); result.set(key(item), group); } return result; }
 function normalizeName(value: string) { return value.normalize("NFKC").replace(/\s+/g, "").trim(); }
 function sanitizeFilename(value: string) { return value.replace(/[\\/\0]/g, "_").slice(0, 180) || "weekly-results.xlsx"; }
+
+// Use the same player-before-result lock order as manual correction/deletion.
+async function lockImportPlayers(client: Pick<PoolClient, "query">, playerIds: string[]) {
+  await client.query("SELECT id FROM weekly_player_library WHERE id = ANY($1::text[]) ORDER BY id FOR UPDATE", [[...new Set(playerIds.filter(Boolean))].sort()]);
+}

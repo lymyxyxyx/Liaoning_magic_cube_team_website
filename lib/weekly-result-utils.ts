@@ -41,8 +41,10 @@ export function parseResultInput(input: string): ResultValue {
   const parts = clean.split(":");
   if (parts.length > 2) throw new Error("成绩格式不正确");
 
+  const decimal = /^(?:\d+(?:\.\d+)?|\.\d+)$/;
   let seconds: number;
   if (parts.length === 2) {
+    if (!/^\d+$/.test(parts[0]) || !decimal.test(parts[1])) throw new Error("成绩格式不正确");
     const minutes = Number(parts[0]);
     const rest = Number(parts[1]);
     if (!Number.isFinite(minutes) || !Number.isFinite(rest) || minutes < 0 || rest < 0 || rest >= 60) {
@@ -50,11 +52,14 @@ export function parseResultInput(input: string): ResultValue {
     }
     seconds = minutes * 60 + rest;
   } else {
+    if (!decimal.test(clean)) throw new Error("成绩格式不正确");
     seconds = Number(clean);
     if (!Number.isFinite(seconds) || seconds < 0) throw new Error("成绩格式不正确");
   }
 
-  return Math.round(seconds * 100);
+  const scaled = Math.round(seconds * 100);
+  if (!Number.isSafeInteger(scaled) || scaled > 2147483647) throw new Error("成绩数值过大");
+  return scaled;
 }
 
 function normalizeResultInput(input: string) {

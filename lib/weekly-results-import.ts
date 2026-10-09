@@ -22,8 +22,9 @@ export function normalizePastedWeeklyResults(text: string, defaults: { eventCode
   return lines.flatMap((line, index) => {
     const values = splitPastedLine(line);
     if (isPastedHeader(values)) return [];
-    const withoutRank = removeLeadingRank(values);
-    const hasIdentityColumns = withoutRank.length >= 8;
+    const attemptCount = getWeeklyResultFormat(defaults.format).attemptCount;
+    const withoutRank = removeLeadingRank(values, attemptCount);
+    const hasIdentityColumns = withoutRank.length >= attemptCount + 3;
     const [playerId, wcaId, playerName, ...attemptValues] = hasIdentityColumns ? withoutRank : ["", "", withoutRank[0] || "", ...withoutRank.slice(1)];
     return [normalizeWeeklyResultRow({ eventCode: defaults.eventCode, playerId, wcaId, playerName, attemptValues, notes: "", sourceRow: index + 1, format: defaults.format })];
   });
@@ -37,7 +38,7 @@ export function normalizePastedWeeklyResults(text: string, defaults: { eventCode
  */
 function splitPastedLine(line: string) {
   const trimmed = line.trim();
-  if (trimmed.includes("\t")) return trimmed.split("\t").map(cleanPastedCell).filter(Boolean);
+  if (line.includes("\t")) return line.split("\t").map(cleanPastedCell);
   return trimmed.split(/[，,;；\s/]+/).map(cleanPastedCell).filter(Boolean);
 }
 
@@ -45,8 +46,8 @@ function cleanPastedCell(value: string) {
   return value.trim().replace(/^[：:]+|[：:]+$/g, "").replace(/[（(]新[）)]$/g, "");
 }
 
-function removeLeadingRank(values: string[]) {
-  return values.length > 1 && /^(?:#|第)?\d+(?:名)?$/.test(values[0]) ? values.slice(1) : values;
+function removeLeadingRank(values: string[], attemptCount: number) {
+  return [attemptCount + 2, attemptCount + 4].includes(values.length) && /^(?:#|第)?\d+(?:名)?$/.test(values[0]) ? values.slice(1) : values;
 }
 
 function isPastedHeader(values: string[]) {

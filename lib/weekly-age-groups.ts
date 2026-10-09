@@ -38,9 +38,14 @@ function getWeeklyAge(birthDate: string, today: Date) {
   const day = Number(match[3]);
   if (!year || month < 1 || month > 12 || day < 1 || day > 31) return null;
 
-  let age = today.getFullYear() - year;
-  const currentMonth = today.getMonth() + 1;
-  const currentDay = today.getDate();
+  const birth = new Date(0);
+  birth.setUTCFullYear(year, month - 1, day);
+  if (birth.getUTCFullYear() !== year || birth.getUTCMonth() + 1 !== month || birth.getUTCDate() !== day || !Number.isFinite(today.getTime())) return null;
+  const parts = new Intl.DateTimeFormat("en-US", { timeZone: "Asia/Shanghai", year: "numeric", month: "numeric", day: "numeric" }).formatToParts(today);
+  const part = (name: string) => Number(parts.find((item) => item.type === name)?.value);
+  let age = part("year") - year;
+  const currentMonth = part("month");
+  const currentDay = part("day");
   if (currentMonth < month || (currentMonth === month && currentDay < day)) age -= 1;
   return age >= 0 && age < 120 ? age : null;
 }

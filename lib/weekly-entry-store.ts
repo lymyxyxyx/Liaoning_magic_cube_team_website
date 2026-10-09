@@ -344,6 +344,8 @@ export async function deleteEmptyWeeklyMeet(id: string) {
   const client = await pool.connect();
   try {
     await client.query("BEGIN");
+    const locked = await client.query("SELECT id FROM weekly_meets WHERE id = $1 AND data_version = 2 FOR UPDATE", [id]);
+    if (!locked.rows[0]) throw new Error("周赛不存在，或历史数据不可删除");
     const exists = await client.query<{ result_count: string }>(
       `SELECT count(result.id)::text AS result_count
          FROM weekly_meets meet
@@ -376,10 +378,21 @@ export async function updateWeeklyMeetConfig(input: {
 }) {
   if (!input.title.trim() || !input.dateLabel.trim()) throw new Error("请填写周赛标题和周期");
   if (!input.eventConfigs.some((item) => item.enabled)) throw new Error("请至少开放一个项目");
+  const start = input.startsAt ? Date.parse(input.startsAt) : null;
+  const end = input.endsAt ? Date.parse(input.endsAt) : null;
+  if ((start !== null && !Number.isFinite(start)) || (end !== null && !Number.isFinite(end))) throw new Error("周赛日期格式不正确");
+  if (start !== null && end !== null && end < start) throw new Error("结束日期不能早于开始日期");
   const pool = getPostgresPool();
   const client = await pool.connect();
   try {
     await client.query("BEGIN");
+    const original = await client.query<{ starts_at: string | null }>("SELECT starts_at FROM weekly_meets WHERE id = $1 AND data_version = 2 FOR UPDATE", [input.id]);
+    if (!original.rows[0]) throw new Error("周赛不存在，或历史数据 / 只读");
+    const originalStart = original.rows[0].starts_at ? new Date(original.rows[0].starts_at).getTime() : null;
+    if (originalStart !== start) {
+      const recorded = await client.query("SELECT id FROM weekly_results WHERE meet_id = $1 LIMIT 1", [input.id]);
+      if (recorded.rows[0]) throw new Error("该周已有成绩，不能修改开始时间，以免改变年龄组和历史 PB 顺序");
+    }
     const status = getWeeklyMeetStatus({ startsAt: input.startsAt, endsAt: input.endsAt });
     const updated = await client.query(
       `UPDATE weekly_meets
@@ -656,10 +669,12 @@ export async function saveWeeklyResult(input: {
   const playerName = input.player.name.trim();
   const playerSlug = input.player.slug || (input.player.id.startsWith("code:") ? input.player.id.slice(5) : "");
   const pbEventId = getPersonalBestEventId(input.eventId);
-  const playerAgeGroup = getWeeklyAgeGroup(input.player.birthDate, meet.startsAt ? new Date(meet.startsAt) : new Date()) || input.player.ageGroup || "";
 
   try {
     if (ownsTransaction) await client.query("BEGIN");
+    await lockWeeklyResultWrites(client);
+    const startsAt = await assertMeetV2(client, meet.id);
+    const playerAgeGroup = getWeeklyAgeGroup(input.player.birthDate, startsAt ? new Date(startsAt) : new Date()) || input.player.ageGroup || "";
     await assertWeeklyEventConfig(client, meet.id, input.eventId, formatConfig.id);
     const eventKey = await resolveWeeklyEventKey(client, meet.id, input.eventId, formatConfig.id);
     const playerLibrary = await client.query<{ status: string; personal_bests: WeeklyPersonalBests | null; personal_bests_average: WeeklyPersonalBests | null }>(
@@ -762,6 +777,7 @@ export async function correctWeeklyResult(input: {
   const client = await pool.connect();
   try {
     await client.query("BEGIN");
+    await lockWeeklyResultWrites(client);
     const owner = await client.query<{ player_id: string | null }>("SELECT player_id FROM weekly_results WHERE id = $1", [input.resultId]);
     if (owner.rows[0]?.player_id) {
       await client.query("SELECT id FROM weekly_player_library WHERE id = $1 FOR UPDATE", [owner.rows[0].player_id]);
@@ -830,6 +846,7 @@ export async function deleteWeeklyResult(input: { resultId: number; reason: stri
   const client = await pool.connect();
   try {
     await client.query("BEGIN");
+    await lockWeeklyResultWrites(client);
     const owner = await client.query<{ player_id: string | null }>("SELECT player_id FROM weekly_results WHERE id = $1", [input.resultId]);
     if (owner.rows[0]?.player_id) {
       await client.query("SELECT id FROM weekly_player_library WHERE id = $1 FOR UPDATE", [owner.rows[0].player_id]);
@@ -1035,11 +1052,22 @@ async function saveWeeklyMeetEvents(client: Pick<PoolClient, "query">, meetId: s
       WHERE meet_id = $1 AND event_code IS NOT NULL AND event_code <> ''`,
     [meetId]
   );
+  const seen = new Set<string>();
   for (const [index, config] of configs.entries()) {
+    if (seen.has(config.eventId)) throw new Error("周赛项目不能重复");
+    seen.add(config.eventId);
+    if (getWeeklyResultFormat(config.format).id !== config.format) throw new Error("赛制不正确");
     if (!isWcaEventId(config.eventId)) throw new Error("项目不正确");
     const format = getWeeklyResultFormat(config.format).id;
     if (isWeeklySingleAttemptEvent(config.eventId) && format !== "best1") throw new Error("个人全能和大堆项目只允许使用单次赛制");
     if (!isWeeklySingleAttemptEvent(config.eventId) && format === "best1") throw new Error("常规项目不能使用单次赛制");
+    const recorded = await client.query(
+      `SELECT event.id FROM weekly_events event
+        WHERE event.meet_id = $1 AND event.event_code = $2 AND event.format <> $3
+          AND EXISTS (SELECT 1 FROM weekly_results result WHERE result.meet_id = $1 AND result.event_id = event.id)`,
+      [meetId, config.eventId, format]
+    );
+    if (recorded.rows[0]) throw new Error("该项目已有成绩，不能修改赛制");
     const eventName = getWcaEventName(config.eventId);
     await client.query(
       `INSERT INTO weekly_events
@@ -1234,9 +1262,10 @@ async function getStoredFormat(client: Pick<PoolClient, "query">, meetId: string
 }
 
 async function assertMeetV2(client: Pick<PoolClient, "query">, meetId: string) {
-  const { rows } = await client.query<{ data_version: number }>("SELECT data_version FROM weekly_meets WHERE id = $1 FOR SHARE", [meetId]);
+  const { rows } = await client.query<{ data_version: number; starts_at: string | null }>("SELECT data_version, starts_at FROM weekly_meets WHERE id = $1 FOR SHARE", [meetId]);
   if (!rows[0]) throw new Error("周赛不存在");
   if (rows[0].data_version !== 2) throw new Error("历史数据 / 只读");
+  return rows[0].starts_at;
 }
 
 async function assertWeeklyV2ActivePlayer(client: Pick<PoolClient, "query">, playerId: string) {
@@ -1260,4 +1289,10 @@ function groupBy<T, K>(items: T[], key: (item: T) => K): Map<K, T[]> {
     map.set(itemKey, group);
   }
   return map;
+}
+
+/** PB history and reranking update other results, so coordinate all score writers
+ * before taking player/result row locks. The lock is released with the transaction. */
+export async function lockWeeklyResultWrites(client: Pick<PoolClient, "query">) {
+  await client.query("SELECT pg_advisory_xact_lock(187009, 1)");
 }

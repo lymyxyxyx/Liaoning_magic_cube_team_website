@@ -39,3 +39,11 @@ test("big-stack stored group ranks use descending counts", () => {
     { id: 3, rank: 1 }, { id: 1, rank: 2 }, { id: 4, rank: 3 }, { id: 5, rank: 4 }, { id: 2, rank: 1 }
   ]);
 });
+
+test("age boundaries follow Beijing midnight and reject impossible birthdays", () => {
+  assert.equal(getWeeklyRankingAgeGroup("2018-10-08", "", new Date("2026-10-07T15:59:59Z")), "U8");
+  assert.equal(getWeeklyRankingAgeGroup("2018-10-08", "", new Date("2026-10-07T16:00:00Z")), "U10");
+  assert.equal(getWeeklyRankingAgeGroup("2018-02-30", "", new Date("2026-10-08T00:00:00Z")), "待补");
+  assert.equal(getWeeklyRankingAgeGroup("2019-02-29", "", new Date("2026-10-08T00:00:00Z")), "待补");
+  assert.equal(getWeeklyRankingAgeGroup("2020-02-29", "", new Date("2026-10-08T00:00:00Z")), "U8");
+});

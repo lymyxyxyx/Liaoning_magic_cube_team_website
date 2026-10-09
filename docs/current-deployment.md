@@ -245,3 +245,17 @@ Only `--apply` commits the recalculation. This changes derived PB values and
 badges, preserving attempts and edit/rollback versions. Isolated integration
 checks can run with `node scripts/verify-weekly-write-safety.cjs`; they create and
 drop a disposable schema and never read or write production result tables.
+
+## Weekly write coordination and import integrity (2026-10-09)
+
+Score mutations acquire the same PostgreSQL transaction advisory lock before
+player/result locks, because PB reconstruction and reranking can update results
+outside the submitted row. This serializes score writes at the current weekly
+scale; reads continue normally. Deploy all mutation paths together. No additional
+migration is needed for this release.
+
+Populated events cannot change format, and populated meets cannot change their
+start timestamp. Import matching uses optimistic batch/preview checks; committed
+file hashes are checked within the selected meet. The isolated integration script
+also checks concurrent reranking, configuration rollback, meet deletion versus
+an in-flight score transaction, and matching versus batch commit.
