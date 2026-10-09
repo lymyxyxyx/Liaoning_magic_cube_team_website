@@ -1,7 +1,8 @@
-import { randomUUID } from "node:crypto";
+import { createHash, randomUUID } from "node:crypto";
 import type { Pool, PoolClient } from "pg";
 import { getPostgresPool } from "@/lib/postgres";
-import type { BigStackSpreadsheetRow } from "@/lib/big-stack-xlsx";
+import { assertWeeklyResultVersion } from "@/lib/weekly-result-version";
+import { normalizeBigStackSpreadsheetRow, type BigStackSpreadsheetRow } from "@/lib/big-stack-xlsx";
 
 export const BIG_STACK_EVENTS = [
   { id: "333", name: "三阶" },
@@ -27,7 +28,15 @@ export type BigStackRecord = {
   note: string;
   rank: number;
   updatedAt: string;
+  version: string;
 };
+
+export type BigStackPublicRecord = Pick<BigStackRecord, "id" | "name" | "eventId" | "solveCount" | "wcaId" | "achievedAt" | "meetTitle" | "sourceLabel" | "rank">;
+
+export function publicBigStackRecord(record: BigStackRecord): BigStackPublicRecord {
+  const { id, name, eventId, solveCount, wcaId, achievedAt, meetTitle, sourceLabel, rank } = record;
+  return { id, name, eventId, solveCount, wcaId, achievedAt, meetTitle, sourceLabel, rank };
+}
 
 export type BigStackRevision = {
   id: number;
@@ -56,6 +65,7 @@ export type BigStackImportPreviewRow = BigStackSpreadsheetRow & {
 };
 
 export type BigStackImportPreview = {
+  token: string;
   eventId: BigStackEventId;
   mode: BigStackImportMode;
   rows: BigStackImportPreviewRow[];
@@ -86,6 +96,7 @@ type BigStackRecordRow = {
   source_label: string;
   note: string;
   updated_at: string;
+  result_version: string;
 };
 
 type WeeklyIdentityRow = { id: string; name: string; wca_id: string };
@@ -159,6 +170,7 @@ export async function commitBigStackImport(input: {
   eventId: BigStackEventId;
   mode: BigStackImportMode;
   filename: string;
+  expectedPreviewToken: string;
   errors?: string[];
   warnings?: string[];
 }) {
@@ -169,10 +181,12 @@ export async function commitBigStackImport(input: {
     await client.query("LOCK TABLE weekly_big_stack_records IN EXCLUSIVE MODE");
     const preview = await buildImportPreview(client, input);
     if (preview.errors.length > 0) throw new Error(preview.errors[0]);
+    if (!input.expectedPreviewToken || input.expectedPreviewToken !== preview.token) throw new BigStackImportConflictError();
     const batchId = randomUUID();
     const sourceLabel = `Excel导入：${sanitizeFilename(input.filename)}`;
 
     if (input.mode === "baseline") {
+      await snapshotReplacedRecords(client, input.eventId, batchId);
       await client.query("DELETE FROM weekly_big_stack_records WHERE event_code = $1", [input.eventId]);
       const records = preview.rows.map((row) => ({
         id: `big-stack-${randomUUID()}`,
@@ -268,7 +282,9 @@ export async function createBigStackRecord(input: {
   const client = await pool.connect();
   try {
     await client.query("BEGIN");
-    const identity = await resolveManualIdentity(client, input.playerId, input.wcaId);
+    await client.query("LOCK TABLE weekly_big_stack_records IN EXCLUSIVE MODE");
+    const validated = normalizeBigStackSpreadsheetRow({ rowNumber: 0, name: input.name, count: input.solveCount, wcaId: input.wcaId, achievedAt: input.achievedAt, note: input.note });
+    const identity = await resolveManualIdentity(client, input.playerId, validated.wcaId);
     await assertNoManualDuplicate(client, input.eventId, requiredName(input.name), identity.playerId, identity.wcaId);
     const record = await insertRecord(client, {
       name: requiredName(input.name),
@@ -293,6 +309,7 @@ export async function createBigStackRecord(input: {
 }
 
 export async function updateBigStackRecord(id: string, input: {
+  expectedVersion: string;
   name: string;
   eventId: BigStackEventId;
   solveCount: number;
@@ -308,9 +325,12 @@ export async function updateBigStackRecord(id: string, input: {
   const client = await pool.connect();
   try {
     await client.query("BEGIN");
+    await client.query("LOCK TABLE weekly_big_stack_records IN EXCLUSIVE MODE");
     const before = await getRecordForUpdate(client, id);
     if (!before) throw new Error("未找到这条大堆记录");
-    const identity = await resolveManualIdentity(client, input.playerId, input.wcaId);
+    assertWeeklyResultVersion(before.version, input.expectedVersion);
+    const validated = normalizeBigStackSpreadsheetRow({ rowNumber: 0, name: input.name, count: input.solveCount, wcaId: input.wcaId, achievedAt: input.achievedAt, note: input.note });
+    const identity = await resolveManualIdentity(client, input.playerId, validated.wcaId);
     const name = requiredName(input.name);
     const solveCount = requiredCount(input.solveCount);
     const identityChanged = name !== before.name || input.eventId !== before.eventId ||
@@ -329,7 +349,7 @@ export async function updateBigStackRecord(id: string, input: {
       sourceLabel: input.sourceLabel?.trim() || "",
       note: input.note?.trim() || ""
     });
-    const improved = after.solveCount > before.solveCount;
+    const improved = !identityChanged && after.solveCount > before.solveCount;
     await insertRevision(client, id, improved ? "pb" : "correct", input.reason?.trim() || (improved ? "管理员刷新 PB" : "管理员修改"), before, after, improved ? 1 : 0);
     await client.query("COMMIT");
     return after;
@@ -341,13 +361,15 @@ export async function updateBigStackRecord(id: string, input: {
   }
 }
 
-export async function deleteBigStackRecord(id: string, reason: string) {
+export async function deleteBigStackRecord(id: string, reason: string, expectedVersion: string) {
   if (!reason.trim()) throw new Error("删除记录时必须填写原因");
   const pool = getPostgresPool();
   const client = await pool.connect();
   try {
     await client.query("BEGIN");
+    await client.query("LOCK TABLE weekly_big_stack_records IN EXCLUSIVE MODE");
     const before = await getRecordForUpdate(client, id);
+    assertWeeklyResultVersion(before?.version, expectedVersion);
     if (!before) throw new Error("未找到这条大堆记录");
     await client.query("DELETE FROM weekly_big_stack_records WHERE id = $1", [id]);
     await insertRevision(client, id, "delete", reason.trim(), before, undefined);
@@ -371,22 +393,40 @@ async function buildImportPreview(db: Queryable, input: {
   const identityMaps = buildIdentityMaps(identities);
   const existingMaps = buildExistingMaps(existingRows.map(mapRecordRow));
   const warnings = [...(input.warnings || [])];
-  const rows = input.rows.map((row): BigStackImportPreviewRow => {
+  const errors = [...(input.errors || [])];
+  const validatedRows = input.rows.flatMap((row) => {
+    try { return [normalizeBigStackSpreadsheetRow(row)]; } catch (error) {
+      errors.push(`第 ${row.rowNumber} 行：${error instanceof Error ? error.message : "参数不正确"}`);
+      return [];
+    }
+  });
+  if (!validatedRows.length) errors.push("没有可导入的成绩记录");
+  const rows = validatedRows.map((row): BigStackImportPreviewRow => {
     const identity = matchWeeklyIdentity(row, identityMaps);
+    if (identity.conflict) errors.push(`第 ${row.rowNumber} 行：${identity.message}`);
     if (identity.message) warnings.push(`第 ${row.rowNumber} 行“${row.name}”：${identity.message}`);
     const existingMatch = findExistingRecord(row, identity, existingMaps);
     if (input.mode === "baseline") return { ...row, action: "replace", matchMethod: identity.method, resolvedPlayerId: identity.playerId, resolvedWcaId: identity.wcaId, message: identity.message };
-    if (existingMatch.ambiguous) return { ...row, action: "ambiguous", matchMethod: identity.method, resolvedPlayerId: identity.playerId, resolvedWcaId: identity.wcaId, message: "现有榜单存在多条同名记录，需要管理员手动处理" };
+    if (existingMatch.ambiguous) {
+      errors.push(`第 ${row.rowNumber} 行：现有同名纪录身份不确定，不能自动合并，请人工核对`);
+      return { ...row, action: "ambiguous", matchMethod: "ambiguous", resolvedPlayerId: identity.playerId, resolvedWcaId: identity.wcaId, message: "现有同名纪录身份不确定，需要管理员手动处理" };
+    }
     if (!existingMatch.record) return { ...row, action: "new", matchMethod: identity.method, resolvedPlayerId: identity.playerId, resolvedWcaId: identity.wcaId, message: identity.message };
     const record = existingMatch.record;
     const action: BigStackImportAction = row.count > record.solveCount ? "improved" : row.count === record.solveCount ? "unchanged" : "lower";
     return { ...row, action, matchMethod: identity.method, resolvedPlayerId: identity.playerId, resolvedWcaId: identity.wcaId, currentCount: record.solveCount, existingRecordId: record.id, message: identity.message };
   });
 
-  const errors = [...(input.errors || [])];
   const resolvedKeys = new Map<string, number>();
+  const unboundNames = new Map<string, number>();
   for (const row of rows) {
-    const key = row.resolvedPlayerId ? `周赛选手 ${row.resolvedPlayerId}` : row.resolvedWcaId ? `WCA ID ${row.resolvedWcaId}` : "";
+    const key = row.existingRecordId ? `已有纪录 ${row.existingRecordId}` : row.resolvedPlayerId ? `周赛选手 ${row.resolvedPlayerId}` : row.resolvedWcaId ? `WCA ID ${row.resolvedWcaId}` : "";
+    if (!row.resolvedPlayerId && !row.resolvedWcaId) {
+      const name = normalizeName(row.name);
+      const earlier = unboundNames.get(name);
+      if (earlier !== undefined) errors.push(`第 ${earlier}、${row.rowNumber} 行为重复的未绑定选手`);
+      else unboundNames.set(name, row.rowNumber);
+    }
     if (!key) continue;
     const earlierRow = resolvedKeys.get(key);
     if (earlierRow) errors.push(`第 ${earlierRow}、${row.rowNumber} 行匹配到了同一位选手（${key}）`);
@@ -394,6 +434,7 @@ async function buildImportPreview(db: Queryable, input: {
   }
   const countAction = (action: BigStackImportAction) => rows.filter((row) => row.action === action).length;
   return {
+    token: createHash("sha256").update(JSON.stringify({ eventId: input.eventId, mode: input.mode, rows: input.rows, identities: [...identities].sort((a, b) => a.id.localeCompare(b.id)), records: [...existingRows].sort((a, b) => a.id.localeCompare(b.id)) })).digest("hex"),
     eventId: input.eventId,
     mode: input.mode,
     rows,
@@ -416,7 +457,7 @@ async function listRecordRows(db: Queryable, eventId: BigStackEventId) {
   const { rows } = await db.query<BigStackRecordRow>(`
     SELECT record.id, record.name, record.event_code, record.solve_count, record.player_id,
            record.wca_id, record.achieved_at::text, record.meet_id, meet.title AS meet_title,
-           record.source_label, record.note, record.updated_at
+           record.source_label, record.note, record.updated_at, record.updated_at::text AS result_version
       FROM weekly_big_stack_records record
       LEFT JOIN weekly_meets meet ON meet.id = record.meet_id
      WHERE record.event_code = $1
@@ -444,13 +485,14 @@ function buildIdentityMaps(rows: WeeklyIdentityRow[]) {
 function matchWeeklyIdentity(row: BigStackSpreadsheetRow, maps: ReturnType<typeof buildIdentityMaps>) {
   if (row.playerId) {
     const player = maps.byId.get(row.playerId);
+    if (player && row.wcaId && ((player.wca_id && row.wcaId.toUpperCase() !== player.wca_id.toUpperCase()) || (maps.byWca.get(row.wcaId.toUpperCase()) || []).some((candidate) => candidate.id !== player.id))) return { method: "ambiguous" as const, conflict: true, message: "选手 ID 与 WCA ID 指向不同身份，请先核对" };
     if (player) return { method: "player_id" as const, playerId: player.id, wcaId: player.wca_id || row.wcaId };
-    return { method: "unmatched" as const, wcaId: row.wcaId, message: `周赛选手 ID ${row.playerId} 不存在，已作为未绑定记录处理` };
+    return { method: "unmatched" as const, conflict: true, wcaId: row.wcaId, message: `周赛选手 ID ${row.playerId} 不存在，请更正或清空后重新预览` };
   }
   if (row.wcaId) {
     const matches = maps.byWca.get(row.wcaId.toUpperCase()) || [];
     if (matches.length === 1) return { method: "wca_id" as const, playerId: matches[0].id, wcaId: row.wcaId.toUpperCase() };
-    if (matches.length > 1) return { method: "ambiguous" as const, wcaId: row.wcaId.toUpperCase(), message: "WCA ID 匹配到多个周赛选手，暂不绑定" };
+    if (matches.length > 1) return { method: "ambiguous" as const, conflict: true, wcaId: row.wcaId.toUpperCase(), message: "WCA ID 匹配到多个周赛选手，暂不绑定" };
     return { method: "unmatched" as const, wcaId: row.wcaId.toUpperCase(), message: "WCA ID 尚未进入周赛选手库" };
   }
   const matches = maps.byName.get(normalizeName(row.name)) || [];
@@ -472,7 +514,12 @@ function findExistingRecord(row: BigStackSpreadsheetRow, identity: ReturnType<ty
   const wcaId = identity.wcaId || row.wcaId;
   if (wcaId && maps.byWca.has(wcaId)) return { record: maps.byWca.get(wcaId) };
   const nameMatches = maps.byName.get(normalizeName(row.name)) || [];
-  if (nameMatches.length === 1) return { record: nameMatches[0] };
+  if (nameMatches.length === 1) {
+    const candidate = nameMatches[0];
+    if ((identity.playerId && candidate.playerId && candidate.playerId !== identity.playerId) || (wcaId && candidate.wcaId && candidate.wcaId.toUpperCase() !== wcaId.toUpperCase())) return { ambiguous: true, record: undefined };
+    if (!identity.playerId && !wcaId && (candidate.playerId || candidate.wcaId)) return { ambiguous: true, record: undefined };
+    return { record: candidate };
+  }
   return { record: undefined, ambiguous: nameMatches.length > 1 };
 }
 
@@ -487,6 +534,7 @@ async function resolveManualIdentity(db: Queryable, playerId?: string, wcaId?: s
   }
   if (cleanWcaId) {
     const { rows } = await db.query<WeeklyIdentityRow>("SELECT id, name, wca_id FROM weekly_player_library WHERE upper(wca_id) = $1", [cleanWcaId]);
+    if (rows.length > 1) throw new Error("WCA ID 对应多个周赛选手，请明确选择选手 ID");
     if (rows.length === 1) return { playerId: rows[0].id, wcaId: cleanWcaId };
   }
   return { playerId: undefined, wcaId: cleanWcaId || undefined };
@@ -497,7 +545,8 @@ async function assertNoManualDuplicate(db: Queryable, eventId: BigStackEventId, 
   const values: string[] = [eventId, excludeId];
   if (playerId) { values.push(playerId); conditions.push(`player_id = $${values.length}`); }
   if (wcaId) { values.push(wcaId.toUpperCase()); conditions.push(`upper(wca_id) = $${values.length}`); }
-  if (!playerId && !wcaId) { values.push(name); conditions.push(`name = $${values.length}`); }
+  values.push(normalizeName(name));
+  conditions.push(`(btrim(regexp_replace(name, '\\s+', ' ', 'g')) = $${values.length}${playerId || wcaId ? " AND (player_id IS NULL OR player_id = '') AND wca_id = ''" : ""})`);
   const result = await db.query(
     `SELECT id FROM weekly_big_stack_records WHERE event_code = $1 AND id <> $2 AND (${conditions.join(" OR ")}) LIMIT 1`,
     values
@@ -515,7 +564,7 @@ async function insertRecord(db: Queryable, input: {
       (id, name, event_code, solve_count, player_id, wca_id, achieved_at, meet_id, source_label, note, updated_at)
     VALUES ($1, $2, $3, $4, NULLIF($5, ''), $6, NULLIF($7, '')::date, $8, $9, $10, now())
     RETURNING id, name, event_code, solve_count, player_id, wca_id, achieved_at::text, meet_id,
-              NULL::text AS meet_title, source_label, note, updated_at
+              NULL::text AS meet_title, source_label, note, updated_at, updated_at::text AS result_version
   `, [id, requiredName(input.name), input.eventId, requiredCount(input.solveCount), input.playerId || "", input.wcaId || "", normalizeDate(input.achievedAt), input.meetId, input.sourceLabel?.trim() || "", input.note?.trim() || ""]);
   return mapRecordRow(rows[0]);
 }
@@ -524,10 +573,10 @@ async function updateRecordRow(db: Queryable, id: string, input: BigStackRecord)
   const { rows } = await db.query<BigStackRecordRow>(`
     UPDATE weekly_big_stack_records
        SET name = $2, event_code = $3, solve_count = $4, player_id = NULLIF($5, ''), wca_id = $6,
-           achieved_at = NULLIF($7, '')::date, meet_id = $8, source_label = $9, note = $10, updated_at = now()
+           achieved_at = NULLIF($7, '')::date, meet_id = $8, source_label = $9, note = $10, updated_at = clock_timestamp()
      WHERE id = $1
     RETURNING id, name, event_code, solve_count, player_id, wca_id, achieved_at::text, meet_id,
-              NULL::text AS meet_title, source_label, note, updated_at
+              NULL::text AS meet_title, source_label, note, updated_at, updated_at::text AS result_version
   `, [id, requiredName(input.name), input.eventId, requiredCount(input.solveCount), input.playerId || "", input.wcaId || "", normalizeDate(input.achievedAt), input.meetId, input.sourceLabel.trim(), input.note.trim()]);
   if (!rows[0]) throw new Error("未找到这条大堆记录");
   return mapRecordRow(rows[0]);
@@ -537,7 +586,7 @@ async function getRecordForUpdate(db: Queryable, id: string) {
   const { rows } = await db.query<BigStackRecordRow>(`
     SELECT record.id, record.name, record.event_code, record.solve_count, record.player_id,
            record.wca_id, record.achieved_at::text, record.meet_id, meet.title AS meet_title,
-           record.source_label, record.note, record.updated_at
+           record.source_label, record.note, record.updated_at, record.updated_at::text AS result_version
       FROM weekly_big_stack_records record
       LEFT JOIN weekly_meets meet ON meet.id = record.meet_id
      WHERE record.id = $1 FOR UPDATE OF record
@@ -558,7 +607,7 @@ function mapRecordRow(row: BigStackRecordRow): BigStackRecord {
     id: row.id, name: row.name, eventId: row.event_code, solveCount: Number(row.solve_count),
     playerId: row.player_id || undefined, wcaId: row.wca_id || undefined, achievedAt: row.achieved_at || undefined,
     meetId: row.meet_id, meetTitle: row.meet_title || "", sourceLabel: row.source_label || "", note: row.note || "",
-    rank: 0, updatedAt: row.updated_at
+    rank: 0, updatedAt: row.updated_at, version: row.result_version
   };
 }
 
@@ -575,7 +624,7 @@ function mapSnapshot(value: Record<string, unknown> | null | undefined): BigStac
     meetId: String(value.meetId || value.meet_id || "") || null,
     meetTitle: String(value.meetTitle || value.meet_title || ""),
     sourceLabel: String(value.sourceLabel || value.source_label || ""), note: String(value.note || ""),
-    rank: Number(value.rank || 0), updatedAt: String(value.updatedAt || value.updated_at || "")
+    rank: Number(value.rank || 0), updatedAt: String(value.updatedAt || value.updated_at || ""), version: String(value.version || "")
   };
 }
 
@@ -619,4 +668,18 @@ function normalizeDatabaseError(error: unknown) {
   const code = typeof error === "object" && error && "code" in error ? String(error.code) : "";
   if (code === "23505") return new Error("这个周赛选手或 WCA ID 已绑定到另一条同项目大堆记录");
   return error instanceof Error ? error : new Error("保存大堆记录失败");
+}
+
+export class BigStackImportConflictError extends Error {
+  constructor() {
+    super("文件、选手档案或榜单已变化，请重新预览并确认导入");
+    this.name = "BigStackImportConflictError";
+  }
+}
+
+async function snapshotReplacedRecords(client: Queryable, eventId: BigStackEventId, batchId: string) {
+  await client.query(`INSERT INTO weekly_big_stack_record_revisions
+    (record_id, action, reason, before_record, after_record, points_awarded, import_batch_id)
+    SELECT id, 'baseline_removed', '全量替换前快照', to_jsonb(record), NULL, 0, $1
+    FROM weekly_big_stack_records record WHERE event_code = $2`, [batchId, eventId]);
 }

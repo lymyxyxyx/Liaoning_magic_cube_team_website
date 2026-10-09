@@ -16,7 +16,8 @@ if (!process.env.DATABASE_URL) {
 const baselinePath = path.join(process.cwd(), "data", "big-stack-baseline.json");
 const rows = JSON.parse(await fs.readFile(baselinePath, "utf8"));
 if (!Array.isArray(rows) || rows.length !== 805) throw new Error(`Expected 805 baseline rows, received ${Array.isArray(rows) ? rows.length : "invalid JSON"}`);
-if (new Set(rows.map((row) => row.name)).size !== rows.length) throw new Error("Baseline contains duplicate names");
+if (rows.some((row) => typeof row.name !== "string" || !row.name.trim() || row.name.trim().length > 80 || !Number.isInteger(row.count) || row.count < 0 || row.count > 10000)) throw new Error("Baseline contains invalid names or counts");
+if (new Set(rows.map((row) => row.name.trim())).size !== rows.length) throw new Error("Baseline contains duplicate names");
 if (rows.filter((row) => row.name === "刘奕辰" && row.count === 64).length !== 1) throw new Error("刘奕辰 baseline mismatch");
 
 const pool = new pg.Pool({ connectionString: process.env.DATABASE_URL });
@@ -49,6 +50,10 @@ try {
   const batchId = randomUUID();
   const unresolved = records.filter((record) => !record.player_id).length;
 
+  await client.query(`INSERT INTO weekly_big_stack_record_revisions
+    (record_id, action, reason, before_record, after_record, points_awarded, import_batch_id)
+    SELECT id, 'baseline_removed', '全量替换前快照', to_jsonb(record), NULL, 0, $1
+    FROM weekly_big_stack_records record WHERE event_code = '333'`, [batchId]);
   await client.query("DELETE FROM weekly_big_stack_records WHERE event_code = '333'");
   await client.query(`
     INSERT INTO weekly_big_stack_records

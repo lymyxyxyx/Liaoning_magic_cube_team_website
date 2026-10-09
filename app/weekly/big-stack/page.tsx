@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { cookies } from "next/headers";
 import { PageHero } from "@/components/page-hero";
-import { BIG_STACK_EVENTS, isBigStackEvent, listBigStackRecords } from "@/lib/big-stack";
+import { BIG_STACK_EVENTS, isBigStackEvent, listBigStackRecords, publicBigStackRecord } from "@/lib/big-stack";
 import { hasWeeklyAdminCookie } from "@/lib/weekly-admin-auth";
 import { listWeeklyMeetOptions } from "@/lib/weekly-entry-store";
 import { isWeeklyCompetitionEnabled } from "@/lib/weekly-feature";
@@ -30,6 +30,6 @@ export default async function BigStackPage({ searchParams }: { searchParams: Pro
     <section className="container section big-stack-page-intro"><nav className="weekly-provincial-ranking-tabs" aria-label="大堆项目">
       {BIG_STACK_EVENTS.map((event) => <Link className={event.id === eventId ? "is-active" : ""} href={`/weekly/big-stack?event=${event.id}`} key={event.id}>{event.name}</Link>)}
     </nav><p className="weekly-provincial-ranking-note"><strong>{selectedEvent.name}大堆榜</strong><span>计量单位：一小时内还原数量；同数量并列。周赛期次只作为可选来源，不决定纪录归属。</span></p></section>
-    <BigStackConsole eventId={eventId} initialRecords={records} meets={meets} players={players} isAdmin={isAdmin} />
+    <BigStackConsole key={eventId} eventId={eventId} initialRecords={isAdmin ? records : records.map(publicBigStackRecord)} meets={meets} players={players} isAdmin={isAdmin} />
   </>;
 }

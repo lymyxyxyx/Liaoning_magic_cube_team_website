@@ -6,9 +6,12 @@ import type {
   BigStackImportMode,
   BigStackImportPreview,
   BigStackRecord,
+  BigStackPublicRecord,
   BigStackRevision
 } from "@/lib/big-stack";
 import type { WeeklyPlayerLibraryEntry } from "@/lib/weekly-player-library";
+
+type BigStackListRecord = BigStackPublicRecord & Partial<BigStackRecord>;
 
 type MeetOption = { id: string; title: string };
 type Draft = {
@@ -32,7 +35,7 @@ export function BigStackConsole({
   isAdmin
 }: {
   eventId: BigStackEventId;
-  initialRecords: BigStackRecord[];
+  initialRecords: BigStackListRecord[];
   meets: MeetOption[];
   players: WeeklyPlayerLibraryEntry[];
   isAdmin: boolean;
@@ -67,7 +70,13 @@ export function BigStackConsole({
     try {
       const response = await fetch(url, { ...init, headers: { "Content-Type": "application/json", ...(init.headers || {}) } });
       const body = await response.json().catch(() => null) as (T & { message?: string }) | null;
-      if (!response.ok || !body) throw new Error(body?.message || "操作失败");
+      if (!response.ok || !body) {
+        if (response.status === 409 || response.status === 428) {
+          const latest = await fetch(`/api/big-stack?event=${eventId}`, { cache: "no-store" });
+          if (latest.ok) { const refreshed = await latest.json(); setRecords(refreshed.records); }
+        }
+        throw new Error(body?.message || "操作失败");
+      }
       return body;
     } finally {
       setSaving(false);
@@ -76,7 +85,7 @@ export function BigStackConsole({
 
   function bindDraftPlayer(playerId: string) {
     const player = playersById.get(playerId);
-    setDraft((current) => ({ ...current, playerId, name: current.name || player?.name || "", wcaId: player?.wcaId || current.wcaId }));
+    setDraft((current) => ({ ...current, playerId, name: player?.name || current.name || "", wcaId: player?.wcaId || current.wcaId }));
   }
 
   async function createRecord(event: FormEvent<HTMLFormElement>) {
@@ -111,7 +120,7 @@ export function BigStackConsole({
     try {
       const body = await jsonRequest<{ record: BigStackRecord }>(`/api/big-stack/${encodeURIComponent(editing.id)}`, {
         method: "PATCH",
-        body: JSON.stringify({ ...editing, reason })
+        body: JSON.stringify({ ...editing, reason, expectedVersion: editing.version })
       });
       setRecords((current) => rerank(
         body.record.eventId === eventId
@@ -126,13 +135,13 @@ export function BigStackConsole({
     }
   }
 
-  async function removeRecord(record: BigStackRecord) {
+  async function removeRecord(record: BigStackListRecord) {
     const deleteReason = reason.trim() || window.prompt(`请输入删除“${record.name}”的原因`)?.trim() || "";
     if (!deleteReason || !window.confirm(`确认删除“${record.name}”的${record.eventId}大堆 PB？`)) return;
     try {
       await jsonRequest<{ ok: boolean }>(`/api/big-stack/${encodeURIComponent(record.id)}`, {
         method: "DELETE",
-        body: JSON.stringify({ reason: deleteReason })
+        body: JSON.stringify({ reason: deleteReason, expectedVersion: record.version })
       });
       setRecords((current) => rerank(current.filter((item) => item.id !== record.id)));
       setReason("");
@@ -144,6 +153,7 @@ export function BigStackConsole({
 
   async function runImport(action: "preview" | "commit") {
     if (!file) return setMessage("请先选择 .xlsx 文件");
+    if (action === "commit" && (!preview || preview.eventId !== eventId || preview.mode !== mode || preview.errors.length)) return setMessage("请重新预览当前项目和文件");
     if (action === "commit" && mode === "baseline" && !window.confirm(`这会删除当前${eventId}项目全部记录，并以 Excel 为唯一基线。确认继续？`)) return;
     setSaving(true);
     setMessage("");
@@ -153,10 +163,11 @@ export function BigStackConsole({
       formData.set("eventId", eventId);
       formData.set("mode", mode);
       formData.set("action", action);
+      if (action === "commit" && preview) formData.set("previewToken", preview.token);
       if (action === "commit" && mode === "baseline") formData.set("confirmBaseline", "true");
       const response = await fetch("/api/big-stack/import", { method: "POST", body: formData });
       const body = await response.json().catch(() => null) as { preview?: BigStackImportPreview; records?: BigStackRecord[]; message?: string } | null;
-      if (!response.ok) throw new Error(body?.message || "导入失败");
+      if (!response.ok) { if (response.status === 409) setPreview(null); throw new Error(body?.message || "导入失败"); }
       if (action === "preview" && body?.preview) {
         setPreview(body.preview);
         setMessage("预览完成，请核对统计和异常项后再提交");
@@ -192,8 +203,8 @@ export function BigStackConsole({
         {message ? <p className="admin-inline-notice">{message}</p> : null}
 
         <div className="big-stack-pb-import">
-          <label>导入模式<select value={mode} onChange={(event) => { setMode(event.target.value as BigStackImportMode); setPreview(null); }}><option value="merge">PB 合并（日常）</option><option value="baseline">全量基线替换</option></select></label>
-          <label>Excel 文件<input type="file" accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" onChange={(event) => { setFile(event.target.files?.[0] || null); setPreview(null); }} /></label>
+          <label>导入模式<select disabled={saving} value={mode} onChange={(event) => { setMode(event.target.value as BigStackImportMode); setPreview(null); }}><option value="merge">PB 合并（日常）</option><option value="baseline">全量基线替换</option></select></label>
+          <label>Excel 文件<input disabled={saving} type="file" accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" onChange={(event) => { setFile(event.target.files?.[0] || null); setPreview(null); }} /></label>
           <div className="weekly-admin-login-actions"><button className="button" type="button" disabled={saving || !file} onClick={() => runImport("preview")}>预览</button><button className="button primary" type="button" disabled={saving || !file || !preview || preview.errors.length > 0} onClick={() => runImport("commit")}>确认导入</button></div>
         </div>
         {preview ? <ImportPreview preview={preview} /> : null}
@@ -211,14 +222,14 @@ export function BigStackConsole({
         </form>
         <datalist id="big-stack-player-options">{players.map((player) => <option key={player.id} value={player.id}>{player.name}{player.wcaId ? ` · ${player.wcaId}` : ""}</option>)}</datalist>
 
-        {historyOpen ? <details className="big-stack-pb-history" open><summary>最近 50 条修改历史</summary>{revisions.length === 0 ? <p>暂无修改历史。</p> : revisions.map((revision) => <div key={revision.id}><strong>{revision.after?.name || revision.before?.name || revision.recordId}</strong><span>{revision.action} · {revision.before?.solveCount ?? "—"} → {revision.after?.solveCount ?? "—"}</span><span>{revision.reason}{revision.pointsAwarded ? ` · PB积分 +${revision.pointsAwarded}` : ""}</span><time>{new Date(revision.createdAt).toLocaleString("zh-CN")}</time></div>)}</details> : null}
+        {historyOpen ? <details className="big-stack-pb-history" open><summary>最近 50 条修改历史</summary>{revisions.length === 0 ? <p>暂无修改历史。</p> : revisions.map((revision) => <div key={revision.id}><strong>{revision.after?.name || revision.before?.name || revision.recordId}</strong><span>{revision.action} · {revision.before?.solveCount ?? "—"} → {revision.after?.solveCount ?? "—"}</span><span>{revision.reason}{revision.pointsAwarded ? " · 刷新 PB" : ""}</span><time>{new Date(revision.createdAt).toLocaleString("zh-CN", { timeZone: "Asia/Shanghai" })}</time></div>)}</details> : null}
       </div>
     </section> : null}
 
     <section className="container section big-stack-table-section">
-      <div className="big-stack-pb-toolbar"><label>搜索<input value={query} onChange={(event) => { setQuery(event.target.value); setPage(1); }} placeholder="姓名、WCA ID、周赛选手 ID" /></label><span>共 {filtered.length} 人</span></div>
+      <div className="big-stack-pb-toolbar"><label>搜索<input value={query} onChange={(event) => { setQuery(event.target.value); setPage(1); }} placeholder={isAdmin ? "姓名、WCA ID、周赛选手 ID" : "姓名或 WCA ID"} /></label><span>共 {filtered.length} 人</span></div>
       <div className="result-table-wrap"><table className="result-table"><thead><tr><th>排名</th><th>姓名</th><th>一小时还原数量</th><th>来源</th>{isAdmin ? <th>操作</th> : null}</tr></thead><tbody>
-        {visibleRecords.map((record) => <tr key={record.id}><td className="score-strong">#{record.rank}</td><td>{record.name}{record.wcaId ? <small className="big-stack-pb-id">{record.wcaId}</small> : null}</td><td className="score-strong">{record.solveCount}</td><td>{record.meetTitle || record.sourceLabel || "长期记录"}</td>{isAdmin ? <td><button className="button compact" onClick={() => { setEditing({ ...record }); setReason(""); }}>编辑</button> <button className="button compact" onClick={() => removeRecord(record)} disabled={saving}>删除</button></td> : null}</tr>)}
+        {visibleRecords.map((record) => <tr key={record.id}><td className="score-strong">#{record.rank}</td><td>{record.name}{record.wcaId ? <small className="big-stack-pb-id">{record.wcaId}</small> : null}</td><td className="score-strong">{record.solveCount}</td><td>{record.meetTitle || record.sourceLabel || "长期记录"}</td>{isAdmin ? <td><button className="button compact" disabled={saving} onClick={() => { setEditing({ ...record } as BigStackRecord); setReason(""); }}>编辑</button> <button className="button compact" onClick={() => removeRecord(record)} disabled={saving}>删除</button></td> : null}</tr>)}
         {!visibleRecords.length ? <tr><td colSpan={isAdmin ? 5 : 4}>该项目暂未录入大堆成绩。</td></tr> : null}
       </tbody></table></div>
       <div className="big-stack-pb-pagination"><button className="button compact" disabled={safePage <= 1} onClick={() => setPage((current) => Math.max(1, current - 1))}>上一页</button><span>第 {safePage} / {pageCount} 页</span><button className="button compact" disabled={safePage >= pageCount} onClick={() => setPage((current) => Math.min(pageCount, current + 1))}>下一页</button></div>
@@ -245,7 +256,7 @@ function ImportPreview({ preview }: { preview: BigStackImportPreview }) {
   return <section className="big-stack-pb-preview"><div className="big-stack-pb-stats"><span>总行数 <strong>{summary.total}</strong></span>{preview.mode === "baseline" ? <span>将替换 <strong>{summary.replace}</strong></span> : null}<span>新增 <strong>{summary.inserted}</strong></span><span>刷新 PB <strong>{summary.improved}</strong></span><span>不变 <strong>{summary.unchanged}</strong></span><span>较低忽略 <strong>{summary.lowerIgnored}</strong></span><span>未绑定 <strong>{summary.unresolved}</strong></span><span>歧义 <strong>{summary.ambiguous}</strong></span></div>{preview.errors.length ? <div className="big-stack-pb-errors"><strong>必须修正</strong>{preview.errors.map((error) => <p key={error}>{error}</p>)}</div> : null}{preview.warnings.length ? <details><summary>匹配提醒（{preview.warnings.length}）</summary>{preview.warnings.slice(0, 100).map((warning) => <p key={warning}>{warning}</p>)}</details> : null}</section>;
 }
 
-function rerank(records: BigStackRecord[]) {
+function rerank(records: BigStackListRecord[]) {
   const sorted = [...records].sort((a, b) => b.solveCount - a.solveCount || a.name.localeCompare(b.name, "zh-Hans-CN"));
   let previousCount: number | null = null;
   let previousRank = 0;

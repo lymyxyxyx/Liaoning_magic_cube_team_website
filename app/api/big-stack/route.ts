@@ -3,6 +3,7 @@ import {
   createBigStackRecord,
   isBigStackEvent,
   listBigStackRecords,
+  publicBigStackRecord,
   listBigStackRevisions
 } from "@/lib/big-stack";
 import { hasWeeklyAdminSession } from "@/lib/weekly-admin-auth";
@@ -27,7 +28,8 @@ export async function GET(request: NextRequest) {
   const event = request.nextUrl.searchParams.get("event") || "333";
   if (!isBigStackEvent(event)) return NextResponse.json({ message: "项目不正确" }, { status: 400 });
   try {
-    return NextResponse.json({ records: await listBigStackRecords(event) });
+    const records = await listBigStackRecords(event);
+    return NextResponse.json({ records: await hasWeeklyAdminSession(request) ? records : records.map(publicBigStackRecord) }, { headers: { "Cache-Control": "private, no-store" } });
   } catch {
     return NextResponse.json({ message: "读取大堆榜失败" }, { status: 500 });
   }
