@@ -369,6 +369,7 @@ export async function updateWeeklyPlayerProfile(id: string, input: Partial<Weekl
   const player = current.rows[0];
   if (!player) throw new Error("选手不存在");
   const nextWcaId = input.wcaId === undefined ? player.wca_id : input.wcaId.trim().toUpperCase();
+  if (nextWcaId !== player.wca_id) throw new Error("请在周赛编号 / WCA ID 入口修改选手绑定");
   await assertWcaIdAvailable(pool, nextWcaId, player.id);
   const nextStatus = input.status === "inactive" ? "inactive" : input.status === "active" ? "active" : player.status;
   const nextDeactivatedAt = nextStatus === "inactive" ? input.deactivatedAt ?? player.deactivated_at ?? new Date().toISOString() : null;
@@ -378,7 +379,7 @@ export async function updateWeeklyPlayerProfile(id: string, input: Partial<Weekl
     `UPDATE weekly_player_library
         SET name = $2, gender = $3, birth_date = $4, wca_id = $5, province = $6, city = $7,
             notes = $8, status = $9, deactivated_at = $10, deactivation_reason = $11, updated_at = now()
-      WHERE id = $1 AND ${weeklyV2PlayerSourceSql()}
+      WHERE id = $1 AND wca_id = $5 AND ${weeklyV2PlayerSourceSql()}
       RETURNING id, name, gender, birth_date, wca_id, province, city, notes, status,
                 deactivated_at, deactivation_reason, source, created_at, updated_at`,
     [
@@ -395,6 +396,7 @@ export async function updateWeeklyPlayerProfile(id: string, input: Partial<Weekl
       nextDeactivationReason
     ]
   );
+  if (!rows[0]) throw new Error("选手绑定已被修改，请刷新资料后重试");
   return mapAdminPlayer(rows[0]);
 }
 
@@ -518,7 +520,12 @@ export async function rollbackPlayerImportBatch(input: { id: string; actor: stri
     const manifest = parseManifest(batch.commit_manifest_jsonb);
     const rollback = { deletedPlayerIds: [] as string[], inactivatedPlayerIds: [] as string[], restoredPlayerIds: [] as string[] };
     for (const id of manifest.createdPlayerIds || []) {
-      const resultCount = await client.query<{ count: string }>("SELECT count(*)::text AS count FROM weekly_results WHERE player_id = $1", [id]);
+      await getPlayerForUpdate(client, id);
+      const resultCount = await client.query<{ count: string }>(`SELECT count(*)::text AS count FROM (
+        SELECT 1 FROM weekly_results WHERE player_id=$1
+        UNION ALL SELECT 1 FROM weekly_big_stack_records WHERE player_id=$1
+        UNION ALL SELECT 1 FROM weekly_player_identity_revisions WHERE player_id=$1
+      ) activity`, [id]);
       if (Number(resultCount.rows[0]?.count || 0) === 0) {
         await client.query("DELETE FROM weekly_player_library WHERE id = $1", [id]);
         rollback.deletedPlayerIds.push(id);
@@ -527,7 +534,7 @@ export async function rollbackPlayerImportBatch(input: { id: string; actor: stri
           `UPDATE weekly_player_library
               SET status = 'inactive', deactivated_at = now(), deactivation_reason = $2, updated_at = now()
             WHERE id = $1`,
-          [id, `回滚批次 ${batch.id}：已有比赛成绩，保留档案`]
+          [id, `回滚批次 ${batch.id}：已有成绩或身份维护记录，保留档案`]
         );
         rollback.inactivatedPlayerIds.push(id);
       }
@@ -705,14 +712,8 @@ function sameSnapshot(left: PlayerSnapshot, right: PlayerSnapshot) {
 }
 
 async function restoreSnapshot(client: PoolClient, id: string, value: PlayerSnapshot) {
-  await client.query(
-    `UPDATE weekly_player_library
-        SET name = $2, gender = $3, birth_date = $4, wca_id = $5, province = $6, city = $7,
-            notes = $8, status = $9, deactivated_at = $10, deactivation_reason = $11,
-            source = $12, updated_at = now()
-      WHERE id = $1`,
-    [id, value.name, value.gender, value.birthDate, value.wcaId, value.province, value.city, value.notes, value.status, value.deactivatedAt, value.deactivationReason, value.source]
-  );
+  // Player imports only change gender/birth date; preserve later identity edits.
+  await client.query("UPDATE weekly_player_library SET gender=$2,birth_date=$3,updated_at=now() WHERE id=$1", [id, value.gender, value.birthDate]);
 }
 
 async function assertWcaIdAvailable(client: Pick<PoolClient, "query"> | ReturnType<typeof getPostgresPool>, wcaId: string, excludeId = "") {

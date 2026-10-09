@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { FormEvent, useMemo, useState } from "react";
 import type {
   BigStackEventId,
@@ -58,8 +59,8 @@ export function BigStackConsole({
   const filtered = useMemo(() => {
     const term = query.trim().toLowerCase();
     if (!term) return records;
-    return records.filter((record) => [record.name, record.wcaId, record.playerId, record.note].some((value) => value?.toLowerCase().includes(term)));
-  }, [query, records]);
+    return records.filter((record) => [record.name, record.wcaId, record.playerId, record.note, record.playerId ? String(playersById.get(record.playerId)?.weeklyNumber || "") : ""].some((value) => value?.toLowerCase().includes(term)));
+  }, [query, records, playersById]);
   const pageCount = Math.max(1, Math.ceil(filtered.length / pageSize));
   const safePage = Math.min(page, pageCount);
   const visibleRecords = filtered.slice((safePage - 1) * pageSize, safePage * pageSize);
@@ -85,7 +86,7 @@ export function BigStackConsole({
 
   function bindDraftPlayer(playerId: string) {
     const player = playersById.get(playerId);
-    setDraft((current) => ({ ...current, playerId, name: player?.name || current.name || "", wcaId: player?.wcaId || current.wcaId }));
+    setDraft((current) => ({ ...current, playerId, name: player?.name || current.name || "", wcaId: player ? player.wcaId || "" : current.wcaId }));
   }
 
   async function createRecord(event: FormEvent<HTMLFormElement>) {
@@ -212,24 +213,24 @@ export function BigStackConsole({
         <form className="big-stack-pb-create" onSubmit={createRecord}>
           <label>姓名<input required value={draft.name} onChange={(event) => setDraft({ ...draft, name: event.target.value })} /></label>
           <label>一小时还原数量<input required min="0" step="1" type="number" value={draft.solveCount} onChange={(event) => setDraft({ ...draft, solveCount: event.target.value })} /></label>
-          <label>周赛选手 ID<input list="big-stack-player-options" value={draft.playerId} onChange={(event) => bindDraftPlayer(event.target.value)} placeholder="可选" /></label>
-          <label>WCA ID<input value={draft.wcaId} onChange={(event) => setDraft({ ...draft, wcaId: event.target.value.toUpperCase() })} placeholder="可选" /></label>
+          <label>关联周赛选手（沿用原编号）<select value={draft.playerId} onChange={(event) => bindDraftPlayer(event.target.value)}><option value="">暂未关联</option>{players.map((player) => <option key={player.id} value={player.id}>{player.weeklyNumber ? `${player.weeklyNumber} · ` : ""}{player.name}{player.wcaId ? ` · ${player.wcaId}` : ""}</option>)}</select></label>
+          <label>WCA ID<input readOnly={Boolean(draft.playerId)} value={draft.wcaId} onChange={(event) => setDraft({ ...draft, wcaId: event.target.value.toUpperCase() })} placeholder="可选" /></label>
           <label>达成日期<input type="date" value={draft.achievedAt} onChange={(event) => setDraft({ ...draft, achievedAt: event.target.value })} /></label>
           <label>来源周赛<select value={draft.meetId} onChange={(event) => setDraft({ ...draft, meetId: event.target.value })}><option value="">非特定周赛 / 待补</option>{meets.map((meet) => <option key={meet.id} value={meet.id}>{meet.title}</option>)}</select></label>
           <label>备注<input value={draft.note} onChange={(event) => setDraft({ ...draft, note: event.target.value })} /></label>
           <label>修改原因<input value={reason} onChange={(event) => setReason(event.target.value)} placeholder="纠错、改身份或删除时必填" /></label>
           <button className="button primary" disabled={saving}>{saving ? "保存中…" : "新增记录"}</button>
         </form>
-        <datalist id="big-stack-player-options">{players.map((player) => <option key={player.id} value={player.id}>{player.name}{player.wcaId ? ` · ${player.wcaId}` : ""}</option>)}</datalist>
+        <p>大堆与普通周赛共用选手编号和 WCA 绑定。<Link href="/admin/weekly/players">管理共用编号、匹配辽宁魔友库 WCA ID</Link>；未关联的历史记录需先核对并选择已有选手。</p>
 
         {historyOpen ? <details className="big-stack-pb-history" open><summary>最近 50 条修改历史</summary>{revisions.length === 0 ? <p>暂无修改历史。</p> : revisions.map((revision) => <div key={revision.id}><strong>{revision.after?.name || revision.before?.name || revision.recordId}</strong><span>{revision.action} · {revision.before?.solveCount ?? "—"} → {revision.after?.solveCount ?? "—"}</span><span>{revision.reason}{revision.pointsAwarded ? " · 刷新 PB" : ""}</span><time>{new Date(revision.createdAt).toLocaleString("zh-CN", { timeZone: "Asia/Shanghai" })}</time></div>)}</details> : null}
       </div>
     </section> : null}
 
     <section className="container section big-stack-table-section">
-      <div className="big-stack-pb-toolbar"><label>搜索<input value={query} onChange={(event) => { setQuery(event.target.value); setPage(1); }} placeholder={isAdmin ? "姓名、WCA ID、周赛选手 ID" : "姓名或 WCA ID"} /></label><span>共 {filtered.length} 人</span></div>
-      <div className="result-table-wrap"><table className="result-table"><thead><tr><th>排名</th><th>姓名</th><th>一小时还原数量</th><th>来源</th>{isAdmin ? <th>操作</th> : null}</tr></thead><tbody>
-        {visibleRecords.map((record) => <tr key={record.id}><td className="score-strong">#{record.rank}</td><td>{record.name}{record.wcaId ? <small className="big-stack-pb-id">{record.wcaId}</small> : null}</td><td className="score-strong">{record.solveCount}</td><td>{record.meetTitle || record.sourceLabel || "长期记录"}</td>{isAdmin ? <td><button className="button compact" disabled={saving} onClick={() => { setEditing({ ...record } as BigStackRecord); setReason(""); }}>编辑</button> <button className="button compact" onClick={() => removeRecord(record)} disabled={saving}>删除</button></td> : null}</tr>)}
+      <div className="big-stack-pb-toolbar"><label>搜索<input value={query} onChange={(event) => { setQuery(event.target.value); setPage(1); }} placeholder={isAdmin ? "姓名、WCA ID、周赛编号" : "姓名或 WCA ID"} /></label><span>共 {filtered.length} 人</span></div>
+      <div className="result-table-wrap"><table className="result-table"><thead><tr><th>排名</th>{isAdmin ? <th>周赛编号</th> : null}<th>姓名</th><th>一小时还原数量</th><th>来源</th>{isAdmin ? <th>操作</th> : null}</tr></thead><tbody>
+        {visibleRecords.map((record) => <tr key={record.id}><td className="score-strong">#{record.rank}</td>{isAdmin ? <td>{record.playerId ? playersById.get(record.playerId)?.weeklyNumber || "未关联" : "未关联"}</td> : null}<td>{record.name}{record.wcaId ? <small className="big-stack-pb-id">{record.wcaId}</small> : null}</td><td className="score-strong">{record.solveCount}</td><td>{record.meetTitle || record.sourceLabel || "长期记录"}</td>{isAdmin ? <td><button className="button compact" disabled={saving} onClick={() => { setEditing({ ...record } as BigStackRecord); setReason(""); }}>编辑</button> <button className="button compact" onClick={() => removeRecord(record)} disabled={saving}>删除</button></td> : null}</tr>)}
         {!visibleRecords.length ? <tr><td colSpan={isAdmin ? 5 : 4}>该项目暂未录入大堆成绩。</td></tr> : null}
       </tbody></table></div>
       <div className="big-stack-pb-pagination"><button className="button compact" disabled={safePage <= 1} onClick={() => setPage((current) => Math.max(1, current - 1))}>上一页</button><span>第 {safePage} / {pageCount} 页</span><button className="button compact" disabled={safePage >= pageCount} onClick={() => setPage((current) => Math.min(pageCount, current + 1))}>下一页</button></div>
@@ -239,8 +240,8 @@ export function BigStackConsole({
       <label className="field"><span>姓名</span><input required value={editing.name} onChange={(event) => setEditing({ ...editing, name: event.target.value })} /></label>
       <label className="field"><span>项目</span><select value={editing.eventId} onChange={(event) => setEditing({ ...editing, eventId: event.target.value as BigStackEventId })}>{["333", "222", "pyram", "maple", "mirror"].map((id) => <option key={id} value={id}>{id}</option>)}</select></label>
       <label className="field"><span>还原数量</span><input required min="0" type="number" value={editing.solveCount} onChange={(event) => setEditing({ ...editing, solveCount: Number(event.target.value) })} /></label>
-      <label className="field"><span>周赛选手 ID</span><input list="big-stack-player-options" value={editing.playerId || ""} onChange={(event) => { const player = playersById.get(event.target.value); setEditing({ ...editing, playerId: event.target.value || undefined, wcaId: player?.wcaId || editing.wcaId }); }} /></label>
-      <label className="field"><span>WCA ID</span><input value={editing.wcaId || ""} onChange={(event) => setEditing({ ...editing, wcaId: event.target.value.toUpperCase() })} /></label>
+      <label className="field"><span>关联周赛选手（沿用原编号）</span><select value={editing.playerId || ""} onChange={(event) => { const player = playersById.get(event.target.value); setEditing({ ...editing, playerId: event.target.value || undefined, wcaId: player ? player.wcaId || "" : editing.wcaId }); }}><option value="">暂未关联</option>{players.map((player) => <option key={player.id} value={player.id}>{player.weeklyNumber ? `${player.weeklyNumber} · ` : ""}{player.name}{player.wcaId ? ` · ${player.wcaId}` : ""}</option>)}</select></label>
+      <label className="field"><span>WCA ID（已关联时沿用周赛绑定）</span><input readOnly={Boolean(editing.playerId)} value={editing.wcaId || ""} onChange={(event) => setEditing({ ...editing, wcaId: event.target.value.toUpperCase() })} /></label>
       <label className="field"><span>达成日期</span><input type="date" value={editing.achievedAt || ""} onChange={(event) => setEditing({ ...editing, achievedAt: event.target.value })} /></label>
       <label className="field"><span>来源周赛</span><select value={editing.meetId || ""} onChange={(event) => setEditing({ ...editing, meetId: event.target.value || null })}><option value="">非特定周赛 / 待补</option>{meets.map((meet) => <option key={meet.id} value={meet.id}>{meet.title}</option>)}</select></label>
       <label className="field"><span>来源说明</span><input value={editing.sourceLabel} onChange={(event) => setEditing({ ...editing, sourceLabel: event.target.value })} /></label>

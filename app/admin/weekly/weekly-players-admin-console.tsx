@@ -5,6 +5,7 @@ import { ArrowDown, ArrowUp, Pencil, Search, UserPlus } from "lucide-react";
 import type { WeeklyLongCardProfile } from "@/lib/weekly-player-admin-store";
 import type { WeeklyPlayerLibraryEntry } from "@/lib/weekly-player-library";
 import { matchesWeeklyPlayerQuery } from "@/lib/weekly-player-search";
+import { WeeklyPlayerIdentityConsole } from "./weekly-player-identity-console";
 import { WeeklyPlayerLibraryConsole } from "@/app/weekly/admin/weekly-player-library-console";
 
 type LongCardForm = Pick<WeeklyLongCardProfile, "submittedAt" | "name" | "gender" | "birthDate" | "phone" | "contactRelationship" | "channel" | "notes" | "wcaId">;
@@ -17,13 +18,14 @@ export function WeeklyPlayersAdminWorkspace({
   longCardProfiles: WeeklyLongCardProfile[];
   libraryPlayers: WeeklyPlayerLibraryEntry[];
 }) {
-  const [view, setView] = useState<"library" | "long-card">("library");
+  const [view, setView] = useState<"identity" | "library" | "long-card">("identity");
   return <>
     <section className="container section weekly-player-data-switcher" aria-label="选手资料类型">
+      <button className={view === "identity" ? "is-active" : ""} type="button" onClick={() => setView("identity")}>周赛编号 / WCA ID</button>
       <button className={view === "library" ? "is-active" : ""} type="button" onClick={() => setView("library")}>周赛选手库</button>
       <button className={view === "long-card" ? "is-active" : ""} type="button" onClick={() => setView("long-card")}>长期卡原始资料</button>
     </section>
-    {view === "library"
+    {view === "identity" ? <WeeklyPlayerIdentityConsole /> : view === "library"
       ? <WeeklyPlayerLibraryConsole initialPlayers={libraryPlayers} />
       : <WeeklyPlayersAdminConsole longCardProfiles={longCardProfiles} />}
   </>;
@@ -93,7 +95,7 @@ export function WeeklyPlayersAdminConsole({ longCardProfiles }: { longCardProfil
         {suggestionsOpen && suggestions.length > 0 ? <div id="long-card-search-suggestions" className="weekly-long-card-suggestions" role="listbox">{suggestions.map((profile) => <button key={profile.sourceRowNumber} type="button" role="option" aria-selected={false} onMouseDown={(event) => event.preventDefault()} onClick={() => selectSuggestion(profile)}>{rosterNumberByRow.get(profile.sourceRowNumber)} · {profile.name}{profile.wcaId ? ` · ${profile.wcaId}` : ""}</button>)}</div> : null}
       </div>
       {notice ? <p className="admin-inline-notice">{notice}</p> : null}
-      <div className="table-scroll weekly-admin-table-scroll"><table className="result-table weekly-admin-desktop-table"><thead><tr><th><button className="weekly-sort-button" type="button" onClick={() => { setNumberOrder((current) => current === "asc" ? "desc" : "asc"); setPage(1); }}>编号 {numberOrder === "asc" ? <ArrowUp size={14} aria-label="正序" /> : <ArrowDown size={14} aria-label="倒序" />}</button></th><th>提交日期</th><th>姓名</th><th>性别</th><th>出生日期</th><th>组别</th><th>WCA ID</th><th>联系电话（点击显示）</th><th>联系人所属关系</th><th>渠道</th><th>备注</th><th>操作</th></tr></thead><tbody>{visible.map((profile) => <tr key={profile.sourceRowNumber}><td>{rosterNumberByRow.get(profile.sourceRowNumber)}</td><td>{dateOnly(profile.submittedAt) || "—"}</td><td>{profile.name}</td><td>{profile.gender || "—"}</td><td>{profile.birthDate || "—"}</td><td>{ageGroup(profile.birthDate)}</td><td>{profile.wcaId || "—"}</td><td>{phoneValue(profile)}</td><td>{profile.contactRelationship || "—"}</td><td>{profile.channel || "—"}</td><td>{profile.notes || "—"}</td><td><button className="button compact" type="button" onClick={() => openEdit(profile)}><Pencil size={14} />编辑</button></td></tr>)}</tbody></table></div>
+      <div className="table-scroll weekly-admin-table-scroll"><table className="result-table weekly-admin-desktop-table"><thead><tr><th><button className="weekly-sort-button" type="button" onClick={() => { setNumberOrder((current) => current === "asc" ? "desc" : "asc"); setPage(1); }}>登记序号 {numberOrder === "asc" ? <ArrowUp size={14} aria-label="正序" /> : <ArrowDown size={14} aria-label="倒序" />}</button></th><th>提交日期</th><th>姓名</th><th>性别</th><th>出生日期</th><th>组别</th><th>WCA ID</th><th>联系电话（点击显示）</th><th>联系人所属关系</th><th>渠道</th><th>备注</th><th>操作</th></tr></thead><tbody>{visible.map((profile) => <tr key={profile.sourceRowNumber}><td>{rosterNumberByRow.get(profile.sourceRowNumber)}</td><td>{dateOnly(profile.submittedAt) || "—"}</td><td>{profile.name}</td><td>{profile.gender || "—"}</td><td>{profile.birthDate || "—"}</td><td>{ageGroup(profile.birthDate)}</td><td>{profile.wcaId || "—"}</td><td>{phoneValue(profile)}</td><td>{profile.contactRelationship || "—"}</td><td>{profile.channel || "—"}</td><td>{profile.notes || "—"}</td><td><button className="button compact" type="button" onClick={() => openEdit(profile)}><Pencil size={14} />编辑</button></td></tr>)}</tbody></table></div>
       {visible.length === 0 ? <p className="empty-state">没有符合条件的学员。</p> : null}
       <div className="weekly-admin-actions"><span>共 {filtered.length} 条，第 {currentPage}/{pageCount} 页</span><button className="button" type="button" disabled={currentPage <= 1} onClick={() => setPage(currentPage - 1)}>上一页</button><button className="button" type="button" disabled={currentPage >= pageCount} onClick={() => setPage(currentPage + 1)}>下一页</button></div>
     </div>

@@ -1,3 +1,4 @@
+import { updateWeeklyPlayerIdentity } from "@/lib/weekly-player-identity";
 import { getPostgresPool } from "@/lib/postgres";
 import { enrichLocalProfiles, readLocalProfiles } from "@/lib/local-profile-store";
 import { getWeeklyAgeGroup, weeklyAgeGroups } from "@/lib/weekly-age-groups";
@@ -10,6 +11,7 @@ export type WeeklyPersonalBests = Partial<Record<"333" | "222" | "pyram" | "mirr
 export type WeeklyPlayerLibraryEntry = {
   id: string;
   name: string;
+  weeklyNumber?: number;
   wcaId?: string;
   wcaIdConfirmed?: boolean;
   gender: WeeklyLibraryGender;
@@ -46,6 +48,7 @@ export type WeeklyWcaMatchCandidate = {
 };
 
 type WeeklyPlayerLibraryRow = {
+  weekly_number?: number;
   id: string;
   name: string;
   wca_id: string;
@@ -87,7 +90,7 @@ export async function listWeeklyPlayerLibrary(): Promise<WeeklyPlayerLibraryEntr
   const { rows } = await pool.query<WeeklyPlayerLibraryRow>(
     `SELECT id, name, wca_id, wca_id_confirmed, gender, birth_date, age_group_override, age_group_is_fuzzy,
             province, city, source, notes, status, deactivated_at, deactivation_reason,
-            personal_bests, personal_bests_average, updated_at
+            personal_bests, personal_bests_average, weekly_number, updated_at
      FROM weekly_player_library
      WHERE ${weeklyV2PlayerSourceSql()}
      ORDER BY name`
@@ -152,59 +155,19 @@ export async function listWeeklyWcaMatchCandidates(playerId?: string): Promise<W
 export async function confirmWeeklyWcaMatch(input: { weeklyPlayerId: string; wcaId: string }) {
   const wcaId = input.wcaId.trim().toUpperCase();
   const pool = getPostgresPool();
-  const existingCandidate = await pool.query("SELECT 1 FROM weekly_player_wca_matches WHERE weekly_player_id = $1 AND wca_id = $2 LIMIT 1", [input.weeklyPlayerId, wcaId]);
-  if (!existingCandidate.rows[0]) await listWeeklyWcaMatchCandidates(input.weeklyPlayerId);
-  const client = await pool.connect();
-  try {
-    await client.query("BEGIN");
-    const candidate = await client.query<WeeklyWcaMatchRow>(
-      `SELECT id, weekly_player_id, wca_id, wca_name, gender, province, city, score, method, evidence, status, confirmed_at, updated_at
-         FROM weekly_player_wca_matches
-        WHERE weekly_player_id = $1 AND wca_id = $2
-        LIMIT 1
-        FOR UPDATE`,
-      [input.weeklyPlayerId, wcaId]
-    );
-    if (!candidate.rows[0]) throw new Error("WCA 匹配候选不存在");
-
-    const conflict = await client.query<{ id: string }>(
-      `SELECT weekly_player_id AS id
-         FROM weekly_player_wca_matches
-        WHERE wca_id = $1 AND status = 'confirmed' AND weekly_player_id <> $2
-        LIMIT 1`,
-      [wcaId, input.weeklyPlayerId]
-    );
-    if (conflict.rows[0]) throw new Error("这个 WCA ID 已确认给另一名周赛选手");
-
-    const player = await client.query<{ wca_id: string; wca_id_confirmed: boolean }>(
-      `SELECT wca_id, wca_id_confirmed FROM weekly_player_library WHERE id = $1 AND ${weeklyV2ActivePlayerSql()} FOR UPDATE`,
-      [input.weeklyPlayerId]
-    );
-    if (!player.rows[0]) throw new Error("周赛选手不存在");
-    if (player.rows[0].wca_id_confirmed && player.rows[0].wca_id.toUpperCase() !== wcaId) {
-      throw new Error("该选手已有另一个已确认的 WCA ID");
-    }
-
-    await client.query(
-      "UPDATE weekly_player_wca_matches SET status = CASE WHEN wca_id = $1 THEN 'confirmed' ELSE 'rejected' END, confirmed_at = CASE WHEN wca_id = $1 THEN now() ELSE confirmed_at END, updated_at = now() WHERE weekly_player_id = $2",
-      [wcaId, input.weeklyPlayerId]
-    );
-    await client.query(
-      `UPDATE weekly_player_library
-          SET wca_id = CASE WHEN wca_id = '' OR wca_id = $1 THEN $1 ELSE wca_id END,
-              wca_id_confirmed = CASE WHEN wca_id = '' OR wca_id = $1 THEN TRUE ELSE wca_id_confirmed END,
-              updated_at = now()
-        WHERE id = $2 AND ${weeklyV2ActivePlayerSql()}`,
-      [wcaId, input.weeklyPlayerId]
-    );
-    await client.query("COMMIT");
-    return mapWcaMatchRow(candidate.rows[0]);
-  } catch (error) {
-    await client.query("ROLLBACK");
-    throw error;
-  } finally {
-    client.release();
+  let candidate = await pool.query<WeeklyWcaMatchRow>("SELECT * FROM weekly_player_wca_matches WHERE weekly_player_id=$1 AND wca_id=$2 LIMIT 1", [input.weeklyPlayerId, wcaId]);
+  if (!candidate.rows[0]) {
+    await listWeeklyWcaMatchCandidates(input.weeklyPlayerId);
+    candidate = await pool.query<WeeklyWcaMatchRow>("SELECT * FROM weekly_player_wca_matches WHERE weekly_player_id=$1 AND wca_id=$2 LIMIT 1", [input.weeklyPlayerId, wcaId]);
   }
+  if (!candidate.rows[0]) throw new Error("WCA 匹配候选不存在");
+  const player = await pool.query<{ weekly_number: number; wca_id: string; wca_id_confirmed: boolean; version: string }>(`SELECT weekly_number,wca_id,wca_id_confirmed,updated_at::text AS version FROM weekly_player_library WHERE id=$1 AND ${weeklyV2ActivePlayerSql()}`, [input.weeklyPlayerId]);
+  const current = player.rows[0];
+  if (!current) throw new Error("周赛选手不存在");
+  if (current.wca_id_confirmed && current.wca_id.toUpperCase() !== wcaId) throw new Error("该选手已有另一个已确认的 WCA ID，请从编号管理入口核对修改");
+  await updateWeeklyPlayerIdentity({ id: input.weeklyPlayerId, expectedVersion: current.version, weeklyNumber: current.weekly_number, wcaId, wcaIdConfirmed: true, reason: "确认 WCA 匹配候选" });
+  const updated = await pool.query<WeeklyWcaMatchRow>("SELECT * FROM weekly_player_wca_matches WHERE id=$1", [candidate.rows[0].id]);
+  return mapWcaMatchRow(updated.rows[0]);
 }
 
 export async function rejectWeeklyWcaMatch(input: { weeklyPlayerId: string; wcaId: string }) {
@@ -236,7 +199,7 @@ export async function findWeeklyPlayerLibraryEntry(input: { id?: string; name?: 
   const { rows } = await pool.query<WeeklyPlayerLibraryRow>(
     `SELECT id, name, wca_id, wca_id_confirmed, gender, birth_date, age_group_override, age_group_is_fuzzy,
             province, city, source, notes, status, deactivated_at, deactivation_reason,
-            personal_bests, personal_bests_average, updated_at
+            personal_bests, personal_bests_average, weekly_number, updated_at
      FROM weekly_player_library
      WHERE (($1 <> '' AND id = $1) OR ($1 = '' AND name = $2))
        AND ${weeklyV2PlayerSourceSql()}
@@ -258,7 +221,8 @@ export async function saveWeeklyPlayerLibrary(players: WeeklyPlayerLibraryEntry[
     await client.query("BEGIN");
 
     for (const player of normalizedPlayers) {
-      if (player.wcaId) {
+      const existing = await client.query("SELECT id FROM weekly_player_library WHERE id=$1", [player.id]);
+      if (!existing.rows[0] && player.wcaId) {
         const duplicate = await client.query<{ id: string }>(
           `SELECT id FROM weekly_player_library WHERE upper(wca_id) = $1 AND id <> $2 AND ${weeklyV2PlayerSourceSql()} LIMIT 1`,
           [player.wcaId.toUpperCase(), player.id]
@@ -273,8 +237,8 @@ export async function saveWeeklyPlayerLibrary(players: WeeklyPlayerLibraryEntry[
          VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16::jsonb,$17::jsonb,now())
          ON CONFLICT (id) DO UPDATE
            SET name = EXCLUDED.name,
-               wca_id = EXCLUDED.wca_id,
-               wca_id_confirmed = EXCLUDED.wca_id_confirmed,
+               wca_id = weekly_player_library.wca_id,
+               wca_id_confirmed = weekly_player_library.wca_id_confirmed,
                gender = EXCLUDED.gender,
                birth_date = EXCLUDED.birth_date,
                age_group_override = EXCLUDED.age_group_override,
@@ -332,7 +296,7 @@ export async function updateWeeklyPlayerLibraryEntry(input: {
   const current = await pool.query<WeeklyPlayerLibraryRow>(
     `SELECT id, name, wca_id, wca_id_confirmed, gender, birth_date, age_group_override, age_group_is_fuzzy,
             province, city, source, notes, status, deactivated_at, deactivation_reason,
-            personal_bests, personal_bests_average, updated_at
+            personal_bests, personal_bests_average, weekly_number, updated_at
      FROM weekly_player_library
      WHERE (($1 <> '' AND id = $1) OR ($1 = '' AND name = $2))
        AND ${weeklyV2PlayerSourceSql()}
@@ -351,6 +315,7 @@ export async function updateWeeklyPlayerLibraryEntry(input: {
   if (!name) throw new Error("请填写选手姓名");
   const birthDate = patch.birthDate?.trim() ?? row.birth_date;
   const wcaId = patch.wcaId?.trim().toUpperCase() ?? row.wca_id;
+  if (wcaId !== row.wca_id || (patch.wcaIdConfirmed !== undefined && patch.wcaIdConfirmed !== row.wca_id_confirmed)) throw new Error("请在周赛选手档案的“周赛编号 / WCA ID”入口管理绑定");
   if (wcaId) {
     const duplicate = await pool.query<{ id: string }>(
       `SELECT id FROM weekly_player_library WHERE upper(wca_id) = $1 AND id <> $2 AND ${weeklyV2PlayerSourceSql()} LIMIT 1`,
@@ -368,10 +333,10 @@ export async function updateWeeklyPlayerLibraryEntry(input: {
          age_group_override = $7, age_group_is_fuzzy = $8, province = $9, city = $10,
          source = $11, notes = $12, status = $13, deactivated_at = $14,
          deactivation_reason = $15, updated_at = now()
-     WHERE id = $1 AND ${weeklyV2PlayerSourceSql()}
+     WHERE id = $1 AND wca_id = $3 AND wca_id_confirmed = $4 AND ${weeklyV2PlayerSourceSql()}
      RETURNING id, name, wca_id, wca_id_confirmed, gender, birth_date, age_group_override, age_group_is_fuzzy,
                province, city, source, notes, status, deactivated_at, deactivation_reason,
-               personal_bests, personal_bests_average, updated_at`,
+               personal_bests, personal_bests_average, weekly_number, updated_at`,
     [
       row.id,
       name,
@@ -390,6 +355,7 @@ export async function updateWeeklyPlayerLibraryEntry(input: {
       deactivationReason
     ]
   );
+  if (!rows[0]) throw new Error("选手绑定已被修改，请刷新资料后重试");
   return mapLibraryRow(rows[0]);
 }
 
@@ -528,6 +494,7 @@ function mapLibraryRow(row: WeeklyPlayerLibraryRow): WeeklyPlayerLibraryEntry {
   return {
     id: row.id,
     name: row.name,
+    weeklyNumber: row.weekly_number,
     wcaId: row.wca_id || "",
     wcaIdConfirmed: Boolean(row.wca_id_confirmed),
     gender: normalizeGender(row.gender),

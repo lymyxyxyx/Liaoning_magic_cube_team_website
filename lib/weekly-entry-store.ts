@@ -587,20 +587,8 @@ export async function listWeeklyResults(meetIdOrSlug: string, eventId: string, f
   });
 }
 
-async function listWeeklyRosterNumbers(libraryPlayers: ReadonlyArray<Pick<WeeklyPlayer, "id" | "name">>) {
-  const pool = getPostgresPool();
-  const { rows } = await pool.query<{ student_name: string; matched_player_id: string | null }>(
-    "SELECT student_name, matched_player_id FROM weekly_long_card_profiles ORDER BY source_row_number"
-  );
-  const playerIdsByName = new Map<string, string[]>();
-  for (const player of libraryPlayers) playerIdsByName.set(player.name, [...(playerIdsByName.get(player.name) || []), player.id]);
-  const numbers = new Map<string, number>();
-  rows.forEach((row, index) => {
-    const exactNameMatches = playerIdsByName.get(row.student_name) || [];
-    const playerId = row.matched_player_id || (exactNameMatches.length === 1 ? exactNameMatches[0] : null);
-    if (playerId) numbers.set(playerId, index + 1);
-  });
-  return numbers;
+async function listWeeklyRosterNumbers(libraryPlayers: ReadonlyArray<Pick<WeeklyPlayer, "id" | "name" | "weeklyNumber">>) {
+  return new Map(libraryPlayers.flatMap((player) => player.weeklyNumber ? [[player.id, player.weeklyNumber] as const] : []));
 }
 
 export async function listWeeklyOperationLogs(meetIdOrSlug: string, eventId: string, format: string = "avg5"): Promise<WeeklyOperationLog[]> {

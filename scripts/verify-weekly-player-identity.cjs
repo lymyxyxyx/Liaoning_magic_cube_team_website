@@ -1,0 +1,87 @@
+#!/usr/bin/env node
+/* eslint-disable @typescript-eslint/no-require-imports -- Load services for isolated PostgreSQL integration checks. */
+const fs=require('node:fs'),path=require('node:path'),assert=require('node:assert/strict');
+const req=name=>require(require.resolve(name,{paths:[process.cwd()]}));
+const ts=req('typescript'),{Pool}=req('pg');
+async function main(){
+  if(!process.env.DATABASE_URL)throw new Error('DATABASE_URL is required');
+  const schema=`weekly_identity_verify_${Date.now()}_${process.pid}`;
+  const admin=new Pool({connectionString:process.env.DATABASE_URL});
+  const pool=new Pool({connectionString:process.env.DATABASE_URL,options:`-c search_path=${schema}`,max:4});
+  const cache=new Map();
+  function load(name){if(name==='weekly-player-import')return {};if(name==='local-profile-store')return {readLocalProfiles:async()=>[{visible:true,province:'辽宁',name:'乙',wcaId:'2020BBBB01',city:'沈阳',gender:'男'},{visible:true,province:'吉林',name:'乙',wcaId:'2020CCCC01',city:'长春'}],enrichLocalProfiles:async profiles=>profiles};if(cache.has(name))return cache.get(name);const exports={};cache.set(name,exports);const source=fs.readFileSync(path.join(__dirname,'..','lib',`${name}.ts`),'utf8');const compiled=ts.transpileModule(source,{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022}}).outputText;new Function('require','exports',compiled)(dependency=>dependency==='@/lib/postgres'?{getPostgresPool:()=>pool}:dependency.startsWith('@/lib/')?load(dependency.slice(6)):req(dependency),exports);return exports;}
+  try{
+    await admin.query(`CREATE SCHEMA ${schema}`);
+    await pool.query(`
+      CREATE TABLE weekly_player_library(id text PRIMARY KEY,name text,wca_id text DEFAULT '',wca_id_confirmed bool DEFAULT false,status text DEFAULT 'active',source text,gender text DEFAULT '',birth_date text DEFAULT '',age_group_override text DEFAULT '',age_group_is_fuzzy bool DEFAULT false,province text DEFAULT '',city text DEFAULT '',notes text DEFAULT '',deactivated_at timestamptz,deactivation_reason text DEFAULT '',personal_bests jsonb DEFAULT '{}',personal_bests_average jsonb DEFAULT '{}',created_at timestamptz DEFAULT now(),updated_at timestamptz DEFAULT now());
+      CREATE TABLE weekly_long_card_profiles(source_row_number int PRIMARY KEY,student_name text,matched_player_id text,wca_id text DEFAULT '',updated_at timestamptz DEFAULT now());
+      CREATE TABLE weekly_player_wca_matches(id serial PRIMARY KEY,weekly_player_id text,wca_id text,status text,confirmed_at timestamptz,updated_at timestamptz DEFAULT now(),wca_name text,gender text,province text,city text,score int,method text,evidence jsonb,UNIQUE(weekly_player_id,wca_id));
+      CREATE TABLE weekly_big_stack_records(id text PRIMARY KEY,name text,event_code text,player_id text,wca_id text,solve_count int,updated_at timestamptz DEFAULT now());
+      CREATE TABLE weekly_results(player_id text);
+      CREATE TABLE weekly_import_batches(id text PRIMARY KEY,kind text,status text,filename text DEFAULT '',file_sha256 text DEFAULT '',raw_row_count int DEFAULT 0,valid_row_count int DEFAULT 0,warning_count int DEFAULT 0,error_count int DEFAULT 0,preview_jsonb jsonb DEFAULT '{}',commit_manifest_jsonb jsonb,admin_actor text,created_at timestamptz DEFAULT now(),committed_at timestamptz DEFAULT now(),rolled_back_at timestamptz);
+      CREATE TABLE weekly_big_stack_record_revisions(id serial PRIMARY KEY,record_id text,action text,reason text,before_record jsonb,after_record jsonb,points_awarded int);
+      INSERT INTO weekly_player_library(id,name,wca_id,source) VALUES ('A','甲','2017AAAA01','admin_manual'),('B','乙','','players_excel_import'),('extra','无原始资料','','admin_manual'),('legacy','历史','','legacy');
+      INSERT INTO weekly_long_card_profiles(source_row_number,student_name,matched_player_id) VALUES (10,'乙','B'),(20,'甲',NULL),(30,'未知',NULL);
+      INSERT INTO weekly_big_stack_records(id,name,event_code,player_id,wca_id,solve_count) VALUES ('record-A','甲','333','A','2017AAAA01',120);
+      INSERT INTO weekly_player_wca_matches(weekly_player_id,wca_id,status) VALUES ('A','2017AAAA01','confirmed');
+    `);
+    await pool.query(fs.readFileSync(path.join(__dirname,'migrations','202610090002_weekly_player_numbers.sql'),'utf8'));
+    const service=load('weekly-player-identity');
+    const initial=await service.listWeeklyPlayerIdentities();
+    assert.equal(initial.find(p=>p.id==='B').weeklyNumber,1);
+    assert.equal(initial.find(p=>p.id==='A').weeklyNumber,2);
+    assert.equal(initial.find(p=>p.id==='extra').weeklyNumber,4);
+    await pool.query("INSERT INTO weekly_player_library(id,name,source) VALUES ('new','新选手','admin_manual')");
+    assert.equal((await service.listWeeklyPlayerIdentities()).find(p=>p.id==='new').weeklyNumber,5);
+    await pool.query("INSERT INTO weekly_long_card_profiles(source_row_number,student_name) VALUES (1,'后来插到前面')");
+    assert.equal((await service.listWeeklyPlayerIdentities()).find(p=>p.id==='A').weeklyNumber,2);
+    console.log('PASS migration preserves previous roster numbers; new players get stable automatic numbers');
+    const a=initial.find(p=>p.id==='A');
+    const input={id:a.id,expectedVersion:a.version,weeklyNumber:77,wcaId:'2018AAAA01',wcaIdConfirmed:true,reason:'身份管理验证'};
+    const updated=await service.updateWeeklyPlayerIdentity(input);
+    assert.equal(updated.weeklyNumber,77);assert.equal(updated.wcaId,'2018AAAA01');assert.equal(updated.wcaIdConfirmed,true);
+    const record=(await pool.query("SELECT * FROM weekly_big_stack_records WHERE id='record-A'")).rows[0];
+    assert.equal(record.wca_id,'2018AAAA01');assert.equal(record.solve_count,120);
+    assert.equal((await pool.query("SELECT status FROM weekly_player_wca_matches WHERE weekly_player_id='A'")).rows[0].status,'rejected');
+    assert.equal((await pool.query('SELECT count(*)::int AS count FROM weekly_player_identity_revisions')).rows[0].count,1);
+    const b=initial.find(p=>p.id==='B');
+    await assert.rejects(service.updateWeeklyPlayerIdentity({...input,id:'B',expectedVersion:b.version,wcaId:''}),/已被其他选手使用/);
+    await assert.rejects(service.updateWeeklyPlayerIdentity({...input,id:'B',expectedVersion:b.version,weeklyNumber:b.weeklyNumber}),/已被其他选手使用/);
+    await assert.rejects(service.updateWeeklyPlayerIdentity(input),error=>error.name==='WeeklyResultConflictError');
+    console.log('PASS number/WCA uniqueness, stale-version protection, PB preservation and identity audit history');
+    await load('weekly-player-library').saveWeeklyPlayerLibrary([{id:'A',name:'甲',gender:'',birthDate:'',province:'辽宁',city:'',source:'admin_manual',wcaId:'2017AAAA01',wcaIdConfirmed:false}]);
+    const protectedIdentity=(await service.listWeeklyPlayerIdentities()).find(p=>p.id==='A');
+    assert.equal(protectedIdentity.weeklyNumber,77);assert.equal(protectedIdentity.wcaId,'2018AAAA01');assert.equal(protectedIdentity.wcaIdConfirmed,true);
+    console.log('PASS legacy profile saves cannot revert the newly managed number or WCA binding');
+    const competition=await Promise.allSettled([78,79].map(weeklyNumber=>service.updateWeeklyPlayerIdentity({...input,weeklyNumber,expectedVersion:protectedIdentity.version})));
+    assert.equal(competition.filter(r=>r.status==='fulfilled').length,1);
+    const fresh=(await service.listWeeklyPlayerIdentities()).find(p=>p.id==='A');
+    const cleared=await service.updateWeeklyPlayerIdentity({...input,expectedVersion:fresh.version,weeklyNumber:fresh.weeklyNumber,wcaId:'',wcaIdConfirmed:true});
+    assert.equal(cleared.wcaId,'');assert.equal(cleared.wcaIdConfirmed,false);
+    assert.equal((await pool.query("SELECT wca_id FROM weekly_big_stack_records WHERE id='record-A'")).rows[0].wca_id,'');
+    await pool.query("INSERT INTO weekly_big_stack_records(id,name,event_code,wca_id,solve_count) VALUES ('unbound','待核对','222','2019BBBB01',50)");
+    await assert.rejects(service.updateWeeklyPlayerIdentity({...input,expectedVersion:cleared.version,weeklyNumber:cleared.weeklyNumber,wcaId:'2019BBBB01'}),/先核对/);
+    assert.equal((await service.listWeeklyPlayerIdentities()).find(p=>p.id==='A').wcaId,'');
+    console.log('PASS competing identity edits, clearing WCA binding and rollback on an unrelated big-stack identity conflict');
+    await pool.query("INSERT INTO weekly_player_library(id,name,source) VALUES ('unused','未使用','admin_manual')");
+    await pool.query("INSERT INTO weekly_big_stack_records(id,name,event_code,player_id,wca_id,solve_count) VALUES ('record-new','新选手','333','new','',80)");
+    const manifest={createdPlayerIds:['new','unused'],updatedPlayers:[{id:'A',before:{gender:'男',birthDate:'2010-01-01',wcaId:'2017AAAA01',name:'旧名字',province:'旧省份'}}]};
+    await pool.query("INSERT INTO weekly_import_batches(id,kind,status,commit_manifest_jsonb) VALUES ('batch','players','committed',$1::jsonb)",[JSON.stringify(manifest)]);
+    await load('weekly-player-admin-store').rollbackPlayerImportBatch({id:'batch',actor:'integration-test'});
+    const preserved=(await service.listWeeklyPlayerIdentities()).find(p=>p.id==='A');
+    assert.equal(preserved.wcaId,'');assert.equal(preserved.weeklyNumber,cleared.weeklyNumber);assert.equal(preserved.name,'甲');
+    assert.equal((await pool.query("SELECT gender FROM weekly_player_library WHERE id='A'")).rows[0].gender,'男');
+    assert.equal((await pool.query("SELECT status FROM weekly_player_library WHERE id='new'")).rows[0].status,'inactive');
+    assert.equal((await pool.query("SELECT count(*)::int AS count FROM weekly_player_library WHERE id='unused'")).rows[0].count,0);
+    console.log('PASS import rollback preserves later identity edits and players with big-stack activity');
+    const library=load('weekly-player-library');
+    const candidates=await library.listWeeklyWcaMatchCandidates('B');
+    assert.deepEqual(candidates.map(candidate=>candidate.wcaId),['2020BBBB01']);
+    const confirmed=await library.confirmWeeklyWcaMatch({weeklyPlayerId:'B',wcaId:'2020BBBB01'});
+    assert.equal(confirmed.status,'confirmed');
+    const shared=(await service.listWeeklyPlayerIdentities()).find(player=>player.id==='B');
+    assert.equal(shared.weeklyNumber,1);assert.equal(shared.wcaId,'2020BBBB01');assert.equal(shared.wcaIdConfirmed,true);
+    console.log('PASS Liaoning profile candidates reuse the ordinary weekly player number when confirmed');
+  }finally{await pool.end();await admin.query(`DROP SCHEMA IF EXISTS ${schema} CASCADE`);await admin.end();}
+}
+main().catch(error=>{console.error(error.stack);process.exitCode=1;});

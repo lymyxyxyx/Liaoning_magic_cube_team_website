@@ -319,8 +319,10 @@ function PlayerFields({
         </select>
       </label>
       <label>
-        WCA ID
+        WCA ID（从编号管理入口修改）
         <input
+          readOnly
+          title="请在周赛选手档案的周赛编号 / WCA ID 入口修改"
           value={player.wcaId || ""}
           onChange={(event) => onChange({ wcaId: event.target.value.trim().toUpperCase(), wcaIdConfirmed: false })}
           placeholder="例如：2012ZHAN01"
@@ -332,7 +334,7 @@ function PlayerFields({
           <input
             type="checkbox"
             checked={Boolean(player.wcaId && player.wcaIdConfirmed)}
-            disabled={!player.wcaId}
+            disabled
             onChange={(event) => onChange({ wcaIdConfirmed: event.target.checked })}
           />
           已由管理员确认
