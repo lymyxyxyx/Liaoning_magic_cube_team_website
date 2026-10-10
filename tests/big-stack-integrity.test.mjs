@@ -68,9 +68,8 @@ test("baseline validates names, count range, dates and empty input before writes
 });
 test("public DTO excludes notes, binding IDs and editing versions", () => {
   const publicRecord = fixture().publicBigStackRecord({ ...existing, name: "测试", eventId: "333", solveCount: 100, note: "内部备注", playerId: "A", matchedPlayerId: "A", playerVersion: "secret-version", genderOverride: "男", weeklyNumber: 53, matchedWcaId: "2018AAAA01", gender: "男", updatedAt: "today", version: "v1", meetId: "private" });
-  for (const key of ["note", "playerId", "matchedPlayerId", "playerVersion", "genderOverride", "updatedAt", "version", "meetId", "achievedAt", "meetTitle", "sourceLabel"]) assert.equal(key in publicRecord, false);
+  for (const key of ["note", "playerId", "matchedPlayerId", "playerVersion", "genderOverride", "updatedAt", "version", "meetId", "achievedAt", "meetTitle", "sourceLabel", "weeklyNumber"]) assert.equal(key in publicRecord, false);
   assert.equal(publicRecord.solveCount, 100);
-  assert.equal(publicRecord.weeklyNumber, 53);
   assert.equal(publicRecord.gender, "男");
   assert.equal(publicRecord.wcaId, "2018AAAA01");
 });

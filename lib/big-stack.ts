@@ -37,11 +37,11 @@ export type BigStackRecord = {
   version: string;
 };
 
-export type BigStackPublicRecord = Pick<BigStackRecord, "id" | "name" | "eventId" | "solveCount" | "wcaId" | "rank" | "weeklyNumber" | "gender">;
+export type BigStackPublicRecord = Pick<BigStackRecord, "id" | "name" | "eventId" | "solveCount" | "wcaId" | "rank" | "gender">;
 
 export function publicBigStackRecord(record: BigStackRecord): BigStackPublicRecord {
   const { id, name, eventId, solveCount, wcaId, rank } = record;
-  return { id, name, eventId, solveCount, wcaId: record.matchedWcaId ?? wcaId, rank, weeklyNumber: record.weeklyNumber, gender: record.gender || "未知" };
+  return { id, name, eventId, solveCount, wcaId: record.matchedWcaId ?? wcaId, rank, gender: record.gender || "未知" };
 }
 
 export type BigStackRevision = {
