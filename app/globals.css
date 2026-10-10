@@ -12881,3 +12881,25 @@ a.commercial-member-link:hover {
   .big-stack-results-table { min-width: 560px; font-size: 12px; }
   .big-stack-results-table th, .big-stack-results-table td { padding: 9px 8px; }
 }
+
+@media (max-width: 900px) {
+  .big-stack-table-section .result-table-wrap {
+    max-width: 100%;
+    min-width: 0;
+    overflow-x: auto;
+    overflow-y: hidden;
+    -webkit-overflow-scrolling: touch;
+  }
+  .big-stack-table-section .big-stack-results-table { display: table; width: 100%; }
+  .big-stack-results-table thead { display: table-header-group; }
+  .big-stack-results-table tbody { display: table-row-group; padding: 0; background: transparent; }
+  .big-stack-results-table tr { display: table-row; padding: 0; border: 0; border-radius: 0; background: transparent; box-shadow: none; }
+  .big-stack-results-table th, .big-stack-results-table td {
+    display: table-cell;
+    width: auto;
+    border-bottom: 1px solid var(--line);
+    text-align: center;
+    white-space: nowrap;
+  }
+  .big-stack-results-table td::before { display: none; }
+}

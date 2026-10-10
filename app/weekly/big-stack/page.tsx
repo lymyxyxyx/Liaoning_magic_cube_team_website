@@ -32,7 +32,7 @@ export default async function BigStackPage({ searchParams }: { searchParams: Pro
     </PageHero>
     <section className="container section big-stack-page-intro"><nav className="weekly-provincial-ranking-tabs" aria-label="大堆项目">
       {BIG_STACK_EVENTS.map((event) => <Link className={event.id === eventId ? "is-active" : ""} href={`/weekly/big-stack?event=${event.id}`} key={event.id}>{event.name}</Link>)}
-    </nav><p className="weekly-provincial-ranking-note"><strong>{selectedEvent.name}大堆榜</strong><span>计量单位：一小时内还原数量；同数量并列。周赛期次只作为可选来源，不决定纪录归属。</span></p></section>
+    </nav><p className="weekly-provincial-ranking-note"><strong>{selectedEvent.name}大堆榜</strong><span>一小时内还原数量，同数量并列。选手资料仅采用精确匹配。</span></p></section>
     <BigStackConsole key={eventId} eventId={eventId} initialRecords={isAdmin ? displayRecords : displayRecords.map(publicBigStackRecord)} meets={meets} players={players} isAdmin={isAdmin} />
   </>;
 }
