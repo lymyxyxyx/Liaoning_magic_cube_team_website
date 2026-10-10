@@ -27,7 +27,7 @@ export default async function BigStackPage({ searchParams }: { searchParams: Pro
   const meets = allMeets.filter((meet) => meet.dataVersion === 2 && meet.id !== "weekly-test-entry").map((meet) => ({ id: meet.id, title: meet.title }));
   const selectedEvent = BIG_STACK_EVENTS.find((event) => event.id === eventId)!;
   return <>
-    <PageHero className="page-hero--compact weekly-results-page-hero" label="辽宁线上周赛" title="大堆总榜" actions={<div className="weekly-page-actions"><Link className="button" href="/weekly">返回周赛</Link><WeeklyInlineAdminLogin isAdmin={isAdmin} returnTo={`/weekly/big-stack?event=${eventId}`} /></div>}>
+    <PageHero className="page-hero--compact weekly-results-page-hero big-stack-page-hero" label="辽宁线上周赛" title="大堆总榜" actions={<div className="weekly-page-actions"><Link className="button" href="/weekly">返回周赛</Link><WeeklyInlineAdminLogin isAdmin={isAdmin} returnTo={`/weekly/big-stack?event=${eventId}`} /></div>}>
       一小时内还原魔方数量排名。这里保存的是长期个人最佳，不属于某一次周赛；只有更高成绩才会刷新当前纪录。
     </PageHero>
     <section className="container section big-stack-page-intro"><nav className="weekly-provincial-ranking-tabs" aria-label="大堆项目">
