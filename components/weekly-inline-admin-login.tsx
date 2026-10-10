@@ -2,7 +2,7 @@
 
 import { FormEvent, useState } from "react";
 
-export function WeeklyInlineAdminLogin({ isAdmin }: { isAdmin: boolean }) {
+export function WeeklyInlineAdminLogin({ isAdmin, returnTo = "/weekly" }: { isAdmin: boolean; returnTo?: string }) {
   const [password, setPassword] = useState("");
   const [notice, setNotice] = useState("");
   const [submitting, setSubmitting] = useState(false);
@@ -23,7 +23,7 @@ export function WeeklyInlineAdminLogin({ isAdmin }: { isAdmin: boolean }) {
       // A full navigation makes the newly issued httpOnly cookie available to
       // the server-rendered weekly console immediately; no second login is
       // required to unlock score entry.
-      window.location.assign("/weekly");
+      window.location.assign(returnTo);
     } catch (error) {
       setNotice(error instanceof Error ? error.message : "管理员登录失败");
     } finally {
