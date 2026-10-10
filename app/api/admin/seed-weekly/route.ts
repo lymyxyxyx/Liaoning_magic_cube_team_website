@@ -56,7 +56,7 @@ export async function POST() {
       await client.query(
         `INSERT INTO weekly_events (id, meet_id, kind, title, event_name, group_name, is_all_around, seq)
          VALUES ($1,$2,'main',$3,$4,NULL,FALSE,0) ON CONFLICT DO NOTHING`,
-        [mainEventId, meet.id, `三阶比赛第${meet.yearWeek}周`, "三阶"]
+        [mainEventId, meet.id, "三阶 · 五次取平均", "三阶"]
       );
       resultsInserted += await insertResults(client, mainEventId, meet.id, meet.results);
 

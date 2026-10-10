@@ -71,7 +71,7 @@ export default async function WeeklyDetailPage({ params }: { params: Promise<{ s
     {
       id: "333",
       eventCode: "333",
-      title: `三阶比赛第${meet.yearWeek}周`,
+      title: "三阶 · 五次取平均",
       eventName: "三阶",
       results: mainResults
     },
