@@ -19,7 +19,7 @@ function formatMeetPeriod(value: string) {
 }
 
 export default async function WeeklyProvincialRankingsPage({ searchParams }: { searchParams: Promise<{ event?: string; ageGroup?: string }> }) {
-  if (!isWeeklyCompetitionEnabled()) notFound();
+  if (!isWeeklyCompetitionEnabled() || process.env.WEEKLY_PROVINCIAL_RANKINGS_ENABLED !== "true") notFound();
   const events = await listWeeklyProvincialRankingEvents();
   const params = await searchParams;
   const selectedEvent = events.find((event) => event.eventCode === params.event)?.eventCode || events.find((event) => event.eventCode === "333")?.eventCode || events[0]?.eventCode;
