@@ -161,7 +161,7 @@ export const commercialTeamMembers: Person[] = [
     roles: ["运动员"],
     city: "沈阳",
     gender: "女",
-    bio: "宇宙爆速社领航队成员",
+    bio: "GAN Gurus 成员",
     visible: true,
     mainEvent: "三阶速拧",
     wcaId: "2025XUYA01",
@@ -515,7 +515,7 @@ export const commercialTeams: CommercialTeam[] = [
     brandUrl: "https://www.gancube.com",
     description: "GAN Gurus 是 GANCUBE 旗下顶级竞技战队，2017 年成立，同年签约 Feliks Zemdegs 为全球代言人。战队汇聚国内外顶尖选手，多人持有世界、亚洲纪录，是 GANCUBE 竞技版图的核心力量。",
     members: commercialTeamMembers.filter(m =>
-      ["韩业臻", "李昭昆", "付荷语", "董一泽", "郭铠希", "黄徽宁"].includes(m.name)
+      ["韩业臻", "李昭昆", "付荷语", "董一泽", "郭铠希", "黄徽宁", "徐雅芊"].includes(m.name)
     )
   },
   {
@@ -525,7 +525,7 @@ export const commercialTeams: CommercialTeam[] = [
     brandUrl: "https://www.gancube.com",
     description: "Speed ACE（宇宙爆速社）是 GANCUBE 旗下面向青少年的梯队体系，分为领航队和启航队。领航队汇聚省内成绩突出的青少年选手，多人已在 WCA 赛事中取得优异名次。",
     members: commercialTeamMembers.filter(m =>
-      ["高云淼", "高雨宸", "郑名竹", "张涵涤", "夏紫晨", "徐雅芊", "李祐萱", "韩沐遥"].includes(m.name)
+      ["高云淼", "高雨宸", "郑名竹", "张涵涤", "夏紫晨", "李祐萱", "韩沐遥"].includes(m.name)
     )
   },
   {
