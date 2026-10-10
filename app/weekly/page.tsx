@@ -34,11 +34,9 @@ export default async function WeeklyPage() {
   const guestDisplayMeet = currentMeet || latestStartedMeet;
   const publicDisplayMeet = isAdmin ? currentMeet : guestDisplayMeet;
   const adminEntryMeets = currentMeet ? [currentMeet, ...adminMeets.filter((meet) => meet.id !== currentMeet.id)] : adminMeets;
-  const [currentEventConfigs, adminMeetEventConfigEntries] = await Promise.all([
-    publicDisplayMeet ? listWeeklyMeetEventConfigs(publicDisplayMeet.id).catch(() => []) : Promise.resolve([]),
-    isAdmin ? Promise.all(adminMeets.map(async (meet) => [meet.id, await listWeeklyMeetEventConfigs(meet.id).catch(() => [])] as const)) : Promise.resolve([])
-  ]);
-  const adminMeetEventConfigsById = Object.fromEntries(adminMeetEventConfigEntries);
+  const currentEventConfigs = publicDisplayMeet
+    ? await listWeeklyMeetEventConfigs(publicDisplayMeet.id).catch(() => [])
+    : [];
   const emptyGuest = !isAdmin && !publicDisplayMeet;
 
   return (
@@ -73,7 +71,6 @@ export default async function WeeklyPage() {
           initialAdminUnlocked
           initialMeets={adminEntryMeets}
           events={WEEKLY_DEFAULT_EVENTS}
-          initialMeetEventConfigsById={adminMeetEventConfigsById}
           mode="admin"
           variant="full"
         />

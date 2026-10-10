@@ -175,7 +175,7 @@ export function WeeklyPlayerLibraryConsole({
           <div className="admin-card-heading">
             <div>
               <h2>资料编辑</h2>
-              <p>WCA ID、城市和个人 PB 会在导入后自动合并；匹配不到的姓名会作为新选手保留。</p>
+              <p>WCA ID、城市和个人 PB 可在选手档案中逐条维护。</p>
             </div>
             <div className="weekly-library-toolbar">
               <input className="weekly-library-search" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="姓名 / 拼音 / 首字母 / WCA ID" />
