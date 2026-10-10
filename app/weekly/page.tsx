@@ -49,6 +49,7 @@ export default async function WeeklyPage() {
           <div className="weekly-page-actions">
             <WeeklyHistoryMenu meets={guestVisibleMeets} />
             <Link className="weekly-grade-standards-link" href="/weekly/big-stack">大堆总榜</Link>
+            <Link className="weekly-grade-standards-link" href="/weekly/overall-rankings">周赛成绩总榜</Link>
             <Link className="weekly-grade-standards-link" href="/weekly/provincial-rankings">辽宁省榜</Link>
             <Link className="weekly-grade-standards-link" href="/weekly/grade-standards">等级标准</Link>
             <WeeklyInlineAdminLogin isAdmin={isAdmin} />
