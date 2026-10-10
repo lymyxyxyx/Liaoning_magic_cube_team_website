@@ -16,16 +16,18 @@ async function main(){
       CREATE TABLE weekly_player_library(id text PRIMARY KEY,name text,wca_id text DEFAULT '',wca_id_confirmed bool DEFAULT false,status text DEFAULT 'active',source text,gender text DEFAULT '',birth_date text DEFAULT '',age_group_override text DEFAULT '',age_group_is_fuzzy bool DEFAULT false,province text DEFAULT '',city text DEFAULT '',notes text DEFAULT '',deactivated_at timestamptz,deactivation_reason text DEFAULT '',personal_bests jsonb DEFAULT '{}',personal_bests_average jsonb DEFAULT '{}',created_at timestamptz DEFAULT now(),updated_at timestamptz DEFAULT now());
       CREATE TABLE weekly_long_card_profiles(source_row_number int PRIMARY KEY,student_name text,matched_player_id text,wca_id text DEFAULT '',updated_at timestamptz DEFAULT now());
       CREATE TABLE weekly_player_wca_matches(id serial PRIMARY KEY,weekly_player_id text,wca_id text,status text,confirmed_at timestamptz,updated_at timestamptz DEFAULT now(),wca_name text,gender text,province text,city text,score int,method text,evidence jsonb,UNIQUE(weekly_player_id,wca_id));
-      CREATE TABLE weekly_big_stack_records(id text PRIMARY KEY,name text,event_code text,player_id text,wca_id text,solve_count int,updated_at timestamptz DEFAULT now());
+      CREATE TABLE weekly_big_stack_records(id text PRIMARY KEY,name text,event_code text,player_id text,wca_id text,solve_count int,achieved_at date,meet_id text,source_label text DEFAULT '',note text DEFAULT '',updated_at timestamptz DEFAULT now());
+      CREATE TABLE weekly_meets(id text PRIMARY KEY,title text);
       CREATE TABLE weekly_results(player_id text);
       CREATE TABLE weekly_import_batches(id text PRIMARY KEY,kind text,status text,filename text DEFAULT '',file_sha256 text DEFAULT '',raw_row_count int DEFAULT 0,valid_row_count int DEFAULT 0,warning_count int DEFAULT 0,error_count int DEFAULT 0,preview_jsonb jsonb DEFAULT '{}',commit_manifest_jsonb jsonb,admin_actor text,created_at timestamptz DEFAULT now(),committed_at timestamptz DEFAULT now(),rolled_back_at timestamptz);
-      CREATE TABLE weekly_big_stack_record_revisions(id serial PRIMARY KEY,record_id text,action text,reason text,before_record jsonb,after_record jsonb,points_awarded int);
+      CREATE TABLE weekly_big_stack_record_revisions(id serial PRIMARY KEY,record_id text,action text,reason text,before_record jsonb,after_record jsonb,points_awarded int,import_batch_id text,created_at timestamptz DEFAULT now());
       INSERT INTO weekly_player_library(id,name,wca_id,source) VALUES ('A','甲','2017AAAA01','admin_manual'),('B','乙','','players_excel_import'),('extra','无原始资料','','admin_manual'),('legacy','历史','','legacy');
       INSERT INTO weekly_long_card_profiles(source_row_number,student_name,matched_player_id) VALUES (10,'乙','B'),(20,'甲',NULL),(30,'未知',NULL);
       INSERT INTO weekly_big_stack_records(id,name,event_code,player_id,wca_id,solve_count) VALUES ('record-A','甲','333','A','2017AAAA01',120);
       INSERT INTO weekly_player_wca_matches(weekly_player_id,wca_id,status) VALUES ('A','2017AAAA01','confirmed');
     `);
     await pool.query(fs.readFileSync(path.join(__dirname,'migrations','202610090002_weekly_player_numbers.sql'),'utf8'));
+    await pool.query(fs.readFileSync(path.join(__dirname,'migrations','202610100001_big_stack_gender.sql'),'utf8'));
     const service=load('weekly-player-identity');
     const initial=await service.listWeeklyPlayerIdentities();
     assert.equal(initial.find(p=>p.id==='B').weeklyNumber,1);
@@ -82,6 +84,25 @@ async function main(){
     const shared=(await service.listWeeklyPlayerIdentities()).find(player=>player.id==='B');
     assert.equal(shared.weeklyNumber,1);assert.equal(shared.wcaId,'2020BBBB01');assert.equal(shared.wcaIdConfirmed,true);
     console.log('PASS Liaoning profile candidates reuse the ordinary weekly player number when confirmed');
+    const direct=load('big-stack-direct-edit').editBigStackRecordDirectly;
+    const records=load('big-stack');
+    let existing=(await records.listBigStackRecords('333')).find(record=>record.id==='record-A');
+    let identity=(await service.listWeeklyPlayerIdentities()).find(player=>player.id==='A');
+    const edited=await direct(existing.id,{...existing,expectedVersion:existing.version,weeklyNumber:identity.weeklyNumber,playerVersion:identity.version,wcaId:'2021AAAA02',solveCount:125,genderOverride:'女'});
+    assert.equal(edited.solveCount,125);assert.equal(edited.genderOverride,'女');
+    assert.equal((await service.listWeeklyPlayerIdentities()).find(player=>player.id==='A').wcaId,'2021AAAA02');
+    identity=(await service.listWeeklyPlayerIdentities()).find(player=>player.id==='A');
+    await assert.rejects(direct(edited.id,{...edited,expectedVersion:edited.version,weeklyNumber:identity.weeklyNumber,playerVersion:identity.version,wcaId:'2022AAAA03',solveCount:10001}),/0 到 10000/);
+    assert.equal((await service.listWeeklyPlayerIdentities()).find(player=>player.id==='A').wcaId,'2021AAAA02');
+    assert.equal((await records.listBigStackRecords('333')).find(record=>record.id===edited.id).solveCount,125);
+    await assert.rejects(direct(edited.id,{...edited,expectedVersion:existing.version,weeklyNumber:identity.weeklyNumber,playerVersion:identity.version,wcaId:'2022AAAA03'}),error=>error.name==='WeeklyResultConflictError');
+    const competing=await Promise.allSettled([126,127].map(solveCount=>direct(edited.id,{...edited,expectedVersion:edited.version,weeklyNumber:identity.weeklyNumber,playerVersion:identity.version,solveCount})));
+    assert.equal(competing.filter(result=>result.status==='fulfilled').length,1);
+    const unbound=(await records.listBigStackRecords('222')).find(record=>record.id==='unbound');
+    const bIdentity=(await service.listWeeklyPlayerIdentities()).find(player=>player.id==='B');
+    const bound=await direct(unbound.id,{...unbound,expectedVersion:unbound.version,weeklyNumber:1,playerVersion:bIdentity.version,wcaId:unbound.wcaId,solveCount:55});
+    assert.equal(bound.playerId,'B');assert.equal((await service.listWeeklyPlayerIdentities()).find(player=>player.id==='B').weeklyNumber,1);
+    console.log('PASS one-step big-stack editing atomically updates shared WCA binding, record gender and scores; failures and competing edits preserve data');
   }finally{await pool.end();await admin.query(`DROP SCHEMA IF EXISTS ${schema} CASCADE`);await admin.end();}
 }
 main().catch(error=>{console.error(error.stack);process.exitCode=1;});

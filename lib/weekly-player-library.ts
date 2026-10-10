@@ -12,6 +12,7 @@ export type WeeklyPlayerLibraryEntry = {
   id: string;
   name: string;
   weeklyNumber?: number;
+  identityVersion?: string;
   wcaId?: string;
   wcaIdConfirmed?: boolean;
   gender: WeeklyLibraryGender;
@@ -49,6 +50,7 @@ export type WeeklyWcaMatchCandidate = {
 
 type WeeklyPlayerLibraryRow = {
   weekly_number?: number;
+  identity_version?: string;
   id: string;
   name: string;
   wca_id: string;
@@ -90,7 +92,7 @@ export async function listWeeklyPlayerLibrary(): Promise<WeeklyPlayerLibraryEntr
   const { rows } = await pool.query<WeeklyPlayerLibraryRow>(
     `SELECT id, name, wca_id, wca_id_confirmed, gender, birth_date, age_group_override, age_group_is_fuzzy,
             province, city, source, notes, status, deactivated_at, deactivation_reason,
-            personal_bests, personal_bests_average, weekly_number, updated_at
+            personal_bests, personal_bests_average, weekly_number, updated_at::text AS identity_version, updated_at
      FROM weekly_player_library
      WHERE ${weeklyV2PlayerSourceSql()}
      ORDER BY name`
@@ -199,7 +201,7 @@ export async function findWeeklyPlayerLibraryEntry(input: { id?: string; name?: 
   const { rows } = await pool.query<WeeklyPlayerLibraryRow>(
     `SELECT id, name, wca_id, wca_id_confirmed, gender, birth_date, age_group_override, age_group_is_fuzzy,
             province, city, source, notes, status, deactivated_at, deactivation_reason,
-            personal_bests, personal_bests_average, weekly_number, updated_at
+            personal_bests, personal_bests_average, weekly_number, updated_at::text AS identity_version, updated_at
      FROM weekly_player_library
      WHERE (($1 <> '' AND id = $1) OR ($1 = '' AND name = $2))
        AND ${weeklyV2PlayerSourceSql()}
@@ -296,7 +298,7 @@ export async function updateWeeklyPlayerLibraryEntry(input: {
   const current = await pool.query<WeeklyPlayerLibraryRow>(
     `SELECT id, name, wca_id, wca_id_confirmed, gender, birth_date, age_group_override, age_group_is_fuzzy,
             province, city, source, notes, status, deactivated_at, deactivation_reason,
-            personal_bests, personal_bests_average, weekly_number, updated_at
+            personal_bests, personal_bests_average, weekly_number, updated_at::text AS identity_version, updated_at
      FROM weekly_player_library
      WHERE (($1 <> '' AND id = $1) OR ($1 = '' AND name = $2))
        AND ${weeklyV2PlayerSourceSql()}
@@ -495,6 +497,7 @@ function mapLibraryRow(row: WeeklyPlayerLibraryRow): WeeklyPlayerLibraryEntry {
     id: row.id,
     name: row.name,
     weeklyNumber: row.weekly_number,
+    identityVersion: row.identity_version,
     wcaId: row.wca_id || "",
     wcaIdConfirmed: Boolean(row.wca_id_confirmed),
     gender: normalizeGender(row.gender),

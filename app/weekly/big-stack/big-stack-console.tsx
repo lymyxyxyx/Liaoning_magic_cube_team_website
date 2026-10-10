@@ -44,6 +44,7 @@ export function BigStackConsole({
   const [records, setRecords] = useState(initialRecords);
   const [draft, setDraft] = useState<Draft>(emptyDraft);
   const [editing, setEditing] = useState<BigStackRecord | null>(null);
+  const [editingNumber, setEditingNumber] = useState("");
   const [reason, setReason] = useState("");
   const [message, setMessage] = useState("");
   const [saving, setSaving] = useState(false);
@@ -59,8 +60,8 @@ export function BigStackConsole({
   const filtered = useMemo(() => {
     const term = query.trim().toLowerCase();
     if (!term) return records;
-    return records.filter((record) => [record.name, record.wcaId, record.playerId, record.note, record.playerId ? String(playersById.get(record.playerId)?.weeklyNumber || "") : ""].some((value) => value?.toLowerCase().includes(term)));
-  }, [query, records, playersById]);
+    return records.filter((record) => [record.name, record.wcaId, record.playerId, record.note, String(record.weeklyNumber || "")].some((value) => value?.toLowerCase().includes(term)));
+  }, [query, records]);
   const pageCount = Math.max(1, Math.ceil(filtered.length / pageSize));
   const safePage = Math.min(page, pageCount);
   const visibleRecords = filtered.slice((safePage - 1) * pageSize, safePage * pageSize);
@@ -121,7 +122,7 @@ export function BigStackConsole({
     try {
       const body = await jsonRequest<{ record: BigStackRecord }>(`/api/big-stack/${encodeURIComponent(editing.id)}`, {
         method: "PATCH",
-        body: JSON.stringify({ ...editing, reason, expectedVersion: editing.version })
+        body: JSON.stringify({ ...editing, weeklyNumber: editingNumber.trim() ? Number(editingNumber) : null, playerVersion: players.find(player => player.weeklyNumber === Number(editingNumber))?.identityVersion || editing.playerVersion, reason: reason || "大堆榜直接编辑", expectedVersion: editing.version })
       });
       setRecords((current) => rerank(
         body.record.eventId === eventId
@@ -146,6 +147,7 @@ export function BigStackConsole({
       });
       setRecords((current) => rerank(current.filter((item) => item.id !== record.id)));
       setReason("");
+      setEditing(null);
       setMessage(`已删除 ${record.name}`);
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "删除失败");
@@ -199,9 +201,9 @@ export function BigStackConsole({
 
   return <>
     {isAdmin ? <section className="container section big-stack-admin-panel">
-      <div className="admin-card big-stack-pb-admin">
+      <details className="admin-card big-stack-pb-admin"><summary>新增成绩 / Excel 导入 / 修改历史</summary>
         <div className="admin-card-heading"><div><h2>长期 PB 管理</h2><p>大堆总榜不属于某一次周赛。首次全量替换，日常使用 PB 合并；较低成绩不会覆盖。</p></div><button className="button" type="button" onClick={loadHistory}>最近修改</button></div>
-        {message ? <p className="admin-inline-notice">{message}</p> : null}
+
 
         <div className="big-stack-pb-import">
           <label>导入模式<select disabled={saving} value={mode} onChange={(event) => { setMode(event.target.value as BigStackImportMode); setPreview(null); }}><option value="merge">PB 合并（日常）</option><option value="baseline">全量基线替换</option></select></label>
@@ -224,31 +226,36 @@ export function BigStackConsole({
         <p>大堆与普通周赛共用选手编号和 WCA 绑定。<Link href="/admin/weekly/players">管理共用编号、匹配辽宁魔友库 WCA ID</Link>；未关联的历史记录需先核对并选择已有选手。</p>
 
         {historyOpen ? <details className="big-stack-pb-history" open><summary>最近 50 条修改历史</summary>{revisions.length === 0 ? <p>暂无修改历史。</p> : revisions.map((revision) => <div key={revision.id}><strong>{revision.after?.name || revision.before?.name || revision.recordId}</strong><span>{revision.action} · {revision.before?.solveCount ?? "—"} → {revision.after?.solveCount ?? "—"}</span><span>{revision.reason}{revision.pointsAwarded ? " · 刷新 PB" : ""}</span><time>{new Date(revision.createdAt).toLocaleString("zh-CN", { timeZone: "Asia/Shanghai" })}</time></div>)}</details> : null}
-      </div>
+      </details>
     </section> : null}
 
     <section className="container section big-stack-table-section">
-      <div className="big-stack-pb-toolbar"><label>搜索<input value={query} onChange={(event) => { setQuery(event.target.value); setPage(1); }} placeholder={isAdmin ? "姓名、WCA ID、周赛编号" : "姓名或 WCA ID"} /></label><span>共 {filtered.length} 人</span></div>
-      <div className="result-table-wrap"><table className="result-table"><thead><tr><th>排名</th>{isAdmin ? <th>周赛编号</th> : null}<th>姓名</th><th>一小时还原数量</th><th>来源</th>{isAdmin ? <th>操作</th> : null}</tr></thead><tbody>
-        {visibleRecords.map((record) => <tr key={record.id}><td className="score-strong">#{record.rank}</td>{isAdmin ? <td>{record.playerId ? playersById.get(record.playerId)?.weeklyNumber || "未关联" : "未关联"}</td> : null}<td>{record.name}{record.wcaId ? <small className="big-stack-pb-id">{record.wcaId}</small> : null}</td><td className="score-strong">{record.solveCount}</td><td>{record.meetTitle || record.sourceLabel || "长期记录"}</td>{isAdmin ? <td><button className="button compact" disabled={saving} onClick={() => { setEditing({ ...record } as BigStackRecord); setReason(""); }}>编辑</button> <button className="button compact" onClick={() => removeRecord(record)} disabled={saving}>删除</button></td> : null}</tr>)}
-        {!visibleRecords.length ? <tr><td colSpan={isAdmin ? 5 : 4}>该项目暂未录入大堆成绩。</td></tr> : null}
+      {message ? <p className="admin-inline-notice" role="status">{message}</p> : null}
+      <div className="big-stack-pb-toolbar"><label>搜索<input value={query} onChange={(event) => { setQuery(event.target.value); setPage(1); }} placeholder="姓名、WCA ID、周赛编号" /></label><span>共 {filtered.length} 人</span></div>
+      <div className="result-table-wrap"><table className="result-table big-stack-results-table"><thead><tr><th>排名</th><th>周赛编号</th><th>姓名</th><th>WCA ID</th><th>性别</th><th>一小时还原数量</th>{isAdmin ? <th>操作</th> : null}</tr></thead><tbody>
+        {visibleRecords.map((record) => <tr key={record.id}><td className="score-strong">#{record.rank}</td><td>{record.weeklyNumber || ""}</td><td>{record.name}</td><td>{record.matchedWcaId ?? record.wcaId ?? ""}</td><td>{record.gender || "未知"}</td><td className="score-strong">{record.solveCount}</td>{isAdmin ? <td><button className="button compact" disabled={saving} onClick={() => { setEditing({ ...record, wcaId: record.matchedWcaId || record.wcaId || "" } as BigStackRecord); setEditingNumber(String(record.weeklyNumber || "")); setReason(""); setMessage(""); }}>编辑</button></td> : null}</tr>)}
+        {!visibleRecords.length ? <tr><td colSpan={isAdmin ? 7 : 6}>该项目暂未录入大堆成绩。</td></tr> : null}
       </tbody></table></div>
       <div className="big-stack-pb-pagination"><button className="button compact" disabled={safePage <= 1} onClick={() => setPage((current) => Math.max(1, current - 1))}>上一页</button><span>第 {safePage} / {pageCount} 页</span><button className="button compact" disabled={safePage >= pageCount} onClick={() => setPage((current) => Math.min(pageCount, current + 1))}>下一页</button></div>
     </section>
 
-    {editing ? <div className="weekly-admin-login-backdrop" role="presentation"><section className="weekly-admin-login-modal weekly-player-editor-modal" role="dialog" aria-modal="true" aria-label="编辑大堆记录"><div className="admin-card-heading"><div><span className="eyebrow">长期 PB</span><h2>编辑记录</h2><p>降低成绩、修改姓名或身份绑定时必须填写原因。</p></div></div><form className="weekly-player-editor-grid" onSubmit={saveRecord}>
+    {editing ? <div className="weekly-admin-login-backdrop" role="presentation"><section className="weekly-admin-login-modal weekly-player-editor-modal" role="dialog" aria-modal="true" aria-label="编辑大堆记录"><div className="admin-card-heading"><div><h2>编辑 {editing.name}</h2><p>在此修改后保存即可。周赛编号沿用已有编号，匹配不到可留空。</p></div></div><form className="weekly-player-editor-grid" onSubmit={saveRecord}>
       <label className="field"><span>姓名</span><input required value={editing.name} onChange={(event) => setEditing({ ...editing, name: event.target.value })} /></label>
-      <label className="field"><span>项目</span><select value={editing.eventId} onChange={(event) => setEditing({ ...editing, eventId: event.target.value as BigStackEventId })}>{["333", "222", "pyram", "maple", "mirror"].map((id) => <option key={id} value={id}>{id}</option>)}</select></label>
-      <label className="field"><span>还原数量</span><input required min="0" type="number" value={editing.solveCount} onChange={(event) => setEditing({ ...editing, solveCount: Number(event.target.value) })} /></label>
-      <label className="field"><span>关联周赛选手（沿用原编号）</span><select value={editing.playerId || ""} onChange={(event) => { const player = playersById.get(event.target.value); setEditing({ ...editing, playerId: event.target.value || undefined, wcaId: player ? player.wcaId || "" : editing.wcaId }); }}><option value="">暂未关联</option>{players.map((player) => <option key={player.id} value={player.id}>{player.weeklyNumber ? `${player.weeklyNumber} · ` : ""}{player.name}{player.wcaId ? ` · ${player.wcaId}` : ""}</option>)}</select></label>
-      <label className="field"><span>WCA ID（已关联时沿用周赛绑定）</span><input readOnly={Boolean(editing.playerId)} value={editing.wcaId || ""} onChange={(event) => setEditing({ ...editing, wcaId: event.target.value.toUpperCase() })} /></label>
-      <label className="field"><span>达成日期</span><input type="date" value={editing.achievedAt || ""} onChange={(event) => setEditing({ ...editing, achievedAt: event.target.value })} /></label>
-      <label className="field"><span>来源周赛</span><select value={editing.meetId || ""} onChange={(event) => setEditing({ ...editing, meetId: event.target.value || null })}><option value="">非特定周赛 / 待补</option>{meets.map((meet) => <option key={meet.id} value={meet.id}>{meet.title}</option>)}</select></label>
-      <label className="field"><span>来源说明</span><input value={editing.sourceLabel} onChange={(event) => setEditing({ ...editing, sourceLabel: event.target.value })} /></label>
-      <label className="field"><span>备注</span><input value={editing.note} onChange={(event) => setEditing({ ...editing, note: event.target.value })} /></label>
-      <label className="field"><span>修改原因</span><input value={reason} onChange={(event) => setReason(event.target.value)} /></label>
-      <div className="weekly-admin-login-actions"><button className="button" type="button" onClick={() => setEditing(null)}>取消</button><button className="button primary" disabled={saving}>{saving ? "保存中…" : "保存"}</button></div>
+      <label className="field"><span>一小时还原数量</span><input required min="0" max="10000" type="number" value={editing.solveCount} onChange={(event) => setEditing({ ...editing, solveCount: Number(event.target.value) })} /></label>
+      <label className="field"><span>周赛编号</span><input type="text" inputMode="numeric" list="big-stack-weekly-numbers" value={editingNumber} placeholder="已有编号，可留空" onChange={(event) => { setEditingNumber(event.target.value); const player = players.find(player => String(player.weeklyNumber) === event.target.value); setEditing({ ...editing, playerId: player?.id, playerVersion: player?.identityVersion, wcaId: player ? player.wcaId || "" : editing.wcaId }); }} /></label>
+      <datalist id="big-stack-weekly-numbers">{players.filter(player => player.weeklyNumber).map(player => <option key={player.id} value={player.weeklyNumber}>{player.name}</option>)}</datalist>
+      <label className="field"><span>WCA ID</span><input maxLength={10} value={editing.wcaId || ""} placeholder="精确匹配，无匹配可留空" onChange={(event) => setEditing({ ...editing, wcaId: event.target.value.toUpperCase() })} /></label>
+      <label className="field"><span>性别</span><select value={editing.genderOverride || ""} onChange={(event) => setEditing({ ...editing, genderOverride: event.target.value })}><option value="">自动匹配（{editing.gender || "未知"}）</option><option value="男">男</option><option value="女">女</option><option value="未知">未知</option></select></label>
+      {message ? <p className="admin-inline-notice" role="status">{message}</p> : null}
+      <details className="big-stack-edit-extra"><summary>更多信息（选填）</summary>
+        <label className="field"><span>达成日期</span><input type="date" value={editing.achievedAt || ""} onChange={(event) => setEditing({ ...editing, achievedAt: event.target.value })} /></label>
+        <label className="field"><span>备注</span><input value={editing.note} onChange={(event) => setEditing({ ...editing, note: event.target.value })} /></label>
+        <label className="field"><span>修改说明</span><input value={reason} onChange={(event) => setReason(event.target.value)} placeholder="选填" /></label>
+        <button className="button compact" type="button" disabled={saving} onClick={()=>removeRecord(editing)}>删除这条记录</button>
+      </details>
+      <div className="weekly-admin-login-actions"><button className="button" type="button" disabled={saving} onClick={() => setEditing(null)}>取消</button><button className="button primary" disabled={saving}>{saving ? "保存中…" : "保存"}</button></div>
     </form></section></div> : null}
+
   </>;
 }
 

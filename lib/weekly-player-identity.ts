@@ -1,3 +1,4 @@
+import type { PoolClient } from "pg";
 import { getPostgresPool } from "@/lib/postgres";
 import { weeklyV2PlayerSourceSql } from "@/lib/weekly-player-scope";
 import { assertWeeklyResultVersion } from "@/lib/weekly-result-version";
@@ -25,11 +26,11 @@ export function validateWeeklyPlayerIdentity(input: { weeklyNumber: number; wcaI
   return { weeklyNumber: input.weeklyNumber, wcaId, wcaIdConfirmed: Boolean(wcaId && input.wcaIdConfirmed), reason };
 }
 
-export async function updateWeeklyPlayerIdentity(input: { id: string; expectedVersion: string; weeklyNumber: number; wcaId: string; wcaIdConfirmed: boolean; reason: string }) {
+export async function updateWeeklyPlayerIdentity(input: { id: string; expectedVersion: string; weeklyNumber: number; wcaId: string; wcaIdConfirmed: boolean; reason: string }, suppliedClient?: PoolClient, allowedRecordId = "") {
   const next = validateWeeklyPlayerIdentity(input);
-  const client = await getPostgresPool().connect();
+  const client = suppliedClient || await getPostgresPool().connect();
   try {
-    await client.query("BEGIN");
+    if (!suppliedClient) await client.query("BEGIN");
     // Match long-card creation order; take table locks before library row locks.
     await client.query("LOCK TABLE weekly_long_card_profiles IN SHARE ROW EXCLUSIVE MODE");
     await client.query("LOCK TABLE weekly_player_wca_matches IN EXCLUSIVE MODE");
@@ -44,7 +45,7 @@ export async function updateWeeklyPlayerIdentity(input: { id: string; expectedVe
       if (matched.rows[0]) throw new Error("该 WCA ID 已确认给另一位选手，请先核对已有绑定");
     }
     if (next.wcaId && next.wcaId !== before.wca_id) {
-      const conflicts = await client.query("SELECT id FROM weekly_big_stack_records WHERE upper(wca_id)=$1 AND (player_id IS NULL OR player_id<>$2) LIMIT 1", [next.wcaId, input.id]);
+      const conflicts = await client.query("SELECT id FROM weekly_big_stack_records WHERE upper(wca_id)=$1 AND (player_id IS NULL OR player_id<>$2) AND id<>$3 LIMIT 1", [next.wcaId, input.id, allowedRecordId]);
       if (conflicts.rows[0]) throw new Error("该 WCA ID 已在大堆榜绑定另一条记录，请先核对或补绑定原记录");
     }
     const updated = await client.query<IdentityRow>(`UPDATE weekly_player_library SET weekly_number=$2, wca_id=$3, wca_id_confirmed=$4, updated_at=clock_timestamp() WHERE id=$1 RETURNING ${columns}`, [input.id, next.weeklyNumber, next.wcaId, next.wcaIdConfirmed]);
@@ -58,11 +59,11 @@ export async function updateWeeklyPlayerIdentity(input: { id: string; expectedVe
       }
     }
     await client.query("INSERT INTO weekly_player_identity_revisions(player_id,before_record,after_record,reason) VALUES ($1,$2::jsonb,$3::jsonb,$4)", [input.id, JSON.stringify(mapIdentity(before)), JSON.stringify(mapIdentity(updated.rows[0])), next.reason]);
-    await client.query("COMMIT");
+    if (!suppliedClient) await client.query("COMMIT");
     return mapIdentity(updated.rows[0]);
   } catch (error) {
-    await client.query("ROLLBACK");
+    if (!suppliedClient) await client.query("ROLLBACK");
     if (error && typeof error === "object" && "code" in error && error.code === "23505") throw new Error("周赛编号或 WCA ID 已被其他选手使用");
     throw error;
-  } finally { client.release(); }
+  } finally { if (!suppliedClient) client.release(); }
 }

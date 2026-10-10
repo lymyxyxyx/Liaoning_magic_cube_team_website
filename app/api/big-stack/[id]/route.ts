@@ -1,3 +1,5 @@
+import { decorateBigStackRecords } from "@/lib/big-stack-player-display";
+import { editBigStackRecordDirectly } from "@/lib/big-stack-direct-edit";
 import { WeeklyResultConflictError } from "@/lib/weekly-result-version";
 import { isBoundedString } from "@/lib/weekly-request-validation";
 import { NextRequest, NextResponse } from "next/server";
@@ -12,6 +14,9 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
   if (!isWeeklySameOrigin(request)) return NextResponse.json({ message: "请求来源不受信任" }, { status: 403 });
   const { id } = await params;
   const payload = await request.json().catch(() => null) as {
+    weeklyNumber?: number | null;
+    playerVersion?: string;
+    genderOverride?: string;
     name?: string;
     eventId?: string;
     solveCount?: number;
@@ -32,8 +37,9 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     return NextResponse.json({ message: "大堆记录参数不正确" }, { status: 400 });
   }
   try {
-    const record = await updateBigStackRecord(id, { ...payload, name: payload.name, eventId, solveCount, expectedVersion: payload.expectedVersion });
-    return NextResponse.json({ record });
+    const input = { ...payload, name: payload.name, eventId, solveCount, expectedVersion: payload.expectedVersion };
+    const record = Object.hasOwn(payload, "weeklyNumber") ? await editBigStackRecordDirectly(id, input) : await updateBigStackRecord(id, input);
+    return NextResponse.json({ record: (await decorateBigStackRecords([record]))[0] });
   } catch (error) {
     return NextResponse.json({ message: error instanceof Error ? error.message : "更新大堆记录失败" }, { status: error instanceof WeeklyResultConflictError ? 409 : 400 });
   }

@@ -1,3 +1,4 @@
+import { decorateBigStackRecords } from "@/lib/big-stack-player-display";
 import { NextRequest, NextResponse } from "next/server";
 import {
   BigStackImportConflictError,
@@ -35,7 +36,8 @@ export async function POST(request: NextRequest) {
     const input = { rows: parsed.rows, eventId: eventValue, mode, errors: parsed.errors, warnings: parsed.warnings };
     if (action !== "commit") return NextResponse.json({ preview: await previewBigStackImport(input) });
     if (parsed.errors.length > 0) return NextResponse.json({ message: parsed.errors[0], errors: parsed.errors }, { status: 400 });
-    return NextResponse.json(await commitBigStackImport({ ...input, filename: file.name, expectedPreviewToken: String(formData.get("previewToken") || "") }));
+    const result = await commitBigStackImport({ ...input, filename: file.name, expectedPreviewToken: String(formData.get("previewToken") || "") });
+    return NextResponse.json({ ...result, records: await decorateBigStackRecords(result.records) });
   } catch (error) {
     console.error("big stack import failed", error);
     return NextResponse.json({ message: error instanceof Error ? error.message : "导入大堆记录失败" }, { status: error instanceof BigStackImportConflictError ? 409 : 400 });

@@ -26,7 +26,7 @@ async function main() {
     await pool.query(`
       CREATE TABLE weekly_meets(id text PRIMARY KEY,title text);
       CREATE TABLE weekly_player_library(id text PRIMARY KEY,name text,wca_id text);
-      CREATE TABLE weekly_big_stack_records(id text PRIMARY KEY,name text NOT NULL,event_code text NOT NULL,solve_count int NOT NULL,player_id text,wca_id text NOT NULL DEFAULT '',achieved_at date,meet_id text,source_label text NOT NULL DEFAULT '',note text NOT NULL DEFAULT '',updated_at timestamptz NOT NULL DEFAULT clock_timestamp());
+      CREATE TABLE weekly_big_stack_records(id text PRIMARY KEY,name text NOT NULL,event_code text NOT NULL,solve_count int NOT NULL,player_id text,wca_id text NOT NULL DEFAULT '',achieved_at date,meet_id text,source_label text NOT NULL DEFAULT '',note text NOT NULL DEFAULT '',gender_override text NOT NULL DEFAULT '',updated_at timestamptz NOT NULL DEFAULT clock_timestamp());
       CREATE UNIQUE INDEX big_stack_verify_player ON weekly_big_stack_records(event_code,player_id) WHERE player_id IS NOT NULL AND player_id<>'';
       CREATE UNIQUE INDEX big_stack_verify_wca ON weekly_big_stack_records(event_code,wca_id) WHERE wca_id<>'';
       CREATE TABLE weekly_big_stack_record_revisions(id bigserial PRIMARY KEY,record_id text,action text,reason text,before_record jsonb,after_record jsonb,points_awarded int,import_batch_id text,created_at timestamptz DEFAULT now());

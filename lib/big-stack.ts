@@ -21,6 +21,12 @@ export type BigStackRecord = {
   solveCount: number;
   playerId?: string;
   wcaId?: string;
+  weeklyNumber?: number;
+  matchedWcaId?: string;
+  gender?: string;
+  genderOverride?: string;
+  matchedPlayerId?: string;
+  playerVersion?: string;
   achievedAt?: string;
   meetId: string | null;
   meetTitle: string;
@@ -31,11 +37,11 @@ export type BigStackRecord = {
   version: string;
 };
 
-export type BigStackPublicRecord = Pick<BigStackRecord, "id" | "name" | "eventId" | "solveCount" | "wcaId" | "achievedAt" | "meetTitle" | "sourceLabel" | "rank">;
+export type BigStackPublicRecord = Pick<BigStackRecord, "id" | "name" | "eventId" | "solveCount" | "wcaId" | "achievedAt" | "meetTitle" | "sourceLabel" | "rank" | "weeklyNumber" | "gender">;
 
 export function publicBigStackRecord(record: BigStackRecord): BigStackPublicRecord {
   const { id, name, eventId, solveCount, wcaId, achievedAt, meetTitle, sourceLabel, rank } = record;
-  return { id, name, eventId, solveCount, wcaId, achievedAt, meetTitle, sourceLabel, rank };
+  return { id, name, eventId, solveCount, wcaId: record.matchedWcaId ?? wcaId, achievedAt, meetTitle, sourceLabel, rank, weeklyNumber: record.weeklyNumber, gender: record.gender || "未知" };
 }
 
 export type BigStackRevision = {
@@ -97,6 +103,7 @@ type BigStackRecordRow = {
   note: string;
   updated_at: string;
   result_version: string;
+  gender_override?: string;
 };
 
 type WeeklyIdentityRow = { id: string; name: string; wca_id: string };
@@ -310,6 +317,7 @@ export async function createBigStackRecord(input: {
 
 export async function updateBigStackRecord(id: string, input: {
   expectedVersion: string;
+  genderOverride?: string;
   name: string;
   eventId: BigStackEventId;
   solveCount: number;
@@ -320,12 +328,13 @@ export async function updateBigStackRecord(id: string, input: {
   sourceLabel?: string;
   note?: string;
   reason?: string;
-}) {
+}, suppliedClient?: PoolClient) {
   const pool = getPostgresPool();
-  const client = await pool.connect();
+  const client = suppliedClient || await pool.connect();
   try {
-    await client.query("BEGIN");
+    if (!suppliedClient) await client.query("BEGIN");
     await client.query("LOCK TABLE weekly_big_stack_records IN EXCLUSIVE MODE");
+    if (input.genderOverride !== undefined && !["", "男", "女", "未知"].includes(input.genderOverride)) throw new Error("性别信息不正确");
     const before = await getRecordForUpdate(client, id);
     if (!before) throw new Error("未找到这条大堆记录");
     assertWeeklyResultVersion(before.version, input.expectedVersion);
@@ -339,6 +348,7 @@ export async function updateBigStackRecord(id: string, input: {
     await assertNoManualDuplicate(client, input.eventId, name, identity.playerId, identity.wcaId, id);
     const after = await updateRecordRow(client, id, {
       ...before,
+      genderOverride: input.genderOverride ?? before.genderOverride,
       name,
       eventId: input.eventId,
       solveCount,
@@ -351,13 +361,13 @@ export async function updateBigStackRecord(id: string, input: {
     });
     const improved = !identityChanged && after.solveCount > before.solveCount;
     await insertRevision(client, id, improved ? "pb" : "correct", input.reason?.trim() || (improved ? "管理员刷新 PB" : "管理员修改"), before, after, improved ? 1 : 0);
-    await client.query("COMMIT");
+    if (!suppliedClient) await client.query("COMMIT");
     return after;
   } catch (error) {
-    await client.query("ROLLBACK");
+    if (!suppliedClient) await client.query("ROLLBACK");
     throw normalizeDatabaseError(error);
   } finally {
-    client.release();
+    if (!suppliedClient) client.release();
   }
 }
 
@@ -456,7 +466,7 @@ async function buildImportPreview(db: Queryable, input: {
 async function listRecordRows(db: Queryable, eventId: BigStackEventId) {
   const { rows } = await db.query<BigStackRecordRow>(`
     SELECT record.id, record.name, record.event_code, record.solve_count, record.player_id,
-           record.wca_id, record.achieved_at::text, record.meet_id, meet.title AS meet_title,
+           record.wca_id, record.gender_override, record.achieved_at::text, record.meet_id, meet.title AS meet_title,
            record.source_label, record.note, record.updated_at, record.updated_at::text AS result_version
       FROM weekly_big_stack_records record
       LEFT JOIN weekly_meets meet ON meet.id = record.meet_id
@@ -564,7 +574,7 @@ async function insertRecord(db: Queryable, input: {
       (id, name, event_code, solve_count, player_id, wca_id, achieved_at, meet_id, source_label, note, updated_at)
     VALUES ($1, $2, $3, $4, NULLIF($5, ''), $6, NULLIF($7, '')::date, $8, $9, $10, now())
     RETURNING id, name, event_code, solve_count, player_id, wca_id, achieved_at::text, meet_id,
-              NULL::text AS meet_title, source_label, note, updated_at, updated_at::text AS result_version
+              NULL::text AS meet_title, source_label, note, gender_override, updated_at, updated_at::text AS result_version
   `, [id, requiredName(input.name), input.eventId, requiredCount(input.solveCount), input.playerId || "", input.wcaId || "", normalizeDate(input.achievedAt), input.meetId, input.sourceLabel?.trim() || "", input.note?.trim() || ""]);
   return mapRecordRow(rows[0]);
 }
@@ -573,11 +583,11 @@ async function updateRecordRow(db: Queryable, id: string, input: BigStackRecord)
   const { rows } = await db.query<BigStackRecordRow>(`
     UPDATE weekly_big_stack_records
        SET name = $2, event_code = $3, solve_count = $4, player_id = NULLIF($5, ''), wca_id = $6,
-           achieved_at = NULLIF($7, '')::date, meet_id = $8, source_label = $9, note = $10, updated_at = clock_timestamp()
+           achieved_at = NULLIF($7, '')::date, meet_id = $8, source_label = $9, note = $10, gender_override = $11, updated_at = clock_timestamp()
      WHERE id = $1
     RETURNING id, name, event_code, solve_count, player_id, wca_id, achieved_at::text, meet_id,
-              NULL::text AS meet_title, source_label, note, updated_at, updated_at::text AS result_version
-  `, [id, requiredName(input.name), input.eventId, requiredCount(input.solveCount), input.playerId || "", input.wcaId || "", normalizeDate(input.achievedAt), input.meetId, input.sourceLabel.trim(), input.note.trim()]);
+              NULL::text AS meet_title, source_label, note, gender_override, updated_at, updated_at::text AS result_version
+  `, [id, requiredName(input.name), input.eventId, requiredCount(input.solveCount), input.playerId || "", input.wcaId || "", normalizeDate(input.achievedAt), input.meetId, input.sourceLabel.trim(), input.note.trim(), input.genderOverride || ""]);
   if (!rows[0]) throw new Error("未找到这条大堆记录");
   return mapRecordRow(rows[0]);
 }
@@ -585,7 +595,7 @@ async function updateRecordRow(db: Queryable, id: string, input: BigStackRecord)
 async function getRecordForUpdate(db: Queryable, id: string) {
   const { rows } = await db.query<BigStackRecordRow>(`
     SELECT record.id, record.name, record.event_code, record.solve_count, record.player_id,
-           record.wca_id, record.achieved_at::text, record.meet_id, meet.title AS meet_title,
+           record.wca_id, record.gender_override, record.achieved_at::text, record.meet_id, meet.title AS meet_title,
            record.source_label, record.note, record.updated_at, record.updated_at::text AS result_version
       FROM weekly_big_stack_records record
       LEFT JOIN weekly_meets meet ON meet.id = record.meet_id
@@ -607,7 +617,7 @@ function mapRecordRow(row: BigStackRecordRow): BigStackRecord {
     id: row.id, name: row.name, eventId: row.event_code, solveCount: Number(row.solve_count),
     playerId: row.player_id || undefined, wcaId: row.wca_id || undefined, achievedAt: row.achieved_at || undefined,
     meetId: row.meet_id, meetTitle: row.meet_title || "", sourceLabel: row.source_label || "", note: row.note || "",
-    rank: 0, updatedAt: row.updated_at, version: row.result_version
+    genderOverride: row.gender_override || "", rank: 0, updatedAt: row.updated_at, version: row.result_version
   };
 }
 
@@ -624,7 +634,7 @@ function mapSnapshot(value: Record<string, unknown> | null | undefined): BigStac
     meetId: String(value.meetId || value.meet_id || "") || null,
     meetTitle: String(value.meetTitle || value.meet_title || ""),
     sourceLabel: String(value.sourceLabel || value.source_label || ""), note: String(value.note || ""),
-    rank: Number(value.rank || 0), updatedAt: String(value.updatedAt || value.updated_at || ""), version: String(value.version || "")
+    genderOverride: String(value.genderOverride || value.gender_override || ""), rank: Number(value.rank || 0), updatedAt: String(value.updatedAt || value.updated_at || ""), version: String(value.version || "")
   };
 }
 

@@ -7,6 +7,7 @@ import { listWeeklyMeetOptions } from "@/lib/weekly-entry-store";
 import { isWeeklyCompetitionEnabled } from "@/lib/weekly-feature";
 import { listWeeklyPlayerLibrary } from "@/lib/weekly-player-library";
 import { notFound } from "next/navigation";
+import { decorateBigStackRecords } from "@/lib/big-stack-player-display";
 import { BigStackConsole } from "./big-stack-console";
 
 export const dynamic = "force-dynamic";
@@ -21,6 +22,7 @@ export default async function BigStackPage({ searchParams }: { searchParams: Pro
     listWeeklyMeetOptions(),
     isAdmin ? listWeeklyPlayerLibrary() : Promise.resolve([])
   ]);
+  const displayRecords = await decorateBigStackRecords(records);
   const meets = allMeets.filter((meet) => meet.dataVersion === 2 && meet.id !== "weekly-test-entry").map((meet) => ({ id: meet.id, title: meet.title }));
   const selectedEvent = BIG_STACK_EVENTS.find((event) => event.id === eventId)!;
   return <>
@@ -30,6 +32,6 @@ export default async function BigStackPage({ searchParams }: { searchParams: Pro
     <section className="container section big-stack-page-intro"><nav className="weekly-provincial-ranking-tabs" aria-label="大堆项目">
       {BIG_STACK_EVENTS.map((event) => <Link className={event.id === eventId ? "is-active" : ""} href={`/weekly/big-stack?event=${event.id}`} key={event.id}>{event.name}</Link>)}
     </nav><p className="weekly-provincial-ranking-note"><strong>{selectedEvent.name}大堆榜</strong><span>计量单位：一小时内还原数量；同数量并列。周赛期次只作为可选来源，不决定纪录归属。</span></p></section>
-    <BigStackConsole key={eventId} eventId={eventId} initialRecords={isAdmin ? records : records.map(publicBigStackRecord)} meets={meets} players={players} isAdmin={isAdmin} />
+    <BigStackConsole key={eventId} eventId={eventId} initialRecords={isAdmin ? displayRecords : displayRecords.map(publicBigStackRecord)} meets={meets} players={players} isAdmin={isAdmin} />
   </>;
 }

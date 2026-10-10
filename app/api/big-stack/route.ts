@@ -1,3 +1,4 @@
+import { decorateBigStackRecords } from "@/lib/big-stack-player-display";
 import { NextRequest, NextResponse } from "next/server";
 import {
   createBigStackRecord,
@@ -28,7 +29,7 @@ export async function GET(request: NextRequest) {
   const event = request.nextUrl.searchParams.get("event") || "333";
   if (!isBigStackEvent(event)) return NextResponse.json({ message: "项目不正确" }, { status: 400 });
   try {
-    const records = await listBigStackRecords(event);
+    const records = await decorateBigStackRecords(await listBigStackRecords(event));
     return NextResponse.json({ records: await hasWeeklyAdminSession(request) ? records : records.map(publicBigStackRecord) }, { headers: { "Cache-Control": "private, no-store" } });
   } catch {
     return NextResponse.json({ message: "读取大堆榜失败" }, { status: 500 });
@@ -58,7 +59,7 @@ export async function POST(request: NextRequest) {
   }
   try {
     const record = await createBigStackRecord({ ...payload, name: payload.name, eventId, solveCount });
-    return NextResponse.json({ record }, { status: 201 });
+    return NextResponse.json({ record: (await decorateBigStackRecords([record]))[0] }, { status: 201 });
   } catch (error) {
     return NextResponse.json({ message: error instanceof Error ? error.message : "保存大堆记录失败" }, { status: 400 });
   }

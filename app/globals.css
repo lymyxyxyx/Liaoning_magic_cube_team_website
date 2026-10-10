@@ -12870,3 +12870,9 @@ a.commercial-member-link:hover {
   .big-stack-pb-create,
   .big-stack-pb-toolbar { grid-template-columns: 1fr; }
 }
+
+.big-stack-pb-admin > summary { cursor: pointer; font-weight: 700; }
+.big-stack-edit-extra { grid-column: 1 / -1; display: grid; gap: 12px; }
+.big-stack-edit-extra > summary { cursor: pointer; color: var(--muted); }
+.big-stack-edit-extra[open] > .field { margin-top: 12px; }
+.big-stack-results-table th, .big-stack-results-table td { white-space: nowrap; }
