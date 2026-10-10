@@ -78,7 +78,7 @@ export async function getWeeklyMeets(): Promise<WeeklyMeet[]> {
     const mainResultsResult = await pool.query<ResultRow>(
       `SELECT wr.* FROM weekly_results wr
      JOIN weekly_events we ON we.id = wr.event_id AND we.meet_id = wr.meet_id
-     WHERE wr.meet_id = ANY($1) AND we.event_code = '333' AND we.enabled = TRUE
+     WHERE wr.meet_id = ANY($1) AND we.event_code = '333'
      ORDER BY wr.meet_id, wr.rank`,
       [meetIds]
     );
@@ -133,7 +133,11 @@ export async function getWeeklyMeetBySlug(
       [meetRow.id]
     ),
     pool.query<EventRow>(
-      "SELECT * FROM weekly_events WHERE meet_id = $1 AND enabled = TRUE ORDER BY seq, event_code, id",
+      `SELECT * FROM weekly_events event
+        WHERE meet_id = $1 AND (enabled = TRUE OR EXISTS (
+          SELECT 1 FROM weekly_results result WHERE result.meet_id = event.meet_id AND result.event_id = event.id
+        ))
+        ORDER BY seq, event_code, id`,
       [meetRow.id]
     ),
     pool.query<ResultRow>(

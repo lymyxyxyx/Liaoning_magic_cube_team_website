@@ -29,6 +29,16 @@ test("conflicting or nonexistent explicit identifiers block import", async () =>
     assert.ok((await fixture(identities).previewBigStackImport({ ...input, rows: [row] })).errors.length);
   }
 });
+test("an explicit ID or WCA ID cannot be assigned to a different name", async () => {
+  const store = fixture(identities);
+  for (const row of [
+    { rowNumber: 2, name: "另一位选手", count: 120, playerId: "A" },
+    { rowNumber: 2, name: "另一位选手", count: 120, wcaId: "2018AAAA01" }
+  ]) {
+    const preview = await store.previewBigStackImport({ ...input, rows: [row] });
+    assert.ok(preview.errors.length);
+  }
+});
 test("a confirmed identity can merge into an unbound unique record", async () => {
   const preview = await fixture(identities, [{ ...existing, player_id: null, wca_id: "" }]).previewBigStackImport(input);
   assert.deepEqual(preview.errors, []);

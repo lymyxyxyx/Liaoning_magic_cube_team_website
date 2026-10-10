@@ -5,11 +5,13 @@ import { isBoundedString } from "@/lib/weekly-request-validation";
 import { NextRequest, NextResponse } from "next/server";
 import { deleteBigStackRecord, isBigStackEvent, updateBigStackRecord } from "@/lib/big-stack";
 import { hasWeeklyAdminSession } from "@/lib/weekly-admin-auth";
+import { isWeeklyCompetitionEnabled } from "@/lib/weekly-feature";
 import { isWeeklySameOrigin } from "@/lib/weekly-request-security";
 
 export const dynamic = "force-dynamic";
 
 export async function PATCH(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  if (!isWeeklyCompetitionEnabled()) return NextResponse.json({ message: "Not found" }, { status: 404 });
   if (!(await hasWeeklyAdminSession(request))) return NextResponse.json({ message: "需要管理员登录" }, { status: 401 });
   if (!isWeeklySameOrigin(request)) return NextResponse.json({ message: "请求来源不受信任" }, { status: 403 });
   const { id } = await params;
@@ -46,6 +48,7 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
 }
 
 export async function DELETE(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  if (!isWeeklyCompetitionEnabled()) return NextResponse.json({ message: "Not found" }, { status: 404 });
   if (!(await hasWeeklyAdminSession(request))) return NextResponse.json({ message: "需要管理员登录" }, { status: 401 });
   if (!isWeeklySameOrigin(request)) return NextResponse.json({ message: "请求来源不受信任" }, { status: 403 });
   const payload = await request.json().catch(() => null) as { reason?: string; expectedVersion?: string } | null;

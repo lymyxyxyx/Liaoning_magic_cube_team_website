@@ -65,6 +65,7 @@ export async function listWeeklyOverallResults(event: WeeklyOverallResultEvent):
     player_name: string;
     weekly_number: number | null;
     wca_id: string | null;
+    wca_id_confirmed: boolean;
     gender: string | null;
     score: string;
     age_group: string | null;
@@ -101,7 +102,6 @@ export async function listWeeklyOverallResults(event: WeeklyOverallResultEvent):
           AND meet.id <> 'weekly-test-entry'
           AND meet.week_number >= $1
           AND result.player_id IS NOT NULL
-          AND result.average >= 0
           AND ${weeklyV2PlayerSourceSql("participant")}
         GROUP BY result.player_id
      )
@@ -111,6 +111,7 @@ export async function listWeeklyOverallResults(event: WeeklyOverallResultEvent):
             )::text AS group_rank,
             library.id AS player_id, library.name AS player_name,
             library.weekly_number, NULLIF(library.wca_id, '') AS wca_id,
+            library.wca_id_confirmed,
             COALESCE(NULLIF(library.gender, ''), '未知') AS gender,
             best.score::text, COALESCE(NULLIF(best.age_group, ''), '待补') AS age_group,
             best.meet_title, best.week_number, best.date_label, best.meet_slug,
@@ -122,16 +123,18 @@ export async function listWeeklyOverallResults(event: WeeklyOverallResultEvent):
       ORDER BY CASE COALESCE(NULLIF(best.age_group, ''), '待补')
                  WHEN 'U6' THEN 1 WHEN 'U8' THEN 2 WHEN 'U10' THEN 3 WHEN 'U12' THEN 4
                  WHEN 'U18' THEN 5 WHEN '成人组' THEN 6 WHEN '成人' THEN 6 ELSE 7 END,
+               COALESCE(NULLIF(best.age_group, ''), '待补') ASC,
                best.score ${direction}, library.name ASC`,
     [WEEKLY_OVERALL_RESULTS_START, event.eventCode, event.countEvent]
   );
 
+  const storedWcaByPlayerId = new Map(rows.map((row) => [row.player_id, row.wca_id?.toUpperCase() || ""]));
   const rankings = rows.map((row) => ({
     groupRank: Number(row.group_rank),
     playerId: row.player_id,
     playerName: row.player_name,
     weeklyNumber: row.weekly_number,
-    wcaId: row.wca_id || "",
+    wcaId: row.wca_id_confirmed ? row.wca_id || "" : "",
     gender: row.gender === "男" || row.gender === "女" ? row.gender : "未知",
     score: Number(row.score),
     ageGroup: ["成人", "成人组", "O18", "O30", "O40"].includes(row.age_group || "") ? "成人组" : row.age_group || "待补",
@@ -144,20 +147,33 @@ export async function listWeeklyOverallResults(event: WeeklyOverallResultEvent):
 
   // WCA profile names include a verified Chinese name in parentheses. Fill
   // only unique exact Chinese-name matches from visible Liaoning profiles.
-  const profiles = await enrichLocalProfiles(await readLocalProfiles()).catch(() => []);
+  const [profiles, allPlayers] = await Promise.all([
+    enrichLocalProfiles(await readLocalProfiles()).catch(() => []),
+    getPostgresPool().query<{ name: string }>(`SELECT name FROM weekly_player_library WHERE ${weeklyV2PlayerSourceSql()}`)
+  ]);
   const byExactChineseName = new Map<string, Set<string>>();
+  const participantNameCounts = new Map<string, number>();
+  const chineseName = (name: string) => name.replace(/[^\u3400-\u9fff]/g, "");
+  for (const player of allPlayers.rows) {
+    const name = chineseName(player.name);
+    if (name) participantNameCounts.set(name, (participantNameCounts.get(name) || 0) + 1);
+  }
   for (const profile of profiles) {
     if (!profile.visible || profile.province !== "辽宁" || !profile.wcaId) continue;
-    const chineseName = (profile.name.match(/[\u3400-\u9fff]+/g) || []).join("");
-    if (!chineseName) continue;
-    const ids = byExactChineseName.get(chineseName) || new Set<string>();
+    const name = (profile.name.match(/[\u3400-\u9fff]+/g) || []).join("");
+    if (!name) continue;
+    const ids = byExactChineseName.get(name) || new Set<string>();
     ids.add(profile.wcaId);
-    byExactChineseName.set(chineseName, ids);
+    byExactChineseName.set(name, ids);
   }
 
   return rankings.map((row) => {
     if (row.wcaId) return row;
-    const matches = byExactChineseName.get(row.playerName.replace(/[^\u3400-\u9fff]/g, ""));
-    return matches?.size === 1 ? { ...row, wcaId: [...matches][0] } : row;
+    const name = chineseName(row.playerName);
+    if (participantNameCounts.get(name) !== 1) return row;
+    const matches = byExactChineseName.get(name);
+    const matchedWcaId = matches?.size === 1 ? [...matches][0] : "";
+    const storedWcaId = storedWcaByPlayerId.get(row.playerId);
+    return matchedWcaId && (!storedWcaId || storedWcaId === matchedWcaId.toUpperCase()) ? { ...row, wcaId: matchedWcaId } : row;
   });
 }

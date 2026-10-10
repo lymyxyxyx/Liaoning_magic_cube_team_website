@@ -9,11 +9,13 @@ import {
 } from "@/lib/big-stack";
 import { parseBigStackWorkbook } from "@/lib/big-stack-xlsx";
 import { hasWeeklyAdminSession } from "@/lib/weekly-admin-auth";
+import { isWeeklyCompetitionEnabled } from "@/lib/weekly-feature";
 import { isWeeklySameOrigin } from "@/lib/weekly-request-security";
 
 export const dynamic = "force-dynamic";
 
 export async function POST(request: NextRequest) {
+  if (!isWeeklyCompetitionEnabled()) return NextResponse.json({ message: "Not found" }, { status: 404 });
   if (!(await hasWeeklyAdminSession(request))) return NextResponse.json({ message: "需要管理员登录" }, { status: 401 });
   if (!isWeeklySameOrigin(request)) return NextResponse.json({ message: "请求来源不受信任" }, { status: 403 });
   try {

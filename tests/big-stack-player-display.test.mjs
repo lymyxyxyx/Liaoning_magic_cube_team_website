@@ -26,6 +26,14 @@ test('conflicting WCA IDs and gender evidence are not silently presented as conf
   const conflict=display({...record,playerId:'A',wcaId:'2019OTHER01'});assert.equal(conflict.weeklyNumber,undefined);assert.equal(conflict.matchedWcaId,'');assert.equal(conflict.gender,'未知');
   assert.equal(display(record,[{...player,gender:'女'}]).gender,'未知');
 });
+test('an identifier belonging to another name does not expose that person’s number or WCA ID',()=>{
+  const wrongPlayer=display({...record,name:'李四',playerId:'A',wcaId:'2018WANG01'});
+  assert.equal(wrongPlayer.weeklyNumber,undefined);
+  assert.equal(wrongPlayer.matchedWcaId,'');
+  assert.equal(wrongPlayer.gender,'未知');
+  const wrongWca=display({...record,name:'李四',wcaId:'2018WANG01'});
+  assert.equal(wrongWca.matchedWcaId,'');
+});
 test('administrator gender corrections can be explicitly set or returned to automatic matching',()=>{
   assert.equal(display({...record,genderOverride:'女'}).gender,'女');assert.equal(display({...record,genderOverride:'未知'}).gender,'未知');assert.equal(display({...record,genderOverride:''}).gender,'男');
 });

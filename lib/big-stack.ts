@@ -291,7 +291,7 @@ export async function createBigStackRecord(input: {
     await client.query("BEGIN");
     await client.query("LOCK TABLE weekly_big_stack_records IN EXCLUSIVE MODE");
     const validated = normalizeBigStackSpreadsheetRow({ rowNumber: 0, name: input.name, count: input.solveCount, wcaId: input.wcaId, achievedAt: input.achievedAt, note: input.note });
-    const identity = await resolveManualIdentity(client, input.playerId, validated.wcaId);
+    const identity = await resolveManualIdentity(client, input.playerId, validated.wcaId, input.name);
     await assertNoManualDuplicate(client, input.eventId, requiredName(input.name), identity.playerId, identity.wcaId);
     const record = await insertRecord(client, {
       name: requiredName(input.name),
@@ -339,7 +339,7 @@ export async function updateBigStackRecord(id: string, input: {
     if (!before) throw new Error("未找到这条大堆记录");
     assertWeeklyResultVersion(before.version, input.expectedVersion);
     const validated = normalizeBigStackSpreadsheetRow({ rowNumber: 0, name: input.name, count: input.solveCount, wcaId: input.wcaId, achievedAt: input.achievedAt, note: input.note });
-    const identity = await resolveManualIdentity(client, input.playerId, validated.wcaId);
+    const identity = await resolveManualIdentity(client, input.playerId, validated.wcaId, input.name);
     const name = requiredName(input.name);
     const solveCount = requiredCount(input.solveCount);
     const identityChanged = name !== before.name || input.eventId !== before.eventId ||
@@ -495,13 +495,17 @@ function buildIdentityMaps(rows: WeeklyIdentityRow[]) {
 function matchWeeklyIdentity(row: BigStackSpreadsheetRow, maps: ReturnType<typeof buildIdentityMaps>) {
   if (row.playerId) {
     const player = maps.byId.get(row.playerId);
+    if (player && normalizeName(player.name) !== normalizeName(row.name)) return { method: "ambiguous" as const, conflict: true, message: "姓名与周赛选手 ID 不一致，请先核对" };
     if (player && row.wcaId && ((player.wca_id && row.wcaId.toUpperCase() !== player.wca_id.toUpperCase()) || (maps.byWca.get(row.wcaId.toUpperCase()) || []).some((candidate) => candidate.id !== player.id))) return { method: "ambiguous" as const, conflict: true, message: "选手 ID 与 WCA ID 指向不同身份，请先核对" };
     if (player) return { method: "player_id" as const, playerId: player.id, wcaId: player.wca_id || row.wcaId };
     return { method: "unmatched" as const, conflict: true, wcaId: row.wcaId, message: `周赛选手 ID ${row.playerId} 不存在，请更正或清空后重新预览` };
   }
   if (row.wcaId) {
     const matches = maps.byWca.get(row.wcaId.toUpperCase()) || [];
-    if (matches.length === 1) return { method: "wca_id" as const, playerId: matches[0].id, wcaId: row.wcaId.toUpperCase() };
+    if (matches.length === 1) {
+      if (normalizeName(matches[0].name) !== normalizeName(row.name)) return { method: "ambiguous" as const, conflict: true, wcaId: row.wcaId.toUpperCase(), message: "姓名与 WCA ID 对应的周赛选手不一致，请先核对" };
+      return { method: "wca_id" as const, playerId: matches[0].id, wcaId: row.wcaId.toUpperCase() };
+    }
     if (matches.length > 1) return { method: "ambiguous" as const, conflict: true, wcaId: row.wcaId.toUpperCase(), message: "WCA ID 匹配到多个周赛选手，暂不绑定" };
     return { method: "unmatched" as const, wcaId: row.wcaId.toUpperCase(), message: "WCA ID 尚未进入周赛选手库" };
   }
@@ -533,19 +537,27 @@ function findExistingRecord(row: BigStackSpreadsheetRow, identity: ReturnType<ty
   return { record: undefined, ambiguous: nameMatches.length > 1 };
 }
 
-async function resolveManualIdentity(db: Queryable, playerId?: string, wcaId?: string) {
+async function resolveManualIdentity(db: Queryable, playerId?: string, wcaId?: string, name?: string) {
   const cleanPlayerId = playerId?.trim() || "";
   const cleanWcaId = wcaId?.trim().toUpperCase() || "";
   if (cleanPlayerId) {
     const { rows } = await db.query<WeeklyIdentityRow>("SELECT id, name, wca_id FROM weekly_player_library WHERE id = $1", [cleanPlayerId]);
     if (!rows[0]) throw new Error("选择的周赛选手不存在");
+    if (normalizeName(rows[0].name) !== normalizeName(name || "")) throw new Error("姓名与所选周赛选手不一致，请核对编号或取消关联");
     if (cleanWcaId && rows[0].wca_id && cleanWcaId !== rows[0].wca_id.toUpperCase()) throw new Error("WCA ID 与所选周赛选手不一致");
+    if (cleanWcaId) {
+      const conflict = await db.query<{ id: string }>("SELECT id FROM weekly_player_library WHERE upper(wca_id) = $1 AND id <> $2 LIMIT 1", [cleanWcaId, cleanPlayerId]);
+      if (conflict.rows[0]) throw new Error("WCA ID 已属于另一位周赛选手");
+    }
     return { playerId: rows[0].id, wcaId: cleanWcaId || rows[0].wca_id || undefined };
   }
   if (cleanWcaId) {
     const { rows } = await db.query<WeeklyIdentityRow>("SELECT id, name, wca_id FROM weekly_player_library WHERE upper(wca_id) = $1", [cleanWcaId]);
     if (rows.length > 1) throw new Error("WCA ID 对应多个周赛选手，请明确选择选手 ID");
-    if (rows.length === 1) return { playerId: rows[0].id, wcaId: cleanWcaId };
+    if (rows.length === 1) {
+      if (normalizeName(rows[0].name) !== normalizeName(name || "")) throw new Error("姓名与该 WCA ID 对应的周赛选手不一致");
+      return { playerId: rows[0].id, wcaId: cleanWcaId };
+    }
   }
   return { playerId: undefined, wcaId: cleanWcaId || undefined };
 }

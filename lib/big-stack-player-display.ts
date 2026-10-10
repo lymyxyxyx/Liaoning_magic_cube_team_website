@@ -4,7 +4,7 @@ import type { BigStackRecord } from "@/lib/big-stack";
 
 export type BigStackPlayerIdentity = { id: string; name: string; weeklyNumber?: number; wcaId: string; gender: string; version: string };
 export type BigStackRegionalIdentity = { name: string; wcaId: string; gender?: string };
-const exactName = (name: string) => name.match(/\(([\u3400-\u9fff]+)\)/)?.[1] || name.trim();
+const exactName = (name: string) => (name.match(/\(([\u3400-\u9fff]+)\)/)?.[1] || name).trim().replace(/\s+/g, " ");
 function unique<T>(values: T[], key: (value: T) => string) {
   const groups = new Map<string, T[]>();
   for (const value of values) { const k = key(value); if (k) groups.set(k, [...(groups.get(k) || []), value]); }
@@ -18,12 +18,14 @@ export function matchBigStackPlayerDisplay(records: BigStackRecord[], players: B
   const byProfileName = unique(profiles, profile => exactName(profile.name));
   const byProfileWca = unique(profiles, profile => profile.wcaId.toUpperCase());
   return records.map(record => {
-    const player = record.playerId ? byPlayerId(record.playerId) : record.wcaId ? byPlayerWca(record.wcaId.toUpperCase()) : byPlayerName(exactName(record.name));
+    const matchedPlayer = record.playerId ? byPlayerId(record.playerId) : record.wcaId ? byPlayerWca(record.wcaId.toUpperCase()) : byPlayerName(exactName(record.name));
+    const player = matchedPlayer && exactName(matchedPlayer.name) === exactName(record.name) ? matchedPlayer : undefined;
     const wcaId = record.wcaId || player?.wcaId || "";
     const ambiguousName = !record.playerId && !record.wcaId && players.filter(candidate => exactName(candidate.name) === exactName(record.name)).length > 1;
     const conflict = Boolean(record.wcaId && player?.wcaId && record.wcaId.toUpperCase() !== player.wcaId.toUpperCase());
     // Explicit identifiers never fall back to a same-name person when unresolved.
-    const profile = conflict || ambiguousName || (record.playerId && !player && !wcaId) ? undefined : wcaId ? byProfileWca(wcaId.toUpperCase()) : byProfileName(exactName(record.name));
+    const matchedProfile = conflict || ambiguousName || (record.playerId && !player && !wcaId) ? undefined : wcaId ? byProfileWca(wcaId.toUpperCase()) : byProfileName(exactName(record.name));
+    const profile = matchedProfile && exactName(matchedProfile.name) === exactName(record.name) ? matchedProfile : undefined;
     const genders = [player?.gender, profile?.gender].filter(gender => gender === "男" || gender === "女");
     const gender = record.genderOverride || (!conflict && !ambiguousName && new Set(genders).size === 1 ? genders[0] : "未知");
     return { ...record, weeklyNumber: conflict ? undefined : player?.weeklyNumber, matchedWcaId: profile?.wcaId || "", gender,
