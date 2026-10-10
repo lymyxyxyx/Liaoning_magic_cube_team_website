@@ -1110,6 +1110,16 @@ main {
   white-space: nowrap;
 }
 
+.weekly-provincial-ranking-table .weekly-provincial-age-group-divider td {
+  padding: 10px 14px;
+  border-top: 2px solid #b8c9e6;
+  background: #edf3ff;
+  color: #174a9e;
+  font-size: 14px;
+  font-weight: 800;
+  text-align: left;
+}
+
 .weekly-provincial-wca-id {
   color: var(--muted);
   font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
@@ -9415,6 +9425,31 @@ a.commercial-member-link:hover {
     grid-column: 1 / -1;
     font-weight: 900;
     justify-content: space-between;
+  }
+
+  .weekly-provincial-ranking-table .weekly-provincial-age-group-divider {
+    display: block;
+    padding: 0;
+    border: 0;
+    border-radius: 8px;
+    background: #edf3ff;
+    box-shadow: none;
+  }
+
+  .weekly-provincial-ranking-table .weekly-provincial-age-group-divider td {
+    display: block;
+    width: 100%;
+    padding: 9px 12px;
+    border: 0;
+    color: #174a9e;
+    font-size: 14px;
+    font-weight: 800;
+    text-align: left;
+  }
+
+  .weekly-provincial-ranking-table .weekly-provincial-age-group-divider td::before {
+    content: "年龄组";
+    min-width: 0;
   }
 
   .competition-list-table td:last-child,

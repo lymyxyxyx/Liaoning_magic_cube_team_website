@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { Fragment } from "react";
 import { PageHero } from "@/components/page-hero";
 import { isWeeklyCompetitionEnabled } from "@/lib/weekly-feature";
 import { formatCountResult, formatResult, secondsToResultValue } from "@/lib/weekly-result-utils";
@@ -30,7 +31,12 @@ export default async function WeeklyOverallRankingsPage({ searchParams }: { sear
       {selected ? <>
         <div className="weekly-provincial-ranking-note"><strong>{selected.eventName}成绩排名</strong><span>{selected.countEvent ? "每人取最高还原数量。" : selected.format === "best1" ? "每人取历史最好单次成绩。" : "每人取历史最好平均成绩。"}成绩按其所属年龄组分别排名；周赛成绩更新后，这里会同步显示最新结果。</span></div>
         <div className="result-table-wrap"><table className="result-table weekly-provincial-ranking-table"><thead><tr><th>组内排名</th><th>周赛编号</th><th>姓名</th><th>年龄组</th><th>性别</th><th>WCA ID</th><th>{selected.countEvent ? "最好数量" : selected.format === "best1" ? "最好单次" : "最好平均"}</th><th>参赛期数</th><th>最好成绩来源</th></tr></thead><tbody>
-          {rankings.map((row) => <tr key={row.playerId}><td className="score-strong">#{row.groupRank}</td><td>{row.weeklyNumber ?? ""}</td><td>{row.playerName}</td><td>{row.ageGroup}</td><td>{row.gender}</td><td className="weekly-provincial-wca-id">{row.wcaId}</td><td className="score-strong">{selected.countEvent ? formatCountResult(Math.round(row.score * 100)) : formatResult(secondsToResultValue(row.score))}</td><td>{row.participationWeeks}</td><td className="weekly-provincial-meet-cell"><Link href={`/weekly/${encodeURIComponent(row.meetSlug)}#weekly-event-${encodeURIComponent(selected.eventCode)}`}>第{row.weekNumber}周周赛 · {formatMeetPeriod(row.dateLabel)}</Link></td></tr>)}
+          {rankings.map((row, index) => <Fragment key={row.playerId}>
+            {index === 0 || rankings[index - 1].ageGroup !== row.ageGroup
+              ? <tr className="weekly-provincial-age-group-divider"><td colSpan={9}>{row.ageGroup}</td></tr>
+              : null}
+            <tr><td className="score-strong">#{row.groupRank}</td><td>{row.weeklyNumber ?? ""}</td><td>{row.playerName}</td><td>{row.ageGroup}</td><td>{row.gender}</td><td className="weekly-provincial-wca-id">{row.wcaId}</td><td className="score-strong">{selected.countEvent ? formatCountResult(Math.round(row.score * 100)) : formatResult(secondsToResultValue(row.score))}</td><td>{row.participationWeeks}</td><td className="weekly-provincial-meet-cell"><Link href={`/weekly/${encodeURIComponent(row.meetSlug)}#weekly-event-${encodeURIComponent(selected.eventCode)}`}>第{row.weekNumber}周周赛 · {formatMeetPeriod(row.dateLabel)}</Link></td></tr>
+          </Fragment>)}
           {!rankings.length ? <tr><td colSpan={9}>第 {WEEKLY_OVERALL_RESULTS_START} 周起暂未录入该项目的有效成绩。</td></tr> : null}
         </tbody></table></div>
       </> : <p className="empty-state">第 {WEEKLY_OVERALL_RESULTS_START} 周起暂未录入周赛成绩。</p>}
