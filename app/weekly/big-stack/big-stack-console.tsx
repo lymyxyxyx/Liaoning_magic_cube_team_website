@@ -122,9 +122,8 @@ export function BigStackConsole({
     }
   }
 
-  async function removeRecord(record: BigStackListRecord) {
-    const deleteReason = reason.trim() || window.prompt(`请输入删除“${record.name}”的原因`)?.trim() || "";
-    if (!deleteReason || !window.confirm(`确认删除“${record.name}”的${record.eventId}大堆 PB？`)) return;
+  async function removeRecord(record: BigStackListRecord, deleteReason = "管理员从大堆榜删除") {
+    if (!window.confirm(`确认删除“${record.name}”的大堆记录（${record.solveCount} 个）？`)) return;
     try {
       await jsonRequest<{ ok: boolean }>(`/api/big-stack/${encodeURIComponent(record.id)}`, {
         method: "DELETE",
@@ -161,7 +160,7 @@ export function BigStackConsole({
       {message ? <p className="admin-inline-notice" role="status">{message}</p> : null}
       <div className="big-stack-pb-toolbar"><label>搜索<input value={query} onChange={(event) => { setQuery(event.target.value); setPage(1); }} placeholder="姓名、WCA ID、周赛编号" /></label><span>共 {filtered.length} 人</span></div>
       <div className="result-table-wrap"><table className="result-table big-stack-results-table"><thead><tr><th>排名</th><th>周赛编号</th><th>姓名</th><th>WCA ID</th><th>性别</th><th>一小时还原数量</th>{isAdmin ? <th>操作</th> : null}</tr></thead><tbody>
-        {visibleRecords.map((record) => <tr key={record.id}><td className="score-strong">#{record.rank}</td><td>{record.weeklyNumber || ""}</td><td>{record.name}</td><td>{record.matchedWcaId ?? record.wcaId ?? ""}</td><td>{record.gender || "未知"}</td><td className="score-strong">{record.solveCount}</td>{isAdmin ? <td><button className="button compact" disabled={saving} onClick={() => { setEditing({ ...record, wcaId: record.matchedWcaId || record.wcaId || "" } as BigStackRecord); setEditingNumber(String(record.weeklyNumber || "")); setReason(""); setMessage(""); }}>编辑</button></td> : null}</tr>)}
+        {visibleRecords.map((record) => <tr key={record.id}><td className="score-strong">#{record.rank}</td><td>{record.weeklyNumber || ""}</td><td>{record.name}</td><td>{record.matchedWcaId ?? record.wcaId ?? ""}</td><td>{record.gender || "未知"}</td><td className="score-strong">{record.solveCount}</td>{isAdmin ? <td><div className="big-stack-row-actions"><button className="button compact" disabled={saving} onClick={() => { setEditing({ ...record, wcaId: record.matchedWcaId || record.wcaId || "" } as BigStackRecord); setEditingNumber(String(record.weeklyNumber || "")); setReason(""); setMessage(""); }}>编辑</button><button className="button compact button--danger" type="button" disabled={saving} onClick={() => removeRecord(record)}>删除</button></div></td> : null}</tr>)}
         {!visibleRecords.length ? <tr><td colSpan={isAdmin ? 7 : 6}>该项目暂未录入大堆成绩。</td></tr> : null}
       </tbody></table></div>
       <div className="big-stack-pb-pagination"><button className="button compact" disabled={safePage <= 1} onClick={() => setPage((current) => Math.max(1, current - 1))}>上一页</button><span>第 {safePage} / {pageCount} 页</span><button className="button compact" disabled={safePage >= pageCount} onClick={() => setPage((current) => Math.min(pageCount, current + 1))}>下一页</button></div>
@@ -179,7 +178,7 @@ export function BigStackConsole({
         <label className="field"><span>达成日期</span><input type="date" value={editing.achievedAt || ""} onChange={(event) => setEditing({ ...editing, achievedAt: event.target.value })} /></label>
         <label className="field"><span>备注</span><input value={editing.note} onChange={(event) => setEditing({ ...editing, note: event.target.value })} /></label>
         <label className="field"><span>修改说明</span><input value={reason} onChange={(event) => setReason(event.target.value)} placeholder="选填" /></label>
-        <button className="button compact" type="button" disabled={saving} onClick={()=>removeRecord(editing)}>删除这条记录</button>
+        <button className="button compact button--danger" type="button" disabled={saving} onClick={()=>removeRecord(editing, reason.trim() || "管理员从编辑窗口删除")}>删除这条记录</button>
       </details>
       <div className="weekly-admin-login-actions"><button className="button" type="button" disabled={saving} onClick={() => setEditing(null)}>取消</button><button className="button primary" disabled={saving}>{saving ? "保存中…" : "保存"}</button></div>
     </form></section></div> : null}

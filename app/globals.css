@@ -12883,6 +12883,7 @@ a.commercial-member-link:hover {
 .big-stack-edit-extra[open] > .field { margin-top: 12px; }
 .big-stack-results-table th, .big-stack-results-table td { white-space: nowrap; }
 .big-stack-results-table { min-width: 680px; }
+.big-stack-row-actions { display: flex; justify-content: center; gap: 6px; }
 @media (max-width: 640px) {
   .big-stack-results-table { min-width: 560px; font-size: 12px; }
   .big-stack-results-table th, .big-stack-results-table td { padding: 9px 8px; }
