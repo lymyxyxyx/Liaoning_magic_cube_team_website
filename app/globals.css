@@ -12842,7 +12842,7 @@ a.commercial-member-link:hover {
 .big-stack-pb-create,
 .big-stack-pb-toolbar { display: grid; gap: 12px; align-items: end; }
 .big-stack-pb-import { grid-template-columns: minmax(180px, .7fr) minmax(260px, 1.4fr) auto; padding: 16px; border: 1px solid var(--line); border-radius: 16px; background: var(--soft); }
-.big-stack-pb-create { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.big-stack-pb-create { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 .big-stack-pb-import label,
 .big-stack-pb-create label,
 .big-stack-pb-toolbar label { display: grid; gap: 6px; color: var(--muted); font-size: 12px; }

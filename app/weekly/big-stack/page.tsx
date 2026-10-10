@@ -3,7 +3,6 @@ import { cookies } from "next/headers";
 import { PageHero } from "@/components/page-hero";
 import { BIG_STACK_EVENTS, isBigStackEvent, listBigStackRecords, publicBigStackRecord } from "@/lib/big-stack";
 import { hasWeeklyAdminCookie } from "@/lib/weekly-admin-auth";
-import { listWeeklyMeetOptions } from "@/lib/weekly-entry-store";
 import { isWeeklyCompetitionEnabled } from "@/lib/weekly-feature";
 import { listWeeklyPlayerLibrary } from "@/lib/weekly-player-library";
 import { notFound } from "next/navigation";
@@ -18,13 +17,11 @@ export default async function BigStackPage({ searchParams }: { searchParams: Pro
   const params = await searchParams;
   const eventId = isBigStackEvent(params.event || "") ? params.event as typeof BIG_STACK_EVENTS[number]["id"] : "333";
   const isAdmin = await hasWeeklyAdminCookie(await cookies());
-  const [records, allMeets, players] = await Promise.all([
+  const [records, players] = await Promise.all([
     listBigStackRecords(eventId),
-    listWeeklyMeetOptions(),
     isAdmin ? listWeeklyPlayerLibrary() : Promise.resolve([])
   ]);
   const displayRecords = await decorateBigStackRecords(records);
-  const meets = allMeets.filter((meet) => meet.dataVersion === 2 && meet.id !== "weekly-test-entry").map((meet) => ({ id: meet.id, title: meet.title }));
   const selectedEvent = BIG_STACK_EVENTS.find((event) => event.id === eventId)!;
   return <>
     <PageHero className="page-hero--compact weekly-results-page-hero big-stack-page-hero" label="辽宁线上周赛" title="大堆总榜" actions={<div className="weekly-page-actions"><Link className="button" href="/weekly">返回周赛</Link><WeeklyInlineAdminLogin isAdmin={isAdmin} returnTo={`/weekly/big-stack?event=${eventId}`} /></div>}>
@@ -33,6 +30,6 @@ export default async function BigStackPage({ searchParams }: { searchParams: Pro
     <section className="container section big-stack-page-intro"><nav className="weekly-provincial-ranking-tabs" aria-label="大堆项目">
       {BIG_STACK_EVENTS.map((event) => <Link className={event.id === eventId ? "is-active" : ""} href={`/weekly/big-stack?event=${event.id}`} key={event.id}>{event.name}</Link>)}
     </nav><p className="weekly-provincial-ranking-note"><strong>{selectedEvent.name}大堆榜</strong><span>一小时内还原数量，同数量并列。选手资料仅采用精确匹配。</span></p></section>
-    <BigStackConsole key={eventId} eventId={eventId} initialRecords={isAdmin ? displayRecords : displayRecords.map(publicBigStackRecord)} meets={meets} players={players} isAdmin={isAdmin} />
+    <BigStackConsole key={eventId} eventId={eventId} initialRecords={isAdmin ? displayRecords : displayRecords.map(publicBigStackRecord)} players={players} isAdmin={isAdmin} />
   </>;
 }
