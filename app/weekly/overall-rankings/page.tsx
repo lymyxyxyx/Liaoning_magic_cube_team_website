@@ -30,6 +30,27 @@ export default async function WeeklyOverallRankingsPage({ searchParams }: { sear
       </nav>
       {selected ? <>
         <div className="weekly-provincial-ranking-note"><strong>{selected.eventName}成绩排名</strong><span>{selected.countEvent ? "每人取最高还原数量。" : selected.format === "best1" ? "每人取历史最好单次成绩。" : "每人取历史最好平均成绩。"}成绩按其所属年龄组分别排名；周赛成绩更新后，这里会同步显示最新结果。</span></div>
+        <ol className="weekly-overall-mobile-list" aria-label={`${selected.eventName}成绩排名`}>
+          {rankings.map((row, index) => <Fragment key={row.playerId}>
+            {index === 0 || rankings[index - 1].ageGroup !== row.ageGroup
+              ? <li className="weekly-overall-mobile-group" key={`${row.playerId}-group`}>{row.ageGroup}</li>
+              : null}
+            <li className="weekly-overall-mobile-item">
+              <div className="weekly-overall-mobile-primary">
+                <span className="weekly-overall-mobile-rank">#{row.groupRank}</span>
+                <strong>{row.playerName}</strong>
+                <strong className="weekly-overall-mobile-score">{selected.countEvent ? formatCountResult(Math.round(row.score * 100)) : formatResult(secondsToResultValue(row.score))}</strong>
+              </div>
+              <div className="weekly-overall-mobile-details">
+                <span>第{row.weeklyNumber ?? "—"}号</span><span>{row.ageGroup}</span><span>{row.gender}</span>
+                {row.wcaId ? <span>{row.wcaId}</span> : null}
+                <span>参赛{row.participationWeeks}期</span>
+                <Link href={`/weekly/${encodeURIComponent(row.meetSlug)}#weekly-event-${encodeURIComponent(selected.eventCode)}`}>第{row.weekNumber}周 · {formatMeetPeriod(row.dateLabel)}</Link>
+              </div>
+            </li>
+          </Fragment>)}
+          {!rankings.length ? <li className="weekly-overall-mobile-empty">第 {WEEKLY_OVERALL_RESULTS_START} 周起暂未录入该项目的有效成绩。</li> : null}
+        </ol>
         <div className="result-table-wrap"><table className="result-table weekly-provincial-ranking-table"><thead><tr><th>组内排名</th><th>周赛编号</th><th>姓名</th><th>年龄组</th><th>性别</th><th>WCA ID</th><th>{selected.countEvent ? "最好数量" : selected.format === "best1" ? "最好单次" : "最好平均"}</th><th>参赛期数</th><th>最好成绩来源</th></tr></thead><tbody>
           {rankings.map((row, index) => <Fragment key={row.playerId}>
             {index === 0 || rankings[index - 1].ageGroup !== row.ageGroup
