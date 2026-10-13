@@ -9346,14 +9346,6 @@ a.commercial-member-link:hover {
     list-style: none;
   }
 
-  .weekly-overall-mobile-group {
-    padding: 9px 0 7px;
-    border-bottom: 1px solid #b8c9e6;
-    color: #174a9e;
-    font-size: 14px;
-    font-weight: 800;
-  }
-
   .weekly-overall-mobile-item {
     display: grid;
     gap: 5px;

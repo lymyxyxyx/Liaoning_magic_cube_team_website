@@ -13,7 +13,7 @@ export type WeeklyOverallResultEvent = {
 };
 
 export type WeeklyOverallResultRow = {
-  groupRank: number;
+  rank: number;
   playerId: string;
   playerName: string;
   weeklyNumber: number | null;
@@ -60,7 +60,7 @@ export async function listWeeklyOverallResultEvents(): Promise<WeeklyOverallResu
 export async function listWeeklyOverallResults(event: WeeklyOverallResultEvent): Promise<WeeklyOverallResultRow[]> {
   const direction = event.countEvent ? "DESC" : "ASC";
   const { rows } = await getPostgresPool().query<{
-    group_rank: string;
+    rank: string;
     player_id: string;
     player_name: string;
     weekly_number: number | null;
@@ -105,10 +105,7 @@ export async function listWeeklyOverallResults(event: WeeklyOverallResultEvent):
           AND ${weeklyV2PlayerSourceSql("participant")}
         GROUP BY result.player_id
      )
-     SELECT RANK() OVER (
-              PARTITION BY COALESCE(NULLIF(best.age_group, ''), '待补')
-              ORDER BY best.score ${direction}
-            )::text AS group_rank,
+     SELECT RANK() OVER (ORDER BY best.score ${direction})::text AS rank,
             library.id AS player_id, library.name AS player_name,
             library.weekly_number, NULLIF(library.wca_id, '') AS wca_id,
             library.wca_id_confirmed,
@@ -120,17 +117,13 @@ export async function listWeeklyOverallResults(event: WeeklyOverallResultEvent):
        JOIN weekly_player_library library ON library.id = best.player_id
        LEFT JOIN participation ON participation.player_id = best.player_id
       WHERE ${weeklyV2PlayerSourceSql("library")}
-      ORDER BY CASE COALESCE(NULLIF(best.age_group, ''), '待补')
-                 WHEN 'U6' THEN 1 WHEN 'U8' THEN 2 WHEN 'U10' THEN 3 WHEN 'U12' THEN 4
-                 WHEN 'U18' THEN 5 WHEN '成人组' THEN 6 WHEN '成人' THEN 6 ELSE 7 END,
-               COALESCE(NULLIF(best.age_group, ''), '待补') ASC,
-               best.score ${direction}, library.name ASC`,
+      ORDER BY best.score ${direction}, library.name ASC`,
     [WEEKLY_OVERALL_RESULTS_START, event.eventCode, event.countEvent]
   );
 
   const storedWcaByPlayerId = new Map(rows.map((row) => [row.player_id, row.wca_id?.toUpperCase() || ""]));
   const rankings = rows.map((row) => ({
-    groupRank: Number(row.group_rank),
+    rank: Number(row.rank),
     playerId: row.player_id,
     playerName: row.player_name,
     weeklyNumber: row.weekly_number,
