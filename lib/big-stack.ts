@@ -339,13 +339,19 @@ export async function updateBigStackRecord(id: string, input: {
     if (!before) throw new Error("未找到这条大堆记录");
     assertWeeklyResultVersion(before.version, input.expectedVersion);
     const validated = normalizeBigStackSpreadsheetRow({ rowNumber: 0, name: input.name, count: input.solveCount, wcaId: input.wcaId, achievedAt: input.achievedAt, note: input.note });
-    const identity = await resolveManualIdentity(client, input.playerId, validated.wcaId, input.name);
     const name = requiredName(input.name);
     const solveCount = requiredCount(input.solveCount);
+    const identityInputsUnchanged = name === before.name && input.eventId === before.eventId &&
+      (input.playerId || "") === (before.playerId || "") && (validated.wcaId || "") === (before.wcaId || "");
+    // Existing records may contain an older identity link or a duplicate from
+    // an import. Neither should prevent correcting the score on that record.
+    const identity = identityInputsUnchanged
+      ? { playerId: before.playerId, wcaId: before.wcaId }
+      : await resolveManualIdentity(client, input.playerId, validated.wcaId, name);
     const identityChanged = name !== before.name || input.eventId !== before.eventId ||
       identity.playerId !== before.playerId || identity.wcaId !== before.wcaId;
     if ((solveCount < before.solveCount || identityChanged) && !input.reason?.trim()) throw new Error("降低成绩或修改选手身份时必须填写原因");
-    await assertNoManualDuplicate(client, input.eventId, name, identity.playerId, identity.wcaId, id);
+    if (!identityInputsUnchanged) await assertNoManualDuplicate(client, input.eventId, name, identity.playerId, identity.wcaId, id);
     const after = await updateRecordRow(client, id, {
       ...before,
       genderOverride: input.genderOverride ?? before.genderOverride,

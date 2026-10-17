@@ -12,16 +12,22 @@ export async function editBigStackRecordDirectly(id: string, input: RecordEdit &
     await client.query("LOCK TABLE weekly_long_card_profiles IN SHARE ROW EXCLUSIVE MODE");
     await client.query("LOCK TABLE weekly_player_wca_matches IN EXCLUSIVE MODE");
     await client.query("LOCK TABLE weekly_big_stack_records IN EXCLUSIVE MODE");
-    const original = await client.query<{version: string}>("SELECT updated_at::text AS version FROM weekly_big_stack_records WHERE id=$1 FOR UPDATE", [id]);
+    const original = await client.query<{version: string; player_id: string | null}>("SELECT updated_at::text AS version, player_id FROM weekly_big_stack_records WHERE id=$1 FOR UPDATE", [id]);
     assertWeeklyResultVersion(original.rows[0]?.version, input.expectedVersion);
-    let playerId: string | undefined;
+    // Keep an existing link when the record has no displayed weekly number.
+    // The editor clears playerId explicitly when an administrator clears it.
+    let playerId: string | undefined = input.playerId;
     if (input.weeklyNumber !== null) {
       const selected = await client.query<{id: string; wca_id: string; wca_id_confirmed: boolean; version: string}>("SELECT id,wca_id,wca_id_confirmed,updated_at::text AS version FROM weekly_player_library WHERE weekly_number=$1 AND source IN ('players_excel_import','admin_manual') FOR UPDATE", [input.weeklyNumber]);
       const player = selected.rows[0];
       if (!player) throw new Error("周赛编号不存在，请填写已有编号；无编号可留空");
-      assertWeeklyResultVersion(player.version, input.playerVersion || "");
       playerId = player.id;
       const wcaId = input.wcaId?.trim().toUpperCase() || "";
+      // A score-only edit must not depend on a player version captured when the
+      // page was opened. Check that version only when changing the shared identity.
+      if (wcaId !== player.wca_id || original.rows[0].player_id !== player.id) {
+        assertWeeklyResultVersion(player.version, input.playerVersion || "");
+      }
       if (wcaId !== player.wca_id) await updateWeeklyPlayerIdentity({ id: player.id, expectedVersion: player.version, weeklyNumber: input.weeklyNumber!, wcaId, wcaIdConfirmed: Boolean(wcaId), reason: input.reason || "大堆榜直接编辑 WCA 绑定" }, client, id);
     }
     // Shared identity changes may refresh this bound record's timestamp.

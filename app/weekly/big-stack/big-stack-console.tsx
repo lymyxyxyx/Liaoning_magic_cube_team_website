@@ -62,6 +62,7 @@ export function BigStackConsole({
         if (response.status === 409 || response.status === 428) {
           const latest = await fetch(`/api/big-stack?event=${eventId}`, { cache: "no-store" });
           if (latest.ok) { const refreshed = await latest.json(); setRecords(refreshed.records); }
+          setEditing(null);
         }
         throw new Error(body?.message || "操作失败");
       }
@@ -160,7 +161,7 @@ export function BigStackConsole({
       {message ? <p className="admin-inline-notice" role="status">{message}</p> : null}
       <div className="big-stack-pb-toolbar"><label>搜索<input value={query} onChange={(event) => { setQuery(event.target.value); setPage(1); }} placeholder="姓名、WCA ID" /></label><span>共 {filtered.length} 人</span></div>
       <div className="result-table-wrap"><table className="result-table big-stack-results-table"><thead><tr><th>排名</th><th>姓名</th><th>WCA ID</th><th>性别</th><th>一小时还原数量</th>{isAdmin ? <th>操作</th> : null}</tr></thead><tbody>
-        {visibleRecords.map((record) => <tr key={record.id}><td className="score-strong">#{record.rank}</td><td>{record.name}</td><td>{record.matchedWcaId ?? record.wcaId ?? ""}</td><td>{record.gender || "未知"}</td><td className="score-strong">{record.solveCount}</td>{isAdmin ? <td><div className="big-stack-row-actions"><button className="button compact" disabled={saving} onClick={() => { setEditing({ ...record, wcaId: record.matchedWcaId || record.wcaId || "" } as BigStackRecord); setEditingNumber(String(record.weeklyNumber || "")); setReason(""); setMessage(""); }}>编辑</button><button className="button compact button--danger" type="button" disabled={saving} onClick={() => removeRecord(record)}>删除</button></div></td> : null}</tr>)}
+        {visibleRecords.map((record) => <tr key={record.id}><td className="score-strong">#{record.rank}</td><td>{record.name}</td><td>{record.matchedWcaId ?? record.wcaId ?? ""}</td><td>{record.gender || "未知"}</td><td className="score-strong">{record.solveCount}</td>{isAdmin ? <td><div className="big-stack-row-actions"><button className="button compact" disabled={saving} onClick={() => { setEditing(record as BigStackRecord); setEditingNumber(String(record.weeklyNumber || "")); setReason(""); setMessage(""); }}>编辑</button><button className="button compact button--danger" type="button" disabled={saving} onClick={() => removeRecord(record)}>删除</button></div></td> : null}</tr>)}
         {!visibleRecords.length ? <tr><td colSpan={isAdmin ? 6 : 5}>该项目暂未录入大堆成绩。</td></tr> : null}
       </tbody></table></div>
       <div className="big-stack-pb-pagination"><button className="button compact" disabled={safePage <= 1} onClick={() => setPage((current) => Math.max(1, current - 1))}>上一页</button><span>第 {safePage} / {pageCount} 页</span><button className="button compact" disabled={safePage >= pageCount} onClick={() => setPage((current) => Math.min(pageCount, current + 1))}>下一页</button></div>
