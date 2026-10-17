@@ -100,7 +100,7 @@ async function main(){
     assert.equal(competing.filter(result=>result.status==='fulfilled').length,1);
     const unbound=(await records.listBigStackRecords('222')).find(record=>record.id==='unbound');
     const bIdentity=(await service.listWeeklyPlayerIdentities()).find(player=>player.id==='B');
-    const bound=await direct(unbound.id,{...unbound,expectedVersion:unbound.version,weeklyNumber:1,playerVersion:bIdentity.version,wcaId:unbound.wcaId,solveCount:55});
+    const bound=await direct(unbound.id,{...unbound,name:bIdentity.name,expectedVersion:unbound.version,weeklyNumber:1,playerVersion:bIdentity.version,wcaId:unbound.wcaId,solveCount:55});
     assert.equal(bound.playerId,'B');assert.equal((await service.listWeeklyPlayerIdentities()).find(player=>player.id==='B').weeklyNumber,1);
     console.log('PASS one-step big-stack editing atomically updates shared WCA binding, record gender and scores; failures and competing edits preserve data');
   }finally{await pool.end();await admin.query(`DROP SCHEMA IF EXISTS ${schema} CASCADE`);await admin.end();}

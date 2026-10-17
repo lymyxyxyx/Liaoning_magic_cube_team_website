@@ -31,7 +31,7 @@ async function main() {
       CREATE UNIQUE INDEX big_stack_verify_wca ON weekly_big_stack_records(event_code,wca_id) WHERE wca_id<>'';
       CREATE TABLE weekly_big_stack_record_revisions(id bigserial PRIMARY KEY,record_id text,action text,reason text,before_record jsonb,after_record jsonb,points_awarded int,import_batch_id text,created_at timestamptz DEFAULT now());
       CREATE TABLE weekly_big_stack_import_batches(id text PRIMARY KEY,filename text,event_code text,mode text,summary jsonb);
-      INSERT INTO weekly_player_library VALUES ('A','同名选手','2018AAAA01'),('B','同名选手','2019BBBB01');
+      INSERT INTO weekly_player_library VALUES ('A','同名选手','2018AAAA01'),('B','同名选手','2019BBBB01'),('C','未绑定测试','');
     `);
     const store = load('big-stack');
     const initial = await store.createBigStackRecord({ name: '同名选手', eventId: '333', solveCount: 100, playerId: 'A', note: '内部备注' });
@@ -44,7 +44,7 @@ async function main() {
 
     const duplicates = await Promise.allSettled([1,2].map(()=>store.createBigStackRecord({ name:'未绑定测试',eventId:'333',solveCount:50 })));
     assert.equal(duplicates.filter(r=>r.status==='fulfilled').length,1);
-    await assert.rejects(store.createBigStackRecord({ name:'未绑定测试',eventId:'333',solveCount:50,playerId:'B' }),/已经有/);
+    await assert.rejects(store.createBigStackRecord({ name:'未绑定测试',eventId:'333',solveCount:50,playerId:'C' }),/已经有/);
     console.log('PASS concurrent unbound creation and accidental duplicate creation with a new binding are blocked');
 
     const conflicting = await store.previewBigStackImport({eventId:'333',mode:'merge',rows:[{rowNumber:2,name:'同名选手',count:200,playerId:'B'}]});
