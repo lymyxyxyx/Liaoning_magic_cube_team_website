@@ -382,10 +382,14 @@ export async function updateWeeklyPlayerLibraryEntry(input: {
     const bestBase = { ...(base.rows[0]?.personal_bests_base || {}) };
     const averageBase = { ...(base.rows[0]?.personal_bests_average_base || {}) };
     for (const key of changedEvents) {
-      if (requestedBest[key] === undefined) delete bestBase[key];
-      else bestBase[key] = requestedBest[key];
-      if (requestedAverage[key] === undefined) delete averageBase[key];
-      else averageBase[key] = requestedAverage[key];
+      if (currentBest[key] !== requestedBest[key]) {
+        if (requestedBest[key] === undefined) delete bestBase[key];
+        else bestBase[key] = requestedBest[key];
+      }
+      if (currentAverage[key] !== requestedAverage[key]) {
+        if (requestedAverage[key] === undefined) delete averageBase[key];
+        else averageBase[key] = requestedAverage[key];
+      }
     }
     await client.query(
       "UPDATE weekly_player_library SET personal_bests_base=$2::jsonb, personal_bests_average_base=$3::jsonb WHERE id=$1",

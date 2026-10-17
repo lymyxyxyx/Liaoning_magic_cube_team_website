@@ -77,7 +77,11 @@ async function main() {
     const derived = await library.findWeeklyPlayerLibraryEntry({id:'A'});
     assert.equal(derived.personalBests['333'],9);
     assert.equal(derived.personalBestAverages['333'],11);
-    const improved = await library.updateWeeklyPlayerLibraryEntry({id:'A',expectedVersion:derived.identityVersion,patch:{personalBests:{'333':8},personalBestAverages:{'333':10}}});
+    const averageOnly = await library.updateWeeklyPlayerLibraryEntry({id:'A',expectedVersion:derived.identityVersion,patch:{personalBestAverages:{'333':10}}});
+    const afterAverage = (await pool.query("SELECT personal_bests_base,personal_bests_average_base FROM weekly_player_library WHERE id='A'")).rows[0];
+    assert.equal(afterAverage.personal_bests_base['333'],10);
+    assert.equal(afterAverage.personal_bests_average_base['333'],10);
+    const improved = await library.updateWeeklyPlayerLibraryEntry({id:'A',expectedVersion:averageOnly.identityVersion,patch:{personalBests:{'333':8}}});
     assert.equal(improved.personalBests['333'],8);
     assert.equal(improved.personalBestAverages['333'],10);
     assert.equal((await pool.query("SELECT personal_bests_base->>'333' AS best FROM weekly_player_library WHERE id='A'")).rows[0].best,'8');
