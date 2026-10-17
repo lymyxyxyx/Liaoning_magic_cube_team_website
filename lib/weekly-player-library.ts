@@ -1,4 +1,5 @@
 import { updateWeeklyPlayerIdentity } from "@/lib/weekly-player-identity";
+import { lockWeeklyResultWrites, refreshWeeklyPlayerPersonalBestForEvent } from "@/lib/weekly-entry-store";
 import { getPostgresPool } from "@/lib/postgres";
 import { enrichLocalProfiles, readLocalProfiles } from "@/lib/local-profile-store";
 import { getWeeklyAgeGroup, weeklyAgeGroups } from "@/lib/weekly-age-groups";
@@ -231,31 +232,14 @@ export async function saveWeeklyPlayerLibrary(players: WeeklyPlayerLibraryEntry[
         );
         if (duplicate.rows[0]) throw new Error("该 WCA ID 已存在或历史数据中存在重复，不能重复绑定");
       }
+      if (existing.rows[0]) continue;
       await client.query(
         `INSERT INTO weekly_player_library
           (id, name, wca_id, wca_id_confirmed, gender, birth_date, age_group_override, age_group_is_fuzzy,
            province, city, source, notes, status, deactivated_at, deactivation_reason,
-           personal_bests, personal_bests_average, updated_at)
-         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16::jsonb,$17::jsonb,now())
-         ON CONFLICT (id) DO UPDATE
-           SET name = EXCLUDED.name,
-               wca_id = weekly_player_library.wca_id,
-               wca_id_confirmed = weekly_player_library.wca_id_confirmed,
-               gender = EXCLUDED.gender,
-               birth_date = EXCLUDED.birth_date,
-               age_group_override = EXCLUDED.age_group_override,
-               age_group_is_fuzzy = EXCLUDED.age_group_is_fuzzy,
-               province = EXCLUDED.province,
-               city = EXCLUDED.city,
-               source = EXCLUDED.source,
-               notes = EXCLUDED.notes,
-               status = EXCLUDED.status,
-               deactivated_at = EXCLUDED.deactivated_at,
-               deactivation_reason = EXCLUDED.deactivation_reason,
-               personal_bests = EXCLUDED.personal_bests,
-               personal_bests_average = EXCLUDED.personal_bests_average,
-               updated_at = now()
-         WHERE ${weeklyV2PlayerSourceSql("weekly_player_library")}`,
+           personal_bests, personal_bests_average, personal_bests_base, personal_bests_average_base, updated_at)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16::jsonb,$17::jsonb,$16::jsonb,$17::jsonb,clock_timestamp())
+         ON CONFLICT (id) DO NOTHING`,
         [
           player.id,
           player.name,
@@ -289,13 +273,36 @@ export async function saveWeeklyPlayerLibrary(players: WeeklyPlayerLibraryEntry[
   return listWeeklyPlayerLibrary();
 }
 
+export async function createWeeklyPlayerLibraryEntry(player: Partial<WeeklyPlayerLibraryEntry>) {
+  const name = player.name?.trim();
+  if (!name) throw new Error("请填写选手姓名");
+  const id = createLibraryPlayerId();
+  await saveWeeklyPlayerLibrary([{
+    id, name, gender: player.gender || "", birthDate: player.birthDate || "",
+    ageGroup: player.ageGroup || "", ageGroupIsFuzzy: player.ageGroupIsFuzzy || false,
+    province: player.province || "辽宁", city: player.city || "", source: "admin_manual",
+    notes: player.notes || "", personalBests: player.personalBests,
+    personalBestAverages: player.personalBestAverages
+  }]);
+  const created = await findWeeklyPlayerLibraryEntry({ id });
+  if (!created) throw new Error("创建选手失败");
+  return created;
+}
+
 export async function updateWeeklyPlayerLibraryEntry(input: {
   id?: string;
   name?: string;
+  expectedVersion: string;
   patch: Partial<WeeklyPlayerLibraryEntry>;
 }) {
   const pool = getPostgresPool();
-  const current = await pool.query<WeeklyPlayerLibraryRow>(
+  const client = await pool.connect();
+  try {
+  await client.query("BEGIN");
+  // Coordinate with result writers before locking the player row, since PB
+  // recalculation may also update weekly result badges.
+  await lockWeeklyResultWrites(client);
+  const current = await client.query<WeeklyPlayerLibraryRow>(
     `SELECT id, name, wca_id, wca_id_confirmed, gender, birth_date, age_group_override, age_group_is_fuzzy,
             province, city, source, notes, status, deactivated_at, deactivation_reason,
             personal_bests, personal_bests_average, weekly_number, updated_at::text AS identity_version, updated_at
@@ -303,7 +310,7 @@ export async function updateWeeklyPlayerLibraryEntry(input: {
      WHERE (($1 <> '' AND id = $1) OR ($1 = '' AND name = $2))
        AND ${weeklyV2PlayerSourceSql()}
      ORDER BY id
-     LIMIT 2`,
+     LIMIT 2 FOR UPDATE`,
     [input.id?.trim() || "", input.name?.trim() || ""]
   );
   if (!input.id?.trim() && current.rows.length > 1) {
@@ -311,6 +318,7 @@ export async function updateWeeklyPlayerLibraryEntry(input: {
   }
   const row = current.rows[0];
   if (!row) throw new Error("周赛选手不存在");
+  if (!input.expectedVersion || input.expectedVersion !== row.identity_version) throw new WeeklyPlayerLibraryConflictError();
 
   const patch = input.patch;
   const name = patch.name?.trim() || row.name;
@@ -319,7 +327,7 @@ export async function updateWeeklyPlayerLibraryEntry(input: {
   const wcaId = patch.wcaId?.trim().toUpperCase() ?? row.wca_id;
   if (wcaId !== row.wca_id || (patch.wcaIdConfirmed !== undefined && patch.wcaIdConfirmed !== row.wca_id_confirmed)) throw new Error("请在周赛选手档案的“周赛编号 / WCA ID”入口管理绑定");
   if (wcaId) {
-    const duplicate = await pool.query<{ id: string }>(
+    const duplicate = await client.query<{ id: string }>(
       `SELECT id FROM weekly_player_library WHERE upper(wca_id) = $1 AND id <> $2 AND ${weeklyV2PlayerSourceSql()} LIMIT 1`,
       [wcaId, row.id]
     );
@@ -329,16 +337,24 @@ export async function updateWeeklyPlayerLibraryEntry(input: {
   const status = patch.status === "inactive" ? "inactive" : patch.status === "active" ? "active" : row.status;
   const deactivatedAt = status === "inactive" ? patch.deactivatedAt ?? row.deactivated_at ?? new Date().toISOString() : null;
   const deactivationReason = status === "inactive" ? patch.deactivationReason?.trim() ?? row.deactivation_reason : "";
-  const { rows } = await pool.query<WeeklyPlayerLibraryRow>(
+  if (status === "inactive" && !deactivationReason) throw new Error("请填写停用原因");
+  const currentBest = normalizePersonalBests(row.personal_bests);
+  const currentAverage = normalizePersonalBests(row.personal_bests_average);
+  const requestedBest = patch.personalBests === undefined ? currentBest : normalizePersonalBests(patch.personalBests);
+  const requestedAverage = patch.personalBestAverages === undefined ? currentAverage : normalizePersonalBests(patch.personalBestAverages);
+  const changedEvents = (Object.keys({ ...currentBest, ...currentAverage, ...requestedBest, ...requestedAverage }) as (keyof WeeklyPersonalBests)[])
+    .filter((key) => currentBest[key] !== requestedBest[key] || currentAverage[key] !== requestedAverage[key]);
+  if (changedEvents.length && status !== "active") throw new Error("请先恢复选手，再修改个人 PB");
+  const { rows } = await client.query<WeeklyPlayerLibraryRow>(
     `UPDATE weekly_player_library
      SET name = $2, wca_id = $3, wca_id_confirmed = $4, gender = $5, birth_date = $6,
          age_group_override = $7, age_group_is_fuzzy = $8, province = $9, city = $10,
          source = $11, notes = $12, status = $13, deactivated_at = $14,
-         deactivation_reason = $15, updated_at = now()
+         deactivation_reason = $15, updated_at = clock_timestamp()
      WHERE id = $1 AND wca_id = $3 AND wca_id_confirmed = $4 AND ${weeklyV2PlayerSourceSql()}
      RETURNING id, name, wca_id, wca_id_confirmed, gender, birth_date, age_group_override, age_group_is_fuzzy,
                province, city, source, notes, status, deactivated_at, deactivation_reason,
-               personal_bests, personal_bests_average, weekly_number, updated_at`,
+               personal_bests, personal_bests_average, weekly_number, updated_at::text AS identity_version, updated_at`,
     [
       row.id,
       name,
@@ -350,7 +366,7 @@ export async function updateWeeklyPlayerLibraryEntry(input: {
       birthDate ? false : (patch.ageGroupIsFuzzy ?? row.age_group_is_fuzzy),
       patch.province?.trim() ?? row.province,
       patch.city?.trim() ?? row.city,
-      patch.source?.trim() ?? row.source,
+      row.source,
       patch.notes?.trim() ?? row.notes,
       status,
       deactivatedAt,
@@ -358,7 +374,49 @@ export async function updateWeeklyPlayerLibraryEntry(input: {
     ]
   );
   if (!rows[0]) throw new Error("选手绑定已被修改，请刷新资料后重试");
-  return mapLibraryRow(rows[0]);
+  if (changedEvents.length) {
+    const base = await client.query<{ personal_bests_base: WeeklyPersonalBests | null; personal_bests_average_base: WeeklyPersonalBests | null }>(
+      "SELECT personal_bests_base, personal_bests_average_base FROM weekly_player_library WHERE id=$1",
+      [row.id]
+    );
+    const bestBase = { ...(base.rows[0]?.personal_bests_base || {}) };
+    const averageBase = { ...(base.rows[0]?.personal_bests_average_base || {}) };
+    for (const key of changedEvents) {
+      if (requestedBest[key] === undefined) delete bestBase[key];
+      else bestBase[key] = requestedBest[key];
+      if (requestedAverage[key] === undefined) delete averageBase[key];
+      else averageBase[key] = requestedAverage[key];
+    }
+    await client.query(
+      "UPDATE weekly_player_library SET personal_bests_base=$2::jsonb, personal_bests_average_base=$3::jsonb WHERE id=$1",
+      [row.id, JSON.stringify(bestBase), JSON.stringify(averageBase)]
+    );
+    for (const key of changedEvents) {
+      await refreshWeeklyPlayerPersonalBestForEvent(client, row.id, key === "allAround" ? "individual" : key);
+    }
+  }
+  const updated = await client.query<WeeklyPlayerLibraryRow>(
+    `SELECT id, name, wca_id, wca_id_confirmed, gender, birth_date, age_group_override, age_group_is_fuzzy,
+            province, city, source, notes, status, deactivated_at, deactivation_reason,
+            personal_bests, personal_bests_average, weekly_number, updated_at::text AS identity_version, updated_at
+       FROM weekly_player_library WHERE id=$1`,
+    [row.id]
+  );
+  await client.query("COMMIT");
+  return mapLibraryRow(updated.rows[0]);
+  } catch (error) {
+    await client.query("ROLLBACK");
+    throw error;
+  } finally {
+    client.release();
+  }
+}
+
+export class WeeklyPlayerLibraryConflictError extends Error {
+  constructor() {
+    super("这名选手的资料已被其他操作更新，请刷新选手库后重试。你的修改尚未保存。");
+    this.name = "WeeklyPlayerLibraryConflictError";
+  }
 }
 
 function normalizePlayers(players: WeeklyPlayerLibraryEntry[]) {

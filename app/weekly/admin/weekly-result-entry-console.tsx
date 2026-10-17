@@ -39,6 +39,7 @@ type MeetOption = {
 
 type WeeklyPlayer = {
   id: string;
+  identityVersion?: string;
   name: string;
   slug: string;
   wcaId: string;
@@ -526,18 +527,26 @@ export function WeeklyResultEntryConsole({ initialMeets, initialPlayers = [], ev
     setPlayers([player]);
   }
 
-  function openPlayerEditor(player: WeeklyPlayer) {
-    setPlayerDraft({ ...player });
-    setIsPlayerEditorOpen(true);
+  async function openPlayerEditor(player: WeeklyPlayer) {
+    setNotice("");
+    try {
+      const response = await fetch(`/api/admin/weekly-player-library?id=${encodeURIComponent(player.id)}`);
+      const payload = await response.json().catch(() => null) as { player?: WeeklyPlayer; message?: string } | null;
+      if (!response.ok || !payload?.player) throw new Error(payload?.message || "读取选手资料失败");
+      setPlayerDraft(toWeeklyPlayer(payload.player));
+      setIsPlayerEditorOpen(true);
+    } catch (error) {
+      setNotice(error instanceof Error ? error.message : "读取选手资料失败");
+    }
   }
 
   function savePlayerDetails() {
-    if (!playerDraft || !playerDraft.name.trim()) return;
+    if (!playerDraft || !playerDraft.name.trim() || !playerDraft.identityVersion) return;
     setIsSavingPlayer(true);
     fetch("/api/admin/weekly-player-library", {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ id: playerDraft.id, name: playerDraft.name, patch: playerDraft })
+      body: JSON.stringify({ id: playerDraft.id, name: playerDraft.name, expectedVersion: playerDraft.identityVersion, patch: playerDraft })
     })
       .then(async (response) => {
         const payload = await response.json().catch(() => null) as { player?: WeeklyPlayer; message?: string } | null;
@@ -1214,6 +1223,8 @@ function replacePlayer(players: WeeklyPlayer[], updated: WeeklyPlayer) {
 function toWeeklyPlayer(player: Partial<WeeklyPlayer> & Pick<WeeklyPlayer, "id" | "name">): WeeklyPlayer {
   return {
     id: player.id,
+    identityVersion: player.identityVersion,
+    weeklyNumber: player.weeklyNumber,
     name: player.name,
     slug: player.slug || "",
     wcaId: player.wcaId || "",

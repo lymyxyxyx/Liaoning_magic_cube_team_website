@@ -62,7 +62,7 @@ export function WeeklyPlayerLibraryConsole({
 
   const matchedCount = players.filter((player) => player.wcaId || player.city).length;
 
-  function addPlayer() {
+  async function addPlayer() {
     const name = draft.name.trim();
     if (!name) {
       setNotice("请先填写姓名。");
@@ -72,11 +72,18 @@ export function WeeklyPlayerLibraryConsole({
       setNotice("选手库里已经有这个姓名。");
       return;
     }
-    setPlayers((current) => [{ ...draft, id: createLibraryPlayerId(name), name }, ...current]);
-    setDraft(emptyDraft);
-    setIsCreatingPlayer(false);
-    setStatus("有未保存修改");
-    setNotice("已加入列表，保存后写入选手库。");
+    setStatus("保存中");
+    try {
+      const player = await requestPlayer("POST", { player: { ...draft, name } });
+      setPlayers((current) => [player, ...current]);
+      setDraft(emptyDraft);
+      setIsCreatingPlayer(false);
+      setStatus("已保存");
+      setNotice(`已新建 ${name}。`);
+    } catch (error) {
+      setStatus("保存失败");
+      setNotice(error instanceof Error ? error.message : "新建失败");
+    }
   }
 
   function openCreator() {
@@ -93,44 +100,52 @@ export function WeeklyPlayerLibraryConsole({
     setEditingPlayer((current) => (current ? { ...current, ...next } : current));
   }
 
-  function saveEditingPlayer() {
+  async function saveEditingPlayer() {
     if (!editingPlayer) return;
     const name = editingPlayer.name.trim();
     if (!name) {
       setNotice("姓名不能为空。");
       return;
     }
-    const nextPlayers = players.map((player) => (player.id === editingPlayer.id ? { ...editingPlayer, name } : player));
-    setPlayers(nextPlayers);
-    setEditingPlayer(null);
-    savePlayers(nextPlayers);
-  }
-
-  function removePlayer(id: string) {
-    if (!window.confirm("确认从周赛选手库删除这名选手？")) return;
-    setPlayers((current) => current.filter((player) => player.id !== id));
-    setStatus("有未保存修改");
-  }
-
-  function savePlayers(nextPlayers = players) {
     setStatus("保存中");
-    setNotice("");
-    fetch(apiPath, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ players: nextPlayers })
-    })
-      .then((response) => response.json().then((payload) => ({ ok: response.ok, payload })))
-      .then(({ ok, payload }) => {
-        if (!ok) throw new Error(payload.message || "保存失败");
-        setPlayers(payload.players || []);
-        setStatus("已保存");
-        setNotice("周赛选手库已保存。");
-      })
-      .catch((error) => {
-        setStatus("保存失败");
-        setNotice(error instanceof Error ? error.message : "保存失败，请稍后重试。");
+    try {
+      const player = await requestPlayer("PATCH", { id: editingPlayer.id, expectedVersion: editingPlayer.identityVersion, patch: { ...editingPlayer, name } });
+      setPlayers((current) => current.map((item) => item.id === player.id ? player : item));
+      setEditingPlayer(null);
+      setStatus("已保存");
+      setNotice(`已保存 ${name} 的资料。`);
+    } catch (error) {
+      setStatus("保存失败");
+      setNotice(error instanceof Error ? error.message : "保存失败");
+    }
+  }
+
+  async function changePlayerStatus(player: DraftPlayer) {
+    const deactivating = player.status !== "inactive";
+    if (!window.confirm(`确认${deactivating ? "停用" : "恢复"}${player.name}？${deactivating ? "已有成绩会保留，选手将不再参与新成绩录入。" : ""}`)) return;
+    const reason = deactivating ? window.prompt("请填写停用原因（会保存在选手档案中）")?.trim() : "";
+    if (deactivating && !reason) return;
+    setStatus("保存中");
+    try {
+      const updated = await requestPlayer("PATCH", {
+        id: player.id,
+        expectedVersion: player.identityVersion,
+        patch: { status: deactivating ? "inactive" : "active", deactivationReason: reason }
       });
+      setPlayers((current) => current.map((item) => item.id === updated.id ? updated : item));
+      setStatus("已保存");
+      setNotice(`已${deactivating ? "停用" : "恢复"} ${player.name}。`);
+    } catch (error) {
+      setStatus("保存失败");
+      setNotice(error instanceof Error ? error.message : "操作失败");
+    }
+  }
+
+  async function requestPlayer(method: "POST" | "PATCH", body: object): Promise<DraftPlayer> {
+    const response = await fetch(apiPath, { method, headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+    const payload = await response.json().catch(() => null) as { player?: DraftPlayer; message?: string } | null;
+    if (!response.ok || !payload?.player) throw new Error(payload?.message || "保存失败");
+    return payload.player;
   }
 
   return (
@@ -183,10 +198,6 @@ export function WeeklyPlayerLibraryConsole({
                 <Plus size={15} />
                 新建
               </button>
-              <button className="button primary" type="button" onClick={() => savePlayers()}>
-                <Save size={15} />
-                保存
-              </button>
             </div>
           </div>
           {notice ? <p className="admin-inline-notice weekly-library-notice">{notice}</p> : null}
@@ -202,6 +213,7 @@ export function WeeklyPlayerLibraryConsole({
                   <th>组别</th>
                   <th>省份</th>
                   <th>城市</th>
+                  <th>状态</th>
                   <th>操作</th>
                 </tr>
               </thead>
@@ -223,13 +235,14 @@ export function WeeklyPlayerLibraryConsole({
                     </td>
                     <td data-label="省份">{player.province || ""}</td>
                     <td data-label="城市">{player.city || ""}</td>
+                    <td data-label="状态">{player.status === "inactive" ? "已停用" : "正常"}</td>
                     <td data-label="操作">
                       <span className="weekly-library-row-actions">
                         <button className="icon-button" type="button" onClick={() => openEditor(player)} aria-label={`编辑${player.name}`}>
                           <Pencil size={15} />
                         </button>
-                        <button className="icon-button danger" type="button" onClick={() => removePlayer(player.id)} aria-label={`删除${player.name}`}>
-                          <Trash2 size={15} />
+                        <button className="icon-button danger" type="button" onClick={() => changePlayerStatus(player)} aria-label={`${player.status === "inactive" ? "恢复" : "停用"}${player.name}`}>
+                          {player.status === "inactive" ? "恢复" : <Trash2 size={15} />}
                         </button>
                       </span>
                     </td>
@@ -262,7 +275,7 @@ export function WeeklyPlayerLibraryConsole({
               </button>
               <button className="button primary" type="button" onClick={addPlayer}>
                 <Plus size={16} />
-                加入列表
+                新建并保存
               </button>
             </div>
           </div>
@@ -386,7 +399,7 @@ function PlayerFields({
       </label>
       <fieldset className="weekly-library-pb-fields">
         <legend>个人 PB</legend>
-        <p>单位：秒。留空表示暂无记录。</p>
+        <p>单位：秒。手工成绩会保存为基线；若周赛历史有更好的成绩，个人 PB 仍显示历史最佳。</p>
         <div className="weekly-library-pb-grid">
           {personalBestFields.map((field) => (
             <label key={field.id}>
@@ -420,16 +433,6 @@ function PlayerFields({
       </fieldset>
     </div>
   );
-}
-
-function createLibraryPlayerId(name: string) {
-  const base =
-    name
-      .trim()
-      .toLowerCase()
-      .replace(/[^a-z0-9\u4e00-\u9fa5]+/g, "-")
-      .replace(/^-+|-+$/g, "") || Date.now().toString(36);
-  return `weekly-library-${base}-${Math.random().toString(36).slice(2, 8)}`;
 }
 
 const personalBestFields = [

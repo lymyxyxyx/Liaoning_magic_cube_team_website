@@ -1228,7 +1228,7 @@ async function refreshWeeklyPlayerPersonalBest(
      SET personal_bests = $1::jsonb, personal_bests_average = $2::jsonb,
          personal_bests_base = $4::jsonb,
          personal_bests_average_base = $5::jsonb,
-         updated_at = now()
+         updated_at = clock_timestamp()
      WHERE id = $3`,
     [JSON.stringify(nextBest), JSON.stringify(nextAverage), playerId, JSON.stringify(baseBest), JSON.stringify(baseAverage)]
   );
